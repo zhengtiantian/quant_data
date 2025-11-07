@@ -3,7 +3,7 @@ from test_db_connection import test_mysql, test_mongo
 
 
 def run_health_check():
-    print("=== Quant Data System Started ===")
+    print("=== Quant Data System Started 1===")
     print("Performing initial database connectivity test...\n")
 
     mysql_result = test_mysql()
