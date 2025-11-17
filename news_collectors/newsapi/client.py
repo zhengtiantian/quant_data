@@ -6,107 +6,115 @@ from dotenv import load_dotenv
 from pymongo import MongoClient
 
 # =========================================================
-# 1. 加载环境变量（全局 + 模块专属）
+# 1. 加载环境变量（强制加载项目根目录 + 覆盖模块 .env）
 # =========================================================
 
-# 先加载根目录下的 .env（全局配置）
-root_env = Path(__file__).resolve().parents[2] / ".env"
-if root_env.exists():
-    load_dotenv(dotenv_path=root_env, override=False)
-    print(f"✅ 已加载全局配置: {root_env}")
+# 项目根目录：quant_data （父级的父级）
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+GLOBAL_ENV = PROJECT_ROOT / ".env"
+
+# 加载项目根目录的 .env（不能 override）
+load_dotenv(GLOBAL_ENV, override=False)
+print(f"Loaded GLOBAL .env: {GLOBAL_ENV}")
+
+# 加载当前模块下的 .env（能 override）
+MODULE_ENV = Path(__file__).parent / ".env"
+if MODULE_ENV.exists():
+    load_dotenv(MODULE_ENV, override=True)
+    print(f"Loaded MODULE .env: {MODULE_ENV}")
 else:
-    print(f"⚠️ 未找到全局 .env 文件: {root_env}")
+    print(f"No module .env found at: {MODULE_ENV}")
 
-# 再加载当前模块专属 .env（覆盖同名变量）
-local_env = Path(__file__).parent / ".env"
-if local_env.exists():
-    load_dotenv(dotenv_path=local_env, override=True)
-    print(f"✅ 已加载模块配置: {local_env}")
-else:
-    print(f"⚠️ 未找到模块 .env 文件: {local_env}")
-
-# 打印调试信息
-print("MONGO_URI =", os.getenv("MONGO_URI"))
-print("NEWS_API_KEY =", os.getenv("NEWS_API_KEY"))
+# 调试输出
+print("DEBUG MONGO_URI:", os.getenv("MONGO_URI"))
+print("DEBUG GDELT_BASE_URL:", os.getenv("GDELT_BASE_URL"))
 
 # =========================================================
-# 2. 环境变量配置
+# 2. 环境变量
 # =========================================================
-API_KEY = os.getenv("NEWS_API_KEY")
-BASE_URL = os.getenv("NEWS_API_BASE_URL", "https://newsapi.org/v2/everything")
-DEFAULT_QUERY = os.getenv("NEWS_DEFAULT_QUERY", "finance")
-LANGUAGE = os.getenv("NEWS_LANGUAGE", "en")
-PAGE_SIZE = int(os.getenv("NEWS_PAGE_SIZE", 50))
+BASE_URL = os.getenv("GDELT_BASE_URL", "https://api.gdeltproject.org/api/v2/doc/doc")
+QUERY = os.getenv("GDELT_QUERY", "((US stock OR Wall Street OR Nasdaq OR S&P OR Dow Jones) AND (market OR stocks OR earnings OR inflation OR Fed))")
+PAGE_SIZE = int(os.getenv("GDELT_PAGE_SIZE", 50))
 MONGO_URI = os.getenv("MONGO_URI")
 
 if not MONGO_URI:
-    raise RuntimeError("❌ 未能从全局 .env 读取 MONGO_URI，请检查 quant_data/.env 文件")
+    raise RuntimeError("❌ ERROR: 未读取到 MONGO_URI，请检查 quant_data/.env 文件")
 
 # =========================================================
-# 3. 获取新闻函数
+# 3. 请求 GDELT
 # =========================================================
 def fetch_news(query: str = None):
-    """从 NewsAPI 获取新闻"""
+    q = query or QUERY
+
+    # 自动为 OR 查询加括号
+    if " OR " in q and not (q.startswith("(") and q.endswith(")")):
+        q = f"({q})"
+
     params = {
-        "q": query or DEFAULT_QUERY,
-        "language": LANGUAGE,
-        "pageSize": PAGE_SIZE,
-        "apiKey": API_KEY
+        "query": q,
+        "mode": "ArtList",
+        "maxrecords": PAGE_SIZE,
+        "format": "JSON"
     }
 
-    response = requests.get(BASE_URL, params=params)
-    if response.status_code != 200:
-        print(f"❌ 请求失败: {response.status_code} - {response.text}")
+    resp = requests.get(
+        BASE_URL,
+        params=params,
+        headers={"User-Agent": "Mozilla/5.0"}
+    )
+
+    try:
+        data = resp.json()
+    except Exception:
         return []
 
-    data = response.json()
-    articles = data.get("articles", [])
-    print(f"✅ 获取到 {len(articles)} 篇新闻")
-    return articles
+    return data.get("articles", [])
 
 # =========================================================
 # 4. 保存到 MongoDB
 # =========================================================
 def save_to_mongo(articles):
-    """将新闻存入 MongoDB"""
     try:
         client = MongoClient(MONGO_URI)
-        db = client["quant_data"]
-        collection = db["news_articles"]
+        col = client["quant_data"]["news_articles"]
 
         docs = []
         for a in articles:
             docs.append({
                 "source": {
-                    "platform": "newsapi",
-                    "name": a.get("source", {}).get("name")
+                    "platform": "gdelt",
+                    "name": a.get("domain"),
                 },
                 "title": a.get("title"),
-                "description": a.get("description"),
-                "content": a.get("content"),
+                "description": a.get("sourcecountry"),
+                "content": None,
                 "url": a.get("url"),
-                "publishedAt": a.get("publishedAt"),
+                "publishedAt": a.get("seendate"),
                 "collectedAt": datetime.utcnow().isoformat(),
-                "language": a.get("language", LANGUAGE),
+                "language": a.get("language", "unknown"),
                 "meta": {
-                    "collector": "newsapi.client",
+                    "collector": "gdelt.collector",
                     "version": "1.0.0"
                 }
             })
 
         if docs:
-            collection.insert_many(docs)
-            print(f"✅ 已写入 {len(docs)} 条新闻到 MongoDB")
+            col.insert_many(docs)
+            print(f"Inserted {len(docs)} docs into MongoDB")
 
     except Exception as e:
-        print("❌ 写入 MongoDB 失败:", e)
+        print("❌ MongoDB insert failed:", e)
 
 # =========================================================
-# 5. 主程序入口
+# 5. 主程序
 # =========================================================
 if __name__ == "__main__":
-    news = fetch_news()
-    if news:
-        save_to_mongo(news)
-        for i, article in enumerate(news[:5], 1):
-            print(f"{i}. {article['title']}")
+    articles = fetch_news()
+    if not articles:
+        print("No articles fetched.")
+    else:
+        print("\nSample articles:")
+        for i, a in enumerate(articles[:5], 1):
+            print(f"{i}. {a.get('title')}")
+
+        # save_to_mongo(articles)  # 需要时开启
