@@ -33,7 +33,7 @@ print("DEBUG GDELT_BASE_URL:", os.getenv("GDELT_BASE_URL"))
 # 2. 环境变量
 # =========================================================
 BASE_URL = os.getenv("GDELT_BASE_URL", "https://api.gdeltproject.org/api/v2/doc/doc")
-QUERY = os.getenv("GDELT_QUERY", "((US stock OR Wall Street OR Nasdaq OR S&P OR Dow Jones) AND (market OR stocks OR earnings OR inflation OR Fed))")
+QUERY = os.getenv("NEWS_DEFAULT_QUERY", "Wall Street")
 PAGE_SIZE = int(os.getenv("GDELT_PAGE_SIZE", 50))
 MONGO_URI = os.getenv("MONGO_URI")
 
@@ -46,7 +46,6 @@ if not MONGO_URI:
 def fetch_news(query: str = None):
     q = query or QUERY
 
-    # 自动为 OR 查询加括号
     if " OR " in q and not (q.startswith("(") and q.endswith(")")):
         q = f"({q})"
 
@@ -57,18 +56,19 @@ def fetch_news(query: str = None):
         "format": "JSON"
     }
 
-    resp = requests.get(
-        BASE_URL,
-        params=params,
-        headers={"User-Agent": "Mozilla/5.0"}
-    )
-
+    resp = requests.get(BASE_URL, params=params, headers={"User-Agent": "Mozilla/5.0"})
     try:
         data = resp.json()
-    except Exception:
+    except:
         return []
 
-    return data.get("articles", [])
+    print("RAW RESPONSE:", resp.text)
+    articles = data.get("articles", [])
+
+    # 关键过滤，只保留美国新闻
+    us_articles = [a for a in articles if a.get("sourcecountry") == "US"]
+
+    return us_articles
 
 # =========================================================
 # 4. 保存到 MongoDB
