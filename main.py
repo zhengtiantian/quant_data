@@ -17,8 +17,7 @@ def run_health_check():
 
 
 if __name__ == "__main__":
-    # 这里未来可以添加数据采集、分析、模型训练等任务
-    # 目前仅运行数据库健康检测
+
     while True:
         run_health_check()
         print("Sleeping for 5 minutes before next check...\n")
