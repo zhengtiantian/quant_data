@@ -22,4 +22,5 @@ dist/
 
 # Docker
 *.pid
-pycache/
+__pycache__/
+*.pyc
