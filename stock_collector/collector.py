@@ -1,19 +1,18 @@
 import os
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime, UTC
 from pathlib import Path
 from dotenv import load_dotenv
 from pymongo import MongoClient
 
 # Load env
 CURRENT = Path(__file__).resolve()
-ROOT = CURRENT.parents[2]
+ROOT = CURRENT.parents[1]
 GLOBAL_ENV = ROOT / ".env"
-load_dotenv(GLOBAL_ENV, override=False)
+load_dotenv(GLOBAL_ENV, override=True)
+print("Loaded:", GLOBAL_ENV)
 
 MONGO_URI = os.getenv("MONGO_URI")
-
 URL_SP500 = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
 URL_NASDAQ100 = "https://en.wikipedia.org/wiki/Nasdaq-100"
 URL_DOW30 = "https://en.wikipedia.org/wiki/Dow_Jones_Industrial_Average"
