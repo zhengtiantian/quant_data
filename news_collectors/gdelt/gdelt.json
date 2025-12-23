@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "peak-lattice-482021-g0",
+  "private_key_id": "20edf16d722fd04b28e34364cefe7b5f94246343",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQCqi216xXSD2SXh\nULEBa35tplvFK3XFAbZfvdE3Q1PFGPTGAUBr8fedtxOVpgoPC8p75RdGPFnkjUXd\n9i0s9BWb8pWXlwuRuLUJVzDEg8MprIZcr6UHTRI3PwkYhrBmzp37a/gw3cUDVCQf\nha2xyZ8jrkeycBzkSjzVwXc2QAgmQYsCzPHd9c+yBamNane6CrLABcvaMwopdEQC\nAZO/OAW7H8WtvY1WwLTEHOqzS1O8FoNlEZDeOgvqVB5Ak92MN3Io7RpMcXkDMRJA\nKqnPn8PbXbKApzxTvxS5Hy00uoqwDs/WDDj4OBMX49v5sp5tX0C0SU7kvtFb9PRi\n4ZkG7m+1AgMBAAECggEAH97e9njEcahIoS7iaTTEo2qZj0L0Jv0PLxyqpqRtGPH1\nOjR9LL8C6mUOYqKtEgs+y4DwJMa9+M1iz1xELHivuh0vEe1e8tw87rIt0aea9uSA\nFn2XfkILo6niwgPXntrBYL0YXE9xVBIrDv39C/K1C+azjNfROmNaM4sMQ2XbcAR0\nmIyApT/gtF5raEAfjOBdFTExHgWyzHN6ThU41dxdUxDkY7F5+7f94AOuBFf8/Q/m\nJbS88ZPFfCITUkZXyuySBW8ZbJGDyGl2DPCJ9BjSCIZlCM6q3RvGES6OUtzNp8je\nIq2Ak3OPvBj07PvklW1H6TWXGLobP7f+KdLiMGFOoQKBgQDn1pnL0KobhY5RFRCi\nQwBLReFH1CuUW5vYhW44Dksa7SOLz5RuiFajVx8XjRmN/awzA/24hBJ6mok6Mt1F\n8kUDql7N6Gb++Pbo1X4/gUr1ArkxT+HaZI8NG2J1ATBzC0BDdhQ5XZS1hD027l0d\n4KxEc7P7nboTtjJ34WIbIJW4oQKBgQC8UYZPneeuK2MZz5UPeZ+5IH7xz2zAwK0Z\nV9leOqNuGHumSGlfE+/j3khg8RyuELYc8i+l0ujvzzFkpln3Rb5X5gQn3s8HB6VV\n76os+YoHVWwns7jPruNgRTzuWfIFHJrLiAKXPkmQWJIiLIv/ya4lAebFdO1MiquI\nUIBP3IW6lQKBgB+PzZw7qgzZH8jWD0+nw3B78PFwZwZpekv9zkV/XKYrxn0QI2rw\n0Kqn/6mbIfF8qWbAklf+Uu2yACCWMB2Hn/GhzgpGK09m4WZNOkS2+1djqYaXE25B\n5l+obLz1Dn16+KK2foZYwRf9CsBhrveUUJ95CPWmQWDRmwlK+6opw3hBAoGAUiEj\n+HkfX6BgehNEKRmcBTsc4gzamz3swE7F6Aie2hcnZh/ShLrHNpPs8Qp2vZtgMUOW\ncDWJjXzJR+Ic/nCWUPNqAJF1rNUy0EXT7AVwoz4oCzCge0MEuym3JyRnHr+Y6wcI\nSjnKD3/xS6It9IJaxp0LrjYOgAFCShMBwtKkJ/kCgYAQQ/wCFHP5Zr33JaKLn8Ed\ngybvqiGpB/hAsgyqsxTwKUOiQlc42wZU5RdE4sfNjs6uy5o+BrY4oPg6+frmIFLN\nSFtnHO86bjao9AynGDnr/E92JmawdwmLFnLyTmlXpRqZOJrKewT7i1w75apjy50k\nzZn+mhviEt4/LQgH7mDuRA==\n-----END PRIVATE KEY-----\n",
+  "client_email": "gdelt-reader@peak-lattice-482021-g0.iam.gserviceaccount.com",
+  "client_id": "101319162127964891934",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/gdelt-reader%40peak-lattice-482021-g0.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
