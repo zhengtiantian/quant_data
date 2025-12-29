@@ -1,40 +1,61 @@
 import os
-import requests
-import zipfile
 import io
+import socket
+import zipfile
+import requests
 import pandas as pd
 from datetime import datetime, timedelta
+from pymongo import MongoClient
 from newspaper import Article, Config
-import time
-import re
 import concurrent.futures
+import time
 
-# ============================
-# 配置参数
-# ============================
-COMPANY = "Apple"
-START_DATE = "2020-03-01"
-END_DATE = "2020-03-03"
-MAX_FILES = 50
-CACHE_DIR = "./cache_gdelt"
+# =====================================================
+# 0. 环境配置
+# =====================================================
+def get_mongo_uri():
+    try:
+        socket.gethostbyname("mongo6")
+        print("🔗 Running inside Docker network, using internal Mongo URI")
+        return "mongodb://root:root@mongo6:27017/quant_data?authSource=admin"
+    except socket.gaierror:
+        print("💻 Running on external machine, using host Mongo URI")
+        return "mongodb://root:root@192.168.1.26:37018/quant_data?authSource=admin"
+
+MONGO_URI = os.getenv("MONGO_URI", get_mongo_uri())
+DB_NAME = "quant_data"
+COLLECTION_STOCKS = "stock_universe"
+COLLECTION_NEWS = "news_articles"
+
+CACHE_DIR = os.getenv("GDELT_CACHE", "./cache_gdelt")
 FILES_DIR = os.path.join(CACHE_DIR, "files")
-os.makedirs(CACHE_DIR, exist_ok=True)
 os.makedirs(FILES_DIR, exist_ok=True)
 
 BASE_URL = "http://data.gdeltproject.org/gdeltv2"
 MASTER_FILE = os.path.join(CACHE_DIR, "masterfilelist.txt")
 
-# 自定义 User-Agent
-user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15"
+# 时间范围：过去 5 年
+END_DATE = datetime.utcnow()
+START_DATE = END_DATE - timedelta(days=5 * 365)
+
+# newspaper3k 配置
+user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/605.1.15 (KHTML, like Gecko)"
 config = Config()
 config.browser_user_agent = user_agent
 config.request_timeout = 10
 
-# ============================
-# masterfilelist 缓存
-# ============================
+# =====================================================
+# 1. MongoDB 连接
+# =====================================================
+def get_mongo_client():
+    client = MongoClient(MONGO_URI)
+    return client[DB_NAME]
+
+# =====================================================
+# 2. 加载 masterfilelist.txt（带缓存）
+# =====================================================
 def load_masterfilelist():
-    if os.path.exists(MASTER_FILE):
+    if os.path.exists(MASTER_FILE) and os.path.getsize(MASTER_FILE) > 100_000_000:
         print(f"📂 Using cached masterfilelist.txt ({os.path.getsize(MASTER_FILE)/1e6:.1f} MB)")
         with open(MASTER_FILE, "r") as f:
             return f.readlines()
@@ -49,13 +70,20 @@ def load_masterfilelist():
     with open(MASTER_FILE, "r") as f:
         return f.readlines()
 
-# ============================
-# 从 masterfilelist 过滤日期范围
-# ============================
-def get_gkg_file_urls(start, end, max_files):
+# =====================================================
+# 3. 按时间分批生成 GKG 文件（2天一批）
+# =====================================================
+def generate_batches(start, end, days_per_batch=2):
+    batches = []
+    cursor = start
+    while cursor < end:
+        batch_end = min(cursor + timedelta(days=days_per_batch), end)
+        batches.append((cursor, batch_end))
+        cursor = batch_end
+    return batches
+
+def get_gkg_file_urls(start, end):
     lines = load_masterfilelist()
-    start_dt = datetime.strptime(start, "%Y-%m-%d")
-    end_dt = datetime.strptime(end, "%Y-%m-%d") + timedelta(days=1)
     urls = []
     for line in lines:
         if ".gkg.csv.zip" not in line:
@@ -69,89 +97,82 @@ def get_gkg_file_urls(start, end, max_files):
             ts = datetime.strptime(ts_str, "%Y%m%d%H%M%S")
         except:
             continue
-        if start_dt <= ts <= end_dt:
+        if start <= ts <= end:
             urls.append(url)
-        if len(urls) >= max_files:
-            break
-    print(f"✅ Found {len(urls)} candidate files in range {start} → {end}")
+    print(f"✅ Found {len(urls)} GKG files between {start.date()} → {end.date()}")
     return urls
 
-# ============================
-# 下载并解析 GKG 文件
-# ============================
+# =====================================================
+# 4. 解析 GDELT 文件（带详细下载日志）
+# =====================================================
 def parse_gdelt_files(urls, company):
     all_rows = []
-    print(f"🔍 Filtering for company: {company}")
+    cache_hits = downloads = 0
 
-    for url in urls:
+    print(f"\n🔍 Matching company: {company}")
+    print(f"📦 Total GDELT files this batch: {len(urls)}")
+
+    for idx, url in enumerate(urls, 1):
         filename = os.path.basename(url)
         cache_path = os.path.join(FILES_DIR, filename)
-        try:
-            # 缓存
-            if os.path.exists(cache_path):
-                print(f"📦 Using cached {filename}")
-                with open(cache_path, "rb") as f:
-                    data = io.BytesIO(f.read())
-            else:
-                print(f"⬇️ Downloading {filename} ...")
-                r = requests.get(url, timeout=60)
+
+        if os.path.exists(cache_path):
+            cache_hits += 1
+            size_mb = os.path.getsize(cache_path) / 1e6
+            print(f"[{idx}/{len(urls)}] 📂 Cached {filename} ({size_mb:.2f} MB)")
+            with open(cache_path, "rb") as f:
+                data = io.BytesIO(f.read())
+        else:
+            downloads += 1
+            print(f"[{idx}/{len(urls)}] ⬇️ Downloading {filename} ...")
+            try:
+                r = requests.get(url, timeout=90)
                 r.raise_for_status()
                 with open(cache_path, "wb") as f:
                     f.write(r.content)
+                size_mb = len(r.content) / 1e6
+                print(f"✅ Downloaded {filename} ({size_mb:.2f} MB)")
                 data = io.BytesIO(r.content)
+            except Exception as e:
+                print(f"❌ Download failed {filename}: {e}")
+                continue
 
-            # 读取文件
+        try:
             z = zipfile.ZipFile(data)
             with z.open(z.namelist()[0]) as f:
                 df = pd.read_csv(f, sep="\t", header=None, encoding="ISO-8859-1", on_bad_lines="skip")
 
-            print(f"\n📄 {filename} shape={df.shape}")
-
-            # 第26列包含 <PAGE_TITLE> 等
             if 26 not in df.columns:
-                print(f"⚠️ Column 26 missing in {filename}")
                 continue
-
             df = df[[26]]
             df.columns = ["Raw"]
 
-            # 提取 PAGE_TITLE 与 URL
             df["Title"] = df["Raw"].str.extract(r"<PAGE_TITLE>(.*?)</PAGE_TITLE>", expand=False)
             df["AltURL"] = df["Raw"].str.extract(r"<PAGE_ALTURL_AMP>(.*?)</PAGE_ALTURL_AMP>", expand=False)
             df["Links"] = df["Raw"].str.extract(r"<PAGE_LINKS>(.*?)</PAGE_LINKS>", expand=False)
+            df["URL"] = df["AltURL"].combine_first(df["Links"]).astype(str).str.split(";").str[0]
 
-            # 优先用 AltURL，没有则用 Links
-            df["URL"] = df["AltURL"].combine_first(df["Links"])
-
-            # 清洗 URL 与标题
-            df["URL"] = df["URL"].astype(str).str.split(";").str[0]
-            df["Title"] = df["Title"].astype(str).str.replace("&amp;", "&")
-
-            # 匹配公司名
             mask = df["Title"].astype(str).str.contains(company, case=False, na=False)
-            df = df[mask & df["URL"].astype(str).str.startswith(("http://", "https://"))]
+            df = df[mask & df["URL"].str.startswith(("http://", "https://"))]
 
-            if df.empty:
-                continue
-
-            df["Date"] = filename[:8]
-            df = df[["Date", "Title", "URL"]]
-            print(f"✅ {filename}: {len(df)} matches (e.g. {df['Title'].iloc[0][:60]})")
-            all_rows.append(df)
+            if not df.empty:
+                df["Date"] = filename[:8]
+                df = df[["Date", "Title", "URL"]]
+                all_rows.append(df)
 
         except Exception as e:
-            print(f"⚠️ Error parsing {url}: {e}")
+            print(f"⚠️ Error parsing {filename}: {e}")
 
+    print(f"\n📦 Cache hits: {cache_hits} | Downloads: {downloads}")
     if not all_rows:
         return pd.DataFrame()
-
-    combined = pd.concat(all_rows, ignore_index=True)
-    combined = combined.drop_duplicates(subset=["URL", "Title"])
+    combined = pd.concat(all_rows, ignore_index=True).drop_duplicates(subset=["URL", "Title"])
+    print(f"📰 Found {len(combined)} articles for {company}")
     return combined
 
-# ============================
-# 并行抓取新闻正文
-# ============================
+# =====================================================
+# 5. 抓取正文（多线程）
+# =====================================================
 def fetch_article(row, company):
     url = str(row["URL"])
     try:
@@ -160,56 +181,61 @@ def fetch_article(row, company):
         art.parse()
         title = art.title.strip()
         content = art.text.strip().replace("\n", " ")
-        if len(content) < 80:
+        if len(content) < 100:
             return None
         return {
-            "date": row.get("Date", ""),
             "company": company,
             "title": title,
             "url": url,
-            "content": content
+            "content": content,
+            "date": row.get("Date", ""),
+            "source": "GDELT",
+            "collectedAt": datetime.utcnow(),
         }
     except Exception:
         return None
 
 def crawl_articles(df, company):
-    print(f"\n📑 Extracting article content for {len(df)} URLs...\n")
     results = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
         futures = [executor.submit(fetch_article, row, company) for _, row in df.iterrows()]
         for future in concurrent.futures.as_completed(futures):
             res = future.result()
             if res:
                 results.append(res)
-                print(f"[{len(results)}] ✅ {res['title'][:80]}...")
+    print(f"✅ Extracted {len(results)} valid articles for {company}")
     return results
 
-# ============================
-# 主逻辑
-# ============================
+# =====================================================
+# 6. 主逻辑
+# =====================================================
+def main():
+    db = get_mongo_client()
+    companies = [x["name"] for x in db[COLLECTION_STOCKS].find({}, {"name": 1})]
+    print(f"📊 Loaded {len(companies)} companies from MongoDB.")
+
+    batches = generate_batches(START_DATE, END_DATE, days_per_batch=2)
+    print(f"🗓️ Total batches: {len(batches)} (2 days each)")
+
+    for company in companies:
+        print(f"\n==============================")
+        print(f"🏢 Processing company: {company}")
+
+        for batch_start, batch_end in batches:
+            print(f"\n📆 {batch_start.date()} → {batch_end.date()}")
+            urls = get_gkg_file_urls(batch_start, batch_end)
+            if not urls:
+                continue
+            df = parse_gdelt_files(urls, company)
+            if df.empty:
+                continue
+            articles = crawl_articles(df, company)
+            if articles:
+                db[COLLECTION_NEWS].insert_many(articles, ordered=False)
+                print(f"💾 Saved {len(articles)} articles for {company} ({batch_start.date()}→{batch_end.date()})")
+
+            # 每批暂停几秒
+            time.sleep(2)
+
 if __name__ == "__main__":
-    print(f"\n🕒 Running fixed range {START_DATE} → {END_DATE} ...")
-
-    urls = get_gkg_file_urls(START_DATE, END_DATE, MAX_FILES)
-    if not urls:
-        print("❌ No GKG files found in range.")
-        exit(0)
-
-    df = parse_gdelt_files(urls, COMPANY)
-    if df.empty:
-        print("❌ No matching records found for this company.")
-        exit(0)
-
-    news = crawl_articles(df, COMPANY)
-
-    output_file = f"{CACHE_DIR}/news_{COMPANY}_{START_DATE}_{END_DATE}.csv"
-    pd.DataFrame(news).to_csv(output_file, index=False, encoding="utf-8")
-    print(f"\n✅ Saved {len(news)} articles to {output_file}")
-
-    print("\n========================= SAMPLE NEWS =========================")
-    for n in news[:3]:
-        print(f"🗞 Title: {n['title']}")
-        print(f"📅 Date: {n['date']}")
-        print(f"🔗 URL: {n['url']}")
-        print(f"📝 Content:\n{n['content'][:800]}")
-        print("=" * 90)
+    main()
