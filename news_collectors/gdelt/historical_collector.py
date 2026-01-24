@@ -22,7 +22,7 @@ DST_COLLECTION = "news_articles"
 
 YEARS_BACK = 10
 MAX_FILES = None  # 全量
-CACHE_DIR = "./cache_gdelt"
+CACHE_DIR = "/mnt/data24t/docker-volumes/gdelt_cache"  # 存储到 22TB 硬盘
 FILES_DIR = os.path.join(CACHE_DIR, "files")
 os.makedirs(CACHE_DIR, exist_ok=True)
 os.makedirs(FILES_DIR, exist_ok=True)
