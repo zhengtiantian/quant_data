@@ -1,0 +1,46 @@
+{
+    "symbol": "MU",
+    "name": "Micron Technology",
+    "primary_keywords": [
+        "MU",
+        "Micron"
+    ],
+    "expansion_keywords": [
+        "Sanjay Mehrotra",
+        "Fab capacity",
+        "HBM3E",
+        "GDDR7",
+        "PC demand",
+        "DRAM",
+        "NVMe SSD",
+        "US CHIPS Act",
+        "Wafer starts",
+        "LPDDR5X",
+        "Server refresh",
+        "NAND Flash",
+        "Crucial Memory",
+        "Inventory cycle"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "required_keywords": [
+                "MU",
+                "Micron"
+            ],
+            "min_matches": 1
+        }
+    },
+    "strict_validation_keywords": [
+        "MU",
+        "Micron",
+        "Technology",
+        "Memory",
+        "DRAM",
+        "NAND",
+        "Semiconductor",
+        "Nasdaq",
+        "Intel",
+        "Samsung",
+        "SK Hynix"
+    ]
+}

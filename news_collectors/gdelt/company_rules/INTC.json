@@ -1,0 +1,62 @@
+{
+    "symbol": "INTC",
+    "name": "Intel",
+    "primary_keywords": [
+        "INTC",
+        "Intel"
+    ],
+    "expansion_keywords": [
+        "Core i9",
+        "PC demand",
+        "Intel Foundry",
+        "Core Ultra 3",
+        "Xeon Scalable",
+        "Xeon",
+        "Panther Lake",
+        "Arc Alchemist",
+        "Meteor Lake",
+        "Inventory cycle",
+        "Nova Lake",
+        "Arc Battlemage",
+        "RibbonFET",
+        "Diamond Rapids",
+        "Arc Graphics",
+        "Sierra Forest",
+        "Gaudi 3",
+        "Core Ultra 2",
+        "x86 architecture",
+        "Fab capacity",
+        "US CHIPS Act",
+        "Clearwater Forest",
+        "Arc Pro B70",
+        "Lunar Lake",
+        "Xeon 6",
+        "Granite Rapids",
+        "Wafer starts",
+        "Pat Gelsinger",
+        "Server refresh",
+        "Habana Labs",
+        "PowerVia",
+        "Intel 14A",
+        "Intel 18A",
+        "Gaudi 3 accelerator"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "Chip可能匹配到人名Chip Kelly",
+            "required_keywords": [
+                "Intel",
+                "semiconductor",
+                "processor",
+                "CPU",
+                "Xeon",
+                "Core i"
+            ],
+            "exclude_patterns": [
+                "Chip Kelly",
+                "Chip Mularkey"
+            ],
+            "min_matches": 1
+        }
+    }
+}

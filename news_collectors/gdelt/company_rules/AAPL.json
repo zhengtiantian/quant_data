@@ -1,0 +1,73 @@
+{
+    "symbol": "AAPL",
+    "name": "Apple Inc.",
+    "primary_keywords": [
+        "AAPL",
+        "Apple Inc."
+    ],
+    "expansion_keywords": [
+        "Tim Cook",
+        "iPhone revenue",
+        "Mac Studio",
+        "M3 Ultra",
+        "Antitrust lawsuit",
+        "iCloud",
+        "DMA compliance",
+        "Apple Silicon",
+        "macOS",
+        "MacBook",
+        "TSMC",
+        "Project Titan",
+        "Apple Intelligence",
+        "Face ID",
+        "A17 Pro",
+        "Luca Maestri",
+        "M2 Pro",
+        "Jeff Williams",
+        "iPad",
+        "Lina Khan",
+        "Hon Hai",
+        "Gross Margin",
+        "M2 Max",
+        "M4 Max",
+        "Dividend yield",
+        "Share buyback",
+        "M1 chip",
+        "AirTag",
+        "M4 Ultra",
+        "A18 chip",
+        "iOS",
+        "Vision Pro",
+        "DOJ Apple",
+        "visionOS",
+        "A11 Bionic",
+        "Apple Watch Ultra",
+        "European Commission fine",
+        "A13 Bionic",
+        "Foxconn",
+        "AirPods Pro 2",
+        "A10 Fusion",
+        "Cupertino",
+        "App Store",
+        "A12 Bionic",
+        "Apple Watch",
+        "iPhone",
+        "Dynamic Island",
+        "MagSafe",
+        "Studio Display"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "确保是Apple公司相关",
+            "required_keywords": [
+                "Apple",
+                "iPhone",
+                "iPad",
+                "Mac",
+                "iOS",
+                "Tim Cook"
+            ],
+            "min_matches": 1
+        }
+    }
+}

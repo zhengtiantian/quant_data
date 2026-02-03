@@ -1,0 +1,84 @@
+{
+    "symbol": "GOOGL",
+    "name": "Alphabet Inc.(Class A)",
+    "primary_keywords": [
+        "GOOGL",
+        "Alphabet Inc."
+    ],
+    "expansion_keywords": [
+        "DeepMind AlphaGo",
+        "Google Cloud",
+        "Gemini 1.5 Pro",
+        "Pixel 10 Pro",
+        "Ad revenue",
+        "GKE",
+        "Imagen 3",
+        "Alphabet earnings",
+        "Waymo",
+        "Philipp Schindler",
+        "Search monopoly",
+        "Gemini Nano",
+        "AlphaGenome",
+        "TPU v6",
+        "Gemini Ultra",
+        "Google Tensor G5",
+        "Ruth Porat",
+        "Wing drone",
+        "Verily",
+        "GCP growth",
+        "Chrome",
+        "Axion processor",
+        "Google",
+        "TPU v5p",
+        "Antitrust trial",
+        "AdSense revenue",
+        "Android",
+        "Android 15",
+        "Sundar Pichai",
+        "YouTube TV",
+        "Gemini Live",
+        "YouTube",
+        "Google Cloud Vertex AI",
+        "Magic Cue",
+        "Duet AI",
+        "DeepMind"
+    ],
+    "special_rules": {
+        "renamed": {
+            "rename_date": "2015-08-10",
+            "old_name": "Google",
+            "old_keywords": [
+                "Google",
+                "Google Inc."
+            ],
+            "new_keywords": [
+                "Alphabet",
+                "Alphabet Inc."
+            ]
+        },
+        "ambiguous": {
+            "problem": "Google URL可能导致误报",
+            "required_keywords": [
+                "Google",
+                "Alphabet",
+                "Android",
+                "Chrome",
+                "YouTube",
+                "Sundar Pichai"
+            ],
+            "min_matches": 1
+        }
+    },
+    "strict_validation_keywords": [
+        "Alphabet Inc.",
+        "Google",
+        "Sundar Pichai",
+        "DeepMind",
+        "Google Cloud",
+        "YouTube",
+        "Android",
+        "Chrome",
+        "Waymo",
+        "Alphabet earnings"
+    ]
+}

@@ -1,0 +1,97 @@
+{
+    "symbol": "ARM",
+    "name": "Arm Holdings",
+    "primary_keywords": [
+        "ARM",
+        "Arm Holdings"
+    ],
+    "expansion_keywords": [
+        "IP licensing",
+        "PC demand",
+        "Neoverse N3",
+        "Neoverse V3",
+        "CCA",
+        "Inventory cycle",
+        "Neoverse V2",
+        "Neoverse",
+        "SVE2",
+        "Cortex-X925",
+        "Cortex-A725",
+        "Fab capacity",
+        "SoftBank",
+        "US CHIPS Act",
+        "Armv9-A",
+        "Scalable Vector Extension",
+        "NPU",
+        "Rene Haas",
+        "chip architecture",
+        "Armv9",
+        "Lumex platform",
+        "Cortex-X4",
+        "Wafer starts",
+        "Server refresh",
+        "Mali GPU",
+        "Confidential Compute Architecture",
+        "Niva platform",
+        "Snapdragon",
+        "Exynos",
+        "Dimensity",
+        "A10",
+        "A11",
+        "A12",
+        "A13",
+        "A14",
+        "A15",
+        "A16",
+        "A17",
+        "A18",
+        "M1",
+        "M2",
+        "M3",
+        "M4"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "ARM\u53ef\u80fd\u6307\u624b\u81c2\u3001\u6b66\u5668",
+            "case_sensitive": true,
+            "required_keywords": [
+                "Arm Holdings",
+                "Arm Ltd",
+                "chip",
+                "semiconductor",
+                "processor",
+                "SoftBank",
+                "Cortex",
+                "Neoverse",
+                "architecture",
+                "Snapdragon",
+                "Exynos",
+                "Dimensity",
+                "A10",
+                "A11",
+                "A12",
+                "A13",
+                "A14",
+                "A15",
+                "A16",
+                "A17",
+                "A18",
+                "M1",
+                "M2",
+                "M3",
+                "M4"
+            ],
+            "min_matches": 1
+        },
+        "special_periods": {
+            "privatization": {
+                "start_date": "2016-09-05",
+                "end_date": "2023-09-14",
+                "additional_keywords": [
+                    "SoftBank ARM",
+                    "SoftBank Group"
+                ]
+            }
+        }
+    }
+}

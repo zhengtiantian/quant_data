@@ -1,0 +1,52 @@
+{
+    "symbol": "AMZN",
+    "name": "Amazon",
+    "primary_keywords": [
+        "AMZN",
+        "Amazon"
+    ],
+    "expansion_keywords": [
+        "Fire TV",
+        "Prime Day sales",
+        "Advertising revenue",
+        "AWS",
+        "Fulfilment center",
+        "Blue Origin",
+        "Project Kuiper",
+        "Whole Foods",
+        "Alexa",
+        "Amazon Cloud",
+        "Warehouse automation",
+        "Kindle",
+        "Amazon Fresh",
+        "AWS revenue",
+        "Bedrock",
+        "Bezos",
+        "Brian Olsavsky",
+        "Andy Jassy",
+        "FTC Amazon",
+        "Rivian investment",
+        "Logistics network",
+        "Prime Video",
+        "Amazon Music",
+        "Zoox"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "Prime可能匹配到Prime Minister等无关内容",
+            "required_keywords": [
+                "Amazon",
+                "AWS",
+                "Bezos",
+                "Alexa",
+                "Kindle",
+                "Prime Video"
+            ],
+            "exclude_patterns": [
+                "Prime Minister",
+                "Prime Eights"
+            ],
+            "min_matches": 1
+        }
+    }
+}

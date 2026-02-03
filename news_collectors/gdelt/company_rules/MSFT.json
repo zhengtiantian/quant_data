@@ -1,0 +1,58 @@
+{
+    "symbol": "MSFT",
+    "name": "Microsoft",
+    "primary_keywords": [
+        "MSFT",
+        "Microsoft"
+    ],
+    "expansion_keywords": [
+        "Sam Altman",
+        "TypeScript",
+        "Brad Smith",
+        "Dynamics 365",
+        "OpenAI partnership",
+        "Cloud revenue",
+        "Mistral AI",
+        "Office 365",
+        "Xbox",
+        "Azure growth",
+        "LinkedIn",
+        "Copilot",
+        "Nuance Communications",
+        "Azure",
+        "Amy Hood",
+        "Satya Nadella",
+        "Activision Blizzard",
+        "FTC Microsoft",
+        "Copilot subscription",
+        "Commercial bookings",
+        "Surface Pro",
+        "Windows",
+        "GitHub",
+        "DirectX"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "确保是Microsoft公司相关",
+            "required_keywords": [
+                "Microsoft",
+                "Windows",
+                "Azure",
+                "Office",
+                "Xbox",
+                "Satya Nadella"
+            ],
+            "min_matches": 1
+        }
+    },
+    "strict_validation_keywords": [
+        "Microsoft",
+        "Windows",
+        "Azure",
+        "Xbox",
+        "Satya Nadella",
+        "Cloud",
+        "Software",
+        "MSFT"
+    ]
+}

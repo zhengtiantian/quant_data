@@ -1,0 +1,41 @@
+{
+    "symbol": "DDOG",
+    "name": "Datadog",
+    "primary_keywords": [
+        "DDOG",
+        "Datadog"
+    ],
+    "expansion_keywords": [
+        "Multi-cloud adoption",
+        "Monitoring spend",
+        "Olivier Pomel",
+        "Datadog DASH",
+        "Log management revenue",
+        "Synthetics",
+        "APM",
+        "Cloud observability",
+        "Security Monitoring",
+        "Cloud monitoring",
+        "Log Management",
+        "SaaS retention",
+        "Serverless monitoring",
+        "David Obstler",
+        "Observability"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "required_keywords": [
+                "DDOG",
+                "Datadog"
+            ],
+            "min_matches": 1
+        }
+    },
+    "strict_validation_keywords": [
+        "DDOG",
+        "Datadog",
+        "Observability",
+        "Platform",
+        "SaaS"
+    ]
+}

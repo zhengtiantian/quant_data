@@ -1,0 +1,52 @@
+{
+    "symbol": "AVGO",
+    "name": "Broadcom",
+    "primary_keywords": [
+        "AVGO",
+        "Broadcom"
+    ],
+    "expansion_keywords": [
+        "Symantec",
+        "Fab capacity",
+        "PC demand",
+        "Wireless modules",
+        "Trident chip",
+        "US CHIPS Act",
+        "Wafer starts",
+        "Server refresh",
+        "Tomahawk chip",
+        "SAN switches",
+        "Hock Tan",
+        "Broadcom networking",
+        "VMware",
+        "Inventory cycle"
+    ],
+    "special_rules": {
+        "acquisitions": [
+            {
+                "date": "2018-11-05",
+                "company": "CA Technologies",
+                "keywords": [
+                    "CA Technologies",
+                    "CA Inc"
+                ]
+            },
+            {
+                "date": "2019-11-04",
+                "company": "Symantec",
+                "keywords": [
+                    "Symantec",
+                    "Norton"
+                ]
+            },
+            {
+                "date": "2023-11-22",
+                "company": "VMware",
+                "keywords": [
+                    "VMware",
+                    "VMware Inc"
+                ]
+            }
+        ]
+    }
+}

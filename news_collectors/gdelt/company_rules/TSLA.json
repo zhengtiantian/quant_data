@@ -1,0 +1,57 @@
+{
+    "symbol": "TSLA",
+    "name": "Tesla, Inc.",
+    "primary_keywords": [
+        "TSLA",
+        "Tesla"
+    ],
+    "expansion_keywords": [
+        "Master Plan",
+        "Autonomy Day",
+        "Delivery guidance",
+        "Giga Texas",
+        "Vaibhav Taneja",
+        "Model 3",
+        "FSD",
+        "Optimus bot",
+        "Elon Musk",
+        "Tesla Energy",
+        "Model S",
+        "Robotaxi event",
+        "Automotive margin",
+        "Giga Shanghai",
+        "Solar Roof",
+        "Autopilot",
+        "Regulatory credits",
+        "Giga Berlin",
+        "Model X",
+        "Megapack",
+        "Gigafactory",
+        "Cybertruck",
+        "Supercharger",
+        "Model Y"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "Tesla\u53ef\u80fd\u6307Nikola Tesla",
+            "exclude_patterns": [
+                "Nikola Tesla",
+                "inventor Tesla"
+            ],
+            "required_keywords": [
+                "Tesla Inc",
+                "Tesla Motors",
+                "Elon Musk",
+                "Gigafactory",
+                "Model S",
+                "Model 3",
+                "Model X",
+                "Model Y",
+                "Cybertruck",
+                "Autopilot",
+                "FSD"
+            ],
+            "min_matches": 1
+        }
+    }
+}

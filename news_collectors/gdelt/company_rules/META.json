@@ -1,0 +1,71 @@
+{
+    "symbol": "META",
+    "name": "Meta Platforms",
+    "primary_keywords": [
+        "META",
+        "Meta Platforms"
+    ],
+    "expansion_keywords": [
+        "Llama 3",
+        "Instagram",
+        "Ad impressions",
+        "Daily Active Users",
+        "Cambridge Analytica legacy",
+        "Quest 3",
+        "Horizon Worlds",
+        "Facebook",
+        "Reels",
+        "Sheryl Sandberg",
+        "Privacy policy",
+        "Messenger",
+        "DAU",
+        "Llama AI",
+        "PyTorch",
+        "Mark Zuckerberg",
+        "WhatsApp",
+        "MAU",
+        "Instagram Reels",
+        "Susan Li",
+        "Ray-Ban Meta",
+        "Threads app",
+        "Oculus",
+        "Threads",
+        "Reality Labs"
+    ],
+    "special_rules": {
+        "renamed": {
+            "rename_date": "2021-10-28",
+            "old_name": "Facebook",
+            "old_keywords": [
+                "Facebook",
+                "Facebook Inc."
+            ],
+            "new_keywords": [
+                "Meta",
+                "Meta Platforms"
+            ]
+        },
+        "ambiguous": {
+            "problem": "确保是Facebook/Instagram相关，排除医疗meta-analysis",
+            "required_keywords": [
+                "Facebook",
+                "Instagram",
+                "WhatsApp",
+                "Zuckerberg",
+                "Oculus"
+            ],
+            "min_matches": 1
+        }
+    },
+    "strict_validation_keywords": [
+        "Meta Platforms",
+        "Facebook",
+        "Instagram",
+        "WhatsApp",
+        "Zuckerberg",
+        "Reality Labs",
+        "Llama",
+        "Social Media",
+        "Digital Advertising"
+    ]
+}
