@@ -19,7 +19,12 @@
         "Server refresh",
         "NAND Flash",
         "Crucial Memory",
-        "Inventory cycle"
+        "Inventory cycle",
+        "DDR4",
+        "3D NAND",
+        "Mark Durcan",
+        "Lexar",
+        "Ballistix"
     ],
     "special_rules": {
         "ambiguous": {

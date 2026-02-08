@@ -41,7 +41,13 @@
         "Google Cloud Vertex AI",
         "Magic Cue",
         "Duet AI",
-        "DeepMind"
+        "DeepMind",
+        "Nexus 6P",
+        "Nexus 5X",
+        "Android Marshmallow",
+        "Project Fi",
+        "Brillo",
+        "Chromecast"
     ],
     "special_rules": {
         "renamed": {
@@ -53,7 +59,9 @@
             ],
             "new_keywords": [
                 "Alphabet",
-                "Alphabet Inc."
+                "Alphabet Inc.",
+                "Google",
+                "Google Inc."
             ]
         },
         "ambiguous": {

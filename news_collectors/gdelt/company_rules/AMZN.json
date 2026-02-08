@@ -29,22 +29,40 @@
         "Logistics network",
         "Prime Video",
         "Amazon Music",
-        "Zoox"
+        "Zoox",
+        "Dash Button",
+        "Echo Dot",
+        "Amazon Lumberyard"
     ],
     "special_rules": {
         "ambiguous": {
-            "problem": "Prime可能匹配到Prime Minister等无关内容",
+            "is_ambiguous": true,
+            "problem": "Generic name matches rainforest or unrelated tech/philanthropy labels in GDELT.",
             "required_keywords": [
-                "Amazon",
+                "Amazon.com",
+                "Jeff Bezos",
+                "Andy Jassy",
                 "AWS",
-                "Bezos",
-                "Alexa",
+                "Cloud Services",
+                "Prime Video",
+                "Prime Day",
                 "Kindle",
-                "Prime Video"
+                "Alexa",
+                "Whole Foods",
+                "Amazon Marketplace",
+                "Fulfillment",
+                "e-commerce",
+                "online retail",
+                "NASDAQ: AMZN"
             ],
             "exclude_patterns": [
                 "Prime Minister",
-                "Prime Eights"
+                "SpaceX",
+                "Falcon 9",
+                "Panama Papers",
+                "cancer research",
+                "Amazon Rainforest",
+                "Amazon River"
             ],
             "min_matches": 1
         }

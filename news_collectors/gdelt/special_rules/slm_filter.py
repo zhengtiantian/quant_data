@@ -122,12 +122,13 @@ Positive Criteria (Answer YES):
 - Legal, Regulatory & Public Policy: Lawsuits, government conflicts, court orders, privacy debates, regulatory hearings, and antitrust actions.
 - Public Statements & Stance: Official manifestos, open letters, or public stances taken by the CEO/Founder on major societal, political, or legal issues.
 - Sales performance & Consumer Trends: Reports on best-selling items, holiday sales records, or market share changes.
+- Brand Sentiment & Market Positioning: Trust surveys, industry rankings, or reputational reports, even when comparing multiple competitors.
 - Specific Platform Changes: Even moderate updates to user interface or functionality of major platforms (e.g., "YouTube's new progress bar", "Instagram's new navigation").
 - Ecosystem Relevance (especially for ARM): News about major products using {display_name}'s architecture or licensing (e.g. Apple A/M-series chips, Qualcomm Snapdragon, Samsung Exynos, MediaTek Dimensity) is YES.
 - Even if the content is short or blocked by a paywall, if the Title is clearly about {display_name}, answer YES.
 
 Negative Criteria (Answer NO):
-- Mentioning {display_name} only incidentally (e.g. "Former Apple employees started a new car company").
+- Mentioning {display_name} only incidentally (e.g. "Former Apple employees started a new car company"). Note: Industry-wide comparison reports including {display_name} are RELEVANT, not incidental.
 - Pure product sales/listings (e.g. "Refurbished Intel Laptop for sale on eBay").
 - Generic technical terms (e.g. "A meta-analysis of results" when looking for Meta).
 - Celebrity Gossip & Personal Social Media Updates: News about celebrities' personal lives, fashion, dating, or social media posts (e.g., "Kylie Jenner's new photo on Instagram", "Drake follows someone on Instagram").

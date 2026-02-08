@@ -82,7 +82,7 @@ class AmbiguousNameRule(BaseRule):
             r"google\.com/(maps|search|amp)", r"accounts\.google\.com"
         ],
         "MU": [
-            r"murder", r"muslim", r"museum", r"music", r"mutual", r"municipality", 
+            r"murder", r"muslim", r"municipality", 
             r"manchester\s+united", r"make\s+up", r"makeup", r"mukesh"
         ],
         "DDOG": [
@@ -180,9 +180,12 @@ class AmbiguousNameRule(BaseRule):
                 return True
 
         # 6. SLM 智能判断
-        is_real_content = len(content) > 30 and not content.startswith("http")
+        # 修改：即使没有正文，也可以用SLM检查标题
+        has_title = len(title.strip()) > 10
+        has_content = len(content) > 30 and not content.startswith("http")
         
-        if self.use_slm and is_real_content:
+        # 只要有标题或有内容，就可以使用SLM
+        if self.use_slm and (has_title or has_content):
             slm = get_slm_filter()
             if slm:
                 # 调用 SLM (注意：不带 reason 返回)

@@ -39,7 +39,14 @@
         "PowerVia",
         "Intel 14A",
         "Intel 18A",
-        "Gaudi 3 accelerator"
+        "Gaudi 3 accelerator",
+        "Skylake",
+        "Kaby Lake",
+        "Broadwell",
+        "Xeon E5",
+        "Atom processor",
+        "Brian Krzanich",
+        "Optane"
     ],
     "special_rules": {
         "ambiguous": {
