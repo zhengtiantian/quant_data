@@ -6,11 +6,40 @@ Ambiguous Names Rule Handler
 
 import re
 import os
+import threading
+from collections import defaultdict
+from collections import Counter
 from datetime import datetime
 from .base_rule import BaseRule
 
 # 延迟导入 SLM Filter（避免循环依赖）
 _slm_filter = None
+_event_lock = threading.Lock()
+_event_counter = defaultdict(int)
+_event_type_counter = defaultdict(Counter)
+_event_symbol_counter = defaultdict(Counter)
+
+
+def emit_rule_event(event_type, symbol, detail):
+    """规则日志按批聚合输出，避免逐条刷屏。"""
+    step = int(os.getenv("RULE_EVENT_EVERY", "2000"))
+    thread_name = threading.current_thread().name
+    owner = thread_name.split("-scan_")[0] if "-scan_" in thread_name else thread_name
+    with _event_lock:
+        _event_counter[owner] += 1
+        _event_type_counter[owner][event_type] += 1
+        _event_symbol_counter[owner][symbol] += 1
+        current = _event_counter[owner]
+        if current % step != 0:
+            return
+
+        top_types = ", ".join(f"{k}:{v}" for k, v in _event_type_counter[owner].most_common(4))
+        top_symbols = ", ".join(f"{k}:{v}" for k, v in _event_symbol_counter[owner].most_common(4))
+        print(
+            f"[{owner}] 🧾 Rule events progress: {current} records processed "
+            f"(types: {top_types}; symbols: {top_symbols})"
+        )
+        print(f"[{owner}] 🧾 Rule events sample: {detail}")
 
 def get_slm_filter():
     """获取全局 SLM 过滤器实例"""
@@ -107,6 +136,8 @@ class AmbiguousNameRule(BaseRule):
         self.exclude_patterns = config.get('exclude_patterns', [])
         self.case_sensitive = config.get('case_sensitive', False)
         self.use_slm = config.get('use_slm', True)
+        self.rule_verbose = os.getenv("RULE_VERBOSE", "false").lower() == "true"
+        self.log_slm_interceptions = os.getenv("SLM_LOG_INTERCEPTIONS", "false").lower() == "true"
     
     def get_keywords(self, article_date):
         """返回必需的关键词"""
@@ -127,7 +158,12 @@ class AmbiguousNameRule(BaseRule):
             for pattern in self.STATIC_KILL_PATTERNS[self.symbol]:
                 if re.search(pattern, full_text, re.IGNORECASE):
                     # 记录静默拦截
-                    print(f"🚫 Static Kill: {self.symbol} - Pattern: {pattern}")
+                    if self.rule_verbose:
+                        emit_rule_event(
+                            "static_kill",
+                            self.symbol,
+                            f"🚫 Static Kill: {self.symbol} - Pattern: {pattern}",
+                        )
                     return False
 
         # 3. 关键词匹配计数 (必需关键词)
@@ -158,10 +194,20 @@ class AmbiguousNameRule(BaseRule):
                     # break # 不跳出，为了打印所有命中的词
             
             if not has_identity:
-                print(f"🛡️ Strict Identity BLOCK: {self.symbol} - Missing mandatory context. Title: {title[:60]}")
+                if self.rule_verbose:
+                    emit_rule_event(
+                        "strict_block",
+                        self.symbol,
+                        f"🛡️ Strict Identity BLOCK: {self.symbol} - Missing mandatory context. Title: {title[:60]}",
+                    )
                 return False
             else:
-                print(f"✅ Strict Identity PASS: {self.symbol} - Matched: {matched_identity} - Title: {title[:60]}")
+                if self.rule_verbose:
+                    emit_rule_event(
+                        "strict_pass",
+                        self.symbol,
+                        f"✅ Strict Identity PASS: {self.symbol} - Matched: {matched_identity} - Title: {title[:60]}",
+                    )
 
         # 5. 强匹配逻辑：如果命中极其特殊的产品词，直接放行 Bypassing SLM
         # 🆕 改进：从 strong_keywords 中排除过于大众的词，防止其绕过 SLM 检查
@@ -191,33 +237,40 @@ class AmbiguousNameRule(BaseRule):
                 # 调用 SLM (注意：不带 reason 返回)
                 is_relevant = slm.is_relevant(self.symbol, self.company_name, title, content)
                 
-                # 记录拦截日志
-                log_dir = "/home/xiz/logs/history_collector"
-                os.makedirs(log_dir, exist_ok=True)
-                log_file = os.path.join(log_dir, "slm_interceptions.log")
-                
-                try:
-                    with open(log_file, "a", encoding="utf-8") as f:
-                        status = "PASSED" if is_relevant else "INTERCEPTED"
-                        log_entry = (
-                            f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] "
-                            f"Result: {status}\n"
-                            f"Symbol: {self.symbol}\n"
-                            f"Title: {title}\n"
-                            f"Content_Length: {len(content)}\n"
-                            f"Content: {content[:300]}...\n"
-                            f"{'-'*50}\n"
-                        )
-                        f.write(log_entry)
-                        f.flush()
-                except Exception as e:
-                    print(f"⚠️ Log writing failed: {e}")
-
                 if not is_relevant:
-                    print(f"🤖 SLM INTERCEPTED: {self.symbol} - Title: {title[:60]}")
+                    # 仅在被拦截时记录详细日志，减少 IO
+                    if self.log_slm_interceptions:
+                        log_dir = "/home/xiz/logs/history_collector"
+                        os.makedirs(log_dir, exist_ok=True)
+                        log_file = os.path.join(log_dir, "slm_interceptions.log")
+                        
+                        try:
+                            with open(log_file, "a", encoding="utf-8") as f:
+                                log_entry = (
+                                    f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] INTERCEPTED\n"
+                                    f"Symbol: {self.symbol} | Title: {title}\n"
+                                    f"Content: {content[:200]}...\n"
+                                    f"{'-'*30}\n"
+                                )
+                                f.write(log_entry)
+                        except:
+                            pass
+
+                    if self.rule_verbose:
+                        emit_rule_event(
+                            "slm_intercepted",
+                            self.symbol,
+                            f"🤖 SLM INTERCEPTED: {self.symbol} - Title: {title[:60]}",
+                        )
                     return False
                 else:
-                    print(f"✅ SLM PASS: {self.symbol} - Title: {title[:60]}")
+                    # 通过时不记录冗长日志，仅控制台提示
+                    if self.rule_verbose:
+                        emit_rule_event(
+                            "slm_pass",
+                            self.symbol,
+                            f"✅ SLM PASS: {self.symbol} - Title: {title[:60]}",
+                        )
 
         # 默认放行
         return True

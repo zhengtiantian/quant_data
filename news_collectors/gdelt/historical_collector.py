@@ -11,13 +11,38 @@ import random
 from pymongo import MongoClient, errors
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
+import mysql.connector
+import builtins
+import signal
+import traceback
 
 # ============================
 # 启用 SLM 过滤器
 # ============================
 os.environ["USE_SLM_FILTER"] = "true"  # 启用 SLM 智能过滤
+# 默认关闭规则细粒度日志，避免刷屏淹没进度
+RULE_EVENT_LOGS = os.getenv("RULE_EVENT_LOGS", "true").lower() == "true"
+if RULE_EVENT_LOGS:
+    os.environ["RULE_VERBOSE"] = "true"
+    os.environ["SLM_LOG_INTERCEPTIONS"] = "true"
+else:
+    os.environ["RULE_VERBOSE"] = "false"
+    os.environ["SLM_LOG_INTERCEPTIONS"] = "false"
 
 from special_rules import RuleManager
+
+# 统一日志前缀：所有 print 自动附带线程名
+_ORIGINAL_PRINT = builtins.print
+
+def _thread_print(*args, **kwargs):
+    if args and isinstance(args[0], str) and args[0].startswith("["):
+        _ORIGINAL_PRINT(*args, **kwargs)
+        return
+    thread_name = threading.current_thread().name
+    _ORIGINAL_PRINT(f"[{thread_name}]", *args, **kwargs)
+
+builtins.print = _thread_print
 
 # ============================
 # 全局配置
@@ -46,7 +71,248 @@ user_agent = (
 )
 config = Config()
 config.browser_user_agent = user_agent
-config.request_timeout = 10
+ARTICLE_REQUEST_TIMEOUT = int(os.getenv("ARTICLE_REQUEST_TIMEOUT", "6"))
+config.request_timeout = ARTICLE_REQUEST_TIMEOUT
+
+# 并行抓取阶段总超时（秒）：防止少数 parse 卡死拖住整批
+FETCH_BATCH_TIMEOUT = int(os.getenv("FETCH_BATCH_TIMEOUT", "900"))
+FETCH_WORKERS = int(os.getenv("FETCH_WORKERS", "20"))
+FETCH_TASK_TIMEOUT = int(os.getenv("FETCH_TASK_TIMEOUT", "45"))
+SCAN_PROGRESS_EVERY_FILES = int(os.getenv("SCAN_PROGRESS_EVERY_FILES", "100"))
+SCAN_RULE_PROGRESS_EVERY_RECORDS = int(os.getenv("SCAN_RULE_PROGRESS_EVERY_RECORDS", "2000"))
+STUCK_URLS_FILE = os.path.join(CACHE_DIR, "stuck_urls.txt")
+
+# 调试开关：只控制日志，不影响业务逻辑
+DEBUG_TASK_TRACE = os.getenv("DEBUG_TASK_TRACE", "false").lower() == "true"
+USE_MYSQL_BATCH_QUEUE = os.getenv("USE_MYSQL_BATCH_QUEUE", "false").lower() == "true"
+BATCH_WORKERS = int(os.getenv("BATCH_WORKERS", "3"))
+RUNNING_RECLAIM_MINUTES = int(os.getenv("RUNNING_RECLAIM_MINUTES", "30"))
+RESET_ALL_RUNNING_ON_START = os.getenv("RESET_ALL_RUNNING_ON_START", "true").lower() == "true"
+
+MYSQL_HOST = os.getenv("MYSQL_HOST", "127.0.0.1")
+MYSQL_PORT = int(os.getenv("MYSQL_PORT", "23306"))
+MYSQL_USER = os.getenv("MYSQL_USER", "root")
+MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "root")
+MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "workflow")
+MYSQL_TASK_TABLE = os.getenv("MYSQL_TASK_TABLE", "gdelt_batch_tasks")
+SHUTDOWN_EVENT = threading.Event()
+SHUTDOWN_REASON = {"reason": None}
+
+
+def _mark_shutdown(reason):
+    if not SHUTDOWN_EVENT.is_set():
+        SHUTDOWN_REASON["reason"] = reason
+        SHUTDOWN_EVENT.set()
+        print(f"⚠️ Shutdown requested: {reason}")
+
+
+def _signal_handler(sig, _frame):
+    _mark_shutdown(f"signal={sig}")
+
+
+signal.signal(signal.SIGINT, _signal_handler)
+signal.signal(signal.SIGTERM, _signal_handler)
+
+
+def load_stuck_urls():
+    """加载历史超时 URL 黑名单，避免重复卡死。"""
+    if not os.path.exists(STUCK_URLS_FILE):
+        return set()
+    try:
+        with open(STUCK_URLS_FILE, "r", encoding="utf-8") as f:
+            return {line.strip() for line in f if line.strip()}
+    except Exception:
+        return set()
+
+
+def append_stuck_urls(urls):
+    """追加记录本批卡住 URL。"""
+    if not urls:
+        return
+    try:
+        with open(STUCK_URLS_FILE, "a", encoding="utf-8") as f:
+            for u in sorted(set(urls)):
+                f.write(u + "\n")
+    except Exception:
+        pass
+
+
+def get_mysql_conn():
+    return mysql.connector.connect(
+        host=MYSQL_HOST,
+        port=MYSQL_PORT,
+        user=MYSQL_USER,
+        password=MYSQL_PASSWORD,
+        database=MYSQL_DATABASE,
+        autocommit=False,
+    )
+
+
+def ensure_task_table():
+    conn = get_mysql_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            f"""
+            CREATE TABLE IF NOT EXISTS {MYSQL_TASK_TABLE} (
+              batch_id INT PRIMARY KEY,
+              status ENUM('pending','running','done','failed') NOT NULL DEFAULT 'pending',
+              owner VARCHAR(64) DEFAULT NULL,
+              retries INT NOT NULL DEFAULT 0,
+              last_error TEXT,
+              started_at DATETIME NULL,
+              finished_at DATETIME NULL,
+              updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+              INDEX idx_status_batch (status, batch_id)
+            )
+            """
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def seed_tasks(total_batches, resume_batch):
+    conn = get_mysql_conn()
+    try:
+        cur = conn.cursor()
+        # 确保所有批次都在任务表里
+        values = [(i,) for i in range(1, total_batches + 1)]
+        if values:
+            cur.executemany(
+                f"INSERT IGNORE INTO {MYSQL_TASK_TABLE} (batch_id, status) VALUES (%s, 'pending')",
+                values,
+            )
+        # 进度语义：progress=N -> 1..N-1 已完成，N..end 待执行
+        if resume_batch > 1:
+            cur.execute(
+                f"""
+                UPDATE {MYSQL_TASK_TABLE}
+                SET status='done', owner=NULL, finished_at=IFNULL(finished_at, NOW()), updated_at=NOW()
+                WHERE batch_id < %s AND status <> 'done'
+                """,
+                (resume_batch,),
+            )
+        if RESET_ALL_RUNNING_ON_START:
+            # 启动即回收历史 running，确保从最小的非 done 批次继续
+            cur.execute(
+                f"""
+                UPDATE {MYSQL_TASK_TABLE}
+                SET status='pending', owner=NULL, updated_at=NOW()
+                WHERE status='running'
+                """
+            )
+        else:
+            cur.execute(
+                f"""
+                UPDATE {MYSQL_TASK_TABLE}
+                SET status='pending', owner=NULL, updated_at=NOW()
+                WHERE status='running'
+                  AND started_at < (NOW() - INTERVAL %s MINUTE)
+                """,
+                (RUNNING_RECLAIM_MINUTES,),
+            )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def claim_next_batch(owner):
+    conn = get_mysql_conn()
+    try:
+        cur = conn.cursor(dictionary=True)
+        cur.execute("START TRANSACTION")
+        cur.execute(
+            f"""
+            SELECT batch_id
+            FROM {MYSQL_TASK_TABLE}
+            WHERE status IN ('pending', 'failed')
+               OR (status='running' AND started_at < (NOW() - INTERVAL %s MINUTE))
+            ORDER BY batch_id ASC
+            LIMIT 1
+            FOR UPDATE SKIP LOCKED
+            """,
+            (RUNNING_RECLAIM_MINUTES,),
+        )
+        row = cur.fetchone()
+        if not row:
+            conn.commit()
+            return None
+        batch_id = int(row["batch_id"])
+        cur.execute(
+            f"""
+            UPDATE {MYSQL_TASK_TABLE}
+            SET status='running', owner=%s, started_at=NOW(), updated_at=NOW(), last_error=NULL
+            WHERE batch_id=%s
+            """,
+            (owner, batch_id),
+        )
+        conn.commit()
+        return batch_id
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def mark_batch_done(batch_id):
+    conn = get_mysql_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            f"""
+            UPDATE {MYSQL_TASK_TABLE}
+            SET status='done', owner=NULL, finished_at=NOW(), updated_at=NOW(), last_error=NULL
+            WHERE batch_id=%s
+            """,
+            (batch_id,),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def mark_batch_failed(batch_id, err_msg):
+    conn = get_mysql_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            f"""
+            UPDATE {MYSQL_TASK_TABLE}
+            SET retries=retries+1,
+                status=CASE WHEN retries+1 >= 3 THEN 'failed' ELSE 'pending' END,
+                owner=NULL,
+                updated_at=NOW(),
+                last_error=%s
+            WHERE batch_id=%s
+            """,
+            (str(err_msg)[:1000], batch_id),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def requeue_batch(batch_id, reason):
+    """把当前批次放回 pending，避免异常退出时任务丢失。"""
+    conn = get_mysql_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            f"""
+            UPDATE {MYSQL_TASK_TABLE}
+            SET status='pending',
+                owner=NULL,
+                updated_at=NOW(),
+                last_error=%s
+            WHERE batch_id=%s
+            """,
+            (str(reason)[:1000], batch_id),
+        )
+        conn.commit()
+    finally:
+        conn.close()
 
 
 # ============================
@@ -163,7 +429,7 @@ def download_with_retry(url, retries=3, backoff=3):
     return None
 
 
-def batch_download_files(urls, batch_size=20):
+def batch_download_files(urls, batch_size=20, worker_name=None):
     """并行批量下载 GDELT 文件，已缓存文件自动跳过"""
     to_download = [
         url for url in urls
@@ -174,10 +440,14 @@ def batch_download_files(urls, batch_size=20):
     print(f"⬇️ Need to download: {len(to_download)} files\n")
 
     for i in range(0, len(to_download), 60):
+        if SHUTDOWN_EVENT.is_set():
+            print("⚠️ Skip download batch because shutdown is in progress")
+            return
         batch = to_download[i:i + 60]
         print(f"🚀 Batch {i//batch_size + 1}: downloading {len(batch)} files...")
 
-        with ThreadPoolExecutor(max_workers=30) as executor:
+        prefix = f"{worker_name}-download" if worker_name else f"{threading.current_thread().name}-download"
+        with ThreadPoolExecutor(max_workers=30, thread_name_prefix=prefix) as executor:
             futures = {executor.submit(download_with_retry, url): url for url in batch}
             for future in as_completed(futures):
                 url = futures[future]
@@ -316,7 +586,7 @@ def process_single_file(url, companies, rule_manager, avg_date):
         pass
     return matches
 
-def process_batch_files(batch_urls, companies):
+def process_batch_files(batch_urls, companies, worker_name=None):
     """并行处理一批 GKG 文件并高效匹配所有公司"""
     import numpy as np
     
@@ -354,22 +624,47 @@ def process_batch_files(batch_urls, companies):
     if not global_pattern:
         return []
 
+    if SHUTDOWN_EVENT.is_set():
+        print("⚠️ Skip scanning because shutdown is in progress")
+        return []
     print(f"📂 Scanning {len(batch_urls)} files in parallel (Unified Regex)...")
     
     all_combined_matches = []
+    total_files = len(batch_urls)
+    progress_lock = threading.Lock()
+    progress = {
+        "files_done": 0,
+        "rows_scanned": 0,
+        "candidates": 0,
+        "accepted": 0,
+        "rules_total_discovered": 0,
+        "rules_processed": 0,
+    }
     symbol_to_company = {c['symbol']: c for c in companies}
 
     def process_file_task(url):
         filename = os.path.basename(url)
         cache_path = os.path.join(FILES_DIR, filename)
-        if not os.path.exists(cache_path): return []
+        if not os.path.exists(cache_path):
+            return {
+                "matches": [],
+                "rows": 0,
+                "candidates": 0,
+                "sample": "",
+            }
         
         try:
             with zipfile.ZipFile(cache_path) as z:
                 with z.open(z.namelist()[0]) as f:
                     df = pd.read_csv(f, sep="\t", header=None, encoding="ISO-8859-1", on_bad_lines="skip")
             
-            if df.empty: return []
+            if df.empty:
+                return {
+                    "matches": [],
+                    "rows": 0,
+                    "candidates": 0,
+                    "sample": "",
+                }
 
             # 统一列名并增强字段覆盖
             if (26 in df.columns) and (df[26].notna().any()):
@@ -387,7 +682,13 @@ def process_batch_files(batch_urls, companies):
                 df["Raw"] = df[found_cols].fillna("").agg(" ".join, axis=1) if found_cols else ""
 
             df = df[df["URL"].str.startswith("http", na=False)]
-            if df.empty: return []
+            if df.empty:
+                return {
+                    "matches": [],
+                    "rows": 0,
+                    "candidates": 0,
+                    "sample": "",
+                }
 
             # 核心匹配逻辑：大小写不敏感初筛
             # 将 URL 也加入匹配，很多时候 URL 域名包含公司名 (如 apple.com)
@@ -396,6 +697,14 @@ def process_batch_files(batch_urls, companies):
             
             matched_df = df[mask]
             file_matches = []
+            sample_text = ""
+            if not matched_df.empty:
+                srow = matched_df.iloc[0]
+                sample_text = f"title='{str(srow.get('Title', ''))[:50]}' url='{str(srow.get('URL', ''))[:80]}'"
+
+            # 记录已发现的候选记录总数（分母会逐步增长，最终收敛）
+            with progress_lock:
+                progress["rules_total_discovered"] += len(matched_df)
             
             for idx, row in matched_df.iterrows():
                 row_text = combined_text.loc[idx]
@@ -420,16 +729,50 @@ def process_batch_files(batch_urls, companies):
                             },
                             "company": symbol_to_company.get(sym)
                         })
-            return file_matches
+
+                # 按“候选记录”粒度输出规则进度（每100条）
+                with progress_lock:
+                    progress["rules_processed"] += 1
+                    rp = progress["rules_processed"]
+                    rt = progress["rules_total_discovered"]
+                    if rp % SCAN_RULE_PROGRESS_EVERY_RECORDS == 0:
+                        worker = worker_name or threading.current_thread().name
+                        print(f"[{worker}] 🧪 Rule check progress: {rp} records processed")
+            return {
+                "matches": file_matches,
+                "rows": len(df),
+                "candidates": len(matched_df),
+                "sample": sample_text,
+            }
         except Exception as e:
             # 真实报错需要打出来，不能 pass
             # print(f"Error processing {filename}: {e}") 
-            return []
+            return {
+                "matches": [],
+                "rows": 0,
+                "candidates": 0,
+                "sample": "",
+            }
 
-    with ThreadPoolExecutor(max_workers=15) as executor:
+    prefix = f"{worker_name}-scan" if worker_name else f"{threading.current_thread().name}-scan"
+    with ThreadPoolExecutor(max_workers=30, thread_name_prefix=prefix) as executor:
         futures = [executor.submit(process_file_task, url) for url in batch_urls]
         for future in as_completed(futures):
-            all_combined_matches.extend(future.result())
+            res = future.result()
+            all_combined_matches.extend(res["matches"])
+            with progress_lock:
+                progress["files_done"] += 1
+                progress["rows_scanned"] += res["rows"]
+                progress["candidates"] += res["candidates"]
+                progress["accepted"] += len(res["matches"])
+                if progress["files_done"] == total_files:
+                    worker = worker_name or threading.current_thread().name
+                    print(
+                        f"[{worker}] 🔍 Batch scan done: {progress['files_done']}/{total_files}, "
+                        f"rows={progress['rows_scanned']}, candidates={progress['candidates']}, accepted={progress['accepted']}"
+                    )
+                    if res["sample"]:
+                        print(f"[{worker}]    sample: {res['sample']}")
 
     # 去重
     seen = set()
@@ -441,6 +784,10 @@ def process_batch_files(batch_urls, companies):
             final_output.append(m)
 
     print(f"✅ Parallel scan complete: {len(final_output)} matched tasks identified.")
+    if progress["rules_total_discovered"] > 0:
+        print(
+            f"🧪 Rule check done: {progress['rules_processed']}/{progress['rules_total_discovered']} records"
+        )
     return final_output
 
 
@@ -461,7 +808,11 @@ def fetch_article(row, company):
     timestamp = row.get("Timestamp", "")  # YYYYMMDDHHMMSS 格式
     published_at = row.get("PublishedAt", None)  # ISO 8601 格式
     symbol = company["symbol"]
-    company_name = company["name"]    
+    company_name = company["name"]
+    task_id = f"{symbol}|{url}"
+    t0 = time.time()
+    if DEBUG_TASK_TRACE:
+        print(f"🧭 TASK START {task_id}")
     
     # 基础数据结构
     base_data = {
@@ -478,9 +829,19 @@ def fetch_article(row, company):
     }
     
     try:
+        if DEBUG_TASK_TRACE:
+            t_dl = time.time()
+            print(f"🧭 TASK {task_id} -> download start")
         art = Article(url, config=config)
         art.download()
+        if DEBUG_TASK_TRACE:
+            print(f"🧭 TASK {task_id} -> download done {time.time()-t_dl:.2f}s")
+        if DEBUG_TASK_TRACE:
+            t_ps = time.time()
+            print(f"🧭 TASK {task_id} -> parse start")
         art.parse()
+        if DEBUG_TASK_TRACE:
+            print(f"🧭 TASK {task_id} -> parse done {time.time()-t_ps:.2f}s")
         
         # 尝试从文章中提取真实发布时间
         if art.publish_date:
@@ -525,8 +886,13 @@ def fetch_article(row, company):
         if len(content) >= 60:
             # 优先级 1: 完整正文 (质量: full)
             test_article_data = {"title": final_title, "content": content, "date": date}
+            if DEBUG_TASK_TRACE:
+                t_rule = time.time()
+                print(f"🧭 TASK {task_id} -> rule_check(full) start")
             if not rule_manager.should_include(symbol, test_article_data):
                 return None # 被规则引擎拦截的噪音
+            if DEBUG_TASK_TRACE:
+                print(f"🧭 TASK {task_id} -> rule_check(full) done {time.time()-t_rule:.2f}s")
             
             base_data.update({
                 "title": final_title,
@@ -542,8 +908,13 @@ def fetch_article(row, company):
             
             # 只有标题没有正文的文章，也需要通过规则检查
             test_article_data = {"title": final_title, "content": "", "date": date}
+            if DEBUG_TASK_TRACE:
+                t_rule = time.time()
+                print(f"🧭 TASK {task_id} -> rule_check(title_only) start")
             if not rule_manager.should_include(symbol, test_article_data):
                 return None  # 被规则引擎拦截（如 "Beauty intel" 没有 Intel 关键词）
+            if DEBUG_TASK_TRACE:
+                print(f"🧭 TASK {task_id} -> rule_check(title_only) done {time.time()-t_rule:.2f}s")
             
             # ✅ 保留只有标题的文章
             base_data.update({
@@ -556,7 +927,8 @@ def fetch_article(row, company):
         else:
             # 连标题都没有 -> 仅存 URL (url_only)
             base_data.update({"title": "No Title", "data_quality": "url_only"})
-            
+        if DEBUG_TASK_TRACE:
+            print(f"🧭 TASK END {task_id} total={time.time()-t0:.2f}s quality={base_data.get('data_quality')}")
         return base_data
         
     except Exception as e:
@@ -579,8 +951,220 @@ def fetch_article(row, company):
                 "content_length": 0,
                 "note": "Content extraction failed"
             })
+            if DEBUG_TASK_TRACE:
+                print(f"🧭 TASK END {task_id} total={time.time()-t0:.2f}s quality=title_only(fallback)")
             return base_data
+        if DEBUG_TASK_TRACE:
+            print(f"🧭 TASK END {task_id} total={time.time()-t0:.2f}s quality=None err={type(e).__name__}")
         return None
+
+
+def process_one_batch(
+    batch_idx,
+    total_batches,
+    batch_urls,
+    valid_companies,
+    dst_col,
+    stuck_urls,
+    stuck_urls_lock,
+):
+    worker = threading.current_thread().name
+    def wlog(msg):
+        print(f"[{worker}] {msg}")
+
+    wlog(f"🚀 Processing File Batch {batch_idx}/{total_batches}...")
+
+    # 实时下载当前批次的文件
+    batch_download_files(batch_urls, batch_size=20, worker_name=worker)
+
+    # A. 内存匹配
+    matches = process_batch_files(batch_urls, valid_companies, worker_name=worker)
+    if not matches:
+        return 0
+
+    # C. 数据库级去重：在抓取前先检查库里是否已存在
+    all_batch_urls = list(set(m["row"]["URL"] for m in matches))
+    existing_urls_cursor = dst_col.find({"url": {"$in": all_batch_urls}}, {"url": 1})
+    existing_urls = set(doc["url"] for doc in existing_urls_cursor)
+
+    filtered_matches = [m for m in matches if m["row"]["URL"] not in existing_urls]
+    skipped_db = len(matches) - len(filtered_matches)
+    if skipped_db > 0:
+        wlog(f"⏭️ Database Deduplication: Skipped {skipped_db} articles already in {DST_COLLECTION}")
+
+    matches = filtered_matches
+    if not matches:
+        return 0
+
+    wlog(f"📰 Globally crawling {len(matches)} identified articles in parallel...")
+    with stuck_urls_lock:
+        before_stuck_filter = len(matches)
+        matches = [m for m in matches if m["row"]["URL"] not in stuck_urls]
+    if before_stuck_filter != len(matches):
+        wlog(f"⏭️ Stuck URL skip: {before_stuck_filter - len(matches)}")
+    if not matches:
+        return 0
+    if SHUTDOWN_EVENT.is_set():
+        wlog("⚠️ Skip fetch stage because shutdown is in progress")
+        return 0
+
+    # 并行抓取正文
+    final_results = []
+    executor = ThreadPoolExecutor(max_workers=FETCH_WORKERS, thread_name_prefix=f"{worker}-fetch")
+    timed_out = False
+    try:
+        matches_iter = iter(matches)
+        future_to_meta = {}
+        future_start_ts = {}
+        pending = set()
+        timed_out_urls = []
+
+        def submit_next_task():
+            try:
+                m = next(matches_iter)
+            except StopIteration:
+                return False
+            fut = executor.submit(fetch_article, m["row"], m["company"])
+            future_to_meta[fut] = f"{m['company']['symbol']}|{m['row']['URL']}"
+            future_start_ts[fut] = time.time()
+            pending.add(fut)
+            return True
+
+        init_n = min(FETCH_WORKERS, len(matches))
+        for _ in range(init_n):
+            submit_next_task()
+
+        completed = 0
+        last_heartbeat = time.time()
+        batch_start_ts = time.time()
+        while pending:
+            done_now, _ = concurrent.futures.wait(
+                pending, timeout=1, return_when=concurrent.futures.FIRST_COMPLETED
+            )
+
+            for future in done_now:
+                pending.discard(future)
+                try:
+                    res = future.result()
+                    if res:
+                        final_results.append(res)
+                        if len(final_results) <= 3:
+                            wlog(
+                                f"    🐛 DEBUG: Got result with quality={res.get('data_quality')}, title={res.get('title', '')[:50]}"
+                            )
+                except Exception as e:
+                    if DEBUG_TASK_TRACE:
+                        meta = future_to_meta.get(future, "unknown")
+                        wlog(f"⚠️ FUTURE ERROR {meta}: {type(e).__name__}: {e}")
+                finally:
+                    future_to_meta.pop(future, None)
+                    future_start_ts.pop(future, None)
+                    completed += 1
+                    if completed % 20 == 0 or completed == len(matches):
+                        wlog(f"⏳ {completed}/{len(matches)} articles processed in parallel pool...")
+                    if not SHUTDOWN_EVENT.is_set():
+                        submit_next_task()
+
+            # 单 URL 超时：只跳过卡住任务，不终止整批
+            now = time.time()
+            stale = [
+                f for f in list(pending)
+                if now - future_start_ts.get(f, now) > FETCH_TASK_TIMEOUT
+            ]
+            if stale:
+                timed_out = True
+                stale_metas = [future_to_meta.get(sf, "unknown") for sf in stale]
+                for sf in stale:
+                    pending.discard(sf)
+                    sf.cancel()
+                    meta = future_to_meta.get(sf, "")
+                    if "|" in meta:
+                        timed_out_urls.append(meta.split("|", 1)[1])
+                    future_to_meta.pop(sf, None)
+                    future_start_ts.pop(sf, None)
+                for meta in stale_metas[:10]:
+                    wlog(f"   • stuck: {meta}")
+                wlog(f"⚠️ FETCH TASK TIMEOUT ({FETCH_TASK_TIMEOUT}s): skipped {len(stale)} stuck URLs in this round.")
+                completed += len(stale)
+                if completed % 20 == 0 or completed == len(matches):
+                    wlog(f"⏳ {completed}/{len(matches)} articles processed in parallel pool...")
+                if not SHUTDOWN_EVENT.is_set():
+                    for _ in stale:
+                        if not submit_next_task():
+                            break
+
+            # 可选硬上限：防止极端情况下循环无限挂起
+            if FETCH_BATCH_TIMEOUT > 0 and (now - batch_start_ts) > FETCH_BATCH_TIMEOUT:
+                timed_out = True
+                if pending:
+                    wlog(f"⚠️ FETCH BATCH HARD TIMEOUT ({FETCH_BATCH_TIMEOUT}s): force skipping remaining {len(pending)} URLs.")
+                    for pf in list(pending)[:10]:
+                        wlog(f"   • stuck: {future_to_meta.get(pf, 'unknown')}")
+                    for pf in list(pending):
+                        pf.cancel()
+                        meta = future_to_meta.get(pf, "")
+                        if "|" in meta:
+                            timed_out_urls.append(meta.split("|", 1)[1])
+                        future_to_meta.pop(pf, None)
+                        future_start_ts.pop(pf, None)
+                    completed += len(pending)
+                    pending.clear()
+
+            if DEBUG_TASK_TRACE and time.time() - last_heartbeat >= 30:
+                wlog(f"💓 HEARTBEAT done={completed}/{len(matches)} pending={len(pending)}")
+                for pf in list(pending)[:5]:
+                    wlog(f"   • pending: {future_to_meta.get(pf, 'unknown')}")
+                last_heartbeat = time.time()
+
+        if timed_out_urls:
+            append_stuck_urls(timed_out_urls)
+            with stuck_urls_lock:
+                stuck_urls.update(timed_out_urls)
+            wlog(f"⛔ Added {len(set(timed_out_urls))} URLs to stuck blacklist")
+    finally:
+        if timed_out:
+            executor.shutdown(wait=False, cancel_futures=True)
+        else:
+            executor.shutdown(wait=True)
+
+    results = final_results
+    wlog(f"✅ {len(results)}/{len(matches)} articles successfully crawled in global pool")
+
+    # D. 入库
+    inserted_count = 0
+    if results:
+        company_insert_counts = {}
+        quality_stats = {"full": 0, "low_value": 0, "url_only": 0}
+        for art in results:
+            try:
+                quality = art.get("data_quality", "unknown")
+                quality_stats[quality] = quality_stats.get(quality, 0) + 1
+
+                result = dst_col.update_one(
+                    {"url": art["url"]},
+                    {"$setOnInsert": art},
+                    upsert=True,
+                )
+                if result.upserted_id or result.modified_count > 0:
+                    inserted_count += 1
+                    symbol = art.get("symbol", "UNKNOWN")
+                    company_insert_counts[symbol] = company_insert_counts.get(symbol, 0) + 1
+            except Exception:
+                pass
+
+        wlog(f"💾 Batch saved: {inserted_count}/{len(results)} new articles")
+        wlog("📊 Data Quality Distribution:")
+        total_res = len(results)
+        wlog(f"  • Full (Content matched): {quality_stats.get('full', 0)} ({quality_stats.get('full', 0)/total_res*100:.1f}%)")
+        wlog(f"  • Low Value (Title only): {quality_stats.get('low_value', 0)} ({quality_stats.get('low_value', 0)/total_res*100:.1f}%)")
+        wlog(f"  • URL Only/Unknown: {quality_stats.get('url_only', 0)} ({quality_stats.get('url_only', 0)/total_res*100:.1f}%)")
+        if company_insert_counts:
+            wlog("📌 Inserted by company:")
+            sorted_inserts = sorted(company_insert_counts.items(), key=lambda x: x[1], reverse=True)
+            for symbol, count in sorted_inserts:
+                wlog(f"  • {symbol}: {count} articles")
+
+    return inserted_count
 
 
 # ============================
@@ -599,6 +1183,7 @@ if __name__ == "__main__":
         mode_str = f"PRODUCTION ({YEARS_BACK} years, all batches)"
     
     print(f"🕒 Running OPTIMIZED GDELT extraction - Mode: {mode_str}\n")
+    print(f"⚙️ Fetch config: workers={FETCH_WORKERS}, article_timeout={ARTICLE_REQUEST_TIMEOUT}s, batch_timeout={FETCH_BATCH_TIMEOUT}s")
 
     ensure_index()
     urls = get_gkg_file_urls(actual_years_back, actual_max_files)
@@ -624,6 +1209,8 @@ if __name__ == "__main__":
     dst_col = db[DST_COLLECTION]
     
     total_inserted = 0
+    stuck_urls = load_stuck_urls()
+    print(f"⛔ Loaded {len(stuck_urls)} historical stuck URLs")
     
     # 断点续传：读取上次处理到的批次
     PROGRESS_FILE = os.path.join(CACHE_DIR, "progress.txt")
@@ -646,123 +1233,122 @@ if __name__ == "__main__":
     
     # 分批遍历 URL
     total_batches = (len(urls) + BATCH_SIZE - 1) // BATCH_SIZE
-    
-    for i in range(0, len(urls), BATCH_SIZE):
-        batch_idx = (i // BATCH_SIZE) + 1
-        
-        # 跳过已处理的批次
-        if batch_idx <= start_batch:
-            continue
-        
-        batch_urls = urls[i : i + BATCH_SIZE]
-        print(f"\n🚀 Processing File Batch {batch_idx}/{total_batches} ({i}/{len(urls)})...")
-        
-        # 实时下载当前批次的文件
-        batch_download_files(batch_urls, batch_size=20)
-        
-        # A. 内存匹配
-        matches = process_batch_files(batch_urls, valid_companies)
-        
-        if not matches:
-            continue
-            
-        # C. 数据库级云端去重：在抓取前先检查库里是否已存在
-        all_batch_urls = list(set(m['row']['URL'] for m in matches))
-        existing_urls_cursor = dst_col.find({"url": {"$in": all_batch_urls}}, {"url": 1})
-        existing_urls = set(doc['url'] for doc in existing_urls_cursor)
-        
-        filtered_matches = [m for m in matches if m['row']['URL'] not in existing_urls]
-        skipped_db = len(matches) - len(filtered_matches)
-        
-        if skipped_db > 0:
-            print(f"⏭️ Database Deduplication: Skipped {skipped_db} articles already in {DST_COLLECTION}")
-            
-        matches = filtered_matches
-        if not matches:
-            # 如果本批次所有 URL 都已在库中，更新进度并跳过
+    total_files = len(urls)
+    print(f"📌 Global scan target: files={total_files}, batches={total_batches}, batch_size={BATCH_SIZE}")
+    stuck_urls_lock = threading.Lock()
+    progress_lock = threading.Lock()
+    progress_state = {
+        "scanned_files": 0,
+        "done_batches": 0,
+    }
+
+    if USE_MYSQL_BATCH_QUEUE:
+        print(f"🗂️ MySQL queue mode enabled: workers={BATCH_WORKERS}")
+        ensure_task_table()
+        queue_resume_batch = max(1, start_batch)
+        print(f"🧭 Queue resume batch: {queue_resume_batch} (mark 1..{max(0, queue_resume_batch-1)} as done)")
+        seed_tasks(total_batches, queue_resume_batch)
+
+        total_insert_lock = threading.Lock()
+
+        def worker_loop(worker_id):
+            global total_inserted
+            owner = f"worker-{worker_id}"
+            threading.current_thread().name = owner
+            print(f"[{owner}] started")
+            while not SHUTDOWN_EVENT.is_set():
+                batch_idx = claim_next_batch(owner)
+                if batch_idx is None:
+                    break
+                i = (batch_idx - 1) * BATCH_SIZE
+                batch_urls = urls[i : i + BATCH_SIZE]
+                try:
+                    inserted = process_one_batch(
+                        batch_idx=batch_idx,
+                        total_batches=total_batches,
+                        batch_urls=batch_urls,
+                        valid_companies=valid_companies,
+                        dst_col=dst_col,
+                        stuck_urls=stuck_urls,
+                        stuck_urls_lock=stuck_urls_lock,
+                    )
+                    with total_insert_lock:
+                        total_inserted += inserted
+                    mark_batch_done(batch_idx)
+                    with progress_lock:
+                        progress_state["scanned_files"] += len(batch_urls)
+                        progress_state["done_batches"] += 1
+                        pct = (progress_state["scanned_files"] / total_files * 100) if total_files else 0
+                        print(
+                            f"[{owner}] 📈 Global progress: "
+                            f"batches={progress_state['done_batches']}/{total_batches}, "
+                            f"files={progress_state['scanned_files']}/{total_files} ({pct:.2f}%)"
+                        )
+                except Exception as e:
+                    print(f"[{owner}] ❌ failed on batch {batch_idx}: {e}")
+                    # 解释器退出阶段会触发该错误，避免误标失败并继续调度
+                    if "interpreter shutdown" in str(e).lower():
+                        _mark_shutdown(f"{owner} got interpreter shutdown")
+                        try:
+                            requeue_batch(batch_idx, f"shutdown_requeue: {e}")
+                            print(f"[{owner}] 🔁 requeued batch {batch_idx} to pending")
+                        except Exception as requeue_err:
+                            print(f"[{owner}] ⚠️ requeue failed for batch {batch_idx}: {requeue_err}")
+                        print(f"[{owner}] ⚠️ interpreter is shutting down, stop worker loop")
+                        break
+                    mark_batch_failed(batch_idx, e)
+            print(f"[{owner}] ✅ finished.")
+
+        workers = []
+        for wid in range(1, BATCH_WORKERS + 1):
+            t = threading.Thread(target=worker_loop, args=(wid,))
+            workers.append(t)
+            t.start()
+        try:
+            for t in workers:
+                t.join()
+        except KeyboardInterrupt:
+            _mark_shutdown("KeyboardInterrupt in main join")
+            for t in workers:
+                t.join(timeout=5)
+    else:
+        for i in range(0, len(urls), BATCH_SIZE):
+            batch_idx = (i // BATCH_SIZE) + 1
+            if batch_idx <= start_batch:
+                continue
+
+            batch_urls = urls[i : i + BATCH_SIZE]
+            inserted = process_one_batch(
+                batch_idx=batch_idx,
+                total_batches=total_batches,
+                batch_urls=batch_urls,
+                valid_companies=valid_companies,
+                dst_col=dst_col,
+                stuck_urls=stuck_urls,
+                stuck_urls_lock=stuck_urls_lock,
+            )
+            total_inserted += inserted
+            with progress_lock:
+                progress_state["scanned_files"] += len(batch_urls)
+                progress_state["done_batches"] += 1
+                pct = (progress_state["scanned_files"] / total_files * 100) if total_files else 0
+                print(
+                    f"[MainThread] 📈 Global progress: "
+                    f"batches={progress_state['done_batches']}/{total_batches}, "
+                    f"files={progress_state['scanned_files']}/{total_files} ({pct:.2f}%)"
+                )
+
             if not TEST_MODE:
                 with open(PROGRESS_FILE, "w") as f:
                     f.write(str(batch_idx))
-            continue
 
-        # D. 全局并行抓取 (打破公司壁垒，所有 CPU/网络资源全力工作)
-        print(f"\n📰 Globally crawling {len(matches)} identified articles in parallel...")
-        
-        # 将匹配任务平铺，不按公司分组处理，确保线程池利用率 100%
-        final_results = []
-        with ThreadPoolExecutor(max_workers=50) as executor:
-            # 提交所有匹配任务
-            futures = [executor.submit(fetch_article, m['row'], m['company']) for m in matches]
-            
-            completed = 0
-            for future in as_completed(futures):
-                try:
-                    res = future.result()
-                    if res:
-                        final_results.append(res)
-                        # 调试：打印前几个结果
-                        if len(final_results) <= 3:
-                            print(f"    🐛 DEBUG: Got result with quality={res.get('data_quality')}, title={res.get('title', '')[:50]}")
-                    
-                    completed += 1
-                    if completed % 20 == 0 or completed == len(matches):
-                        print(f"    ⏳ {completed}/{len(matches)} articles processed in parallel pool...")
-                except Exception as e:
-                    completed += 1
-        
-        results = final_results
-        print(f"    ✅ {len(results)}/{len(matches)} articles successfully crawled in global pool\n")
+            if TEST_MODE and batch_idx * BATCH_SIZE >= len(urls):
+                print(f"\n🧪 TEST MODE complete. Results saved in '{DST_COLLECTION}'.")
+                break
 
-        # D. 入库
-        if results:
-            inserted_count = 0
-            company_insert_counts = {}  # 统计每个公司实际插入的数量
-            quality_stats = {"full": 0, "low_value": 0, "url_only": 0}
-            
-            for art in results:
-                try:
-                    quality = art.get("data_quality", "unknown")
-                    quality_stats[quality] = quality_stats.get(quality, 0) + 1
+            import gc
+            gc.collect()
 
-                    result = dst_col.update_one(
-                        {"url": art["url"]},
-                        {"$setOnInsert": art},
-                        upsert=True
-                    )
-                    if result.upserted_id or result.modified_count > 0:
-                        inserted_count += 1
-                        symbol = art.get("symbol", "UNKNOWN")
-                        company_insert_counts[symbol] = company_insert_counts.get(symbol, 0) + 1
-                except Exception:
-                    pass
-            
-            total_inserted += inserted_count
-            print(f"\n💾 Batch saved: {inserted_count}/{len(results)} new articles (Total: {total_inserted})")
-            
-            print(f"📊 Data Quality Distribution:")
-            total_res = len(results)
-            print(f"  • Full (Content matched): {quality_stats.get('full', 0)} ({quality_stats.get('full', 0)/total_res*100:.1f}%)")
-            print(f"  • Low Value (Title only): {quality_stats.get('low_value', 0)} ({quality_stats.get('low_value', 0)/total_res*100:.1f}%)")
-            print(f"  • URL Only/Unknown: {quality_stats.get('url_only', 0)} ({quality_stats.get('url_only', 0)/total_res*100:.1f}%)")
-            # 打印每个公司的插入统计
-            if company_insert_counts:
-                print(f"\n� Inserted by company:")
-                sorted_inserts = sorted(company_insert_counts.items(), key=lambda x: x[1], reverse=True)
-                for symbol, count in sorted_inserts:
-                    print(f"  • {symbol}: {count} articles")
-        
-        # 保存进度（每批完成后）- 仅在正式模式下
-        if not TEST_MODE:
-            with open(PROGRESS_FILE, "w") as f:
-                f.write(str(batch_idx))
-        
-        # 测试模式：处理完所有请求的文件后停止（不保存进度）
-        if TEST_MODE and batch_idx * BATCH_SIZE >= len(urls):
-            print(f"\n🧪 TEST MODE complete. Results saved in '{DST_COLLECTION}'.")
-            break
-        
-        # 稍微休息释放内存
-        import gc
-        gc.collect()
-
+    if SHUTDOWN_EVENT.is_set():
+        print(f"\n⚠️ Exiting with shutdown flag. reason={SHUTDOWN_REASON.get('reason')}")
     print(f"\n🏁 All done! Processed {len(urls)} files. Total articles inserted: {total_inserted}")
