@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 SLM-based Article Relevance Filter
-使用 Qwen 小语言模型进行文章相关性判断（通过 quant_langchain API）
+使用 Qwen 小语言模型进行文章相关性判断（通过 Ollama API）
 """
 
 import requests
@@ -11,36 +11,38 @@ from typing import Dict, Optional
 
 class SLMFilter:
     """使用 SLM 判断文章是否真正讨论某个公司"""
-    
-    def __init__(self, api_url: str = None, enabled: bool = True):
-        # 自动检测 API 地址
+
+    def __init__(self, api_url: str = None, model: str = None, enabled: bool = True):
         if api_url is None:
-            api_url = os.getenv("QUANT_LANGCHAIN_API", "http://localhost:18000")
-        
+            api_url = os.getenv("OLLAMA_API", "http://localhost:11434")
+        if model is None:
+            model = os.getenv("OLLAMA_MODEL", "qwen2.5:7b-instruct-q4_K_M")
+
         self.api_url = api_url.rstrip('/')
+        self.model = model
         self.enabled = enabled
-        self.cache = {}  # 简单的缓存避免重复调用
-        
-        # 测试连接
+        self.cache = {}
+
         self._test_connection()
-        
+
     def _test_connection(self):
-        """测试 API 连接"""
+        """测试 Ollama 连接"""
         try:
-            resp = requests.get(f"{self.api_url}/health", timeout=2)
+            resp = requests.get(f"{self.api_url}/api/tags", timeout=3)
             if resp.status_code == 200:
-                print(f"✅ SLM Filter: Connected to {self.api_url}")
+                models = [m["name"] for m in resp.json().get("models", [])]
+                print(f"✅ SLM Filter: Connected to Ollama, models={models}")
             else:
-                print(f"⚠️ SLM Filter: API returned {resp.status_code}")
+                print(f"⚠️ SLM Filter: Ollama returned {resp.status_code}")
                 self.enabled = False
         except Exception as e:
-            print(f"⚠️ SLM Filter: Cannot connect to API ({e}), filter disabled")
+            print(f"⚠️ SLM Filter: Cannot connect to Ollama ({e}), filter disabled")
             self.enabled = False
-    
+
     def is_relevant(self, symbol: str, company_name: str, title: str, content: str, trigger_keywords: str = "") -> bool:
         """
         判断文章是否真正讨论该公司
-        
+
         Args:
             symbol: 股票代码 (如 INTC)
             company_name: 公司名称 (如 Intel)
@@ -50,42 +52,44 @@ class SLMFilter:
         """
         if not self.enabled:
             return True
-        
-        # 缓存键
+
         cache_key = f"{symbol}:{hash(title)}"
         if cache_key in self.cache:
             return self.cache[cache_key]
-        
-        # 构建 prompt
+
         prompt = self._build_prompt(symbol, company_name, title, content, trigger_keywords)
-        
+
         try:
-            # 调用 quant_langchain API
             response = requests.post(
-                f"{self.api_url}/api/ask",
-                json={"question": prompt},
-                timeout=10
+                f"{self.api_url}/api/generate",
+                json={
+                    "model": self.model,
+                    "prompt": prompt,
+                    "stream": False,
+                    "options": {
+                        "num_predict": 3,
+                        "temperature": 0.1,
+                        "top_p": 0.9,
+                    }
+                },
+                timeout=30
             )
-            
+
             if response.status_code == 200:
-                answer = response.json().get("answer", "").strip()
-                # 更robust的判断：检查答案开头是否是 YES
+                answer = response.json()["response"].strip()
                 result = answer.upper().startswith("YES")
-                
-                # 缓存结果
                 self.cache[cache_key] = result
                 return result
             else:
-                print(f"⚠️ SLM API error: {response.status_code}")
-                return True  # 失败时保守处理
-                
+                print(f"⚠️ Ollama API error: {response.status_code}")
+                return True
+
         except Exception as e:
-            print(f"⚠️ SLM 调用失败: {e}，默认允许通过")
-            return True  # 失败时保守处理，允许通过
-    
+            print(f"⚠️ Ollama 调用失败: {e}，默认允许通过")
+            return True
+
     def _build_prompt(self, symbol: str, company_name: str, title: str, content: str, trigger_keywords: str = "") -> str:
         """构建 prompt"""
-        # 简化名称，便于模型理解
         simple_names = {
             "Alphabet Inc.(Class A)": "Google",
             "Meta Platforms": "Facebook",
@@ -96,20 +100,18 @@ class SLMFilter:
             "NVIDIA Corporation": "NVIDIA"
         }
         display_name = simple_names.get(company_name, company_name)
-        
-        # 只使用前 500 字符的正文
+
         content_preview = content[:500] if content else ""
-        
-        # 增加对登录墙/订阅墙的启发式检测，提示模型
+
         paywall_hints = ["login", "subscribe", "etprime", "sign in", "exclusive for members", "register to read"]
         is_possibly_paywalled = any(hint in content_preview.lower() for hint in paywall_hints)
-        
+
         paywall_instruction = ""
         if is_possibly_paywalled:
             paywall_instruction = "\nIMPORTANT: The content snippet looks like a paywall or login prompt. Please rely HEAVILY on the Title to make your decision."
 
         context_str = f"\nContext: Flagged keywords: {trigger_keywords}" if trigger_keywords else ""
-        
+
         prompt = f"""Task: Decide if this news is RELEVANT to "{display_name}" (Ticker: {symbol}).
 
 Article Title: {title}
@@ -136,14 +138,14 @@ Negative Criteria (Answer NO):
 
 Answer ONLY "YES" or "NO".
 Answer:"""
-        
+
         return prompt
 
 
 # 示例使用
 if __name__ == "__main__":
     filter = SLMFilter()
-    
+
     # 测试案例 1: 真实的 Intel 新闻
     result1 = filter.is_relevant(
         "INTC",
@@ -152,7 +154,7 @@ if __name__ == "__main__":
         "Intel Corporation announced today a new processor..."
     )
     print(f"Test 1 (Intel news): {result1}")  # 应该是 True
-    
+
     # 测试案例 2: Beauty intel
     result2 = filter.is_relevant(
         "INTC",
@@ -161,7 +163,7 @@ if __name__ == "__main__":
         "KNEAD THIS NOW. Flaunt a youthful appearance..."
     )
     print(f"Test 2 (Beauty intel): {result2}")  # 应该是 False
-    
+
     # 测试案例 3: Intelligence Committee
     result3 = filter.is_relevant(
         "INTC",

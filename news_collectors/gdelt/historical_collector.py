@@ -76,8 +76,9 @@ config.request_timeout = ARTICLE_REQUEST_TIMEOUT
 
 # 并行抓取阶段总超时（秒）：防止少数 parse 卡死拖住整批
 FETCH_BATCH_TIMEOUT = int(os.getenv("FETCH_BATCH_TIMEOUT", "900"))
-FETCH_WORKERS = int(os.getenv("FETCH_WORKERS", "20"))
+FETCH_WORKERS = int(os.getenv("FETCH_WORKERS", "3"))
 FETCH_TASK_TIMEOUT = int(os.getenv("FETCH_TASK_TIMEOUT", "45"))
+SCAN_WORKERS = int(os.getenv("SCAN_WORKERS", "2"))
 SCAN_PROGRESS_EVERY_FILES = int(os.getenv("SCAN_PROGRESS_EVERY_FILES", "100"))
 SCAN_RULE_PROGRESS_EVERY_RECORDS = int(os.getenv("SCAN_RULE_PROGRESS_EVERY_RECORDS", "2000"))
 STUCK_URLS_FILE = os.path.join(CACHE_DIR, "stuck_urls.txt")
@@ -447,7 +448,7 @@ def batch_download_files(urls, batch_size=20, worker_name=None):
         print(f"🚀 Batch {i//batch_size + 1}: downloading {len(batch)} files...")
 
         prefix = f"{worker_name}-download" if worker_name else f"{threading.current_thread().name}-download"
-        with ThreadPoolExecutor(max_workers=30, thread_name_prefix=prefix) as executor:
+        with ThreadPoolExecutor(max_workers=10, thread_name_prefix=prefix) as executor:
             futures = {executor.submit(download_with_retry, url): url for url in batch}
             for future in as_completed(futures):
                 url = futures[future]
@@ -755,7 +756,7 @@ def process_batch_files(batch_urls, companies, worker_name=None):
             }
 
     prefix = f"{worker_name}-scan" if worker_name else f"{threading.current_thread().name}-scan"
-    with ThreadPoolExecutor(max_workers=30, thread_name_prefix=prefix) as executor:
+    with ThreadPoolExecutor(max_workers=SCAN_WORKERS, thread_name_prefix=prefix) as executor:
         futures = [executor.submit(process_file_task, url) for url in batch_urls]
         for future in as_completed(futures):
             res = future.result()
@@ -1183,13 +1184,16 @@ if __name__ == "__main__":
         mode_str = f"PRODUCTION ({YEARS_BACK} years, all batches)"
     
     print(f"🕒 Running OPTIMIZED GDELT extraction - Mode: {mode_str}\n")
-    print(f"⚙️ Fetch config: workers={FETCH_WORKERS}, article_timeout={ARTICLE_REQUEST_TIMEOUT}s, batch_timeout={FETCH_BATCH_TIMEOUT}s")
+    print(
+        f"⚙️ Runtime config: scan_workers={SCAN_WORKERS}, fetch_workers={FETCH_WORKERS}, "
+        f"article_timeout={ARTICLE_REQUEST_TIMEOUT}s, batch_timeout={FETCH_BATCH_TIMEOUT}s"
+    )
 
     ensure_index()
     urls = get_gkg_file_urls(actual_years_back, actual_max_files)
     
     # 1. 预下载逻辑改为在批次循环中进行，避免启动时长时间阻塞
-    # batch_download_files(urls, batch_size=50) 
+    # batch_download_files(urls, batch_size=50)
     
     # 2. 准备公司数据
     companies = load_companies()
