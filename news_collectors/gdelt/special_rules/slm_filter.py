@@ -9,6 +9,12 @@ import os
 from typing import Dict, Optional
 
 
+import threading
+
+# 极其严酷的全局并发锁：最多允许 1 个线程同时向显卡发送请求。
+# 此举是为了将 RTX 5090 功耗压制在环保区间，彻底解决温度和 CPU/GPU 满载飙升问题。
+_ollama_semaphore = threading.Semaphore(1)
+
 class SLMFilter:
     """使用 SLM 判断文章是否真正讨论某个公司"""
 
@@ -42,13 +48,6 @@ class SLMFilter:
     def is_relevant(self, symbol: str, company_name: str, title: str, content: str, trigger_keywords: str = "") -> bool:
         """
         判断文章是否真正讨论该公司
-
-        Args:
-            symbol: 股票代码 (如 INTC)
-            company_name: 公司名称 (如 Intel)
-            title: 文章标题
-            content: 文章正文
-            trigger_keywords: 触发匹配的关键词上下文
         """
         if not self.enabled:
             return True
@@ -60,20 +59,22 @@ class SLMFilter:
         prompt = self._build_prompt(symbol, company_name, title, content, trigger_keywords)
 
         try:
-            response = requests.post(
-                f"{self.api_url}/api/generate",
-                json={
-                    "model": self.model,
-                    "prompt": prompt,
-                    "stream": False,
-                    "options": {
-                        "num_predict": 3,
-                        "temperature": 0.1,
-                        "top_p": 0.9,
-                    }
-                },
-                timeout=30
-            )
+            # 获取凭证，必须排队，让显卡喘口气
+            with _ollama_semaphore:
+                response = requests.post(
+                    f"{self.api_url}/api/generate",
+                    json={
+                        "model": self.model,
+                        "prompt": prompt,
+                        "stream": False,
+                        "options": {
+                            "num_predict": 3,
+                            "temperature": 0.1,
+                            "top_p": 0.9,
+                        }
+                    },
+                    timeout=45
+                )
 
             if response.status_code == 200:
                 answer = response.json()["response"].strip()
@@ -85,7 +86,7 @@ class SLMFilter:
                 return True
 
         except Exception as e:
-            print(f"⚠️ Ollama 调用失败: {e}，默认允许通过")
+            print(f"⚠️ Ollama 调用失败/超时: {e}，默认允许通过")
             return True
 
     def _build_prompt(self, symbol: str, company_name: str, title: str, content: str, trigger_keywords: str = "") -> str:

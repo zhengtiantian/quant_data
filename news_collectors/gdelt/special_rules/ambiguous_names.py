@@ -19,10 +19,53 @@ _event_counter = defaultdict(int)
 _event_type_counter = defaultdict(Counter)
 _event_symbol_counter = defaultdict(Counter)
 
+# 每步过滤计数器
+_filter_stats_lock = threading.Lock()
+_filter_stats = defaultdict(lambda: defaultdict(int))
+
+
+def track_filter_step(step_name):
+    """记录每步过滤的计数（仅累计，不输出）"""
+    thread_name = threading.current_thread().name
+    owner = thread_name.split("-scan_")[0] if "-scan_" in thread_name else thread_name
+    with _filter_stats_lock:
+        _filter_stats[owner][step_name] += 1
+
+
+def print_filter_summary(worker_name=None):
+    """输出过滤汇总并重置计数器"""
+    owner = worker_name or threading.current_thread().name
+    with _filter_stats_lock:
+        s = dict(_filter_stats.get(owner, {}))
+        _filter_stats[owner] = defaultdict(int)
+    if not s:
+        return
+    entered = s.get("entered", 0)
+    if entered == 0:
+        return
+    after_static = entered - s.get("killed_by_static", 0)
+    after_keyword = after_static - s.get("killed_by_keyword", 0)
+    after_strict = after_keyword - s.get("killed_by_strict", 0)
+    bypassed = s.get("bypassed_by_strong", 0)
+    slm_kill = s.get("killed_by_slm", 0)
+    slm_pass = s.get("slm_pass", 0)
+    default_pass = s.get("default_pass", 0)
+    final = bypassed + slm_pass + default_pass
+    print(
+        f"[{owner}] 📊 Filter summary: {entered} entered "
+        f"→ ①static_kill(-{s.get('killed_by_static', 0)})={after_static} "
+        f"→ ②keyword(-{s.get('killed_by_keyword', 0)})={after_keyword} "
+        f"→ ③strict(-{s.get('killed_by_strict', 0)})={after_strict} "
+        f"→ ④strong_bypass={bypassed} "
+        f"→ ⑤SLM(pass={slm_pass}, kill={slm_kill}) "
+        f"→ ⑥default_pass={default_pass} "
+        f"→ ✅ final={final}"
+    )
+
 
 def emit_rule_event(event_type, symbol, detail):
     """规则日志按批聚合输出，避免逐条刷屏。"""
-    step = int(os.getenv("RULE_EVENT_EVERY", "2000"))
+    step = int(os.getenv("RULE_EVENT_EVERY", "5000"))
     thread_name = threading.current_thread().name
     owner = thread_name.split("-scan_")[0] if "-scan_" in thread_name else thread_name
     with _event_lock:
@@ -148,7 +191,9 @@ class AmbiguousNameRule(BaseRule):
         content = article.get('content', '') or ''
         # 回归稳健：不再将 URL 混入校验，防止 mu 在 /music/ 这种路径中误命中
         full_text = title + ' ' + content
-        
+
+        track_filter_step("entered")
+
         # 0. 防止空内容
         if not full_text.strip():
             return False
@@ -157,7 +202,7 @@ class AmbiguousNameRule(BaseRule):
         if self.symbol in self.STATIC_KILL_PATTERNS:
             for pattern in self.STATIC_KILL_PATTERNS[self.symbol]:
                 if re.search(pattern, full_text, re.IGNORECASE):
-                    # 记录静默拦截
+                    track_filter_step("killed_by_static")
                     if self.rule_verbose:
                         emit_rule_event(
                             "static_kill",
@@ -174,12 +219,12 @@ class AmbiguousNameRule(BaseRule):
                 found = re.search(r'\b' + re.escape(keyword) + r'\b', full_text, re.IGNORECASE)
             else:
                 found = True if keyword.lower() in full_text.lower() else False
-            
+
             if found:
                 matches.append(keyword)
-        
+
         if len(matches) < self.min_matches:
-            # print(f"❌ Keywords Match FAIL: {self.symbol} - Found {len(matches)}/{self.min_matches} required keywords. Title: {title[:60]}")
+            track_filter_step("killed_by_keyword")
             return False
 
         # 4. 特殊短Ticker强校验 (Mandatory Identity Check)
@@ -191,9 +236,9 @@ class AmbiguousNameRule(BaseRule):
                 if identity.lower() in full_text_lower:
                     has_identity = True
                     matched_identity.append(identity)
-                    # break # 不跳出，为了打印所有命中的词
-            
+
             if not has_identity:
+                track_filter_step("killed_by_strict")
                 if self.rule_verbose:
                     emit_rule_event(
                         "strict_block",
@@ -209,41 +254,65 @@ class AmbiguousNameRule(BaseRule):
                         f"✅ Strict Identity PASS: {self.symbol} - Matched: {matched_identity} - Title: {title[:60]}",
                     )
 
+        # 4.5 绝对强关联直通车 (Absolute Strong Bypass)
+        # 极高概率能确定是正相关产品的关键词组合，直接绕过 SLM。这将极大降低 CPU 和 GPU 的排队耗时与发热！
+        ABSOLUTE_BYPASS = {
+            "AAPL": [r"tim\s+cook", r"\biphone\b", r"\bipad\b", r"\bmacbook\b", r"\bios\b", r"app\s+store", r"apple\s+vision", r"steve\s+jobs", r"apple\s+watch", r"airpods"],
+            "MSFT": [r"satya\s+nadella", r"windows\s+(10|11|xp|8|7)", r"\bazure\b", r"\bxbox\b", r"office\s+365", r"bill\s+gates", r"surface\s+pro", r"microsoft\s+teams"],
+            "GOOGL": [r"sundar\s+pichai", r"\byoutube\b", r"\bandroid\b", r"google\s+cloud", r"google\s+ads", r"pixel\s+(phone|watch|tablet)", r"larry\s+page", r"sergey\s+brin", r"waymo"],
+            "AMZN": [r"jeff\s+bezos", r"andy\s+jassy", r"amazon\s+web\s+services", r"\baws\b", r"prime\s+video", r"\bkindle\b", r"\balexa\b", r"amazon\s+prime"],
+            "META": [r"mark\s+zuckerberg", r"\binstagram\b", r"\bwhatsapp\b", r"oculus", r"meta\s+quest", r"facebook\s+ads"],
+            "TSLA": [r"elon\s+musk", r"model\s+(s|3|x|y)", r"cybertruck", r"gigafactory", r"autopilot", r"supercharger"],
+            "NVDA": [r"jensen\s+huang", r"geforce", r"rtx\s+\d{4}", r"cuda", r"h100", r"a100", r"nvidia\s+dgx"],
+            "AMD": [r"lisa\s+su", r"ryzen", r"radeon", r"epyc", r"threadripper", r"mi300"],
+            "ARM": [r"rene\s+haas", r"arm\s+architecture", r"cortex-", r"neoverse", r"mali\s+gpu"],
+            "QCOM": [r"cristiano\s+amon", r"snapdragon", r"\bcdma\b", r"qualcomm\s+hexagon"],
+            "AVGO": [r"hock\s+tan", r"\bvmware\b", r"symantec", r"broadcom\s+software"]
+        }
+        
+        if self.symbol in ABSOLUTE_BYPASS:
+            for pattern in ABSOLUTE_BYPASS[self.symbol]:
+                if re.search(pattern, full_text, re.IGNORECASE):
+                    track_filter_step("bypassed_by_absolute")
+                    if self.rule_verbose:
+                        emit_rule_event(
+                            "absolute_bypass",
+                            self.symbol,
+                            f"⚡ Absolute Bypass PASS: {self.symbol} - Pattern: {pattern} - Title: {title[:60]}",
+                        )
+                    return True
+
         # 5. 强匹配逻辑：如果命中极其特殊的产品词，直接放行 Bypassing SLM
-        # 🆕 改进：从 strong_keywords 中排除过于大众的词，防止其绕过 SLM 检查
         too_common_to_bypass = ["Instagram", "Facebook", "WhatsApp", "YouTube", "Android", "Chrome", "Google", "Amazon", "Apple", "Microsoft"]
         strong_keywords = [
-            k for k in self.expansion_keywords 
-            if len(k) > 3 
+            k for k in self.expansion_keywords
+            if len(k) > 3
             and k.lower() not in [pk.lower() for pk in self.primary_keywords]
             and k not in too_common_to_bypass
         ]
         if strong_keywords:
-            # 优先匹配长词
             strong_keywords.sort(key=len, reverse=True)
             strong_pattern = r'\b(' + '|'.join(re.escape(k) for k in strong_keywords) + r')\b'
             if re.search(strong_pattern, full_text, re.IGNORECASE):
+                track_filter_step("bypassed_by_strong")
                 return True
 
         # 6. SLM 智能判断
-        # 修改：即使没有正文，也可以用SLM检查标题
         has_title = len(title.strip()) > 10
         has_content = len(content) > 30 and not content.startswith("http")
 
-        # 只要有标题或有内容，就可以使用SLM
         if self.use_slm and (has_title or has_content):
             slm = get_slm_filter()
             if slm:
-                # 调用 SLM (注意：不带 reason 返回)
                 is_relevant = slm.is_relevant(self.symbol, self.company_name, title, content)
-                
+
                 if not is_relevant:
-                    # 仅在被拦截时记录详细日志，减少 IO
+                    track_filter_step("killed_by_slm")
                     if self.log_slm_interceptions:
                         log_dir = "/home/xiz/logs/history_collector"
                         os.makedirs(log_dir, exist_ok=True)
                         log_file = os.path.join(log_dir, "slm_interceptions.log")
-                        
+
                         try:
                             with open(log_file, "a", encoding="utf-8") as f:
                                 log_entry = (
@@ -264,7 +333,7 @@ class AmbiguousNameRule(BaseRule):
                         )
                     return False
                 else:
-                    # 通过时不记录冗长日志，仅控制台提示
+                    track_filter_step("slm_pass")
                     if self.rule_verbose:
                         emit_rule_event(
                             "slm_pass",
@@ -273,4 +342,5 @@ class AmbiguousNameRule(BaseRule):
                         )
 
         # 默认放行
+        track_filter_step("default_pass")
         return True

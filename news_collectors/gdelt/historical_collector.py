@@ -80,7 +80,7 @@ FETCH_WORKERS = int(os.getenv("FETCH_WORKERS", "3"))
 FETCH_TASK_TIMEOUT = int(os.getenv("FETCH_TASK_TIMEOUT", "45"))
 SCAN_WORKERS = int(os.getenv("SCAN_WORKERS", "2"))
 SCAN_PROGRESS_EVERY_FILES = int(os.getenv("SCAN_PROGRESS_EVERY_FILES", "100"))
-SCAN_RULE_PROGRESS_EVERY_RECORDS = int(os.getenv("SCAN_RULE_PROGRESS_EVERY_RECORDS", "2000"))
+SCAN_RULE_PROGRESS_EVERY_RECORDS = int(os.getenv("SCAN_RULE_PROGRESS_EVERY_RECORDS", "5000"))
 STUCK_URLS_FILE = os.path.join(CACHE_DIR, "stuck_urls.txt")
 
 # 调试开关：只控制日志，不影响业务逻辑
@@ -789,6 +789,12 @@ def process_batch_files(batch_urls, companies, worker_name=None):
         print(
             f"🧪 Rule check done: {progress['rules_processed']}/{progress['rules_total_discovered']} records"
         )
+
+    # 输出每步过滤汇总
+    from special_rules.ambiguous_names import print_filter_summary
+    w = worker_name or threading.current_thread().name
+    print_filter_summary(w)
+
     return final_output
 
 
