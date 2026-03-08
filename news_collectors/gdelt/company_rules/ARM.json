@@ -52,34 +52,23 @@
     ],
     "special_rules": {
         "ambiguous": {
-            "problem": "ARM\u53ef\u80fd\u6307\u624b\u81c2\u3001\u6b66\u5668",
+            "problem": "ARM可能指手臂、武器",
             "case_sensitive": true,
             "required_keywords": [
                 "Arm Holdings",
                 "Arm Ltd",
-                "chip",
-                "semiconductor",
-                "processor",
                 "SoftBank",
                 "Cortex",
                 "Neoverse",
-                "architecture",
+                "Armv9",
                 "Snapdragon",
                 "Exynos",
                 "Dimensity",
-                "A10",
-                "A11",
-                "A12",
-                "A13",
-                "A14",
-                "A15",
-                "A16",
-                "A17",
-                "A18",
-                "M1",
-                "M2",
-                "M3",
-                "M4"
+                "Mali GPU",
+                "Rene Haas",
+                "IP licensing",
+                "chip design",
+                "chip architecture"
             ],
             "min_matches": 1
         },
@@ -93,5 +82,19 @@
                 ]
             }
         }
-    }
+    },
+    "strict_validation_keywords": [
+        "Arm Holdings",
+        "Arm Ltd",
+        "ARM architecture",
+        "Cortex",
+        "Neoverse",
+        "Armv9",
+        "Rene Haas",
+        "SoftBank",
+        "chip design",
+        "IP licensing",
+        "semiconductor",
+        "chipmaker"
+    ]
 }

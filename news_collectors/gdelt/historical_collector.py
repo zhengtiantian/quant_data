@@ -80,7 +80,7 @@ FETCH_WORKERS = int(os.getenv("FETCH_WORKERS", "3"))
 FETCH_TASK_TIMEOUT = int(os.getenv("FETCH_TASK_TIMEOUT", "45"))
 SCAN_WORKERS = int(os.getenv("SCAN_WORKERS", "2"))
 SCAN_PROGRESS_EVERY_FILES = int(os.getenv("SCAN_PROGRESS_EVERY_FILES", "100"))
-SCAN_RULE_PROGRESS_EVERY_RECORDS = int(os.getenv("SCAN_RULE_PROGRESS_EVERY_RECORDS", "5000"))
+SCAN_RULE_PROGRESS_EVERY_RECORDS = int(os.getenv("SCAN_RULE_PROGRESS_EVERY_RECORDS", "500"))
 STUCK_URLS_FILE = os.path.join(CACHE_DIR, "stuck_urls.txt")
 
 # 调试开关：只控制日志，不影响业务逻辑
@@ -653,12 +653,14 @@ def process_batch_files(batch_urls, companies, worker_name=None):
                 "candidates": 0,
                 "sample": "",
             }
-        
+
         try:
+            t_start = time.time()
             with zipfile.ZipFile(cache_path) as z:
                 with z.open(z.namelist()[0]) as f:
                     df = pd.read_csv(f, sep="\t", header=None, encoding="ISO-8859-1", on_bad_lines="skip")
-            
+            t_parse = time.time()
+
             if df.empty:
                 return {
                     "matches": [],
@@ -683,6 +685,9 @@ def process_batch_files(batch_urls, companies, worker_name=None):
                 df["Raw"] = df[found_cols].fillna("").agg(" ".join, axis=1) if found_cols else ""
 
             df = df[df["URL"].str.startswith("http", na=False)]
+            # 过滤社交媒体主页链接（不是新闻）
+            social_domains = r"(?:instagram\.com|facebook\.com|twitter\.com|x\.com|tiktok\.com|linkedin\.com)/(?!.*\b(?:news|blog|article|press)\b)"
+            df = df[~df["URL"].str.contains(social_domains, case=False, na=False, regex=True)]
             if df.empty:
                 return {
                     "matches": [],
@@ -691,12 +696,13 @@ def process_batch_files(batch_urls, companies, worker_name=None):
                     "sample": "",
                 }
 
-            # 核心匹配逻辑：大小写不敏感初筛
-            # 将 URL 也加入匹配，很多时候 URL 域名包含公司名 (如 apple.com)
-            combined_text = (df["Title"].fillna("") + " " + df["Raw"].fillna("") + " " + df["URL"].fillna("")).str.lower()
+            # 核心匹配逻辑：大小写不敏感初筛（仅 Title + Raw 实体字段，不含 URL）
+            combined_text = (df["Title"].fillna("") + " " + df["Raw"].fillna("")).str.lower()
+            t_combine = time.time()
             mask = combined_text.str.contains(global_pattern, case=False, na=False, regex=True)
-            
+
             matched_df = df[mask]
+            t_regex = time.time()
             file_matches = []
             sample_text = ""
             if not matched_df.empty:
@@ -706,7 +712,7 @@ def process_batch_files(batch_urls, companies, worker_name=None):
             # 记录已发现的候选记录总数（分母会逐步增长，最终收敛）
             with progress_lock:
                 progress["rules_total_discovered"] += len(matched_df)
-            
+
             for idx, row in matched_df.iterrows():
                 row_text = combined_text.loc[idx]
                 # 找出究竟是哪个 symbol 被命中
@@ -739,6 +745,16 @@ def process_batch_files(batch_urls, companies, worker_name=None):
                     if rp % SCAN_RULE_PROGRESS_EVERY_RECORDS == 0:
                         worker = worker_name or threading.current_thread().name
                         print(f"[{worker}] 🧪 Rule check progress: {rp} records processed")
+            t_rules = time.time()
+            total_time = t_rules - t_start
+            # 慢文件 (>2s) 打印详细耗时分解
+            if total_time > 2.0:
+                print(
+                    f"🐢 Slow file {filename}: {total_time:.1f}s total "
+                    f"(parse={t_parse-t_start:.2f}s, combine={t_combine-t_parse:.2f}s, "
+                    f"regex={t_regex-t_combine:.2f}s, rules={t_rules-t_regex:.2f}s) "
+                    f"rows={len(df)}, candidates={len(matched_df)}, accepted={len(file_matches)}"
+                )
             return {
                 "matches": file_matches,
                 "rows": len(df),
@@ -746,16 +762,19 @@ def process_batch_files(batch_urls, companies, worker_name=None):
                 "sample": sample_text,
             }
         except Exception as e:
-            # 真实报错需要打出来，不能 pass
-            # print(f"Error processing {filename}: {e}") 
+            print(f"❌ Error processing {filename}: {e}")
             return {
                 "matches": [],
                 "rows": 0,
                 "candidates": 0,
                 "sample": "",
+                "error": str(e),
             }
 
     prefix = f"{worker_name}-scan" if worker_name else f"{threading.current_thread().name}-scan"
+    scan_start_time = time.time()
+    # 每10个文件打印一次进度，方便排查卡住
+    SCAN_FILE_PROGRESS_INTERVAL = int(os.getenv("SCAN_FILE_PROGRESS_INTERVAL", "10"))
     with ThreadPoolExecutor(max_workers=SCAN_WORKERS, thread_name_prefix=prefix) as executor:
         futures = [executor.submit(process_file_task, url) for url in batch_urls]
         for future in as_completed(futures):
@@ -766,14 +785,16 @@ def process_batch_files(batch_urls, companies, worker_name=None):
                 progress["rows_scanned"] += res["rows"]
                 progress["candidates"] += res["candidates"]
                 progress["accepted"] += len(res["matches"])
-                if progress["files_done"] == total_files:
-                    worker = worker_name or threading.current_thread().name
+                done = progress["files_done"]
+                worker = worker_name or threading.current_thread().name
+                if done == 1 or done % SCAN_FILE_PROGRESS_INTERVAL == 0 or done == total_files:
+                    elapsed = time.time() - scan_start_time
+                    rate = done / elapsed if elapsed > 0 else 0
                     print(
-                        f"[{worker}] 🔍 Batch scan done: {progress['files_done']}/{total_files}, "
+                        f"[{worker}] 🔍 Scan progress: {done}/{total_files} files "
+                        f"({elapsed:.1f}s, {rate:.1f} files/s), "
                         f"rows={progress['rows_scanned']}, candidates={progress['candidates']}, accepted={progress['accepted']}"
                     )
-                    if res["sample"]:
-                        print(f"[{worker}]    sample: {res['sample']}")
 
     # 去重
     seen = set()
@@ -1067,7 +1088,7 @@ def process_one_batch(
                     future_to_meta.pop(future, None)
                     future_start_ts.pop(future, None)
                     completed += 1
-                    if completed % 20 == 0 or completed == len(matches):
+                    if completed % 200 == 0 or completed == len(matches):
                         wlog(f"⏳ {completed}/{len(matches)} articles processed in parallel pool...")
                     if not SHUTDOWN_EVENT.is_set():
                         submit_next_task()
@@ -1093,7 +1114,7 @@ def process_one_batch(
                     wlog(f"   • stuck: {meta}")
                 wlog(f"⚠️ FETCH TASK TIMEOUT ({FETCH_TASK_TIMEOUT}s): skipped {len(stale)} stuck URLs in this round.")
                 completed += len(stale)
-                if completed % 20 == 0 or completed == len(matches):
+                if completed % 200 == 0 or completed == len(matches):
                     wlog(f"⏳ {completed}/{len(matches)} articles processed in parallel pool...")
                 if not SHUTDOWN_EVENT.is_set():
                     for _ in stale:

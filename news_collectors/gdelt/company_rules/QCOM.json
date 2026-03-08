@@ -20,5 +20,30 @@
         "5G modem",
         "Inventory cycle"
     ],
-    "special_rules": {}
+    "special_rules": {
+        "ambiguous": {
+            "problem": "QCOM is a short ticker; articles may mention Qualcomm peripherally in GDELT entities",
+            "required_keywords": [
+                "Qualcomm",
+                "QCOM",
+                "Snapdragon",
+                "Cristiano Amon",
+                "5G modem",
+                "Adreno",
+                "Hexagon",
+                "CDMA"
+            ],
+            "min_matches": 1
+        }
+    },
+    "strict_validation_keywords": [
+        "Qualcomm",
+        "QCOM",
+        "Snapdragon",
+        "5G modem",
+        "Cristiano Amon",
+        "Semiconductor",
+        "Chipmaker",
+        "Wireless chip"
+    ]
 }

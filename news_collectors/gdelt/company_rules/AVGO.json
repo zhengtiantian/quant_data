@@ -22,6 +22,20 @@
         "Inventory cycle"
     ],
     "special_rules": {
+        "ambiguous": {
+            "problem": "Broadcom may appear in generic Wi-Fi chip references without financial relevance",
+            "required_keywords": [
+                "Broadcom",
+                "AVGO",
+                "Hock Tan",
+                "VMware",
+                "Symantec",
+                "Tomahawk",
+                "Trident",
+                "SAN switches"
+            ],
+            "min_matches": 1
+        },
         "acquisitions": [
             {
                 "date": "2018-11-05",
@@ -48,5 +62,16 @@
                 ]
             }
         ]
-    }
+    },
+    "strict_validation_keywords": [
+        "Broadcom",
+        "AVGO",
+        "Hock Tan",
+        "VMware",
+        "Symantec",
+        "Semiconductor",
+        "Chipmaker",
+        "Networking chip",
+        "Enterprise software"
+    ]
 }

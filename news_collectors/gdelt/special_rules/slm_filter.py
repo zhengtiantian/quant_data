@@ -82,12 +82,12 @@ class SLMFilter:
                 self.cache[cache_key] = result
                 return result
             else:
-                print(f"⚠️ Ollama API error: {response.status_code}")
-                return True
+                print(f"⚠️ Ollama API error: {response.status_code}，默认拒绝")
+                return False
 
         except Exception as e:
-            print(f"⚠️ Ollama 调用失败/超时: {e}，默认允许通过")
-            return True
+            print(f"⚠️ Ollama 调用失败/超时: {e}，默认拒绝")
+            return False
 
     def _build_prompt(self, symbol: str, company_name: str, title: str, content: str, trigger_keywords: str = "") -> str:
         """构建 prompt"""
