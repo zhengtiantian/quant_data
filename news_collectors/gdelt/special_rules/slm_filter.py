@@ -22,7 +22,7 @@ class SLMFilter:
         if api_url is None:
             api_url = os.getenv("OLLAMA_API", "http://localhost:11434")
         if model is None:
-            model = os.getenv("OLLAMA_MODEL", "qwen2.5:7b-instruct-q4_K_M")
+            model = os.getenv("OLLAMA_MODEL", "qwen3:4b-q4_K_M")
 
         self.api_url = api_url.rstrip('/')
         self.model = model
