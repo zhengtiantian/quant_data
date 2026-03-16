@@ -4,7 +4,7 @@ from pymongo import MongoClient
 # =====================================================
 # MongoDB 配置
 # =====================================================
-MONGO_URI = "mongodb://root:root@192.168.1.26:37018/"
+MONGO_URI = "mongodb://root:root@127.0.0.1:37018/"
 DB_NAME = "quant_data"
 COLLECTION = "stock_universe"
 # =====================================================

@@ -2,16 +2,16 @@ import mysql.connector
 from pymongo import MongoClient
 
 MYSQL_CONFIG = {
-    "host": "192.168.1.26",
-    "port": 13306,
+    "host": "127.0.0.1",
+    "port": 23306,
     "user": "root",
     "password": "root",
     "database": "workflow"
 }
 
 MONGO_CONFIG = {
-    "host": "192.168.1.26",
-    "port": 27018,
+    "host": "127.0.0.1",
+    "port": 37018,
     "username": "root",
     "password": "root"
 }

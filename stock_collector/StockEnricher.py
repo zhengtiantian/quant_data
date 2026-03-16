@@ -7,10 +7,10 @@ import sys
 # =====================================================
 # 配置区域
 # =====================================================
-MONGO_URI = "mongodb://root:root@192.168.1.26:37018/"
+MONGO_URI = "mongodb://root:root@127.0.0.1:37018/"
 DB_NAME = "quant_data"
 COLLECTION = "stock_universe"
-LANGCHAIN_API = "http://192.168.1.26:18000/api/ask"
+LANGCHAIN_API = "http://127.0.0.1:18000/api/ask"
 TIMEOUT = 120
 FIELD_NAME = "related_keywords"  # 新增字段名
 BATCH_SIZE = 10  # 每10个写入一次数据库

@@ -7,11 +7,11 @@ from pymongo import MongoClient, UpdateOne
 # =====================================================
 # 配置区域
 # =====================================================
-MONGO_URI = "mongodb://root:root@192.168.1.26:37018/"
+MONGO_URI = "mongodb://root:root@127.0.0.1:37018/"
 DB_NAME = "quant_data"
 COLLECTION = "stock_universe"
 FIELD_NAME = "related_keywords"
-LANGCHAIN_API = "http://192.168.1.26:18000/api/ask"
+LANGCHAIN_API = "http://127.0.0.1:18000/api/ask"
 TIMEOUT = 60
 BATCH_SIZE = 10
 # =====================================================
