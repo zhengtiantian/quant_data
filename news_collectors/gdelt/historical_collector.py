@@ -89,6 +89,9 @@ USE_MYSQL_BATCH_QUEUE = os.getenv("USE_MYSQL_BATCH_QUEUE", "false").lower() == "
 BATCH_WORKERS = int(os.getenv("BATCH_WORKERS", "3"))
 RUNNING_RECLAIM_MINUTES = int(os.getenv("RUNNING_RECLAIM_MINUTES", "30"))
 RESET_ALL_RUNNING_ON_START = os.getenv("RESET_ALL_RUNNING_ON_START", "true").lower() == "true"
+HOST_ID = os.getenv("HOST_ID", "mac")
+QUEUE_INSTANCE_ID = os.getenv("QUEUE_INSTANCE_ID", HOST_ID)
+QUEUE_HEARTBEAT_SECONDS = int(os.getenv("QUEUE_HEARTBEAT_SECONDS", "30"))
 
 MYSQL_HOST = os.getenv("MYSQL_HOST", "127.0.0.1")
 MYSQL_PORT = int(os.getenv("MYSQL_PORT", "23306"))
@@ -159,6 +162,7 @@ def ensure_task_table():
               batch_id INT PRIMARY KEY,
               status ENUM('pending','running','done','failed') NOT NULL DEFAULT 'pending',
               owner VARCHAR(64) DEFAULT NULL,
+              owner_host VARCHAR(128) DEFAULT NULL,
               retries INT NOT NULL DEFAULT 0,
               last_error TEXT,
               started_at DATETIME NULL,
@@ -168,6 +172,9 @@ def ensure_task_table():
             )
             """
         )
+        cur.execute(f"SHOW COLUMNS FROM {MYSQL_TASK_TABLE} LIKE 'owner_host'")
+        if cur.fetchone() is None:
+            cur.execute(f"ALTER TABLE {MYSQL_TASK_TABLE} ADD COLUMN owner_host VARCHAR(128) DEFAULT NULL AFTER owner")
         conn.commit()
     finally:
         conn.close()
@@ -195,21 +202,24 @@ def seed_tasks(total_batches, resume_batch):
                 (resume_batch,),
             )
         if RESET_ALL_RUNNING_ON_START:
-            # 启动即回收历史 running，确保从最小的非 done 批次继续
+            # 仅回收当前主机遗留的 running，避免多主机互相打断
             cur.execute(
                 f"""
                 UPDATE {MYSQL_TASK_TABLE}
-                SET status='pending', owner=NULL, updated_at=NOW()
+                SET status='pending', owner=NULL, owner_host=NULL, updated_at=NOW()
                 WHERE status='running'
+                  AND owner_host=%s
                 """
+                ,
+                (HOST_ID,),
             )
         else:
             cur.execute(
                 f"""
                 UPDATE {MYSQL_TASK_TABLE}
-                SET status='pending', owner=NULL, updated_at=NOW()
+                SET status='pending', owner=NULL, owner_host=NULL, updated_at=NOW()
                 WHERE status='running'
-                  AND started_at < (NOW() - INTERVAL %s MINUTE)
+                  AND updated_at < (NOW() - INTERVAL %s MINUTE)
                 """,
                 (RUNNING_RECLAIM_MINUTES,),
             )
@@ -228,7 +238,7 @@ def claim_next_batch(owner):
             SELECT batch_id
             FROM {MYSQL_TASK_TABLE}
             WHERE status IN ('pending', 'failed')
-               OR (status='running' AND started_at < (NOW() - INTERVAL %s MINUTE))
+               OR (status='running' AND updated_at < (NOW() - INTERVAL %s MINUTE))
             ORDER BY batch_id ASC
             LIMIT 1
             FOR UPDATE SKIP LOCKED
@@ -243,10 +253,10 @@ def claim_next_batch(owner):
         cur.execute(
             f"""
             UPDATE {MYSQL_TASK_TABLE}
-            SET status='running', owner=%s, started_at=NOW(), updated_at=NOW(), last_error=NULL
+            SET status='running', owner=%s, owner_host=%s, started_at=NOW(), updated_at=NOW(), last_error=NULL
             WHERE batch_id=%s
             """,
-            (owner, batch_id),
+            (owner, HOST_ID, batch_id),
         )
         conn.commit()
         return batch_id
@@ -264,7 +274,7 @@ def mark_batch_done(batch_id):
         cur.execute(
             f"""
             UPDATE {MYSQL_TASK_TABLE}
-            SET status='done', owner=NULL, finished_at=NOW(), updated_at=NOW(), last_error=NULL
+            SET status='done', owner=NULL, owner_host=NULL, finished_at=NOW(), updated_at=NOW(), last_error=NULL
             WHERE batch_id=%s
             """,
             (batch_id,),
@@ -284,6 +294,7 @@ def mark_batch_failed(batch_id, err_msg):
             SET retries=retries+1,
                 status=CASE WHEN retries+1 >= 3 THEN 'failed' ELSE 'pending' END,
                 owner=NULL,
+                owner_host=NULL,
                 updated_at=NOW(),
                 last_error=%s
             WHERE batch_id=%s
@@ -305,11 +316,32 @@ def requeue_batch(batch_id, reason):
             UPDATE {MYSQL_TASK_TABLE}
             SET status='pending',
                 owner=NULL,
+                owner_host=NULL,
                 updated_at=NOW(),
                 last_error=%s
             WHERE batch_id=%s
             """,
             (str(reason)[:1000], batch_id),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def heartbeat_batch(batch_id, owner):
+    conn = get_mysql_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            f"""
+            UPDATE {MYSQL_TASK_TABLE}
+            SET updated_at=NOW()
+            WHERE batch_id=%s
+              AND status='running'
+              AND owner=%s
+              AND owner_host=%s
+            """,
+            (batch_id, owner, HOST_ID),
         )
         conn.commit()
     finally:
@@ -1318,7 +1350,7 @@ if __name__ == "__main__":
 
         def worker_loop(worker_id):
             global total_inserted
-            owner = f"worker-{worker_id}"
+            owner = QUEUE_INSTANCE_ID
             threading.current_thread().name = owner
             print(f"[{owner}] started")
             while not SHUTDOWN_EVENT.is_set():
@@ -1327,6 +1359,21 @@ if __name__ == "__main__":
                     break
                 i = (batch_idx - 1) * BATCH_SIZE
                 batch_urls = urls[i : i + BATCH_SIZE]
+                heartbeat_stop = threading.Event()
+
+                def heartbeat_loop():
+                    while not heartbeat_stop.wait(QUEUE_HEARTBEAT_SECONDS):
+                        try:
+                            heartbeat_batch(batch_idx, owner)
+                        except Exception as hb_err:
+                            print(f"[{owner}] ⚠️ heartbeat failed for batch {batch_idx}: {hb_err}")
+
+                heartbeat_thread = threading.Thread(
+                    target=heartbeat_loop,
+                    name=f"{owner}-heartbeat",
+                    daemon=True,
+                )
+                heartbeat_thread.start()
                 try:
                     inserted = process_one_batch(
                         batch_idx=batch_idx,
@@ -1362,6 +1409,9 @@ if __name__ == "__main__":
                         print(f"[{owner}] ⚠️ interpreter is shutting down, stop worker loop")
                         break
                     mark_batch_failed(batch_idx, e)
+                finally:
+                    heartbeat_stop.set()
+                    heartbeat_thread.join(timeout=1)
             print(f"[{owner}] ✅ finished.")
 
         workers = []
