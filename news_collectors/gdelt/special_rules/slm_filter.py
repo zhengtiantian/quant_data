@@ -4,16 +4,17 @@ SLM-based Article Relevance Filter
 使用 Qwen 小语言模型进行文章相关性判断（通过 Ollama API）
 """
 
-import requests
+import hashlib
 import os
+import threading
 from typing import Dict, Optional
 
+import requests
 
-import threading
-
-# 极其严酷的全局并发锁：最多允许 1 个线程同时向显卡发送请求。
-# 此举是为了将 RTX 5090 功耗压制在环保区间，彻底解决温度和 CPU/GPU 满载飙升问题。
-_ollama_semaphore = threading.Semaphore(1)
+# 适度保守的全局并发锁：默认 2，可通过环境变量进一步调整。
+# 对于本地 Mac + 4B 量化模型，2 是一个比较稳妥的折中点。
+_OLLAMA_MAX_CONCURRENCY = max(1, int(os.getenv("OLLAMA_MAX_CONCURRENCY", "2")))
+_ollama_semaphore = threading.Semaphore(_OLLAMA_MAX_CONCURRENCY)
 
 class SLMFilter:
     """使用 SLM 判断文章是否真正讨论某个公司"""
@@ -28,6 +29,7 @@ class SLMFilter:
         self.model = model
         self.enabled = enabled
         self.cache = {}
+        self._cache_lock = threading.Lock()
 
         self._test_connection()
 
@@ -37,7 +39,10 @@ class SLMFilter:
             resp = requests.get(f"{self.api_url}/api/tags", timeout=3)
             if resp.status_code == 200:
                 models = [m["name"] for m in resp.json().get("models", [])]
-                print(f"✅ SLM Filter: Connected to Ollama, models={models}")
+                print(
+                    f"✅ SLM Filter: Connected to Ollama, "
+                    f"concurrency={_OLLAMA_MAX_CONCURRENCY}, models={models}"
+                )
             else:
                 print(f"⚠️ SLM Filter: Ollama returned {resp.status_code}")
                 self.enabled = False
@@ -52,9 +57,14 @@ class SLMFilter:
         if not self.enabled:
             return True
 
-        cache_key = f"{symbol}:{hash(title)}"
-        if cache_key in self.cache:
-            return self.cache[cache_key]
+        title_key = title.strip().lower()
+        content_key = content[:300].strip().lower()
+        digest = hashlib.sha1(f"{symbol}|{title_key}|{content_key}".encode("utf-8")).hexdigest()
+        cache_key = f"{symbol}:{digest}"
+        with self._cache_lock:
+            cached = self.cache.get(cache_key)
+        if cached is not None:
+            return cached
 
         prompt = self._build_prompt(symbol, company_name, title, content, trigger_keywords)
 
@@ -79,7 +89,8 @@ class SLMFilter:
             if response.status_code == 200:
                 answer = response.json()["response"].strip()
                 result = answer.upper().startswith("YES")
-                self.cache[cache_key] = result
+                with self._cache_lock:
+                    self.cache[cache_key] = result
                 return result
             else:
                 print(f"⚠️ Ollama API error: {response.status_code}，默认拒绝")

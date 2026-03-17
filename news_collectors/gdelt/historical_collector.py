@@ -48,7 +48,7 @@ builtins.print = _thread_print
 # 全局配置
 # ============================
 rule_manager = RuleManager()
-MONGO_URI = "mongodb://root:root@localhost:37018/"
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://root:root@127.0.0.1:37018/")
 DB_NAME = "quant_data"
 SRC_COLLECTION = "stock_universe"
 DST_COLLECTION = "news_articles"  # 正式数据集合
@@ -56,7 +56,7 @@ DST_COLLECTION = "news_articles"  # 正式数据集合
 YEARS_BACK = 10  # 10年历史数据
 MAX_FILES = None  # 全量
 TEST_MODE = False  # 正式模式
-CACHE_DIR = "/mnt/data24t/docker-volumes/gdelt_cache"  # 存储到 22TB 硬盘
+CACHE_DIR = os.getenv("GDELT_CACHE_DIR", "/Volumes/data24T/docker-volumes/gdelt_cache")
 FILES_DIR = os.path.join(CACHE_DIR, "files")
 os.makedirs(CACHE_DIR, exist_ok=True)
 os.makedirs(FILES_DIR, exist_ok=True)
@@ -521,6 +521,18 @@ def clean_company_name(name):
     return name.strip()
 
 
+def strip_urls_and_xml(text):
+    """移除 XML 标签、PAGE_LINKS 和裸 URL，避免平台域名误触发关键词匹配。"""
+    if not isinstance(text, str) or not text:
+        return ""
+    text = re.sub(r"(?is)<PAGE_LINKS>.*?</PAGE_LINKS>", " ", text)
+    text = re.sub(r"(?is)<[^>]+>", " ", text)
+    text = re.sub(r"https?://\S+", " ", text)
+    text = re.sub(r"\b(?:www\.)?[a-z0-9.-]+\.[a-z]{2,}(?:/\S*)?\b", " ", text, flags=re.I)
+    text = re.sub(r"\s+", " ", text)
+    return text.strip()
+
+
 # 全局去重，防止同一个 URL 在一次运行中被多次分析
 processed_urls = set()
 
@@ -548,12 +560,13 @@ def process_single_file(url, companies, rule_manager, avg_date):
         if has_xml_column:
             df["URL"] = df[26].astype(str).str.extract(r"(?s)<PAGE_LINKS>(.*?)</PAGE_LINKS>", expand=False).fillna("").str.split(";").str[0]
             df["Title"] = df[26].astype(str).str.extract(r"(?s)<PAGE_TITLE>(.*?)</PAGE_TITLE>", expand=False).fillna("")
-            df["Raw"] = df[26].astype(str)
+            df["Raw"] = df[26].astype(str).map(strip_urls_and_xml)
         else:
             df["URL"] = df[4].astype(str) if 4 in df.columns else ""
             df["Title"] = ""
             context_cols = [22, 26, 28] if any(c in df.columns for c in [22, 26, 28]) else []
-            df["Raw"] = df["URL"] + " " + df[context_cols].fillna("").agg(" ".join, axis=1) if context_cols else df["URL"]
+            raw_text = df[context_cols].fillna("").agg(" ".join, axis=1) if context_cols else ""
+            df["Raw"] = raw_text.map(strip_urls_and_xml) if hasattr(raw_text, "map") else ""
 
         df["Date"] = filename[:8]
         df = df[df["URL"].str.startswith(("http"), na=False)]
@@ -570,8 +583,7 @@ def process_single_file(url, companies, rule_manager, avg_date):
             
             # 使用更快的搜索方式
             mask = df["Title"].str.contains(pattern, case=False, na=False, regex=True) | \
-                   df["Raw"].str.contains(pattern, case=False, na=False, regex=True) | \
-                   df["URL"].str.contains(pattern, case=False, na=False)
+                   df["Raw"].str.contains(pattern, case=False, na=False, regex=True)
             
             matched_df = df[mask]
             for _, row in matched_df.iterrows():
@@ -674,7 +686,7 @@ def process_batch_files(batch_urls, companies, worker_name=None):
                 # V2 XML 格式 (2021+)
                 df["URL"] = df[26].astype(str).str.extract(r"(?s)<PAGE_LINKS>(.*?)</PAGE_LINKS>", expand=False).fillna("").str.split(";").str[0]
                 df["Title"] = df[26].astype(str).str.extract(r"(?s)<PAGE_TITLE>(.*?)</PAGE_TITLE>", expand=False).fillna("")
-                df["Raw"] = df[26].astype(str)
+                df["Raw"] = df[26].astype(str).map(strip_urls_and_xml)
             else:
                 # 传统格式 (2016-2020): 同时扫描 V1 和 V2 字段
                 df["URL"] = df[4].astype(str) if 4 in df.columns else ""
@@ -682,7 +694,8 @@ def process_batch_files(batch_urls, companies, worker_name=None):
                 # GDELT GKG 字段索引: 7,9,11 是 V1 实体; 22,26,28 是 V2 实体
                 entity_cols = [7, 9, 11, 22, 26, 28]
                 found_cols = [c for c in entity_cols if c in df.columns]
-                df["Raw"] = df[found_cols].fillna("").agg(" ".join, axis=1) if found_cols else ""
+                raw_text = df[found_cols].fillna("").agg(" ".join, axis=1) if found_cols else ""
+                df["Raw"] = raw_text.map(strip_urls_and_xml) if hasattr(raw_text, "map") else ""
 
             df = df[df["URL"].str.startswith("http", na=False)]
             # 过滤社交媒体主页链接（不是新闻）
@@ -724,7 +737,13 @@ def process_batch_files(batch_urls, companies, worker_name=None):
                 for sym in hit_symbols:
                     # 解析完整时间戳
                     time_info = parse_gdelt_timestamp(filename)
-                    article_data = {"title": row["Title"], "content": row["Raw"], "date": time_info['date_str'] if time_info else filename[:8]}
+                    article_data = {
+                        "title": row["Title"],
+                        "content": row["Raw"],
+                        "date": time_info['date_str'] if time_info else filename[:8],
+                        "source_file": filename,
+                        "url": row["URL"],
+                    }
                     if rule_manager.should_include(sym, article_data):
                         file_matches.append({
                             "row": {
@@ -913,7 +932,12 @@ def fetch_article(row, company):
         
         if len(content) >= 60:
             # 优先级 1: 完整正文 (质量: full)
-            test_article_data = {"title": final_title, "content": content, "date": date}
+            test_article_data = {
+                "title": final_title,
+                "content": content,
+                "date": date,
+                "url": url,
+            }
             if DEBUG_TASK_TRACE:
                 t_rule = time.time()
                 print(f"🧭 TASK {task_id} -> rule_check(full) start")
@@ -935,7 +959,12 @@ def fetch_article(row, company):
                 return None 
             
             # 只有标题没有正文的文章，也需要通过规则检查
-            test_article_data = {"title": final_title, "content": "", "date": date}
+            test_article_data = {
+                "title": final_title,
+                "content": "",
+                "date": date,
+                "url": url,
+            }
             if DEBUG_TASK_TRACE:
                 t_rule = time.time()
                 print(f"🧭 TASK {task_id} -> rule_check(title_only) start")
@@ -967,7 +996,12 @@ def fetch_article(row, company):
                 return None # 抓取失败且标题是占位符，直接放弃
             
             # 即使抓取失败，也要通过规则检查
-            test_article_data = {"title": title, "content": "", "date": date}
+            test_article_data = {
+                "title": title,
+                "content": "",
+                "date": date,
+                "url": url,
+            }
             if not rule_manager.should_include(symbol, test_article_data):
                 return None  # 被规则引擎拦截
             

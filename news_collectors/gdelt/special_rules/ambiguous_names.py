@@ -14,6 +14,7 @@ from .base_rule import BaseRule
 
 # 延迟导入 SLM Filter（避免循环依赖）
 _slm_filter = None
+_slm_filter_lock = threading.Lock()
 _event_lock = threading.Lock()
 _event_counter = defaultdict(int)
 _event_type_counter = defaultdict(Counter)
@@ -87,16 +88,23 @@ def emit_rule_event(event_type, symbol, detail):
 def get_slm_filter():
     """获取全局 SLM 过滤器实例"""
     global _slm_filter
-    if _slm_filter is None:
-        try:
-            from .slm_filter import SLMFilter
-            # 检查是否启用 SLM（通过环境变量控制）
-            use_slm = os.getenv("USE_SLM_FILTER", "true").lower() == "true"
-            _slm_filter = SLMFilter(enabled=use_slm)
-        except Exception as e:
-            print(f"⚠️ SLM Filter 初始化失败: {e}，将使用纯规则过滤")
-            _slm_filter = None
+    if _slm_filter is not None:
+        return _slm_filter
+    with _slm_filter_lock:
+        if _slm_filter is None:
+            try:
+                from .slm_filter import SLMFilter
+                # 检查是否启用 SLM（通过环境变量控制）
+                use_slm = os.getenv("USE_SLM_FILTER", "true").lower() == "true"
+                _slm_filter = SLMFilter(enabled=use_slm)
+            except Exception as e:
+                print(f"⚠️ SLM Filter 初始化失败: {e}，将使用纯规则过滤")
+                _slm_filter = None
     return _slm_filter
+
+
+def _parse_symbol_set(raw_value):
+    return {s.strip().upper() for s in raw_value.split(",") if s.strip()}
 
 
 class AmbiguousNameRule(BaseRule):
@@ -178,7 +186,17 @@ class AmbiguousNameRule(BaseRule):
         self.min_matches = config.get('min_matches', 1)
         self.exclude_patterns = config.get('exclude_patterns', [])
         self.case_sensitive = config.get('case_sensitive', False)
-        self.use_slm = config.get('use_slm', True)
+        base_use_slm = config.get('use_slm', True)
+        enabled_symbols_raw = os.getenv("SLM_ENABLED_SYMBOLS", "ARM,META,MU,AMD,DDOG")
+        disabled_symbols_raw = os.getenv("SLM_DISABLED_SYMBOLS", "")
+        enabled_symbols = _parse_symbol_set(enabled_symbols_raw)
+        disabled_symbols = _parse_symbol_set(disabled_symbols_raw)
+        allow_all = enabled_symbols_raw.strip() == "*"
+        self.use_slm = (
+            base_use_slm
+            and (allow_all or self.symbol.upper() in enabled_symbols)
+            and self.symbol.upper() not in disabled_symbols
+        )
         self.rule_verbose = os.getenv("RULE_VERBOSE", "false").lower() == "true"
         self.log_slm_interceptions = os.getenv("SLM_LOG_INTERCEPTIONS", "false").lower() == "true"
     
@@ -309,7 +327,10 @@ class AmbiguousNameRule(BaseRule):
                 if not is_relevant:
                     track_filter_step("killed_by_slm")
                     if self.log_slm_interceptions:
-                        log_dir = "/home/xiz/logs/history_collector"
+                        log_dir = os.getenv(
+                            "HISTORY_COLLECTOR_LOG_DIR",
+                            os.path.expanduser("~/logs/history_collector"),
+                        )
                         os.makedirs(log_dir, exist_ok=True)
                         log_file = os.path.join(log_dir, "slm_interceptions.log")
 
