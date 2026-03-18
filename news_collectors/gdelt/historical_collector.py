@@ -1408,8 +1408,9 @@ if __name__ == "__main__":
         def worker_loop(worker_id):
             global total_inserted
             owner = QUEUE_INSTANCE_ID
-            threading.current_thread().name = owner
-            print(f"[{owner}] started")
+            worker_name = f"{HOST_ID}-worker{worker_id}"
+            threading.current_thread().name = worker_name
+            print("started")
             while not SHUTDOWN_EVENT.is_set():
                 batch_idx = claim_next_batch(owner)
                 if batch_idx is None:
@@ -1427,7 +1428,7 @@ if __name__ == "__main__":
 
                 heartbeat_thread = threading.Thread(
                     target=heartbeat_loop,
-                    name=f"{owner}-heartbeat",
+                    name=f"{worker_name}-heartbeat",
                     daemon=True,
                 )
                 heartbeat_thread.start()
@@ -1454,22 +1455,22 @@ if __name__ == "__main__":
                             f"files={progress_state['scanned_files']}/{total_files} ({pct:.2f}%)"
                         )
                 except Exception as e:
-                    print(f"[{owner}] ❌ failed on batch {batch_idx}: {e}")
+                    print(f"❌ failed on batch {batch_idx}: {e}")
                     # 解释器退出阶段会触发该错误，避免误标失败并继续调度
                     if "interpreter shutdown" in str(e).lower():
                         _mark_shutdown(f"{owner} got interpreter shutdown")
                         try:
                             requeue_batch(batch_idx, f"shutdown_requeue: {e}")
-                            print(f"[{owner}] 🔁 requeued batch {batch_idx} to pending")
+                            print(f"🔁 requeued batch {batch_idx} to pending")
                         except Exception as requeue_err:
-                            print(f"[{owner}] ⚠️ requeue failed for batch {batch_idx}: {requeue_err}")
-                        print(f"[{owner}] ⚠️ interpreter is shutting down, stop worker loop")
+                            print(f"⚠️ requeue failed for batch {batch_idx}: {requeue_err}")
+                        print("⚠️ interpreter is shutting down, stop worker loop")
                         break
                     mark_batch_failed(batch_idx, e)
                 finally:
                     heartbeat_stop.set()
                     heartbeat_thread.join(timeout=1)
-            print(f"[{owner}] ✅ finished.")
+            print("✅ finished.")
 
         workers = []
         for wid in range(1, BATCH_WORKERS + 1):
