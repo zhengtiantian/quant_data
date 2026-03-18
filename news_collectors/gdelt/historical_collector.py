@@ -87,8 +87,10 @@ STUCK_URLS_FILE = os.path.join(CACHE_DIR, "stuck_urls.txt")
 DEBUG_TASK_TRACE = os.getenv("DEBUG_TASK_TRACE", "false").lower() == "true"
 USE_MYSQL_BATCH_QUEUE = os.getenv("USE_MYSQL_BATCH_QUEUE", "false").lower() == "true"
 BATCH_WORKERS = int(os.getenv("BATCH_WORKERS", "3"))
-RUNNING_RECLAIM_MINUTES = int(os.getenv("RUNNING_RECLAIM_MINUTES", "30"))
+RUNNING_RECLAIM_MINUTES = int(os.getenv("RUNNING_RECLAIM_MINUTES", "720"))
 RESET_ALL_RUNNING_ON_START = os.getenv("RESET_ALL_RUNNING_ON_START", "true").lower() == "true"
+STARTUP_PREDOWNLOAD_ENABLED = os.getenv("STARTUP_PREDOWNLOAD_ENABLED", "true").lower() == "true"
+STARTUP_PREDOWNLOAD_RECENT_FILES = int(os.getenv("STARTUP_PREDOWNLOAD_RECENT_FILES", "288"))
 HOST_ID = os.getenv("HOST_ID", "mac")
 QUEUE_INSTANCE_ID = os.getenv("QUEUE_INSTANCE_ID", HOST_ID)
 QUEUE_HEARTBEAT_SECONDS = int(os.getenv("QUEUE_HEARTBEAT_SECONDS", "30"))
@@ -498,6 +500,26 @@ def batch_download_files(urls, batch_size=20, worker_name=None):
         time.sleep(0.5)
 
     print("🎯 All downloads finished (cached files skipped automatically).")
+
+
+def predownload_recent_missing_files(urls):
+    """启动时优先预下载最新一段缺失的 GKG 文件，避免新一天的数据在首批任务里集中阻塞。"""
+    if not STARTUP_PREDOWNLOAD_ENABLED or not urls:
+        return
+    lookback = max(1, STARTUP_PREDOWNLOAD_RECENT_FILES)
+    recent_urls = urls[-lookback:]
+    missing = [
+        url for url in recent_urls
+        if not os.path.exists(os.path.join(FILES_DIR, os.path.basename(url)))
+    ]
+    if not missing:
+        print(f"📦 Startup predownload: latest {len(recent_urls)} files already cached")
+        return
+    print(
+        f"📦 Startup predownload: caching {len(missing)}/{len(recent_urls)} recent files "
+        f"(window={lookback}) before workers start"
+    )
+    batch_download_files(recent_urls, batch_size=50, worker_name="startup-cache")
 
 
 # ============================
@@ -1284,9 +1306,7 @@ if __name__ == "__main__":
 
     ensure_index()
     urls = get_gkg_file_urls(actual_years_back, actual_max_files)
-    
-    # 1. 预下载逻辑改为在批次循环中进行，避免启动时长时间阻塞
-    # batch_download_files(urls, batch_size=50)
+    predownload_recent_missing_files(urls)
     
     # 2. 准备公司数据
     companies = load_companies()
