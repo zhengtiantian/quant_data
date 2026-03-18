@@ -502,24 +502,56 @@ def batch_download_files(urls, batch_size=20, worker_name=None):
     print("🎯 All downloads finished (cached files skipped automatically).")
 
 
+def get_latest_cached_gkg_timestamp():
+    """返回本地缓存中最新 GKG 文件的时间戳；没有缓存则返回 None。"""
+    latest_dt = None
+    try:
+        for name in os.listdir(FILES_DIR):
+            if not name.endswith(".gkg.csv.zip"):
+                continue
+            ts = parse_gdelt_timestamp(name)
+            if not ts:
+                continue
+            dt = ts["datetime"]
+            if latest_dt is None or dt > latest_dt:
+                latest_dt = dt
+    except FileNotFoundError:
+        return None
+    return latest_dt
+
+
 def predownload_recent_missing_files(urls):
-    """启动时优先预下载最新一段缺失的 GKG 文件，避免新一天的数据在首批任务里集中阻塞。"""
+    """启动时从本地最新缓存补齐到今天，避免新时间段的 GKG 文件缺口。"""
     if not STARTUP_PREDOWNLOAD_ENABLED or not urls:
         return
-    lookback = max(1, STARTUP_PREDOWNLOAD_RECENT_FILES)
-    recent_urls = urls[-lookback:]
+
+    latest_cached_dt = get_latest_cached_gkg_timestamp()
+    if latest_cached_dt is None:
+        lookback = max(1, STARTUP_PREDOWNLOAD_RECENT_FILES)
+        candidate_urls = urls[-lookback:]
+        mode_desc = f"no local cache, fallback to latest {lookback} files"
+    else:
+        candidate_urls = []
+        for url in urls:
+            ts = parse_gdelt_timestamp(os.path.basename(url))
+            if not ts:
+                continue
+            if ts["datetime"] > latest_cached_dt:
+                candidate_urls.append(url)
+        mode_desc = f"latest cached file at {latest_cached_dt.strftime('%Y-%m-%d %H:%M:%S')}"
+
     missing = [
-        url for url in recent_urls
+        url for url in candidate_urls
         if not os.path.exists(os.path.join(FILES_DIR, os.path.basename(url)))
     ]
     if not missing:
-        print(f"📦 Startup predownload: latest {len(recent_urls)} files already cached")
+        print(f"📦 Startup predownload: nothing missing to catch up ({mode_desc})")
         return
     print(
-        f"📦 Startup predownload: caching {len(missing)}/{len(recent_urls)} recent files "
-        f"(window={lookback}) before workers start"
+        f"📦 Startup predownload: caching {len(missing)}/{len(candidate_urls)} files "
+        f"before workers start ({mode_desc})"
     )
-    batch_download_files(recent_urls, batch_size=50, worker_name="startup-cache")
+    batch_download_files(candidate_urls, batch_size=50, worker_name="startup-cache")
 
 
 # ============================
