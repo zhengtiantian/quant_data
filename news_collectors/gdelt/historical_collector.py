@@ -1366,24 +1366,8 @@ if __name__ == "__main__":
     stuck_urls = load_stuck_urls()
     print(f"⛔ Loaded {len(stuck_urls)} historical stuck URLs")
     
-    # 断点续传：读取上次处理到的批次
-    PROGRESS_FILE = os.path.join(CACHE_DIR, "progress.txt")
-    start_batch = 0
-    
-    if os.path.exists(PROGRESS_FILE):
-        try:
-            with open(PROGRESS_FILE, "r") as f:
-                content = f.read().strip()
-                if content:
-                    start_batch = int(content)
-                    print(f"🔄 Resuming from batch {start_batch + 1}")
-        except Exception as e:
-            print(f"⚠️ Error reading progress file: {e}. Starting from batch 1.")
-    
     if TEST_MODE:
-        # 测试模式：强行从头开始
-        start_batch = 0
-        print(f"🧪 TEST MODE: Starting from batch 1 (progress not saved)")
+        print(f"🧪 TEST MODE: Starting from batch 1")
     
     # 分批遍历 URL
     total_batches = (len(urls) + BATCH_SIZE - 1) // BATCH_SIZE
@@ -1399,8 +1383,8 @@ if __name__ == "__main__":
     if USE_MYSQL_BATCH_QUEUE:
         print(f"🗂️ MySQL queue mode enabled: workers={BATCH_WORKERS}")
         ensure_task_table()
-        queue_resume_batch = max(1, start_batch)
-        print(f"🧭 Queue resume batch: {queue_resume_batch} (mark 1..{max(0, queue_resume_batch-1)} as done)")
+        queue_resume_batch = 1
+        print("🧭 Queue resume source: MySQL task table only")
         seed_tasks(total_batches, queue_resume_batch)
 
         total_insert_lock = threading.Lock()
@@ -1487,8 +1471,6 @@ if __name__ == "__main__":
     else:
         for i in range(0, len(urls), BATCH_SIZE):
             batch_idx = (i // BATCH_SIZE) + 1
-            if batch_idx <= start_batch:
-                continue
 
             batch_urls = urls[i : i + BATCH_SIZE]
             inserted = process_one_batch(
@@ -1510,10 +1492,6 @@ if __name__ == "__main__":
                     f"batches={progress_state['done_batches']}/{total_batches}, "
                     f"files={progress_state['scanned_files']}/{total_files} ({pct:.2f}%)"
                 )
-
-            if not TEST_MODE:
-                with open(PROGRESS_FILE, "w") as f:
-                    f.write(str(batch_idx))
 
             if TEST_MODE and batch_idx * BATCH_SIZE >= len(urls):
                 print(f"\n🧪 TEST MODE complete. Results saved in '{DST_COLLECTION}'.")
