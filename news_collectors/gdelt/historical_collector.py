@@ -381,16 +381,21 @@ def ensure_index():
 # masterfilelist 缓存
 # ============================
 def load_masterfilelist():
-    if os.path.exists(MASTER_FILE):
-        print(f"📂 Using cached masterfilelist.txt ({os.path.getsize(MASTER_FILE)/1e6:.1f} MB)")
-        with open(MASTER_FILE, "r") as f:
-            return f.readlines()
-    print("⬇️ Downloading masterfilelist.txt (≈450MB, first time only)...")
-    with requests.get(f"{BASE_URL}/masterfilelist.txt", stream=True, timeout=1800) as r:
-        r.raise_for_status()
-        with open(MASTER_FILE, "wb") as f:
-            for chunk in r.iter_content(8192):
-                f.write(chunk)
+    print("⬇️ Refreshing masterfilelist.txt from GDELT...")
+    try:
+        with requests.get(f"{BASE_URL}/masterfilelist.txt", stream=True, timeout=1800) as r:
+            r.raise_for_status()
+            with open(MASTER_FILE, "wb") as f:
+                for chunk in r.iter_content(8192):
+                    f.write(chunk)
+    except Exception as e:
+        if os.path.exists(MASTER_FILE):
+            print(
+                f"⚠️ Refresh masterfilelist failed: {e}. "
+                f"Falling back to cached file ({os.path.getsize(MASTER_FILE)/1e6:.1f} MB)"
+            )
+        else:
+            raise
     with open(MASTER_FILE, "r") as f:
         return f.readlines()
 
