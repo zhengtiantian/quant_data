@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 SLM-based Article Relevance Filter
-使用 Qwen 小语言模型进行文章相关性判断（通过 Ollama API）
+使用本地小语言模型进行文章相关性判断（默认通过 LM Studio OpenAI 兼容 API）
 """
 
 import hashlib
@@ -12,18 +12,24 @@ from typing import Dict, Optional
 import requests
 
 # 适度保守的全局并发锁：默认 2，可通过环境变量进一步调整。
-# 对于本地 Mac + 4B 量化模型，2 是一个比较稳妥的折中点。
-_OLLAMA_MAX_CONCURRENCY = max(1, int(os.getenv("OLLAMA_MAX_CONCURRENCY", "2")))
-_ollama_semaphore = threading.Semaphore(_OLLAMA_MAX_CONCURRENCY)
+_SLM_MAX_CONCURRENCY = max(1, int(os.getenv("SLM_MAX_CONCURRENCY", os.getenv("OLLAMA_MAX_CONCURRENCY", "2"))))
+_slm_semaphore = threading.Semaphore(_SLM_MAX_CONCURRENCY)
 
 class SLMFilter:
     """使用 SLM 判断文章是否真正讨论某个公司"""
 
     def __init__(self, api_url: str = None, model: str = None, enabled: bool = True):
+        self.provider = os.getenv("SLM_PROVIDER", "lmstudio").lower()
         if api_url is None:
-            api_url = os.getenv("OLLAMA_API", "http://localhost:11434")
+            if self.provider == "lmstudio":
+                api_url = os.getenv("SLM_API_URL", os.getenv("LMSTUDIO_API", "http://127.0.0.1:1234/v1"))
+            else:
+                api_url = os.getenv("SLM_API_URL", os.getenv("OLLAMA_API", "http://127.0.0.1:11434"))
         if model is None:
-            model = os.getenv("OLLAMA_MODEL", "qwen3:4b-q4_K_M")
+            if self.provider == "lmstudio":
+                model = os.getenv("SLM_MODEL", os.getenv("LMSTUDIO_MODEL", "qwen3-4b-bench"))
+            else:
+                model = os.getenv("SLM_MODEL", os.getenv("OLLAMA_MODEL", "qwen3:4b-q4_K_M"))
 
         self.api_url = api_url.rstrip('/')
         self.model = model
@@ -34,20 +40,28 @@ class SLMFilter:
         self._test_connection()
 
     def _test_connection(self):
-        """测试 Ollama 连接"""
+        """测试本地推理服务连接"""
         try:
-            resp = requests.get(f"{self.api_url}/api/tags", timeout=3)
+            if self.provider == "lmstudio":
+                resp = requests.get(f"{self.api_url}/models", timeout=3)
+            else:
+                resp = requests.get(f"{self.api_url}/api/tags", timeout=3)
             if resp.status_code == 200:
-                models = [m["name"] for m in resp.json().get("models", [])]
+                if self.provider == "lmstudio":
+                    models = [m["id"] for m in resp.json().get("data", [])]
+                    provider_name = "LM Studio"
+                else:
+                    models = [m["name"] for m in resp.json().get("models", [])]
+                    provider_name = "Ollama"
                 print(
-                    f"✅ SLM Filter: Connected to Ollama, "
-                    f"concurrency={_OLLAMA_MAX_CONCURRENCY}, models={models}"
+                    f"✅ SLM Filter: Connected to {provider_name}, "
+                    f"provider={self.provider}, concurrency={_SLM_MAX_CONCURRENCY}, models={models}"
                 )
             else:
-                print(f"⚠️ SLM Filter: Ollama returned {resp.status_code}")
+                print(f"⚠️ SLM Filter: {self.provider} returned {resp.status_code}")
                 self.enabled = False
         except Exception as e:
-            print(f"⚠️ SLM Filter: Cannot connect to Ollama ({e}), filter disabled")
+            print(f"⚠️ SLM Filter: Cannot connect to {self.provider} ({e}), filter disabled")
             self.enabled = False
 
     def is_relevant(self, symbol: str, company_name: str, title: str, content: str, trigger_keywords: str = "") -> bool:
@@ -69,36 +83,60 @@ class SLMFilter:
         prompt = self._build_prompt(symbol, company_name, title, content, trigger_keywords)
 
         try:
-            # 获取凭证，必须排队，让显卡喘口气
-            with _ollama_semaphore:
-                response = requests.post(
-                    f"{self.api_url}/api/generate",
-                    json={
-                        "model": self.model,
-                        "prompt": prompt,
-                        "stream": False,
-                        "options": {
-                            "num_predict": 3,
-                            "temperature": 0.1,
-                            "top_p": 0.9,
-                        }
-                    },
-                    timeout=45
-                )
+            with _slm_semaphore:
+                if self.provider == "lmstudio":
+                    response = requests.post(
+                        f"{self.api_url}/chat/completions",
+                        json={
+                            "model": self.model,
+                            "messages": [{"role": "user", "content": f"/no_think\n{prompt}"}],
+                            "max_tokens": 4,
+                            "temperature": 0,
+                        },
+                        timeout=45,
+                    )
+                else:
+                    response = requests.post(
+                        f"{self.api_url}/api/generate",
+                        json={
+                            "model": self.model,
+                            "prompt": prompt,
+                            "stream": False,
+                            "options": {
+                                "num_predict": 3,
+                                "temperature": 0.1,
+                                "top_p": 0.9,
+                            }
+                        },
+                        timeout=45
+                    )
 
             if response.status_code == 200:
-                answer = response.json()["response"].strip()
+                answer = self._extract_answer(response.json())
                 result = answer.upper().startswith("YES")
                 with self._cache_lock:
                     self.cache[cache_key] = result
                 return result
             else:
-                print(f"⚠️ Ollama API error: {response.status_code}，默认拒绝")
+                print(f"⚠️ {self.provider} API error: {response.status_code}，默认拒绝")
                 return False
 
         except Exception as e:
-            print(f"⚠️ Ollama 调用失败/超时: {e}，默认拒绝")
+            print(f"⚠️ {self.provider} 调用失败/超时: {e}，默认拒绝")
             return False
+
+    def _extract_answer(self, data: Dict) -> str:
+        """统一提取 YES/NO 答案。"""
+        if self.provider == "lmstudio":
+            choices = data.get("choices", [])
+            if not choices:
+                return ""
+            message = choices[0].get("message", {})
+            answer = (message.get("content") or "").strip()
+            if answer:
+                return answer
+            return (message.get("reasoning_content") or "").strip()
+        return (data.get("response") or "").strip()
 
     def _build_prompt(self, symbol: str, company_name: str, title: str, content: str, trigger_keywords: str = "") -> str:
         """构建 prompt"""
