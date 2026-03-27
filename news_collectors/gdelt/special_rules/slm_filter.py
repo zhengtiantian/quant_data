@@ -7,6 +7,7 @@ SLM-based Article Relevance Filter
 import hashlib
 import os
 import threading
+from collections import defaultdict
 from typing import Dict, Optional
 
 import requests
@@ -14,6 +15,53 @@ import requests
 # 适度保守的全局并发锁：默认 2，可通过环境变量进一步调整。
 _SLM_MAX_CONCURRENCY = max(1, int(os.getenv("SLM_MAX_CONCURRENCY", os.getenv("OLLAMA_MAX_CONCURRENCY", "2"))))
 _slm_semaphore = threading.Semaphore(_SLM_MAX_CONCURRENCY)
+_slm_stats_lock = threading.Lock()
+_slm_stats = defaultdict(lambda: defaultdict(int))
+
+
+def _thread_name(thread_name: Optional[str] = None) -> str:
+    thread_name = thread_name or threading.current_thread().name
+    return thread_name
+
+
+def _owner_name(thread_name: Optional[str] = None) -> str:
+    thread_name = _thread_name(thread_name)
+    return thread_name.split("-scan_")[0] if "-scan_" in thread_name else thread_name
+
+
+def track_slm_stat(metric: str, amount: int = 1, owner: Optional[str] = None) -> None:
+    thread_name = _thread_name(owner)
+    owner_name = _owner_name(thread_name)
+    with _slm_stats_lock:
+        _slm_stats[thread_name][metric] += amount
+        if owner_name != thread_name:
+            _slm_stats[owner_name][metric] += amount
+
+
+def get_slm_stats(owner: Optional[str] = None) -> Dict[str, int]:
+    current_owner = owner or _thread_name()
+    with _slm_stats_lock:
+        stats = dict(_slm_stats.get(current_owner, {}))
+    return {
+        "requests": stats.get("requests", 0),
+        "cache_hits": stats.get("cache_hits", 0),
+        "yes": stats.get("yes", 0),
+        "no": stats.get("no", 0),
+        "errors": stats.get("errors", 0),
+    }
+
+
+def format_slm_stats(owner: Optional[str] = None) -> str:
+    current_name = owner or _thread_name()
+    stats = get_slm_stats(current_name)
+    if not any(stats.values()):
+        fallback_owner = _owner_name(current_name)
+        if fallback_owner != current_name:
+            stats = get_slm_stats(fallback_owner)
+    return (
+        f"slm(req={stats['requests']}, cache={stats['cache_hits']}, "
+        f"yes={stats['yes']}, no={stats['no']}, err={stats['errors']})"
+    )
 
 class SLMFilter:
     """使用 SLM 判断文章是否真正讨论某个公司"""
@@ -78,12 +126,14 @@ class SLMFilter:
         with self._cache_lock:
             cached = self.cache.get(cache_key)
         if cached is not None:
+            track_slm_stat("cache_hits")
             return cached
 
         prompt = self._build_prompt(symbol, company_name, title, content, trigger_keywords)
 
         try:
             with _slm_semaphore:
+                track_slm_stat("requests")
                 if self.provider == "lmstudio":
                     response = requests.post(
                         f"{self.api_url}/chat/completions",
@@ -114,14 +164,17 @@ class SLMFilter:
             if response.status_code == 200:
                 answer = self._extract_answer(response.json())
                 result = answer.upper().startswith("YES")
+                track_slm_stat("yes" if result else "no")
                 with self._cache_lock:
                     self.cache[cache_key] = result
                 return result
             else:
+                track_slm_stat("errors")
                 print(f"⚠️ {self.provider} API error: {response.status_code}，默认拒绝")
                 return False
 
         except Exception as e:
+            track_slm_stat("errors")
             print(f"⚠️ {self.provider} 调用失败/超时: {e}，默认拒绝")
             return False
 

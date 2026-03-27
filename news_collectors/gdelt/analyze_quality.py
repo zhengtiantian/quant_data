@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
-"""
-详细分析数据质量：full vs title_only
-"""
+"""详细分析数据质量和匹配程度。"""
 
+from collections import Counter, defaultdict
 from pymongo import MongoClient
-from collections import Counter
 
 client = MongoClient('mongodb://root:root@localhost:37018/')
 db = client['quant_data']
 col = db['news_articles']
+AMBIGUOUS_SYMBOLS = ["ARM", "META", "MU", "AMD", "DDOG", "AAPL", "MSFT", "AMZN", "GOOGL"]
 
 print('='*70)
 print('数据质量详细分析报告')
@@ -135,8 +134,85 @@ for symbol, data in sorted_companies:
     title_pct = (title / total * 100) if total > 0 else 0
     print(f'{symbol:<8} {name:<30} {full:>8,} {title:>8,} {total:>8,} {title_pct:>7.1f}%')
 
-# 5. 时间分布
-print('\n📅 5. 数据收集进度')
+# 5. Title_Only 原因分布
+print('\n🧪 5. Title_Only 原因分布')
+print('-'*70)
+
+if title_only_count > 0:
+    reason_stats = col.aggregate([
+        {"$match": {"data_quality": "title_only"}},
+        {"$group": {
+            "_id": "$note",
+            "count": {"$sum": 1}
+        }},
+        {"$sort": {"count": -1}},
+        {"$limit": 10}
+    ])
+
+    print(f'{"原因":<52} {"数量":>12} {"占Title%":>10}')
+    print('-'*70)
+    for stat in reason_stats:
+        reason = (stat["_id"] or "N/A").replace("\n", " ")[:50]
+        count = stat["count"]
+        pct = count / title_only_count * 100 if title_only_count else 0
+        print(f'{reason:<52} {count:>12,} {pct:>9.1f}%')
+else:
+    print('  没有 title_only 文章')
+
+# 6. 歧义公司专项复核
+print('\n🎯 6. 歧义公司专项复核')
+print('-'*70)
+
+ambiguous_quality = col.aggregate([
+    {"$match": {"symbol": {"$in": AMBIGUOUS_SYMBOLS}}},
+    {"$group": {
+        "_id": {
+            "symbol": "$symbol",
+            "name": "$name",
+            "quality": "$data_quality"
+        },
+        "count": {"$sum": 1}
+    }},
+    {"$sort": {"_id.symbol": 1, "_id.quality": 1}}
+])
+
+ambiguous_data = defaultdict(lambda: {"full": 0, "title_only": 0, "url_only": 0, "name": ""})
+for item in ambiguous_quality:
+    symbol = item["_id"]["symbol"]
+    quality = item["_id"]["quality"]
+    ambiguous_data[symbol][quality] = item["count"]
+    ambiguous_data[symbol]["name"] = item["_id"]["name"] or ""
+
+print(f'{"公司":<8} {"名称":<24} {"Full":>8} {"Title":>8} {"URL":>8} {"Title%":>8}')
+print('-'*70)
+for symbol in AMBIGUOUS_SYMBOLS:
+    data = ambiguous_data[symbol]
+    name = data["name"][:22] if data["name"] else "N/A"
+    total = data["full"] + data["title_only"] + data["url_only"]
+    title_pct = (data["title_only"] / total * 100) if total > 0 else 0
+    print(
+        f'{symbol:<8} {name:<24} {data["full"]:>8,} {data["title_only"]:>8,} '
+        f'{data["url_only"]:>8,} {title_pct:>7.1f}%'
+    )
+
+print('\n歧义公司样本复核:')
+for symbol in AMBIGUOUS_SYMBOLS[:5]:
+    samples = list(col.find(
+        {"symbol": symbol},
+        {"title": 1, "data_quality": 1, "url": 1}
+    ).limit(3))
+    if not samples:
+        continue
+    print(f'\n[{symbol}]')
+    for i, doc in enumerate(samples, 1):
+        title = (doc.get("title") or "N/A")[:70]
+        quality = doc.get("data_quality", "N/A")
+        url = (doc.get("url") or "N/A")[:72]
+        print(f'  {i}. ({quality}) {title}')
+        print(f'     {url}')
+
+# 7. 时间分布
+print('\n📅 7. 数据收集进度')
 print('-'*70)
 
 import os

@@ -2,20 +2,25 @@ import os
 import requests
 import zipfile
 import io
+import csv
 import pandas as pd
 from datetime import datetime, timedelta, timezone
 from newspaper import Article, Config
 import concurrent.futures
 import re
 import random
-from pymongo import MongoClient, errors
+from pymongo import MongoClient, UpdateOne, errors
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import multiprocessing
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
+from concurrent.futures.process import BrokenProcessPool
 import threading
 import mysql.connector
 import builtins
 import signal
 import traceback
+import sys
+from bs4 import BeautifulSoup
 
 # ============================
 # 启用 SLM 过滤器
@@ -34,20 +39,41 @@ from special_rules import RuleManager
 
 # 统一日志前缀：所有 print 自动附带线程名
 _ORIGINAL_PRINT = builtins.print
+WORKER_BATCH_CONTEXT = {}
+
+
+def _get_slm_stats_suffix(thread_name):
+    return ""
+
 
 def _thread_print(*args, **kwargs):
-    if args and isinstance(args[0], str) and args[0].startswith("["):
-        _ORIGINAL_PRINT(*args, **kwargs)
-        return
     thread_name = threading.current_thread().name
-    _ORIGINAL_PRINT(f"[{thread_name}]", *args, **kwargs)
+    suffix = _get_slm_stats_suffix(thread_name)
+    if args and isinstance(args[0], str) and args[0].startswith("["):
+        rendered = list(args)
+        rendered[0] = f"{rendered[0]}{suffix}"
+        _ORIGINAL_PRINT(*rendered, **kwargs)
+        return
+    _ORIGINAL_PRINT(f"[{thread_name}]{suffix}", *args, **kwargs)
 
 builtins.print = _thread_print
 
 # ============================
 # 全局配置
 # ============================
-rule_manager = RuleManager()
+_rule_manager = None
+_rule_manager_lock = threading.Lock()
+
+
+def get_rule_manager():
+    global _rule_manager
+    if _rule_manager is None:
+        with _rule_manager_lock:
+            if _rule_manager is None:
+                _rule_manager = RuleManager()
+    return _rule_manager
+
+
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://root:root@127.0.0.1:37018/")
 DB_NAME = "quant_data"
 SRC_COLLECTION = "stock_universe"
@@ -73,14 +99,15 @@ config = Config()
 config.browser_user_agent = user_agent
 ARTICLE_REQUEST_TIMEOUT = int(os.getenv("ARTICLE_REQUEST_TIMEOUT", "6"))
 config.request_timeout = ARTICLE_REQUEST_TIMEOUT
+config.language = "en"
 
-# 并行抓取阶段总超时（秒）：防止少数 parse 卡死拖住整批
-FETCH_BATCH_TIMEOUT = int(os.getenv("FETCH_BATCH_TIMEOUT", "900"))
 FETCH_WORKERS = int(os.getenv("FETCH_WORKERS", "3"))
-FETCH_TASK_TIMEOUT = int(os.getenv("FETCH_TASK_TIMEOUT", "45"))
+PARSE_WORKERS = int(os.getenv("PARSE_WORKERS", "2"))
+FETCH_TASK_TIMEOUT = int(os.getenv("FETCH_TASK_TIMEOUT", "20"))
+PARSE_POOL_MAX_TASKS_PER_CHILD = int(os.getenv("PARSE_POOL_MAX_TASKS_PER_CHILD", "100"))
 SCAN_WORKERS = int(os.getenv("SCAN_WORKERS", "2"))
 SCAN_PROGRESS_EVERY_FILES = int(os.getenv("SCAN_PROGRESS_EVERY_FILES", "100"))
-SCAN_RULE_PROGRESS_EVERY_RECORDS = int(os.getenv("SCAN_RULE_PROGRESS_EVERY_RECORDS", "500"))
+SCAN_RULE_PROGRESS_EVERY_RECORDS = int(os.getenv("SCAN_RULE_PROGRESS_EVERY_RECORDS", "0"))
 STUCK_URLS_FILE = os.path.join(CACHE_DIR, "stuck_urls.txt")
 
 # 调试开关：只控制日志，不影响业务逻辑
@@ -152,6 +179,279 @@ def get_mysql_conn():
         database=MYSQL_DATABASE,
         autocommit=False,
     )
+
+
+def _build_article_base_data(row, company):
+    return {
+        "symbol": company["symbol"],
+        "name": company["name"],
+        "date": row.get("Date", ""),
+        "timestamp": row.get("Timestamp", ""),
+        "publishedAt": row.get("PublishedAt", None),
+        "url": str(row["URL"]),
+        "source": {"platform": "gdelt"},
+        "collectedAt": datetime.now(timezone.utc).isoformat(),
+        "missing_fields": [],
+        "data_quality": "url_only",
+    }
+
+
+def _normalize_publish_date(base_data, publish_date):
+    if not publish_date:
+        return
+    try:
+        article_publish_date = publish_date.strftime("%Y%m%d%H%M%S")
+        if len(article_publish_date) == 14 and article_publish_date.isdigit():
+            time_part = article_publish_date[8:]
+            if time_part != "000000":
+                base_data["date"] = article_publish_date
+                base_data["timestamp"] = article_publish_date
+                base_data["publishedAt"] = publish_date.isoformat()
+    except Exception:
+        pass
+
+
+def _is_junk_page(title, content):
+    junk_indicators = [
+        "necessary cookies", "functional cookies", "analytical cookies",
+        "confirm you are a human", "not a bot", "captcha test",
+        "page was not found", "404 not found", "access denied",
+        "pilihan situs bandar", "togel online", "slot gacor", "toto macau",
+        "before you continue to youtube", "before you continue to google",
+    ]
+    content_lower = (content or "").lower()
+    title_lower = (title or "").lower()
+    return any(indicator in content_lower for indicator in junk_indicators) or any(
+        indicator in title_lower
+        for indicator in ["before you continue to youtube", "before you continue to google"]
+    )
+
+
+def _finalize_article_result(base_data, title_candidate, content, note=None):
+    final_title = (title_candidate or "").strip() or "No Title"
+    is_placeholder = final_title.lower().startswith("news about ")
+    content = (content or "").strip()
+    symbol = base_data["symbol"]
+    article_for_rules = {
+        "title": final_title,
+        "content": content,
+        "date": base_data.get("date", ""),
+        "url": base_data["url"],
+    }
+
+    if _is_junk_page(final_title, content):
+        return None
+
+    rule_manager = get_rule_manager()
+
+    if len(content) >= 60:
+        if not rule_manager.should_include(symbol, article_for_rules):
+            return None
+        base_data.update({
+            "title": final_title,
+            "content": content,
+            "data_quality": "full",
+            "content_length": len(content),
+        })
+        if note:
+            base_data["note"] = note
+        return base_data
+
+    if final_title != "No Title":
+        if is_placeholder:
+            return None
+        article_for_rules["content"] = ""
+        if not rule_manager.should_include(symbol, article_for_rules):
+            return None
+        base_data.update({
+            "title": final_title,
+            "content": "",
+            "data_quality": "title_only",
+            "content_length": 0,
+            "note": note or "Title extracted, content unavailable",
+        })
+        return base_data
+
+    base_data.update({
+        "title": "No Title",
+        "content": "",
+        "content_length": 0,
+        "data_quality": "url_only",
+    })
+    if note:
+        base_data["note"] = note
+    return base_data
+
+
+def _extract_text_with_bs4(html):
+    if not html:
+        return "", ""
+    soup = BeautifulSoup(html, "html.parser")
+    for tag in soup(["script", "style", "noscript", "svg", "iframe", "header", "footer", "nav", "form"]):
+        tag.decompose()
+    title = ""
+    if soup.title and soup.title.string:
+        title = soup.title.string.strip()
+    body = soup.body or soup
+    text = body.get_text("\n", strip=True)
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    return title, "\n".join(lines)
+
+
+def _normalize_lang_hint(value):
+    if not value:
+        return ""
+    value = str(value).strip().lower().replace("_", "-")
+    if "," in value:
+        value = value.split(",", 1)[0].strip()
+    if ";" in value:
+        value = value.split(";", 1)[0].strip()
+    return value
+
+
+def _extract_html_language_hints(html):
+    if not html:
+        return []
+    hints = []
+    try:
+        soup = BeautifulSoup(html, "html.parser")
+        html_tag = soup.find("html")
+        if html_tag:
+            hints.extend(
+                [
+                    html_tag.get("lang"),
+                    html_tag.get("xml:lang"),
+                ]
+            )
+        for meta in soup.find_all("meta"):
+            hints.extend(
+                [
+                    meta.get("lang"),
+                    meta.get("content-language"),
+                ]
+            )
+            http_equiv = (meta.get("http-equiv") or "").strip().lower()
+            if http_equiv == "content-language":
+                hints.append(meta.get("content"))
+    except Exception:
+        return []
+    normalized = []
+    for hint in hints:
+        norm = _normalize_lang_hint(hint)
+        if norm:
+            normalized.append(norm)
+    return normalized
+
+
+def _is_english_hint(lang_hint):
+    return bool(lang_hint) and lang_hint.startswith("en")
+
+
+def _looks_like_english_text(text):
+    if not text:
+        return False
+    sample = text[:4000]
+    letters = [ch for ch in sample if ch.isalpha()]
+    if letters:
+        ascii_ratio = sum(("a" <= ch.lower() <= "z") for ch in letters) / len(letters)
+        if ascii_ratio < 0.85:
+            return False
+    words = re.findall(r"[a-z']+", sample.lower())
+    if len(words) < 20:
+        return True
+    english_markers = {
+        "the", "and", "for", "with", "from", "that", "this", "will", "said",
+        "have", "has", "was", "were", "are", "is", "be", "as", "at", "by",
+        "on", "of", "to", "in", "after", "before", "about", "into", "over",
+    }
+    marker_hits = sum(word in english_markers for word in words[:200])
+    return (marker_hits / min(len(words), 200)) >= 0.04
+
+
+def _should_keep_english_only(html="", title="", content=""):
+    lang_hints = _extract_html_language_hints(html) if html else []
+    if lang_hints and not any(_is_english_hint(hint) for hint in lang_hints):
+        return False
+    text_sample = "\n".join(part for part in [title, content] if part).strip()
+    if not text_sample:
+        return not lang_hints or any(_is_english_hint(hint) for hint in lang_hints)
+    return _looks_like_english_text(text_sample)
+
+
+def _fetch_html_with_requests(url):
+    resp = requests.get(
+        url,
+        headers={"User-Agent": user_agent},
+        timeout=ARTICLE_REQUEST_TIMEOUT,
+    )
+    resp.raise_for_status()
+    return resp.text
+
+
+def _extract_article_payload(row, company, debug_trace=False):
+    url = str(row["URL"])
+    title = row.get("Title", "")
+    base_data = _build_article_base_data(row, company)
+    task_id = f"{company['symbol']}|{url}"
+    t0 = time.time()
+
+    try:
+        if debug_trace:
+            print(f"🧭 TASK START {task_id}")
+        art = Article(url, config=config)
+        html = _fetch_html_with_requests(url)
+        if not _should_keep_english_only(html=html, title=title, content=""):
+            return None
+        art.set_html(html)
+        if debug_trace:
+            print(f"🧭 TASK {task_id} -> download done {time.time() - t0:.2f}s")
+        art.parse()
+        _normalize_publish_date(base_data, art.publish_date)
+        final_title = (art.title or "").strip() or title
+        if not _should_keep_english_only(html=html, title=final_title, content=art.text):
+            return None
+        result = _finalize_article_result(
+            base_data,
+            final_title,
+            art.text,
+            note=None,
+        )
+        if result:
+            return result
+
+        # 规则或垃圾页过滤掉的内容直接丢弃，不再 fallback
+        return None
+    except Exception as err:
+        try:
+            html = ""
+            if "art" in locals() and getattr(art, "html", None):
+                html = art.html
+            if not html:
+                html = _fetch_html_with_requests(url)
+            fallback_title, fallback_content = _extract_text_with_bs4(html)
+            if not _should_keep_english_only(html=html, title=fallback_title or title, content=fallback_content):
+                return None
+            return _finalize_article_result(
+                base_data,
+                fallback_title or title,
+                fallback_content,
+                note=f"bs4_fallback_after_{type(err).__name__}",
+            )
+        except Exception:
+            if title:
+                return _finalize_article_result(
+                    base_data,
+                    title,
+                    "",
+                    note=f"Content extraction failed after {type(err).__name__}",
+                )
+            return None
+        finally:
+            if debug_trace:
+                print(
+                    f"🧭 TASK END {task_id} total={time.time() - t0:.2f}s "
+                    f"fallback_from={type(err).__name__}"
+                )
 
 
 def ensure_task_table():
@@ -624,6 +924,21 @@ def strip_urls_and_xml(text):
     return text.strip()
 
 
+def read_gkg_tsv(file_obj):
+    """使用 pandas Python engine 读取 GKG，绕开多线程下不稳定的 C parser。"""
+    return pd.read_csv(
+        file_obj,
+        sep="\t",
+        header=None,
+        encoding="ISO-8859-1",
+        on_bad_lines="skip",
+        engine="python",
+        dtype=str,
+        keep_default_na=False,
+        quoting=csv.QUOTE_NONE,
+    )
+
+
 # 全局去重，防止同一个 URL 在一次运行中被多次分析
 processed_urls = set()
 
@@ -641,7 +956,7 @@ def process_single_file(url, companies, rule_manager, avg_date):
     try:
         with zipfile.ZipFile(cache_path) as z:
             with z.open(z.namelist()[0]) as f:
-                df = pd.read_csv(f, sep="\t", header=None, encoding="ISO-8859-1", on_bad_lines="skip")
+                df = read_gkg_tsv(f)
         
         if df.empty:
             return []
@@ -693,6 +1008,7 @@ def process_single_file(url, companies, rule_manager, avg_date):
 def process_batch_files(batch_urls, companies, worker_name=None):
     """并行处理一批 GKG 文件并高效匹配所有公司"""
     import numpy as np
+    rule_manager = get_rule_manager()
     
     # 1. 计算平均日期用于获取动态关键词
     batch_dates = []
@@ -761,7 +1077,7 @@ def process_batch_files(batch_urls, companies, worker_name=None):
             t_start = time.time()
             with zipfile.ZipFile(cache_path) as z:
                 with z.open(z.namelist()[0]) as f:
-                    df = pd.read_csv(f, sep="\t", header=None, encoding="ISO-8859-1", on_bad_lines="skip")
+                    df = read_gkg_tsv(f)
             t_parse = time.time()
 
             if df.empty:
@@ -852,24 +1168,24 @@ def process_batch_files(batch_urls, companies, worker_name=None):
                     progress["rules_processed"] += 1
                     rp = progress["rules_processed"]
                     rt = progress["rules_total_discovered"]
-                    if rp % SCAN_RULE_PROGRESS_EVERY_RECORDS == 0:
+                    if SCAN_RULE_PROGRESS_EVERY_RECORDS > 0 and rp % SCAN_RULE_PROGRESS_EVERY_RECORDS == 0:
                         worker = worker_name or threading.current_thread().name
                         print(f"[{worker}] 🧪 Rule check progress: {rp} records processed")
             t_rules = time.time()
             total_time = t_rules - t_start
-            # 慢文件 (>2s) 打印详细耗时分解
-            if total_time > 2.0:
-                print(
-                    f"🐢 Slow file {filename}: {total_time:.1f}s total "
-                    f"(parse={t_parse-t_start:.2f}s, combine={t_combine-t_parse:.2f}s, "
-                    f"regex={t_regex-t_combine:.2f}s, rules={t_rules-t_regex:.2f}s) "
-                    f"rows={len(df)}, candidates={len(matched_df)}, accepted={len(file_matches)}"
-                )
             return {
                 "matches": file_matches,
                 "rows": len(df),
                 "candidates": len(matched_df),
                 "sample": sample_text,
+                "filename": filename,
+                "timings": {
+                    "total": total_time,
+                    "parse": t_parse - t_start,
+                    "combine": t_combine - t_parse,
+                    "regex": t_regex - t_combine,
+                    "rules": t_rules - t_regex,
+                },
             }
         except Exception as e:
             print(f"❌ Error processing {filename}: {e}")
@@ -879,6 +1195,7 @@ def process_batch_files(batch_urls, companies, worker_name=None):
                 "candidates": 0,
                 "sample": "",
                 "error": str(e),
+                "filename": filename,
             }
 
     prefix = f"{worker_name}-scan" if worker_name else f"{threading.current_thread().name}-scan"
@@ -900,10 +1217,15 @@ def process_batch_files(batch_urls, companies, worker_name=None):
                 if done == 1 or done % SCAN_FILE_PROGRESS_INTERVAL == 0 or done == total_files:
                     elapsed = time.time() - scan_start_time
                     rate = done / elapsed if elapsed > 0 else 0
+                    timings = res.get("timings", {})
+                    file_name = res.get("filename", "?")
                     print(
                         f"[{worker}] 🔍 Scan progress: {done}/{total_files} files "
                         f"({elapsed:.1f}s, {rate:.1f} files/s), "
-                        f"rows={progress['rows_scanned']}, candidates={progress['candidates']}, accepted={progress['accepted']}"
+                        f"rows={progress['rows_scanned']}, candidates={progress['candidates']}, accepted={progress['accepted']} | "
+                        f"last={file_name} total={timings.get('total', 0):.1f}s "
+                        f"(parse={timings.get('parse', 0):.2f}s, combine={timings.get('combine', 0):.2f}s, "
+                        f"regex={timings.get('regex', 0):.2f}s, rules={timings.get('rules', 0):.2f}s)"
                     )
 
     # 去重
@@ -934,182 +1256,23 @@ def process_batch_files(batch_urls, companies, worker_name=None):
 # 抓取新闻正文
 # ============================
 def fetch_article(row, company):
-    """
-    抓取新闻正文，采用分级保存策略：
-    - 优先级1：完整正文 (data_quality: "full")
-    - 优先级2：低价值 (data_quality: "low_value") - 有标题没正文
-    - 优先级3：仅URL (data_quality: "url_only")
-    """
-    url = str(row["URL"])
-    title = row.get("Title", "")
-    date = row.get("Date", "")  # YYYYMMDD 格式
-    timestamp = row.get("Timestamp", "")  # YYYYMMDDHHMMSS 格式
-    published_at = row.get("PublishedAt", None)  # ISO 8601 格式
-    symbol = company["symbol"]
-    company_name = company["name"]
-    task_id = f"{symbol}|{url}"
-    t0 = time.time()
-    if DEBUG_TASK_TRACE:
-        print(f"🧭 TASK START {task_id}")
-    
-    # 基础数据结构
-    base_data = {
-        "symbol": symbol,
-        "name": company_name,
-        "date": date,  # YYYYMMDD (保留用于兼容)
-        "timestamp": timestamp,  # YYYYMMDDHHMMSS (完整时间戳)
-        "publishedAt": published_at,  # ISO 8601 格式 (便于查询)
-        "url": url,
-        "source": {"platform": "gdelt"},
-        "collectedAt": datetime.now(timezone.utc).isoformat(),
-        "missing_fields": [],
-        "data_quality": "url_only"
-    }
-    
-    try:
-        if DEBUG_TASK_TRACE:
-            t_dl = time.time()
-            print(f"🧭 TASK {task_id} -> download start")
-        art = Article(url, config=config)
-        art.download()
-        if DEBUG_TASK_TRACE:
-            print(f"🧭 TASK {task_id} -> download done {time.time()-t_dl:.2f}s")
-        if DEBUG_TASK_TRACE:
-            t_ps = time.time()
-            print(f"🧭 TASK {task_id} -> parse start")
-        art.parse()
-        if DEBUG_TASK_TRACE:
-            print(f"🧭 TASK {task_id} -> parse done {time.time()-t_ps:.2f}s")
-        
-        # 尝试从文章中提取真实发布时间
-        if art.publish_date:
-            try:
-                # newspaper3k 提取的发布时间（datetime 对象）
-                article_publish_date = art.publish_date.strftime("%Y%m%d%H%M%S")
-                # 确保是 14 位且时分秒不是 000000
-                if len(article_publish_date) == 14 and article_publish_date.isdigit():
-                    # 检查时分秒是否为 000000（只有日期没有时间）
-                    time_part = article_publish_date[8:]  # 提取 HHMMSS
-                    if time_part != "000000":
-                        # 只有当有具体时间时才更新
-                        base_data["date"] = article_publish_date
-                        base_data["timestamp"] = article_publish_date
-                        base_data["publishedAt"] = art.publish_date.isoformat()
-                    # 否则保留 GDELT 文件名的精确时间戳
-            except:
-                pass  # 转换失败则保持使用 GDELT 时间（已经是14位）
-        
-        fetched_title = art.title.strip()
-        final_title = fetched_title or title or "No Title"
-        
-        # 精准识别 GDELT 占位符标题 (如 "News about Adobe")
-        is_placeholder = final_title.lower().startswith("news about ")
-        
-        # 垃圾页面检测 (检测常用的 Bot/Cookie 屏蔽页)
-        content = art.text.strip()
-        junk_indicators = [
-            "necessary cookies", "functional cookies", "analytical cookies",
-            "confirm you are a human", "not a bot", "captcha test",
-            "page was not found", "404 not found", "access denied",
-            "pilihan situs bandar", "togel online", "slot gacor", "toto macau",
-            "before you continue to youtube", "before you continue to google"
-        ]
-        content_lower = content.lower()
-        title_lower = final_title.lower()
-        if any(indicator in content_lower for indicator in junk_indicators) or \
-           any(indicator in title_lower for indicator in ["before you continue to youtube", "before you continue to google"]):
-            return None
+    return _extract_article_payload(row, company, debug_trace=DEBUG_TASK_TRACE)
 
-        
-        if len(content) >= 60:
-            # 优先级 1: 完整正文 (质量: full)
-            test_article_data = {
-                "title": final_title,
-                "content": content,
-                "date": date,
-                "url": url,
-            }
-            if DEBUG_TASK_TRACE:
-                t_rule = time.time()
-                print(f"🧭 TASK {task_id} -> rule_check(full) start")
-            if not rule_manager.should_include(symbol, test_article_data):
-                return None # 被规则引擎拦截的噪音
-            if DEBUG_TASK_TRACE:
-                print(f"🧭 TASK {task_id} -> rule_check(full) done {time.time()-t_rule:.2f}s")
-            
-            base_data.update({
-                "title": final_title,
-                "content": content,
-                "data_quality": "full",
-                "content_length": len(content)
-            })
-        elif final_title and final_title != "No Title":
-            # 优先级 2: 只有标题
-            # 如果是占位符且没正文 -> 视为垃圾，丢弃
-            if is_placeholder:
-                return None 
-            
-            # 只有标题没有正文的文章，也需要通过规则检查
-            test_article_data = {
-                "title": final_title,
-                "content": "",
-                "date": date,
-                "url": url,
-            }
-            if DEBUG_TASK_TRACE:
-                t_rule = time.time()
-                print(f"🧭 TASK {task_id} -> rule_check(title_only) start")
-            if not rule_manager.should_include(symbol, test_article_data):
-                return None  # 被规则引擎拦截（如 "Beauty intel" 没有 Intel 关键词）
-            if DEBUG_TASK_TRACE:
-                print(f"🧭 TASK {task_id} -> rule_check(title_only) done {time.time()-t_rule:.2f}s")
-            
-            # ✅ 保留只有标题的文章
-            base_data.update({
-                "title": final_title,
-                "content": "",
-                "data_quality": "title_only",
-                "content_length": 0,
-                "note": "Title extracted, content unavailable"
-            })
-        else:
-            # 连标题都没有 -> 仅存 URL (url_only)
-            base_data.update({"title": "No Title", "data_quality": "url_only"})
-        if DEBUG_TASK_TRACE:
-            print(f"🧭 TASK END {task_id} total={time.time()-t0:.2f}s quality={base_data.get('data_quality')}")
-        return base_data
-        
-    except Exception as e:
-        # 抓取彻底失败时的回退逻辑
-        if title:
-            is_placeholder = title.lower().startswith("news about ")
-            if is_placeholder:
-                return None # 抓取失败且标题是占位符，直接放弃
-            
-            # 即使抓取失败，也要通过规则检查
-            test_article_data = {
-                "title": title,
-                "content": "",
-                "date": date,
-                "url": url,
-            }
-            if not rule_manager.should_include(symbol, test_article_data):
-                return None  # 被规则引擎拦截
-            
-            # ✅ 抓取失败但有标题，保留为 title_only
-            base_data.update({
-                "title": title,
-                "content": "",
-                "data_quality": "title_only",
-                "content_length": 0,
-                "note": "Content extraction failed"
-            })
-            if DEBUG_TASK_TRACE:
-                print(f"🧭 TASK END {task_id} total={time.time()-t0:.2f}s quality=title_only(fallback)")
-            return base_data
-        if DEBUG_TASK_TRACE:
-            print(f"🧭 TASK END {task_id} total={time.time()-t0:.2f}s quality=None err={type(e).__name__}")
-        return None
+
+def build_title_only_fallback(row, company, note):
+    base_data = _build_article_base_data(row, company)
+    title = row.get("Title", "")
+    return _finalize_article_result(base_data, title, "", note=note)
+
+
+def build_parse_executor():
+    kwargs = {
+        "max_workers": PARSE_WORKERS,
+        "mp_context": multiprocessing.get_context("spawn"),
+    }
+    if sys.version_info >= (3, 11):
+        kwargs["max_tasks_per_child"] = PARSE_POOL_MAX_TASKS_PER_CHILD
+    return ProcessPoolExecutor(**kwargs)
 
 
 def process_one_batch(
@@ -1122,8 +1285,9 @@ def process_one_batch(
     stuck_urls_lock,
 ):
     worker = threading.current_thread().name
+    log_prefix = f"[{worker}][batch-{batch_idx}]"
     def wlog(msg):
-        print(f"[{worker}] {msg}")
+        print(f"{log_prefix} {msg}")
 
     wlog(f"🚀 Processing File Batch {batch_idx}/{total_batches}...")
 
@@ -1161,16 +1325,35 @@ def process_one_batch(
         wlog("⚠️ Skip fetch stage because shutdown is in progress")
         return 0
 
-    # 并行抓取正文
+    # 正文抓取放到子进程池，避免 lxml/newspaper3k native crash 直接打死主进程。
     final_results = []
-    executor = ThreadPoolExecutor(max_workers=FETCH_WORKERS, thread_name_prefix=f"{worker}-fetch")
+    executor = build_parse_executor()
     timed_out = False
+    pool_broken = False
+    fetch_stage_start = time.time()
     try:
         matches_iter = iter(matches)
         future_to_meta = {}
+        future_to_match = {}
         future_start_ts = {}
         pending = set()
         timed_out_urls = []
+        total_task_elapsed = 0.0
+        total_task_count = 0
+        total_timeout_count = 0
+
+        def log_fetch_progress():
+            elapsed = time.time() - fetch_stage_start
+            rate = completed / elapsed if elapsed > 0 else 0
+            avg_task = (total_task_elapsed / total_task_count) if total_task_count > 0 else 0
+            remaining = max(len(matches) - completed, 0)
+            eta_seconds = (remaining / rate) if rate > 0 else 0
+            eta_minutes = eta_seconds / 60 if eta_seconds > 0 else 0
+            wlog(
+                f"⏳ {completed}/{len(matches)} articles processed in parallel pool... "
+                f"(elapsed={elapsed:.1f}s, rate={rate:.2f}/s, avg_task={avg_task:.2f}s, "
+                f"pending={len(pending)}, timeouts={total_timeout_count}, eta={eta_minutes:.1f}m)"
+            )
 
         def submit_next_task():
             try:
@@ -1179,6 +1362,7 @@ def process_one_batch(
                 return False
             fut = executor.submit(fetch_article, m["row"], m["company"])
             future_to_meta[fut] = f"{m['company']['symbol']}|{m['row']['URL']}"
+            future_to_match[fut] = m
             future_start_ts[fut] = time.time()
             pending.add(fut)
             return True
@@ -1189,7 +1373,6 @@ def process_one_batch(
 
         completed = 0
         last_heartbeat = time.time()
-        batch_start_ts = time.time()
         while pending:
             done_now, _ = concurrent.futures.wait(
                 pending, timeout=1, return_when=concurrent.futures.FIRST_COMPLETED
@@ -1201,22 +1384,53 @@ def process_one_batch(
                     res = future.result()
                     if res:
                         final_results.append(res)
-                        if len(final_results) <= 3:
-                            wlog(
-                                f"    🐛 DEBUG: Got result with quality={res.get('data_quality')}, title={res.get('title', '')[:50]}"
-                            )
+                except BrokenProcessPool as e:
+                    pool_broken = True
+                    timed_out = True
+                    meta = future_to_meta.get(future, "unknown")
+                    wlog(f"⚠️ Parse pool crashed on {meta}: {e}")
+                    fallback_match = future_to_match.get(future)
+                    if fallback_match:
+                        fallback = build_title_only_fallback(
+                            fallback_match["row"],
+                            fallback_match["company"],
+                            note="process_pool_crash_fallback",
+                        )
+                        if fallback:
+                            final_results.append(fallback)
+                    remaining_matches = [future_to_match.get(pf) for pf in list(pending)]
+                    for pending_match in remaining_matches:
+                        if not pending_match:
+                            continue
+                        fallback = build_title_only_fallback(
+                            pending_match["row"],
+                            pending_match["company"],
+                            note="process_pool_crash_fallback",
+                        )
+                        if fallback:
+                            final_results.append(fallback)
+                    pending.clear()
                 except Exception as e:
                     if DEBUG_TASK_TRACE:
                         meta = future_to_meta.get(future, "unknown")
                         wlog(f"⚠️ FUTURE ERROR {meta}: {type(e).__name__}: {e}")
                 finally:
+                    task_started_at = future_start_ts.get(future)
+                    if task_started_at is not None:
+                        total_task_elapsed += max(time.time() - task_started_at, 0)
+                        total_task_count += 1
                     future_to_meta.pop(future, None)
+                    future_to_match.pop(future, None)
                     future_start_ts.pop(future, None)
                     completed += 1
-                    if completed % 200 == 0 or completed == len(matches):
-                        wlog(f"⏳ {completed}/{len(matches)} articles processed in parallel pool...")
-                    if not SHUTDOWN_EVENT.is_set():
+                    if completed % 10 == 0 or completed == len(matches):
+                        log_fetch_progress()
+                    if not SHUTDOWN_EVENT.is_set() and not pool_broken:
                         submit_next_task()
+
+            if pool_broken:
+                completed = len(matches)
+                break
 
             # 单 URL 超时：只跳过卡住任务，不终止整批
             now = time.time()
@@ -1226,42 +1440,39 @@ def process_one_batch(
             ]
             if stale:
                 timed_out = True
+                total_timeout_count += len(stale)
                 stale_metas = [future_to_meta.get(sf, "unknown") for sf in stale]
                 for sf in stale:
+                    task_started_at = future_start_ts.get(sf)
+                    if task_started_at is not None:
+                        total_task_elapsed += max(now - task_started_at, 0)
+                        total_task_count += 1
                     pending.discard(sf)
                     sf.cancel()
                     meta = future_to_meta.get(sf, "")
                     if "|" in meta:
                         timed_out_urls.append(meta.split("|", 1)[1])
                     future_to_meta.pop(sf, None)
+                    pending_match = future_to_match.pop(sf, None)
+                    if pending_match:
+                        fallback = build_title_only_fallback(
+                            pending_match["row"],
+                            pending_match["company"],
+                            note=f"fetch_timeout_{FETCH_TASK_TIMEOUT}s_fallback",
+                        )
+                        if fallback:
+                            final_results.append(fallback)
                     future_start_ts.pop(sf, None)
                 for meta in stale_metas[:10]:
                     wlog(f"   • stuck: {meta}")
                 wlog(f"⚠️ FETCH TASK TIMEOUT ({FETCH_TASK_TIMEOUT}s): skipped {len(stale)} stuck URLs in this round.")
                 completed += len(stale)
-                if completed % 200 == 0 or completed == len(matches):
-                    wlog(f"⏳ {completed}/{len(matches)} articles processed in parallel pool...")
+                if completed % 10 == 0 or completed == len(matches):
+                    log_fetch_progress()
                 if not SHUTDOWN_EVENT.is_set():
                     for _ in stale:
                         if not submit_next_task():
                             break
-
-            # 可选硬上限：防止极端情况下循环无限挂起
-            if FETCH_BATCH_TIMEOUT > 0 and (now - batch_start_ts) > FETCH_BATCH_TIMEOUT:
-                timed_out = True
-                if pending:
-                    wlog(f"⚠️ FETCH BATCH HARD TIMEOUT ({FETCH_BATCH_TIMEOUT}s): force skipping remaining {len(pending)} URLs.")
-                    for pf in list(pending)[:10]:
-                        wlog(f"   • stuck: {future_to_meta.get(pf, 'unknown')}")
-                    for pf in list(pending):
-                        pf.cancel()
-                        meta = future_to_meta.get(pf, "")
-                        if "|" in meta:
-                            timed_out_urls.append(meta.split("|", 1)[1])
-                        future_to_meta.pop(pf, None)
-                        future_start_ts.pop(pf, None)
-                    completed += len(pending)
-                    pending.clear()
 
             if DEBUG_TASK_TRACE and time.time() - last_heartbeat >= 30:
                 wlog(f"💓 HEARTBEAT done={completed}/{len(matches)} pending={len(pending)}")
@@ -1286,36 +1497,57 @@ def process_one_batch(
     # D. 入库
     inserted_count = 0
     if results:
-        company_insert_counts = {}
-        quality_stats = {"full": 0, "low_value": 0, "url_only": 0}
+        quality_rank = {"full": 3, "title_only": 2, "url_only": 1}
+        quality_stats = {"full": 0, "title_only": 0, "url_only": 0}
+        deduped_results = {}
         for art in results:
+            quality = art.get("data_quality", "unknown")
+            quality_stats[quality] = quality_stats.get(quality, 0) + 1
+            url = art.get("url")
+            if not url:
+                continue
+            existing = deduped_results.get(url)
+            if existing is None:
+                deduped_results[url] = art
+                continue
+            existing_rank = quality_rank.get(existing.get("data_quality", "url_only"), 0)
+            current_rank = quality_rank.get(art.get("data_quality", "url_only"), 0)
+            if current_rank > existing_rank:
+                deduped_results[url] = art
+
+        bulk_start = time.time()
+        ops = [
+            UpdateOne(
+                {"url": art["url"]},
+                {"$setOnInsert": art},
+                upsert=True,
+            )
+            for art in deduped_results.values()
+        ]
+        if ops:
             try:
-                quality = art.get("data_quality", "unknown")
-                quality_stats[quality] = quality_stats.get(quality, 0) + 1
+                bulk_result = dst_col.bulk_write(ops, ordered=False)
+                inserted_count = int(getattr(bulk_result, "upserted_count", 0) or 0)
+            except errors.BulkWriteError as e:
+                details = getattr(e, "details", {}) or {}
+                inserted_count = int(details.get("nUpserted", 0) or 0)
+                write_errors = details.get("writeErrors", [])
+                non_dup_errors = [we for we in write_errors if we.get("code") != 11000]
+                if non_dup_errors:
+                    wlog(f"⚠️ Bulk write had {len(non_dup_errors)} non-duplicate errors")
+            except Exception as e:
+                wlog(f"⚠️ Bulk write failed: {type(e).__name__}: {e}")
+        bulk_elapsed = time.time() - bulk_start
 
-                result = dst_col.update_one(
-                    {"url": art["url"]},
-                    {"$setOnInsert": art},
-                    upsert=True,
-                )
-                if result.upserted_id or result.modified_count > 0:
-                    inserted_count += 1
-                    symbol = art.get("symbol", "UNKNOWN")
-                    company_insert_counts[symbol] = company_insert_counts.get(symbol, 0) + 1
-            except Exception:
-                pass
-
-        wlog(f"💾 Batch saved: {inserted_count}/{len(results)} new articles")
+        wlog(
+            f"💾 Batch saved: {inserted_count}/{len(deduped_results)} new articles "
+            f"(bulk_upsert_time={bulk_elapsed:.2f}s, raw_results={len(results)})"
+        )
         wlog("📊 Data Quality Distribution:")
         total_res = len(results)
         wlog(f"  • Full (Content matched): {quality_stats.get('full', 0)} ({quality_stats.get('full', 0)/total_res*100:.1f}%)")
-        wlog(f"  • Low Value (Title only): {quality_stats.get('low_value', 0)} ({quality_stats.get('low_value', 0)/total_res*100:.1f}%)")
+        wlog(f"  • Title Only: {quality_stats.get('title_only', 0)} ({quality_stats.get('title_only', 0)/total_res*100:.1f}%)")
         wlog(f"  • URL Only/Unknown: {quality_stats.get('url_only', 0)} ({quality_stats.get('url_only', 0)/total_res*100:.1f}%)")
-        if company_insert_counts:
-            wlog("📌 Inserted by company:")
-            sorted_inserts = sorted(company_insert_counts.items(), key=lambda x: x[1], reverse=True)
-            for symbol, count in sorted_inserts:
-                wlog(f"  • {symbol}: {count} articles")
 
     return inserted_count
 
@@ -1338,7 +1570,8 @@ if __name__ == "__main__":
     print(f"🕒 Running OPTIMIZED GDELT extraction - Mode: {mode_str}\n")
     print(
         f"⚙️ Runtime config: scan_workers={SCAN_WORKERS}, fetch_workers={FETCH_WORKERS}, "
-        f"article_timeout={ARTICLE_REQUEST_TIMEOUT}s, batch_timeout={FETCH_BATCH_TIMEOUT}s"
+        f"parse_workers={PARSE_WORKERS}, article_timeout={ARTICLE_REQUEST_TIMEOUT}s, "
+        f"fetch_task_timeout={FETCH_TASK_TIMEOUT}s"
     )
 
     ensure_index()
@@ -1399,6 +1632,7 @@ if __name__ == "__main__":
                 batch_idx = claim_next_batch(owner)
                 if batch_idx is None:
                     break
+                WORKER_BATCH_CONTEXT[worker_name] = batch_idx
                 i = (batch_idx - 1) * BATCH_SIZE
                 batch_urls = urls[i : i + BATCH_SIZE]
                 heartbeat_stop = threading.Event()
@@ -1454,6 +1688,7 @@ if __name__ == "__main__":
                 finally:
                     heartbeat_stop.set()
                     heartbeat_thread.join(timeout=1)
+                    WORKER_BATCH_CONTEXT.pop(worker_name, None)
             print("✅ finished.")
 
         workers = []

@@ -1,94 +1,250 @@
-# quant_data/scheduler/tasks.py
+#!/usr/bin/env python3
+"""Scheduler for daily news collection, optional backfill, and feature builds."""
 
-import os
-import time
+from __future__ import annotations
+
 import logging
+import os
+import subprocess
+import sys
+import threading
+import time
 from pathlib import Path
+from urllib.parse import urlparse, urlunparse
 
 import schedule
 from dotenv import load_dotenv
-from pymongo import MongoClient
 
-# 加载环境变量
+
 ROOT = Path(__file__).resolve().parents[1]
 ENV_FILE = ROOT / ".env"
 load_dotenv(ENV_FILE)
-MONGO_URI = os.getenv("MONGO_URI")
-if not MONGO_URI:
-    raise RuntimeError("MONGO_URI not set")
 
-# 导入你的 collectors
-from news_collectors.finnhub.collector import fetch_finnhub
-from news_collectors.newsapi.collector import fetch_news
-from news_collectors.yahoo.collector import fetch_yahoo_news
+PYTHON_BIN = sys.executable
+LOG_FILE = ROOT / "pipeline_scheduler.log"
+LOCAL_MONGO_URI = os.getenv("LOCAL_MONGO_URI", "mongodb://root:root@127.0.0.1:37018/")
 
-# 设置日志
-LOG_FILE = ROOT / "news_collect_scheduler.log"
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
-    handlers=[
-        logging.FileHandler(LOG_FILE),
-        logging.StreamHandler()
-    ]
+    handlers=[logging.FileHandler(LOG_FILE), logging.StreamHandler()],
 )
 
-# deduper
-class Deduper:
-    def __init__(self, mongo_uri):
-        client = MongoClient(mongo_uri)
-        self.col = client["quant_data"]["news_articles"]
-        self.col.create_index({"url": 1}, unique=True, sparse=True)
+JOB_LOCKS: dict[str, threading.Lock] = {}
+MANAGED_PROCESSES: dict[str, subprocess.Popen] = {}
 
-    def save_articles(self, articles):
-        inserted = 0
-        for a in articles:
-            try:
-                self.col.insert_one(a)
-                inserted += 1
-            except Exception:
-                pass
-        return inserted
 
-deduper = Deduper(MONGO_URI)
+def env_bool(name: str, default: str = "false") -> bool:
+    return os.getenv(name, default).lower() == "true"
 
-def job_finnhub():
-    logging.info("Start Finnhub job")
+
+def env_int(name: str, default: int) -> int:
+    return int(os.getenv(name, str(default)))
+
+
+def get_lock(job_name: str) -> threading.Lock:
+    if job_name not in JOB_LOCKS:
+        JOB_LOCKS[job_name] = threading.Lock()
+    return JOB_LOCKS[job_name]
+
+
+def effective_mongo_uri() -> str | None:
+    uri = os.getenv("MONGO_URI")
+    if not uri:
+        return None
+    parsed = urlparse(uri)
+    if parsed.hostname not in {"mongo6", "mongo", "mongodb"}:
+        return uri
+    fallback = urlparse(LOCAL_MONGO_URI)
+    return urlunparse(
+        (
+            parsed.scheme or fallback.scheme,
+            fallback.netloc,
+            parsed.path or fallback.path,
+            parsed.params,
+            parsed.query,
+            parsed.fragment,
+        )
+    )
+
+
+def run_script_once(job_name: str, relative_path: str, timeout: int | None = None, extra_env: dict | None = None) -> None:
+    lock = get_lock(job_name)
+    if not lock.acquire(blocking=False):
+        logging.info("%s skipped: previous run still in progress", job_name)
+        return
+
+    script_path = ROOT / relative_path
+    env = os.environ.copy()
+    mongo_uri = effective_mongo_uri()
+    if mongo_uri:
+        env["MONGO_URI"] = mongo_uri
+        env.setdefault("LOCAL_MONGO_URI", LOCAL_MONGO_URI)
+    if extra_env:
+        env.update(extra_env)
+
     try:
-        data = fetch_finnhub()
-        n = deduper.save_articles(data)
-        logging.info(f"Finnhub → inserted {n} articles")
-    except Exception as e:
-        logging.exception("Finnhub job failed")
+        logging.info("Start %s -> %s", job_name, relative_path)
+        result = subprocess.run(
+            [PYTHON_BIN, str(script_path)],
+            cwd=ROOT,
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+        if result.stdout.strip():
+            logging.info("%s stdout:\n%s", job_name, result.stdout.strip())
+        if result.stderr.strip():
+            logging.warning("%s stderr:\n%s", job_name, result.stderr.strip())
+        if result.returncode != 0:
+            logging.error("%s failed with exit code %s", job_name, result.returncode)
+        else:
+            logging.info("%s finished successfully", job_name)
+    except subprocess.TimeoutExpired:
+        logging.error("%s timed out after %ss", job_name, timeout)
+    except Exception:
+        logging.exception("%s crashed", job_name)
+    finally:
+        lock.release()
 
-def job_newsapi():
-    logging.info("Start NewsAPI job")
-    try:
-        data = fetch_news()
-        n = deduper.save_articles(data)
-        logging.info(f"NewsAPI → inserted {n} articles")
-    except Exception as e:
-        logging.exception("NewsAPI job failed")
 
-def job_yahoo():
-    logging.info("Start Yahoo job")
-    try:
-        data = fetch_yahoo_news()
-        n = deduper.save_articles(data)
-        logging.info(f"Yahoo → inserted {n} articles")
-    except Exception as e:
-        logging.exception("Yahoo job failed")
+def ensure_long_running(job_name: str, relative_path: str, extra_env: dict | None = None) -> None:
+    proc = MANAGED_PROCESSES.get(job_name)
+    if proc and proc.poll() is None:
+        logging.info("%s already running (pid=%s)", job_name, proc.pid)
+        return
 
-def main_loop():
-    logging.info("=== Scheduler started ===")
-    # 设定频率：可根据实际需求调整
-    schedule.every(10).minutes.do(job_finnhub)
-    schedule.every(30).minutes.do(job_newsapi)
-    schedule.every(60).minutes.do(job_yahoo)
+    script_path = ROOT / relative_path
+    env = os.environ.copy()
+    mongo_uri = effective_mongo_uri()
+    if mongo_uri:
+        env["MONGO_URI"] = mongo_uri
+        env.setdefault("LOCAL_MONGO_URI", LOCAL_MONGO_URI)
+    if extra_env:
+        env.update(extra_env)
+
+    logging.info("Launching %s -> %s", job_name, relative_path)
+    proc = subprocess.Popen(
+        [PYTHON_BIN, str(script_path)],
+        cwd=ROOT,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    MANAGED_PROCESSES[job_name] = proc
+
+
+def poll_managed_processes() -> None:
+    for job_name, proc in list(MANAGED_PROCESSES.items()):
+        if proc.poll() is None:
+            continue
+        output = ""
+        if proc.stdout:
+            output = proc.stdout.read().strip()
+        if output:
+            logging.info("%s output:\n%s", job_name, output)
+        logging.info("%s exited with code %s", job_name, proc.returncode)
+        del MANAGED_PROCESSES[job_name]
+
+
+def configure_schedule() -> None:
+    if env_bool("ENABLE_FINNHUB_JOB", "true"):
+        schedule.every(env_int("FINNHUB_JOB_MINUTES", 30)).minutes.do(
+            run_script_once,
+            "finnhub_news",
+            "news_collectors/finnhub/collector.py",
+            env_int("FINNHUB_JOB_TIMEOUT", 600),
+        )
+
+    if env_bool("ENABLE_NEWSAPI_JOB", "true"):
+        schedule.every(env_int("NEWSAPI_JOB_MINUTES", 60)).minutes.do(
+            run_script_once,
+            "newsapi_news",
+            "news_collectors/newsapi/collector.py",
+            env_int("NEWSAPI_JOB_TIMEOUT", 600),
+        )
+
+    if env_bool("ENABLE_YAHOO_JOB", "true"):
+        schedule.every(env_int("YAHOO_JOB_MINUTES", 60)).minutes.do(
+            run_script_once,
+            "yahoo_news",
+            "news_collectors/yahoo/collector.py",
+            env_int("YAHOO_JOB_TIMEOUT", 600),
+        )
+
+    if env_bool("ENABLE_GDELT_LIVE_JOB", "false"):
+        schedule.every(env_int("GDELT_LIVE_JOB_MINUTES", 120)).minutes.do(
+            run_script_once,
+            "gdelt_live_news",
+            "news_collectors/gdelt/collector.py",
+            env_int("GDELT_LIVE_JOB_TIMEOUT", 1200),
+        )
+
+    if env_bool("ENABLE_DAILY_PRICE_JOB", "true"):
+        schedule.every().day.at(os.getenv("DAILY_PRICE_JOB_TIME", "07:30")).do(
+            run_script_once,
+            "daily_price_quotes",
+            "stock_collector/price_collector/collector.py",
+            env_int("DAILY_PRICE_JOB_TIMEOUT", 1800),
+        )
+
+    if env_bool("ENABLE_DAILY_FEATURE_JOB", "true"):
+        schedule.every().day.at(os.getenv("DAILY_FEATURE_JOB_TIME", "08:00")).do(
+            run_script_once,
+            "daily_symbol_features",
+            "research/daily_symbol_features.py",
+            env_int("DAILY_FEATURE_JOB_TIMEOUT", 7200),
+        )
+
+    if env_bool("ENABLE_GDELT_BACKFILL_JOB", "false"):
+        schedule.every(env_int("GDELT_BACKFILL_CHECK_MINUTES", 30)).minutes.do(
+            ensure_long_running,
+            "gdelt_backfill",
+            "news_collectors/gdelt/historical_collector.py",
+            {
+                "RESET_ALL_RUNNING_ON_START": "false",
+                "USE_MYSQL_BATCH_QUEUE": os.getenv("USE_MYSQL_BATCH_QUEUE", "true"),
+            },
+        )
+
+
+def run_startup_jobs() -> None:
+    if env_bool("RUN_STARTUP_INCREMENTAL_JOBS", "false"):
+        run_script_once("finnhub_news", "news_collectors/finnhub/collector.py", env_int("FINNHUB_JOB_TIMEOUT", 600))
+        run_script_once("newsapi_news", "news_collectors/newsapi/collector.py", env_int("NEWSAPI_JOB_TIMEOUT", 600))
+        run_script_once("yahoo_news", "news_collectors/yahoo/collector.py", env_int("YAHOO_JOB_TIMEOUT", 600))
+
+    if env_bool("RUN_STARTUP_FEATURE_BUILD", "false"):
+        run_script_once(
+            "daily_symbol_features",
+            "research/daily_symbol_features.py",
+            env_int("DAILY_FEATURE_JOB_TIMEOUT", 7200),
+        )
+
+    if env_bool("RUN_STARTUP_GDELT_BACKFILL", "false"):
+        ensure_long_running(
+            "gdelt_backfill",
+            "news_collectors/gdelt/historical_collector.py",
+            {
+                "RESET_ALL_RUNNING_ON_START": "false",
+                "USE_MYSQL_BATCH_QUEUE": os.getenv("USE_MYSQL_BATCH_QUEUE", "true"),
+            },
+        )
+
+
+def main_loop() -> None:
+    logging.info("=== Quant data pipeline scheduler started ===")
+    logging.info("Using Python: %s", PYTHON_BIN)
+    configure_schedule()
+    run_startup_jobs()
 
     while True:
+        poll_managed_processes()
         schedule.run_pending()
         time.sleep(5)
+
 
 if __name__ == "__main__":
     main_loop()
