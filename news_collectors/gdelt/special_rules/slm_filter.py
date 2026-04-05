@@ -68,6 +68,7 @@ class SLMFilter:
 
     def __init__(self, api_url: str = None, model: str = None, enabled: bool = True):
         self.provider = os.getenv("SLM_PROVIDER", "lmstudio").lower()
+        self.api_mode = os.getenv("SLM_API_MODE", "openai").lower()
         if api_url is None:
             if self.provider == "lmstudio":
                 api_url = os.getenv("SLM_API_URL", os.getenv("LMSTUDIO_API", "http://127.0.0.1:1234/v1"))
@@ -91,12 +92,19 @@ class SLMFilter:
         """测试本地推理服务连接"""
         try:
             if self.provider == "lmstudio":
-                resp = requests.get(f"{self.api_url}/models", timeout=3)
+                if self.api_mode == "lmstudio_rest":
+                    resp = requests.get(f"{self.api_url}/models", timeout=3)
+                else:
+                    resp = requests.get(f"{self.api_url}/models", timeout=3)
             else:
                 resp = requests.get(f"{self.api_url}/api/tags", timeout=3)
             if resp.status_code == 200:
                 if self.provider == "lmstudio":
-                    models = [m["id"] for m in resp.json().get("data", [])]
+                    payload = resp.json()
+                    if self.api_mode == "lmstudio_rest":
+                        models = [m.get("id") or m.get("identifier") or m.get("name") for m in payload.get("data", [])]
+                    else:
+                        models = [m["id"] for m in payload.get("data", [])]
                     provider_name = "LM Studio"
                 else:
                     models = [m["name"] for m in resp.json().get("models", [])]
@@ -135,16 +143,28 @@ class SLMFilter:
             with _slm_semaphore:
                 track_slm_stat("requests")
                 if self.provider == "lmstudio":
-                    response = requests.post(
-                        f"{self.api_url}/chat/completions",
-                        json={
-                            "model": self.model,
-                            "messages": [{"role": "user", "content": f"/no_think\n{prompt}"}],
-                            "max_tokens": 4,
-                            "temperature": 0,
-                        },
-                        timeout=45,
-                    )
+                    if self.api_mode == "lmstudio_rest":
+                        response = requests.post(
+                            f"{self.api_url}/chat",
+                            json={
+                                "model": self.model,
+                                "messages": [{"role": "user", "content": f"/no_think\n{prompt}"}],
+                                "max_tokens": 8,
+                                "temperature": 0,
+                            },
+                            timeout=45,
+                        )
+                    else:
+                        response = requests.post(
+                            f"{self.api_url}/chat/completions",
+                            json={
+                                "model": self.model,
+                                "messages": [{"role": "user", "content": f"/no_think\n{prompt}"}],
+                                "max_tokens": 8,
+                                "temperature": 0,
+                            },
+                            timeout=45,
+                        )
                 else:
                     response = requests.post(
                         f"{self.api_url}/api/generate",
@@ -181,14 +201,25 @@ class SLMFilter:
     def _extract_answer(self, data: Dict) -> str:
         """统一提取 YES/NO 答案。"""
         if self.provider == "lmstudio":
-            choices = data.get("choices", [])
-            if not choices:
-                return ""
-            message = choices[0].get("message", {})
-            answer = (message.get("content") or "").strip()
-            if answer:
-                return answer
-            return (message.get("reasoning_content") or "").strip()
+            if self.api_mode == "lmstudio_rest":
+                choices = data.get("choices", [])
+                if choices:
+                    message = choices[0].get("message", {})
+                    answer = (message.get("content") or "").strip()
+                    if answer:
+                        return answer
+                prediction = data.get("prediction") or {}
+                candidate = prediction.get("content") or prediction.get("text") or data.get("text") or ""
+                return str(candidate).strip()
+            else:
+                choices = data.get("choices", [])
+                if not choices:
+                    return ""
+                message = choices[0].get("message", {})
+                answer = (message.get("content") or "").strip()
+                if answer:
+                    return answer
+                return (message.get("reasoning_content") or "").strip()
         return (data.get("response") or "").strip()
 
     def _build_prompt(self, symbol: str, company_name: str, title: str, content: str, trigger_keywords: str = "") -> str:

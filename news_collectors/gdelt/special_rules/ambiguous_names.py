@@ -187,7 +187,7 @@ class AmbiguousNameRule(BaseRule):
         self.exclude_patterns = config.get('exclude_patterns', [])
         self.case_sensitive = config.get('case_sensitive', False)
         base_use_slm = config.get('use_slm', True)
-        enabled_symbols_raw = os.getenv("SLM_ENABLED_SYMBOLS", "ARM,META,MU,AMD,DDOG")
+        enabled_symbols_raw = os.getenv("SLM_ENABLED_SYMBOLS", "*")
         disabled_symbols_raw = os.getenv("SLM_DISABLED_SYMBOLS", "")
         enabled_symbols = _parse_symbol_set(enabled_symbols_raw)
         disabled_symbols = _parse_symbol_set(disabled_symbols_raw)
@@ -203,6 +203,11 @@ class AmbiguousNameRule(BaseRule):
     def get_keywords(self, article_date):
         """返回必需的关键词"""
         return self.required_keywords
+
+    @staticmethod
+    def _keyword_matches(full_text, keyword):
+        """Use word boundaries for all identity keywords to avoid substring false positives like intel -> intelnews."""
+        return re.search(r'(?<!\w)' + re.escape(keyword) + r'(?!\w)', full_text, re.IGNORECASE)
     
     def should_include(self, article):
         title = article.get('title', '') or ''
@@ -232,13 +237,7 @@ class AmbiguousNameRule(BaseRule):
         # 3. 关键词匹配计数 (必需关键词)
         matches = []
         for keyword in self.required_keywords:
-            # 对于短 Ticker (<=4)，必须严格词边界；对于长词可稍微放宽
-            if len(keyword) <= 4:
-                found = re.search(r'\b' + re.escape(keyword) + r'\b', full_text, re.IGNORECASE)
-            else:
-                found = True if keyword.lower() in full_text.lower() else False
-
-            if found:
+            if self._keyword_matches(full_text, keyword):
                 matches.append(keyword)
 
         if len(matches) < self.min_matches:
@@ -315,11 +314,17 @@ class AmbiguousNameRule(BaseRule):
                 track_filter_step("bypassed_by_strong")
                 return True
 
+        # 5.5 Multiple identity hits are strong enough to pass without SLM.
+        if len(matches) >= 2:
+            track_filter_step("passed_by_multi_match")
+            return True
+
         # 6. SLM 智能判断
         has_title = len(title.strip()) > 10
         has_content = len(content) > 30 and not content.startswith("http")
 
-        if self.use_slm and (has_title or has_content):
+        # Single weak identity hit should be verified semantically instead of default passing.
+        if len(matches) == 1 and self.use_slm and (has_title or has_content):
             slm = get_slm_filter()
             if slm:
                 is_relevant = slm.is_relevant(self.symbol, self.company_name, title, content)
@@ -361,7 +366,12 @@ class AmbiguousNameRule(BaseRule):
                             self.symbol,
                             f"✅ SLM PASS: {self.symbol} - Title: {title[:60]}",
                         )
+                    return True
 
-        # 默认放行
-        track_filter_step("default_pass")
-        return True
+        if len(matches) == 1:
+            track_filter_step("killed_single_match_without_slm")
+            return False
+
+        # 默认拒绝，避免 ambiguous 规则在弱信号下漏过。
+        track_filter_step("killed_by_default")
+        return False

@@ -182,8 +182,9 @@ def load_news_frame() -> pd.DataFrame:
 
 def aggregate_news_features(news_df: pd.DataFrame) -> pd.DataFrame:
     grouped = (
-        news_df.groupby(["symbol", "name", "date"], as_index=False)
+        news_df.groupby(["symbol", "date"], as_index=False)
         .agg(
+            name=("name", "first"),
             article_count=("url", "count"),
             full_count=("data_quality", lambda s: int((s == "full").sum())),
             title_only_count=("data_quality", lambda s: int((s == "title_only").sum())),
@@ -214,8 +215,9 @@ def aggregate_news_features(news_df: pd.DataFrame) -> pd.DataFrame:
         frame["news_burst_20d"] = frame["article_count"] / prior_mean
         return frame
 
-    grouped = grouped.groupby("symbol", group_keys=False).apply(_add_rollups)
-    return grouped
+    grouped = grouped.groupby("symbol", group_keys=True).apply(_add_rollups)
+    grouped = grouped.reset_index(level=0)
+    return grouped.reset_index(drop=True)
 
 
 def load_price_frame() -> pd.DataFrame:
@@ -324,6 +326,11 @@ def save_features(feature_df: pd.DataFrame) -> int:
     client = create_client()
     col = client[DB_NAME][FEATURE_COLLECTION]
     col.create_index([("symbol", 1), ("date", 1)], unique=True)
+
+    if base_start is not None:
+        col.delete_many({"date": {"$gte": base_start.date().isoformat()}})
+    else:
+        col.delete_many({})
 
     ops = []
     built_at = datetime.now(UTC).isoformat()
