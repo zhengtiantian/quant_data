@@ -171,6 +171,115 @@ class AmbiguousNameRule(BaseRule):
         ]
     }
 
+    # 在强直通之前增加“业务主体”过滤，避免平台载体/商品页/外围品牌词直接放行。
+    CONTEXTUAL_REJECT_PATTERNS = {
+        "AAPL": [
+            r"\bac\s+adapter\b", r"\bcharger\b", r"\bcable\b", r"\bsleeve\b", r"\bcase\b",
+            r"\bskin\b", r"\bstand\b", r"\bdock\b", r"\bkeyboard\s+cover\b",
+            r"\bfor\s+macbook\b.*\b(accessory|adapter|charger|case|sleeve|dock)\b",
+            r"\bcompatible\s+with\s+macbook\b",
+            r"\brefurbished\b", r"\bbuy\s+now\b", r"\badd\s+to\s+cart\b"
+        ],
+        "MSFT": [
+            r"\brelease\s+.+\s+·\s+.+/.+", r"\bgithub\s+release\b", r"\bappx?\b",
+            r"\bdownload\s+for\s+windows\b", r"\bwindows\s+download\b", r"\bpcworld\b",
+            r"\bhow\s+to\b.*\bwindows\b", r"\btutorial\b.*\bwindows\b",
+            r"\barticles\s+by\b", r"\bfor\s+windows\s+\d+\b",
+            r"\bforum\b", r"\bactivation\b", r"\breview\b",
+            r"\bnintendo\s+switch\b", r"\bps4\b", r"\bplaystation\b",
+            r"\bavailable\s+on\s+xbox\b", r"\bcoming\s+to\s+xbox\b", r"\bon\s+xbox\s+one\b",
+            r"\bxbox\s+one\b", r"\bxbox\s+series\s+[xs]\b", r"\bwindows\s+pc\b"
+        ],
+        "AMZN": [
+            r"\badd\s+to\s+cart\b", r"\bbuy\s+now\b", r"\bcurrently\s+unavailable\b",
+            r"\bcustomer\s+reviews?\b", r"\blist\s+price\b", r"\bpaperback\b", r"\bhardcover\b",
+            r"\bkindle\s+edition\b", r"\bships\s+from\b", r"\bsold\s+by\b",
+            r"\bproduct\s+details\b", r"\bin\s+stock\b", r"\bout\s+of\s+stock\b"
+        ],
+        "GOOGL": [
+            r"\bwatch\s+on\s+youtube\b", r"\bsubscribe\b.*\bchannel\b",
+            r"\byoutube\s+channel\b", r"\bmusic\s+video\b", r"\bofficial\s+trailer\b",
+            r"\breaction\s+video\b", r"\bwalkthrough\b", r"\bgameplay\b",
+            r"\bavailable\s+on\s+android\b", r"\bandroid\s+app\b", r"\bapk\b",
+            r"\bhow\s+to\b.*\b(android|youtube|chrome)\b", r"\btutorial\b.*\b(android|youtube|chrome)\b"
+        ],
+        "META": [
+            r"\bon\s+instagram\b", r"\bposted\s+on\s+instagram\b", r"\binstagram\s+post\b",
+            r"\binstagram\s+story\b", r"\binstagram\s+photo\b", r"\binstagram\s+account\b",
+            r"\bfacebook\s+post\b", r"\bon\s+facebook\b", r"\bshared\s+on\s+facebook\b",
+            r"\bwhatsapp\s+message\b", r"\bwhatsapp\s+chat\b", r"^\s*instagram\s*$",
+            r"^\s*facebook\s*$", r"^\s*whatsapp\s*$",
+            r"^\s*instagram(?:\s+instagram)?\s*$",
+            r"^\s*facebook(?:\s+facebook)?\s*$",
+            r"^\s*whatsapp(?:\s+whatsapp)?\s*$",
+            r"\bfact\s+check\b", r"\bimage\b", r"\bphoto\b", r"\bselfie\b",
+            r"\bcelebrit", r"\bactor\b", r"\bsinger\b", r"\bmodel\b",
+            r"\bapologis", r"\bmom\b", r"\bboyfriend\b", r"\bgirlfriend\b",
+            r"\bvacation\b", r"\bbikini\b", r"\bdating\b", r"\bfamily\b",
+            r"\bholding\b", r"\bviral\s+image\b", r"\bphotos?\s+and\s+videos\b",
+            r"\b@[a-z0-9_.]+\b", r"\byacht\b", r"\bsuperyacht\b",
+            r"\bfor\s+whatsapp\b", r"\bextensions?\s+for\s+whatsapp\b"
+        ],
+        "TSLA": [
+            r"\bwar\s+on\s+autopilot\b", r"\bbattlefield\s+robot\b", r"\budar\b",
+            r"\bmilitary\s+robot\b", r"\bweapon(?:ized)?\s+robot\b",
+            r"\bautopilot\b",
+            r"\bfather\b", r"\bmother\b", r"\bfamily\b", r"\bchildhood\b",
+            r"\berrol\s+musk\b", r"\bemerald\s+mine\b", r"\bgossip\b",
+            r"\bthe\s+left\b", r"\bthe\s+right\b", r"\bliberal", r"\bconservative",
+            r"\bpolitic", r"\bpolitical\b", r"\bcampaign\b", r"\bcommentator\b",
+            r"\bscaramucci\b", r"\badviser\b", r"\badvisor\b",
+            r"\brip\s+off\b", r"\bdoge\b"
+        ],
+    }
+
+    CONTEXTUAL_KEEP_PATTERNS = {
+        "AAPL": [
+            r"\blaunch\b", r"\bunveil", r"\brelease\b", r"\bshipment", r"\bsales?\b",
+            r"\bdemand\b", r"\brevenue\b", r"\bearnings\b", r"\bmarket\s+share\b",
+            r"\bsupply\s+chain\b", r"\bproduction\b", r"\bpre-?order\b"
+        ],
+        "MSFT": [
+            r"\bearnings\b", r"\brevenue\b", r"\bcommercial\b", r"\bcloud\b", r"\bsubscription\b",
+            r"\brollout\b", r"\blaunch\b", r"\bfeature\b", r"\bpolicy\b", r"\bpartnership\b",
+            r"\bacquisition\b", r"\bantitrust\b", r"\bsecurity\b", r"\boutage\b",
+            r"\bgame\s+pass\b", r"\bmicrosoft\s+365\b", r"\boffice\s+365\b",
+            r"\bphil\s+spencer\b", r"\bactivision\b", r"\bubisoft\b", r"\bazure\b"
+        ],
+        "GOOGL": [
+            r"\bpolicy\b", r"\bmonetiz", r"\badvertis", r"\bsubscription\b", r"\bcreator\b",
+            r"\bregulat", r"\bantitrust\b", r"\bearnings\b", r"\bfeature\b", r"\brollout\b",
+            r"\bproduct\b", r"\bupdate\b"
+        ],
+        "META": [
+            r"\bpolicy\b", r"\bmonetiz", r"\badvertis", r"\bfeature\b", r"\bupdate\b",
+            r"\bregulat", r"\bban\b", r"\blaunch\b", r"\brollout\b", r"\bearnings\b",
+            r"\bmoderat", r"\bcensorship\b", r"\bcontent\s+policy\b", r"\bfree\s+speech\b",
+            r"\bonline\s+speech\b", r"\busers?\s+should\s+be\s+able\s+to\s+say\b",
+            r"\bplatform\b", r"\boversight\b", r"\bboard\b",
+            r"\bsection\s+230\b", r"\bhearing\b", r"\bceos?\b", r"\bdefend\b",
+            r"\baccusations?\b", r"\bcongress\b", r"\bsenate\b"
+        ],
+        "TSLA": [
+            r"\btesla\b", r"\bmodel\s+(s|3|x|y)\b", r"\bcybertruck\b", r"\bgigafactory\b",
+            r"\bdeliver", r"\btesla\s+autopilot\b", r"\bfsd\b", r"\bsupercharger\b",
+            r"\bmegapack\b", r"\btesla\s+energy\b", r"\bspacex\b",
+            r"\bstarlink\b", r"\bxai\b", r"\btwitter\b", r"\bx\.com\b",
+            r"\btesla\s+dashboard\b", r"\bdashboard\b", r"\bvehicle\b", r"\bdriver\b",
+            r"\bsiriusxm\b", r"\bconnected\s+car\b", r"\blawsuit\b", r"\bsubpoena\b",
+            r"\binvestor", r"\bstock\b", r"\bshares?\b", r"\bmarket\s+cap\b",
+            r"\brecall\b", r"\bfactory\b", r"\brobotaxi\b", r"\bregulat",
+            r"\bcrash\b", r"\bsafety\b", r"\binvestigat", r"\bnhtsa\b",
+            r"\bdriver\s+monitoring\b", r"\bfatal\b", r"\bkilled\b", r"\bdead\b",
+            r"\bacquisition\b", r"\btakeover\b"
+        ],
+        "NVDA": [
+            r"\bnvidia\b", r"\bgeforce\b", r"\bcuda\b", r"\bomniverse\b", r"\bjetson\b",
+            r"\brobotics\b", r"\bai\b", r"\bplatform\b", r"\baccelerat", r"\bpowered\s+by\b",
+            r"\bwith\s+nvidia\b", r"\bh100\b", r"\bb200\b", r"\bdgx\b"
+        ],
+    }
+
     def __init__(self, symbol, config, company_name=None, full_config=None):
         super().__init__(symbol, config)
         self.company_name = company_name or symbol
@@ -214,6 +323,7 @@ class AmbiguousNameRule(BaseRule):
         content = article.get('content', '') or ''
         # 回归稳健：不再将 URL 混入校验，防止 mu 在 /music/ 这种路径中误命中
         full_text = title + ' ' + content
+        full_text_lower = full_text.lower()
 
         track_filter_step("entered")
 
@@ -271,16 +381,44 @@ class AmbiguousNameRule(BaseRule):
                         f"✅ Strict Identity PASS: {self.symbol} - Matched: {matched_identity} - Title: {title[:60]}",
                     )
 
+        # 4.4 业务主体过滤：平台载体/商品页/外围品牌词不要直接因为品牌词而放行。
+        if self.symbol in self.CONTEXTUAL_REJECT_PATTERNS:
+            reject_patterns = self.CONTEXTUAL_REJECT_PATTERNS[self.symbol]
+            hit_contextual_reject = any(
+                re.search(pattern, full_text, re.IGNORECASE) for pattern in reject_patterns
+            )
+            if hit_contextual_reject:
+                keep_patterns = self.CONTEXTUAL_KEEP_PATTERNS.get(self.symbol, [])
+                hit_contextual_keep = any(
+                    re.search(pattern, full_text, re.IGNORECASE) for pattern in keep_patterns
+                )
+
+                # TSLA + Starlink 只有在同时强烈讲 Tesla 业务本体时才保留。
+                if self.symbol == "TSLA":
+                    if not hit_contextual_keep:
+                        track_filter_step("killed_by_contextual")
+                        return False
+                # GOOGL/META 平台类文章，只有在明确是平台业务/政策/产品更新时保留。
+                elif self.symbol in {"GOOGL", "META"}:
+                    if not hit_contextual_keep:
+                        track_filter_step("killed_by_contextual")
+                        return False
+                # AAPL/AMZN 商品页、配件页直接拒绝；Apple 真正产品业务新闻靠 keep 词放行。
+                else:
+                    if not hit_contextual_keep:
+                        track_filter_step("killed_by_contextual")
+                        return False
+
         # 4.5 绝对强关联直通车 (Absolute Strong Bypass)
         # 极高概率能确定是正相关产品的关键词组合，直接绕过 SLM。这将极大降低 CPU 和 GPU 的排队耗时与发热！
         ABSOLUTE_BYPASS = {
             "AAPL": [r"tim\s+cook", r"\biphone\b", r"\bipad\b", r"\bmacbook\b", r"\bios\b", r"app\s+store", r"apple\s+vision", r"steve\s+jobs", r"apple\s+watch", r"airpods"],
-            "MSFT": [r"satya\s+nadella", r"windows\s+(10|11|xp|8|7)", r"\bazure\b", r"\bxbox\b", r"office\s+365", r"bill\s+gates", r"surface\s+pro", r"microsoft\s+teams"],
+            "MSFT": [r"satya\s+nadella", r"\bazure\b", r"office\s+365", r"\bmicrosoft\s+365\b", r"\bgame\s+pass\b", r"bill\s+gates", r"surface\s+pro", r"microsoft\s+teams", r"phil\s+spencer"],
             "GOOGL": [r"sundar\s+pichai", r"\byoutube\b", r"\bandroid\b", r"google\s+cloud", r"google\s+ads", r"pixel\s+(phone|watch|tablet)", r"larry\s+page", r"sergey\s+brin", r"waymo"],
             "AMZN": [r"jeff\s+bezos", r"andy\s+jassy", r"amazon\s+web\s+services", r"\baws\b", r"prime\s+video", r"\bkindle\b", r"\balexa\b", r"amazon\s+prime"],
-            "META": [r"mark\s+zuckerberg", r"\binstagram\b", r"\bwhatsapp\b", r"oculus", r"meta\s+quest", r"facebook\s+ads"],
-            "TSLA": [r"elon\s+musk", r"model\s+(s|3|x|y)", r"cybertruck", r"gigafactory", r"autopilot", r"supercharger"],
-            "NVDA": [r"jensen\s+huang", r"geforce", r"rtx\s+\d{4}", r"cuda", r"h100", r"a100", r"nvidia\s+dgx"],
+            "META": [r"oculus", r"meta\s+quest", r"facebook\s+ads", r"reality\s+labs", r"threads\s+app"],
+            "TSLA": [r"model\s+(s|3|x|y)", r"cybertruck", r"gigafactory", r"tesla\s+autopilot", r"supercharger", r"\btesla\s+energy\b", r"\bmegapack\b", r"\bspacex\b", r"\bstarlink\b", r"\bxai\b"],
+            "NVDA": [r"jensen\s+huang", r"geforce", r"rtx\s+\d{4}", r"cuda", r"h100", r"a100", r"nvidia\s+dgx", r"\bwith\s+nvidia\b", r"\bpowered\s+by\s+nvidia\b"],
             "AMD": [r"lisa\s+su", r"ryzen", r"radeon", r"epyc", r"threadripper", r"mi300"],
             "ARM": [r"rene\s+haas", r"arm\s+architecture", r"cortex-", r"neoverse", r"mali\s+gpu"],
             "QCOM": [r"cristiano\s+amon", r"snapdragon", r"\bcdma\b", r"qualcomm\s+hexagon"],

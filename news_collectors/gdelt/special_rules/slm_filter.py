@@ -6,6 +6,7 @@ SLM-based Article Relevance Filter
 
 import hashlib
 import os
+import re
 import threading
 from collections import defaultdict
 from typing import Dict, Optional
@@ -160,7 +161,7 @@ class SLMFilter:
                             json={
                                 "model": self.model,
                                 "messages": [{"role": "user", "content": f"/no_think\n{prompt}"}],
-                                "max_tokens": 8,
+                                "max_tokens": 6,
                                 "temperature": 0,
                             },
                             timeout=45,
@@ -183,7 +184,12 @@ class SLMFilter:
 
             if response.status_code == 200:
                 answer = self._extract_answer(response.json())
-                result = answer.upper().startswith("YES")
+                if answer not in {"YES", "NO"}:
+                    track_slm_stat("errors")
+                    with self._cache_lock:
+                        self.cache[cache_key] = False
+                    return False
+                result = answer == "YES"
                 track_slm_stat("yes" if result else "no")
                 with self._cache_lock:
                     self.cache[cache_key] = result
@@ -200,30 +206,40 @@ class SLMFilter:
 
     def _extract_answer(self, data: Dict) -> str:
         """统一提取 YES/NO 答案。"""
+        def normalize(candidate: str) -> str:
+            text = (candidate or "").strip()
+            if not text:
+                return ""
+            upper = text.upper()
+            if upper in {"YES", "NO"}:
+                return upper
+            match = re.search(r"\b(YES|NO)\b", upper)
+            return match.group(1) if match else ""
+
         if self.provider == "lmstudio":
             if self.api_mode == "lmstudio_rest":
                 choices = data.get("choices", [])
                 if choices:
                     message = choices[0].get("message", {})
-                    answer = (message.get("content") or "").strip()
+                    answer = normalize(message.get("content") or "")
                     if answer:
                         return answer
                 prediction = data.get("prediction") or {}
                 candidate = prediction.get("content") or prediction.get("text") or data.get("text") or ""
-                return str(candidate).strip()
+                return normalize(str(candidate))
             else:
                 choices = data.get("choices", [])
                 if not choices:
                     return ""
                 message = choices[0].get("message", {})
-                answer = (message.get("content") or "").strip()
+                answer = normalize(message.get("content") or "")
                 if answer:
                     return answer
-                return (message.get("reasoning_content") or "").strip()
-        return (data.get("response") or "").strip()
+                return normalize(message.get("reasoning_content") or "")
+        return normalize(data.get("response") or "")
 
     def _build_prompt(self, symbol: str, company_name: str, title: str, content: str, trigger_keywords: str = "") -> str:
-        """构建 prompt"""
+        """构建 prompt。尽量短，避免模型进入解释/推理模式。"""
         simple_names = {
             "Alphabet Inc.(Class A)": "Google",
             "Meta Platforms": "Facebook",
@@ -235,43 +251,20 @@ class SLMFilter:
         }
         display_name = simple_names.get(company_name, company_name)
 
-        content_preview = content[:500] if content else ""
+        content_preview = " ".join((content or "").split())[:320]
+        trigger_line = f"Trigger Keywords: {trigger_keywords}\n" if trigger_keywords else ""
 
-        paywall_hints = ["login", "subscribe", "etprime", "sign in", "exclusive for members", "register to read"]
-        is_possibly_paywalled = any(hint in content_preview.lower() for hint in paywall_hints)
-
-        paywall_instruction = ""
-        if is_possibly_paywalled:
-            paywall_instruction = "\nIMPORTANT: The content snippet looks like a paywall or login prompt. Please rely HEAVILY on the Title to make your decision."
-
-        context_str = f"\nContext: Flagged keywords: {trigger_keywords}" if trigger_keywords else ""
-
-        prompt = f"""Task: Decide if this news is RELEVANT to "{display_name}" (Ticker: {symbol}).
-
-Article Title: {title}
-Article Content Snippet: {content_preview}{paywall_instruction}{context_str}
-
-Positive Criteria (Answer YES):
-- Direct company news: Financials, earnings, stock movements, M&A, partnerships.
-- Corporate Governance: Board changes, diversity, lawsuits, INVESTOR PRESSURE, layoffs.
-- Product news: Launches, reviews, software updates (iOS, Android, Windows, chips, etc.), and NEW FEATURE ANNOUNCEMENTS.
-- Legal, Regulatory & Public Policy: Lawsuits, government conflicts, court orders, privacy debates, regulatory hearings, and antitrust actions.
-- Public Statements & Stance: Official manifestos, open letters, or public stances taken by the CEO/Founder on major societal, political, or legal issues.
-- Sales performance & Consumer Trends: Reports on best-selling items, holiday sales records, or market share changes.
-- Brand Sentiment & Market Positioning: Trust surveys, industry rankings, or reputational reports, even when comparing multiple competitors.
-- Specific Platform Changes: Even moderate updates to user interface or functionality of major platforms (e.g., "YouTube's new progress bar", "Instagram's new navigation").
-- Ecosystem Relevance (especially for ARM): News about major products using {display_name}'s architecture or licensing (e.g. Apple A/M-series chips, Qualcomm Snapdragon, Samsung Exynos, MediaTek Dimensity) is YES.
-- Even if the content is short or blocked by a paywall, if the Title is clearly about {display_name}, answer YES.
-
-Negative Criteria (Answer NO):
-- Mentioning {display_name} only incidentally (e.g. "Former Apple employees started a new car company"). Note: Industry-wide comparison reports including {display_name} are RELEVANT, not incidental.
-- Pure product sales/listings (e.g. "Refurbished Intel Laptop for sale on eBay").
-- Generic technical terms (e.g. "A meta-analysis of results" when looking for Meta).
-- Celebrity Gossip & Personal Social Media Updates: News about celebrities' personal lives, fashion, dating, or social media posts (e.g., "Kylie Jenner's new photo on Instagram", "Drake follows someone on Instagram").
-- Non-business Lifestyle/Entertainment: Routine movie reviews, holiday photos, or personal recipes unless they directly impact the company's business model.
-
-Answer ONLY "YES" or "NO".
-Answer:"""
+        prompt = (
+            f"Binary classification task.\n"
+            f"Company: {display_name} ({symbol})\n"
+            f"Title: {title}\n"
+            f"Body: {content_preview}\n"
+            f"{trigger_line}"
+            "Answer YES only if the article is primarily about the company, its business, products, policies, earnings, major product updates, or company-controlled platforms.\n"
+            "Answer NO if the company/platform is only incidental, if this is a product listing/accessory page, a generic post on a platform, or unrelated content.\n"
+            "Output exactly one token: YES or NO.\n"
+            "Answer:"
+        )
 
         return prompt
 

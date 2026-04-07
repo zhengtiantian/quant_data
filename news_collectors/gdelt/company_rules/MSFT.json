@@ -36,10 +36,9 @@
             "problem": "确保是Microsoft公司相关",
             "required_keywords": [
                 "Microsoft",
-                "Windows",
                 "Azure",
-                "Office",
-                "Xbox",
+                "Office 365",
+                "Game Pass",
                 "Satya Nadella"
             ],
             "min_matches": 1
@@ -47,12 +46,14 @@
     },
     "strict_validation_keywords": [
         "Microsoft",
-        "Windows",
         "Azure",
-        "Xbox",
         "Satya Nadella",
         "Cloud",
         "Software",
+        "Game Pass",
+        "Office 365",
+        "Microsoft 365",
+        "Xbox",
         "MSFT"
     ]
 }
