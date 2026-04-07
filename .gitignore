@@ -21,6 +21,10 @@ dist/
 # Logs
 *.log
 
+# Local temp benchmark artifacts
+tmp_*.csv
+tmp_*.json
+
 # Docker
 *.pid
 __pycache__/
