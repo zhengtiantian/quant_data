@@ -32,6 +32,8 @@ FEATURE_REBUILD_ALL = os.getenv("FEATURE_REBUILD_ALL", "false").lower() == "true
 FEATURE_LOOKBACK_DAYS = int(os.getenv("FEATURE_LOOKBACK_DAYS", "180"))
 FEATURE_START_DATE = os.getenv("FEATURE_START_DATE")
 FEATURE_END_DATE = os.getenv("FEATURE_END_DATE")
+MIN_VALID_NEWS_DATE = pd.Timestamp(os.getenv("FEATURE_MIN_VALID_DATE", "1990-01-01"))
+MAX_VALID_NEWS_DATE = pd.Timestamp(datetime.now(UTC).date()) + pd.Timedelta(days=1)
 
 
 def _fallback_mongo_uri(uri: str) -> str:
@@ -80,15 +82,27 @@ def _parse_iso_date(raw_value: str | None) -> str | None:
         return None
 
 
+def _is_reasonable_feature_date(value: str | None) -> bool:
+    if not value:
+        return False
+    try:
+        ts = pd.Timestamp(value)
+    except Exception:
+        return False
+    return MIN_VALID_NEWS_DATE <= ts <= MAX_VALID_NEWS_DATE
+
+
 def _extract_news_date(doc: dict) -> str | None:
     raw_date = doc.get("date")
     if raw_date:
         digits = "".join(ch for ch in str(raw_date) if ch.isdigit())
         if len(digits) >= 8:
-            return f"{digits[:4]}-{digits[4:6]}-{digits[6:8]}"
+            parsed = f"{digits[:4]}-{digits[4:6]}-{digits[6:8]}"
+            if _is_reasonable_feature_date(parsed):
+                return parsed
     for key in ("publishedAt", "timestamp", "collectedAt"):
         parsed = _parse_iso_date(doc.get(key))
-        if parsed:
+        if parsed and _is_reasonable_feature_date(parsed):
             return parsed
     return None
 
@@ -99,9 +113,11 @@ def _extract_price_date(doc: dict) -> str | None:
         if key == "date" and value:
             digits = "".join(ch for ch in str(value) if ch.isdigit())
             if len(digits) >= 8:
-                return f"{digits[:4]}-{digits[4:6]}-{digits[6:8]}"
+                parsed = f"{digits[:4]}-{digits[4:6]}-{digits[6:8]}"
+                if _is_reasonable_feature_date(parsed):
+                    return parsed
         parsed = _parse_iso_date(value)
-        if parsed:
+        if parsed and _is_reasonable_feature_date(parsed):
             return parsed
     return None
 
