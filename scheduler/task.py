@@ -190,6 +190,14 @@ def configure_schedule() -> None:
             env_int("DAILY_PRICE_JOB_TIMEOUT", 1800),
         )
 
+    if env_bool("ENABLE_PRICE_HISTORY_BACKFILL_JOB", "false"):
+        schedule.every().day.at(os.getenv("PRICE_HISTORY_BACKFILL_JOB_TIME", "06:30")).do(
+            run_script_once,
+            "historical_daily_prices",
+            "stock_collector/price_collector/10y_1d_history_collector.py",
+            env_int("PRICE_HISTORY_BACKFILL_JOB_TIMEOUT", 7200),
+        )
+
     if env_bool("ENABLE_DAILY_FEATURE_JOB", "true"):
         schedule.every().day.at(os.getenv("DAILY_FEATURE_JOB_TIME", "08:00")).do(
             run_script_once,
@@ -223,7 +231,14 @@ def run_startup_jobs() -> None:
             env_int("DAILY_FEATURE_JOB_TIMEOUT", 7200),
         )
 
-    if env_bool("RUN_STARTUP_GDELT_BACKFILL", "false"):
+    if env_bool("RUN_STARTUP_PRICE_HISTORY_BACKFILL", "true"):
+        run_script_once(
+            "historical_daily_prices",
+            "stock_collector/price_collector/10y_1d_history_collector.py",
+            env_int("PRICE_HISTORY_BACKFILL_JOB_TIMEOUT", 7200),
+        )
+
+    if env_bool("RUN_STARTUP_GDELT_BACKFILL", "true"):
         ensure_long_running(
             "gdelt_backfill",
             "news_collectors/gdelt/historical_collector.py",

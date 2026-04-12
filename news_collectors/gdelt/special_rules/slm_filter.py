@@ -13,6 +13,8 @@ from typing import Dict, Optional
 
 import requests
 
+from news_collectors.gdelt.special_rules.slm_skills import SkillContext, get_skill
+
 # 适度保守的全局并发锁：默认 2，可通过环境变量进一步调整。
 _SLM_MAX_CONCURRENCY = max(1, int(os.getenv("SLM_MAX_CONCURRENCY", os.getenv("OLLAMA_MAX_CONCURRENCY", "2"))))
 _slm_semaphore = threading.Semaphore(_SLM_MAX_CONCURRENCY)
@@ -84,6 +86,8 @@ class SLMFilter:
         self.api_url = api_url.rstrip('/')
         self.model = model
         self.enabled = enabled
+        self.skill_name = os.getenv("SLM_SKILL", "company_match_v1")
+        self.skill = get_skill(self.skill_name)
         self.cache = {}
         self._cache_lock = threading.Lock()
 
@@ -138,7 +142,15 @@ class SLMFilter:
             track_slm_stat("cache_hits")
             return cached
 
-        prompt = self._build_prompt(symbol, company_name, title, content, trigger_keywords)
+        prompt = self.skill.build_prompt(
+            SkillContext(
+                symbol=symbol,
+                company_name=company_name,
+                title=title,
+                content=content,
+                trigger_keywords=trigger_keywords,
+            )
+        )
 
         try:
             with _slm_semaphore:
@@ -237,37 +249,6 @@ class SLMFilter:
                     return answer
                 return normalize(message.get("reasoning_content") or "")
         return normalize(data.get("response") or "")
-
-    def _build_prompt(self, symbol: str, company_name: str, title: str, content: str, trigger_keywords: str = "") -> str:
-        """构建 prompt。尽量短，避免模型进入解释/推理模式。"""
-        simple_names = {
-            "Alphabet Inc.(Class A)": "Google",
-            "Meta Platforms": "Facebook",
-            "Apple Inc.": "Apple",
-            "Microsoft": "Microsoft",
-            "Amazon.com Inc.": "Amazon",
-            "Tesla, Inc.": "Tesla",
-            "NVIDIA Corporation": "NVIDIA"
-        }
-        display_name = simple_names.get(company_name, company_name)
-
-        content_preview = " ".join((content or "").split())[:320]
-        trigger_line = f"Trigger Keywords: {trigger_keywords}\n" if trigger_keywords else ""
-
-        prompt = (
-            f"Binary classification task.\n"
-            f"Company: {display_name} ({symbol})\n"
-            f"Title: {title}\n"
-            f"Body: {content_preview}\n"
-            f"{trigger_line}"
-            "Answer YES only if the article is primarily about the company, its business, products, policies, earnings, major product updates, or company-controlled platforms.\n"
-            "Answer NO if the company/platform is only incidental, if this is a product listing/accessory page, a generic post on a platform, or unrelated content.\n"
-            "Output exactly one token: YES or NO.\n"
-            "Answer:"
-        )
-
-        return prompt
-
 
 # 示例使用
 if __name__ == "__main__":
