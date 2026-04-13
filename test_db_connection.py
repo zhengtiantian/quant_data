@@ -1,20 +1,17 @@
 import mysql.connector
 from pymongo import MongoClient
 
+import os
+
 MYSQL_CONFIG = {
-    "host": "127.0.0.1",
-    "port": 23306,
+    "host": os.getenv("MYSQL_HOST", "mysql8"),
+    "port": int(os.getenv("MYSQL_PORT", 3306)),
     "user": "root",
     "password": "root",
     "database": "workflow"
 }
 
-MONGO_CONFIG = {
-    "host": "127.0.0.1",
-    "port": 37018,
-    "username": "root",
-    "password": "root"
-}
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://root:root@mongo6:27017/")
 
 
 def test_mysql():
@@ -34,7 +31,7 @@ def test_mysql():
 def test_mongo():
     result = {}
     try:
-        client = MongoClient(**MONGO_CONFIG)
+        client = MongoClient(MONGO_URI)
         dbs = client.list_database_names()
         result["mongo"] = f"✅ Connected ({len(dbs)} databases)"
         client.close()
