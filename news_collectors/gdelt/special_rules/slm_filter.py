@@ -13,7 +13,7 @@ from typing import Dict, Optional
 
 import requests
 
-from news_collectors.gdelt.special_rules.slm_skills import SkillContext, get_skill
+from .slm_skills import SkillContext, get_skill
 
 # 适度保守的全局并发锁：默认 2，可通过环境变量进一步调整。
 _SLM_MAX_CONCURRENCY = max(1, int(os.getenv("SLM_MAX_CONCURRENCY", os.getenv("OLLAMA_MAX_CONCURRENCY", "2"))))

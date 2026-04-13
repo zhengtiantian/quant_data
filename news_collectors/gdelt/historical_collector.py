@@ -113,7 +113,7 @@ STUCK_URLS_FILE = os.path.join(CACHE_DIR, "stuck_urls.txt")
 # 调试开关：只控制日志，不影响业务逻辑
 DEBUG_TASK_TRACE = os.getenv("DEBUG_TASK_TRACE", "false").lower() == "true"
 USE_MYSQL_BATCH_QUEUE = os.getenv("USE_MYSQL_BATCH_QUEUE", "false").lower() == "true"
-BATCH_WORKERS = int(os.getenv("BATCH_WORKERS", "3"))
+BATCH_WORKERS = int(os.getenv("BATCH_WORKERS", "2"))
 RUNNING_RECLAIM_MINUTES = int(os.getenv("RUNNING_RECLAIM_MINUTES", "720"))
 RESET_ALL_RUNNING_ON_START = os.getenv("RESET_ALL_RUNNING_ON_START", "true").lower() == "true"
 STARTUP_PREDOWNLOAD_ENABLED = os.getenv("STARTUP_PREDOWNLOAD_ENABLED", "true").lower() == "true"
