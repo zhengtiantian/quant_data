@@ -32,6 +32,7 @@ logging.basicConfig(
 
 JOB_LOCKS: dict[str, threading.Lock] = {}
 MANAGED_PROCESSES: dict[str, subprocess.Popen] = {}
+STREAM_THREADS: dict[str, threading.Thread] = {}
 
 
 def env_bool(name: str, default: str = "false") -> bool:
@@ -123,6 +124,7 @@ def ensure_long_running(job_name: str, relative_path: str, extra_env: dict | Non
         env.setdefault("LOCAL_MONGO_URI", LOCAL_MONGO_URI)
     if extra_env:
         env.update(extra_env)
+    env.setdefault("PYTHONUNBUFFERED", "1")
 
     logging.info("Launching %s -> %s", job_name, relative_path)
     proc = subprocess.Popen(
@@ -132,19 +134,46 @@ def ensure_long_running(job_name: str, relative_path: str, extra_env: dict | Non
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
+        bufsize=1,
     )
     MANAGED_PROCESSES[job_name] = proc
+    if proc.stdout:
+        thread = threading.Thread(
+            target=stream_managed_output,
+            args=(job_name, proc),
+            name=f"{job_name}-stdout",
+            daemon=True,
+        )
+        STREAM_THREADS[job_name] = thread
+        thread.start()
+
+
+def stream_managed_output(job_name: str, proc: subprocess.Popen) -> None:
+    stdout = proc.stdout
+    if stdout is None:
+        return
+
+    try:
+        for line in iter(stdout.readline, ""):
+            rendered = line.rstrip()
+            if rendered:
+                logging.info("%s | %s", job_name, rendered)
+    except Exception:
+        logging.exception("%s output stream crashed", job_name)
+    finally:
+        try:
+            stdout.close()
+        except Exception:
+            pass
 
 
 def poll_managed_processes() -> None:
     for job_name, proc in list(MANAGED_PROCESSES.items()):
         if proc.poll() is None:
             continue
-        output = ""
-        if proc.stdout:
-            output = proc.stdout.read().strip()
-        if output:
-            logging.info("%s output:\n%s", job_name, output)
+        thread = STREAM_THREADS.pop(job_name, None)
+        if thread:
+            thread.join(timeout=1)
         logging.info("%s exited with code %s", job_name, proc.returncode)
         del MANAGED_PROCESSES[job_name]
 

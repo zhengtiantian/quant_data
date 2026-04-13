@@ -4,7 +4,7 @@ from datetime import datetime, UTC
 from pathlib import Path
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from pymongo import MongoClient
+from pymongo import MongoClient, errors
 
 
 # =========================================================
@@ -147,8 +147,18 @@ def save_to_mongo(articles):
         })
 
     if docs:
-        col.insert_many(docs)
-        print(f"Inserted {len(docs)} Yahoo news into MongoDB")
+        try:
+            result = col.insert_many(docs, ordered=False)
+            print(f"Inserted {len(result.inserted_ids)} Yahoo news into MongoDB")
+        except errors.BulkWriteError as exc:
+            details = getattr(exc, "details", {}) or {}
+            inserted = int(details.get("nInserted", 0) or 0)
+            write_errors = details.get("writeErrors", [])
+            non_dup_errors = [err for err in write_errors if err.get("code") != 11000]
+            duplicate_count = len(write_errors) - len(non_dup_errors)
+            print(f"Inserted {inserted} Yahoo news into MongoDB (duplicates skipped: {duplicate_count})")
+            if non_dup_errors:
+                raise
 
 
 # =========================================================
