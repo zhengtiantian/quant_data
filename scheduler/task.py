@@ -198,6 +198,17 @@ def configure_schedule() -> None:
             env_int("PRICE_HISTORY_BACKFILL_JOB_TIMEOUT", 7200),
         )
 
+    if env_bool("ENABLE_DAILY_GDELT_BACKFILL_JOB", "true"):
+        schedule.every().day.at(os.getenv("DAILY_GDELT_BACKFILL_JOB_TIME", "05:15")).do(
+            ensure_long_running,
+            "gdelt_backfill",
+            "news_collectors/gdelt/historical_collector.py",
+            {
+                "RESET_ALL_RUNNING_ON_START": "false",
+                "USE_MYSQL_BATCH_QUEUE": os.getenv("USE_MYSQL_BATCH_QUEUE", "true"),
+            },
+        )
+
     if env_bool("ENABLE_DAILY_FEATURE_JOB", "true"):
         schedule.every().day.at(os.getenv("DAILY_FEATURE_JOB_TIME", "08:00")).do(
             run_script_once,
