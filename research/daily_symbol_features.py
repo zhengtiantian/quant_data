@@ -27,6 +27,7 @@ DB_NAME = os.getenv("FEATURE_DB_NAME", "quant_data")
 NEWS_COLLECTION = os.getenv("FEATURE_NEWS_COLLECTION", "news_articles")
 PRICE_COLLECTION = os.getenv("FEATURE_PRICE_COLLECTION", "stock_prices_history")
 FEATURE_COLLECTION = os.getenv("FEATURE_OUTPUT_COLLECTION", "daily_symbol_features")
+UNIVERSE_COLLECTION = os.getenv("FEATURE_UNIVERSE_COLLECTION", "stock_universe")
 BENCHMARK_SYMBOLS = [
     symbol.strip().upper()
     for symbol in os.getenv("FEATURE_BENCHMARK_SYMBOLS", "SPY,QQQ").split(",")
@@ -249,7 +250,7 @@ def load_price_frame() -> pd.DataFrame:
 
     cursor = col.find(
         {"symbol": {"$exists": True, "$ne": None}},
-        {"_id": 0, "symbol": 1, "timestamp": 1, "date": 1, "close": 1},
+        {"_id": 0, "symbol": 1, "timestamp": 1, "date": 1, "close": 1, "volume": 1},
     )
 
     rows = []
@@ -262,7 +263,12 @@ def load_price_frame() -> pd.DataFrame:
             continue
         if end_date is not None and date_ts > end_date + pd.Timedelta(days=90):
             continue
-        rows.append({"symbol": doc["symbol"], "trade_date": date_ts, "close": float(doc["close"])})
+        rows.append({
+            "symbol": doc["symbol"], 
+            "trade_date": date_ts, 
+            "close": float(doc["close"]),
+            "volume": float(doc.get("volume", 0))
+        })
 
     if not rows:
         return pd.DataFrame()
@@ -332,7 +338,16 @@ def attach_price_labels(feature_df: pd.DataFrame, price_df: pd.DataFrame) -> pd.
 
     enriched_frames = []
     for symbol, frame in feature_df.groupby("symbol"):
-        prices = price_df[price_df["symbol"] == symbol].copy()
+        prices = price_df[price_df["symbol"] == symbol].copy().sort_values("trade_date")
+        prices["ret_1d"] = prices["close"].pct_change()
+        prices["past_ret_5d"] = prices["close"] / prices["close"].shift(5) - 1.0
+        prices["past_ret_20d"] = prices["close"] / prices["close"].shift(20) - 1.0
+        prices["past_ret_60d"] = prices["close"] / prices["close"].shift(60) - 1.0
+        prices["volatility_20d"] = prices["ret_1d"].rolling(20).std()
+        prices["volatility_60d"] = prices["ret_1d"].rolling(60).std()
+        prices["volume_20d_avg"] = prices["volume"].rolling(20, min_periods=5).mean()
+        prices["volume_shock_20d"] = prices["volume"] / prices["volume_20d_avg"]
+        
         frame = frame.sort_values("date").copy()
         if prices.empty:
             frame["trade_date"] = pd.NaT
@@ -340,6 +355,13 @@ def attach_price_labels(feature_df: pd.DataFrame, price_df: pd.DataFrame) -> pd.
             frame["future_ret_5d"] = pd.NA
             frame["future_ret_20d"] = pd.NA
             frame["future_ret_60d"] = pd.NA
+            frame["past_ret_5d"] = pd.NA
+            frame["past_ret_20d"] = pd.NA
+            frame["past_ret_60d"] = pd.NA
+            frame["volatility_20d"] = pd.NA
+            frame["volatility_60d"] = pd.NA
+            frame["volume_20d_avg"] = pd.NA
+            frame["volume_shock_20d"] = pd.NA
             for column in benchmark_columns + excess_columns:
                 frame[column] = pd.NA
             enriched_frames.append(frame)
@@ -354,6 +376,21 @@ def attach_price_labels(feature_df: pd.DataFrame, price_df: pd.DataFrame) -> pd.
         ret_5d = []
         ret_20d = []
         ret_60d = []
+        past_ret_5d = []
+        past_ret_20d = []
+        past_ret_60d = []
+        vol_20d = []
+        vol_60d = []
+        volume_20d_avg = []
+        volume_shock_20d = []
+
+        past_ret_5_arr = prices["past_ret_5d"].to_numpy()
+        past_ret_20_arr = prices["past_ret_20d"].to_numpy()
+        past_ret_60_arr = prices["past_ret_60d"].to_numpy()
+        vol_20_arr = prices["volatility_20d"].to_numpy()
+        vol_60_arr = prices["volatility_60d"].to_numpy()
+        vol_20d_avg_arr = prices["volume_20d_avg"].to_numpy()
+        vol_shock_20d_arr = prices["volume_shock_20d"].to_numpy()
 
         for pos in idx:
             if pos >= len(prices):
@@ -362,6 +399,13 @@ def attach_price_labels(feature_df: pd.DataFrame, price_df: pd.DataFrame) -> pd.
                 ret_5d.append(pd.NA)
                 ret_20d.append(pd.NA)
                 ret_60d.append(pd.NA)
+                past_ret_5d.append(pd.NA)
+                past_ret_20d.append(pd.NA)
+                past_ret_60d.append(pd.NA)
+                vol_20d.append(pd.NA)
+                vol_60d.append(pd.NA)
+                volume_20d_avg.append(pd.NA)
+                volume_shock_20d.append(pd.NA)
                 continue
 
             close_now = closes[pos]
@@ -376,12 +420,27 @@ def attach_price_labels(feature_df: pd.DataFrame, price_df: pd.DataFrame) -> pd.
             ret_5d.append(_forward_return(5))
             ret_20d.append(_forward_return(20))
             ret_60d.append(_forward_return(60))
+            
+            past_ret_5d.append(past_ret_5_arr[pos])
+            past_ret_20d.append(past_ret_20_arr[pos])
+            past_ret_60d.append(past_ret_60_arr[pos])
+            vol_20d.append(vol_20_arr[pos])
+            vol_60d.append(vol_60_arr[pos])
+            volume_20d_avg.append(vol_20d_avg_arr[pos])
+            volume_shock_20d.append(vol_shock_20d_arr[pos])
 
         frame["trade_date"] = mapped_trade_dates
         frame["close"] = mapped_closes
         frame["future_ret_5d"] = ret_5d
         frame["future_ret_20d"] = ret_20d
         frame["future_ret_60d"] = ret_60d
+        frame["past_ret_5d"] = past_ret_5d
+        frame["past_ret_20d"] = past_ret_20d
+        frame["past_ret_60d"] = past_ret_60d
+        frame["volatility_20d"] = vol_20d
+        frame["volatility_60d"] = vol_60d
+        frame["volume_20d_avg"] = volume_20d_avg
+        frame["volume_shock_20d"] = volume_shock_20d
 
         for bench_symbol, bench_frame in benchmark_maps.items():
             prefix = bench_symbol.lower()
@@ -434,10 +493,16 @@ def save_features(feature_df: pd.DataFrame) -> int:
 
     ops = []
     built_at = datetime.now(UTC).isoformat()
+    # Load sector mapping
+    universe_col = client[DB_NAME][UNIVERSE_COLLECTION]
+    sector_map = {doc["symbol"]: doc.get("sector", "Unknown") for doc in universe_col.find({}, {"symbol": 1, "sector": 1})}
+
     for row in feature_df.to_dict("records"):
+        symbol = row["symbol"]
         record = {
-            "symbol": row["symbol"],
+            "symbol": symbol,
             "name": row["name"],
+            "sector": sector_map.get(symbol, "Unknown"),
             "date": row["date"].date().isoformat(),
             "article_count": int(row["article_count"]),
             "full_count": int(row["full_count"]),
@@ -463,6 +528,13 @@ def save_features(feature_df: pd.DataFrame) -> int:
             "future_ret_5d": float(row["future_ret_5d"]) if pd.notna(row["future_ret_5d"]) else None,
             "future_ret_20d": float(row["future_ret_20d"]) if pd.notna(row["future_ret_20d"]) else None,
             "future_ret_60d": float(row["future_ret_60d"]) if pd.notna(row["future_ret_60d"]) else None,
+            "past_ret_5d": float(row["past_ret_5d"]) if pd.notna(row.get("past_ret_5d")) else None,
+            "past_ret_20d": float(row["past_ret_20d"]) if pd.notna(row.get("past_ret_20d")) else None,
+            "past_ret_60d": float(row["past_ret_60d"]) if pd.notna(row.get("past_ret_60d")) else None,
+            "volatility_20d": float(row["volatility_20d"]) if pd.notna(row.get("volatility_20d")) else None,
+            "volatility_60d": float(row["volatility_60d"]) if pd.notna(row.get("volatility_60d")) else None,
+            "volume_20d_avg": float(row["volume_20d_avg"]) if pd.notna(row.get("volume_20d_avg")) else None,
+            "volume_shock_20d": float(row["volume_shock_20d"]) if pd.notna(row.get("volume_shock_20d")) else None,
             "benchmark_symbol": row.get("benchmark_symbol") if pd.notna(row.get("benchmark_symbol")) else None,
             "benchmark_ret_5d": float(row["benchmark_ret_5d"]) if pd.notna(row.get("benchmark_ret_5d")) else None,
             "benchmark_ret_20d": float(row["benchmark_ret_20d"]) if pd.notna(row.get("benchmark_ret_20d")) else None,

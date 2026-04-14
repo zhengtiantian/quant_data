@@ -133,6 +133,11 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Optional symbol subset",
     )
+    parser.add_argument(
+        "--group-by-year",
+        action="store_true",
+        help="Also print a year-by-year breakdown using the same backtest settings",
+    )
     return parser.parse_args()
 
 
@@ -156,6 +161,7 @@ def load_feature_frame(
         "_id": 0,
         "symbol": 1,
         "name": 1,
+        "sector": 1,
         "date": 1,
         "trade_date": 1,
         "article_count": 1,
@@ -174,6 +180,12 @@ def load_feature_frame(
         "excess_ret_5d": 1,
         "excess_ret_20d": 1,
         "excess_ret_60d": 1,
+        "past_ret_5d": 1,
+        "past_ret_20d": 1,
+        "past_ret_60d": 1,
+        "volatility_20d": 1,
+        "volatility_60d": 1,
+        "volume_shock_20d": 1,
     }
     rows = list(coll.find(query, projection))
     if not rows:
@@ -360,6 +372,61 @@ def print_summary(
         )
 
 
+def print_yearly_summary(
+    frame: pd.DataFrame,
+    factors: list[str],
+    horizons: list[int],
+    top_ns: list[int],
+    strategies: list[str],
+    excess_mode: str,
+) -> None:
+    if frame.empty:
+        return
+
+    working = frame.copy()
+    working["year"] = working["trade_date"].dt.year
+
+    print("")
+    print("=== Yearly Stability Breakdown ===")
+    header = (
+        f"{'year':>6} {'factor':<18} {'horizon':>7} {'strategy':<10} {'N':>4} {'obs':>7} "
+        f"{'mean_excess':>12} {'ann_excess':>12} {'hit_rate':>10}"
+    )
+    print(header)
+    print("-" * len(header))
+
+    for year in sorted(working["year"].dropna().unique()):
+        year_frame = working[working["year"] == year].copy()
+        if year_frame.empty:
+            continue
+        for factor in factors:
+            if factor not in year_frame.columns:
+                continue
+            for horizon in horizons:
+                for bucket_size in top_ns:
+                    for strategy in strategies:
+                        result = run_factor_backtest(
+                            year_frame,
+                            factor,
+                            horizon,
+                            bucket_size,
+                            strategy,
+                            excess_mode,
+                        )
+                        if result.observations == 0:
+                            continue
+                        ann_ex = (
+                            f"{result.annualized_excess_return:.2%}"
+                            if result.annualized_excess_return is not None
+                            else "n/a"
+                        )
+                        hit_rate = f"{result.hit_rate:.2%}" if result.hit_rate is not None else "n/a"
+                        print(
+                            f"{int(year):>6} {factor:<18} {horizon:>7} {strategy:<10} {bucket_size:>4} {result.observations:>7} "
+                            f"{result.mean_excess_return:>11.2%} {ann_ex:>12} {hit_rate:>10}"
+                        )
+
+
 def main() -> None:
     args = parse_args()
     frame = load_feature_frame(
@@ -393,6 +460,15 @@ def main() -> None:
                     )
 
     print_summary(results, frame, args.collection, args.min_trade_date, args.excess_mode)
+    if args.group_by_year:
+        print_yearly_summary(
+            frame=frame,
+            factors=args.factors,
+            horizons=args.horizons,
+            top_ns=args.top_ns,
+            strategies=args.strategies,
+            excess_mode=args.excess_mode,
+        )
 
 
 if __name__ == "__main__":
