@@ -117,6 +117,12 @@ def parse_args() -> argparse.Namespace:
         help="Safety cutoff for trade_date; rows before this are excluded",
     )
     parser.add_argument(
+        "--excess-mode",
+        default="benchmark",
+        choices=["benchmark", "universe"],
+        help="How to compute excess return for long-only buckets",
+    )
+    parser.add_argument(
         "--max-trade-date",
         default=None,
         help="Optional inclusive end date in YYYY-MM-DD",
@@ -161,6 +167,13 @@ def load_feature_frame(
         "future_ret_5d": 1,
         "future_ret_20d": 1,
         "future_ret_60d": 1,
+        "benchmark_symbol": 1,
+        "benchmark_ret_5d": 1,
+        "benchmark_ret_20d": 1,
+        "benchmark_ret_60d": 1,
+        "excess_ret_5d": 1,
+        "excess_ret_20d": 1,
+        "excess_ret_60d": 1,
     }
     rows = list(coll.find(query, projection))
     if not rows:
@@ -234,8 +247,16 @@ def _clean_subset(frame: pd.DataFrame, factor: str, horizon: int) -> pd.DataFram
     return subset
 
 
-def run_factor_backtest(frame: pd.DataFrame, factor: str, horizon: int, bucket_size: int, strategy: str) -> BacktestResult:
+def run_factor_backtest(
+    frame: pd.DataFrame,
+    factor: str,
+    horizon: int,
+    bucket_size: int,
+    strategy: str,
+    excess_mode: str,
+) -> BacktestResult:
     target_col = f"future_ret_{horizon}d"
+    benchmark_col = f"benchmark_ret_{horizon}d"
     subset = _clean_subset(frame, factor, horizon)
     if subset.empty:
         return BacktestResult(factor, horizon, strategy, bucket_size, 0, math.nan, math.nan, math.nan, None, None, None, 0.0)
@@ -246,6 +267,8 @@ def run_factor_backtest(frame: pd.DataFrame, factor: str, horizon: int, bucket_s
 
     for _, group in subset.groupby("trade_date"):
         ordered = group.sort_values([factor, "symbol"], ascending=[False, True])
+        group_benchmark = pd.to_numeric(group.get(benchmark_col), errors="coerce") if benchmark_col in group.columns else None
+
         if strategy == "top":
             selected = ordered.head(bucket_size)
             if selected.empty:
@@ -267,7 +290,10 @@ def run_factor_backtest(frame: pd.DataFrame, factor: str, horizon: int, bucket_s
             selection_sizes.append(min(len(top_bucket), len(bottom_bucket)) * 2)
 
         strategy_returns.append(strategy_ret)
-        universe_returns.append(group[target_col].mean())
+        if excess_mode == "benchmark" and group_benchmark is not None and group_benchmark.notna().any():
+            universe_returns.append(group_benchmark.dropna().mean())
+        else:
+            universe_returns.append(group[target_col].mean())
 
     if not strategy_returns:
         return BacktestResult(factor, horizon, strategy, bucket_size, 0, math.nan, math.nan, math.nan, None, None, None, 0.0)
@@ -302,13 +328,20 @@ def run_factor_backtest(frame: pd.DataFrame, factor: str, horizon: int, bucket_s
     )
 
 
-def print_summary(results: list[BacktestResult], frame: pd.DataFrame, collection: str, min_trade_date: str) -> None:
+def print_summary(
+    results: list[BacktestResult],
+    frame: pd.DataFrame,
+    collection: str,
+    min_trade_date: str,
+    excess_mode: str,
+) -> None:
     print("=== News Factor Backtest ===")
     print(f"collection={collection}")
     print(f"rows={len(frame):,}")
     print(f"trade_date_range={frame['trade_date'].min().date()} -> {frame['trade_date'].max().date()}")
     print(f"symbols={frame['symbol'].nunique()}")
     print(f"min_trade_date={min_trade_date}")
+    print(f"excess_mode={excess_mode}")
     print("")
     header = (
         f"{'factor':<18} {'horizon':>7} {'strategy':<10} {'N':>4} {'obs':>7} "
@@ -348,9 +381,18 @@ def main() -> None:
         for horizon in args.horizons:
             for bucket_size in args.top_ns:
                 for strategy in args.strategies:
-                    results.append(run_factor_backtest(frame, factor, horizon, bucket_size, strategy))
+                    results.append(
+                        run_factor_backtest(
+                            frame,
+                            factor,
+                            horizon,
+                            bucket_size,
+                            strategy,
+                            args.excess_mode,
+                        )
+                    )
 
-    print_summary(results, frame, args.collection, args.min_trade_date)
+    print_summary(results, frame, args.collection, args.min_trade_date, args.excess_mode)
 
 
 if __name__ == "__main__":

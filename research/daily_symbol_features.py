@@ -27,6 +27,12 @@ DB_NAME = os.getenv("FEATURE_DB_NAME", "quant_data")
 NEWS_COLLECTION = os.getenv("FEATURE_NEWS_COLLECTION", "news_articles")
 PRICE_COLLECTION = os.getenv("FEATURE_PRICE_COLLECTION", "stock_prices_history")
 FEATURE_COLLECTION = os.getenv("FEATURE_OUTPUT_COLLECTION", "daily_symbol_features")
+BENCHMARK_SYMBOLS = [
+    symbol.strip().upper()
+    for symbol in os.getenv("FEATURE_BENCHMARK_SYMBOLS", "SPY,QQQ").split(",")
+    if symbol.strip()
+]
+PRIMARY_BENCHMARK = os.getenv("FEATURE_PRIMARY_BENCHMARK", "QQQ").strip().upper()
 
 FEATURE_REBUILD_ALL = os.getenv("FEATURE_REBUILD_ALL", "false").lower() == "true"
 FEATURE_LOOKBACK_DAYS = int(os.getenv("FEATURE_LOOKBACK_DAYS", "180"))
@@ -267,13 +273,61 @@ def load_price_frame() -> pd.DataFrame:
     return price_df
 
 
+def build_benchmark_return_maps(price_df: pd.DataFrame) -> dict[str, pd.DataFrame]:
+    benchmark_maps: dict[str, pd.DataFrame] = {}
+    if price_df.empty:
+        return benchmark_maps
+
+    for symbol in BENCHMARK_SYMBOLS:
+        bench = price_df[price_df["symbol"] == symbol].copy()
+        if bench.empty:
+            continue
+
+        bench = bench.sort_values("trade_date").reset_index(drop=True)
+        closes = bench["close"].to_numpy()
+
+        def _forward_return(pos: int, offset: int):
+            if pos + offset >= len(bench):
+                return pd.NA
+            return float(closes[pos + offset] / closes[pos] - 1.0)
+
+        bench[f"{symbol.lower()}_ret_5d"] = [_forward_return(i, 5) for i in range(len(bench))]
+        bench[f"{symbol.lower()}_ret_20d"] = [_forward_return(i, 20) for i in range(len(bench))]
+        bench[f"{symbol.lower()}_ret_60d"] = [_forward_return(i, 60) for i in range(len(bench))]
+
+        bench["trade_date_key"] = bench["trade_date"].dt.strftime("%Y-%m-%d")
+        benchmark_maps[symbol] = bench.set_index("trade_date_key")[
+            [f"{symbol.lower()}_ret_5d", f"{symbol.lower()}_ret_20d", f"{symbol.lower()}_ret_60d"]
+        ]
+
+    return benchmark_maps
+
+
 def attach_price_labels(feature_df: pd.DataFrame, price_df: pd.DataFrame) -> pd.DataFrame:
+    benchmark_maps = build_benchmark_return_maps(price_df)
+    benchmark_columns = []
+    for symbol in BENCHMARK_SYMBOLS:
+        benchmark_columns.extend(
+            [f"{symbol.lower()}_ret_5d", f"{symbol.lower()}_ret_20d", f"{symbol.lower()}_ret_60d"]
+        )
+    excess_columns = [
+        "benchmark_symbol",
+        "benchmark_ret_5d",
+        "benchmark_ret_20d",
+        "benchmark_ret_60d",
+        "excess_ret_5d",
+        "excess_ret_20d",
+        "excess_ret_60d",
+    ]
+
     if feature_df.empty or price_df.empty:
         feature_df["trade_date"] = pd.NaT
         feature_df["close"] = pd.NA
         feature_df["future_ret_5d"] = pd.NA
         feature_df["future_ret_20d"] = pd.NA
         feature_df["future_ret_60d"] = pd.NA
+        for column in benchmark_columns + excess_columns:
+            feature_df[column] = pd.NA
         return feature_df
 
     enriched_frames = []
@@ -286,6 +340,8 @@ def attach_price_labels(feature_df: pd.DataFrame, price_df: pd.DataFrame) -> pd.
             frame["future_ret_5d"] = pd.NA
             frame["future_ret_20d"] = pd.NA
             frame["future_ret_60d"] = pd.NA
+            for column in benchmark_columns + excess_columns:
+                frame[column] = pd.NA
             enriched_frames.append(frame)
             continue
 
@@ -326,6 +382,34 @@ def attach_price_labels(feature_df: pd.DataFrame, price_df: pd.DataFrame) -> pd.
         frame["future_ret_5d"] = ret_5d
         frame["future_ret_20d"] = ret_20d
         frame["future_ret_60d"] = ret_60d
+
+        for bench_symbol, bench_frame in benchmark_maps.items():
+            prefix = bench_symbol.lower()
+            mapped_keys = [ts.strftime("%Y-%m-%d") if pd.notna(ts) else None for ts in frame["trade_date"]]
+            mapped = bench_frame.reindex(pd.Index(mapped_keys))
+            frame[f"{prefix}_ret_5d"] = mapped[f"{prefix}_ret_5d"].to_list()
+            frame[f"{prefix}_ret_20d"] = mapped[f"{prefix}_ret_20d"].to_list()
+            frame[f"{prefix}_ret_60d"] = mapped[f"{prefix}_ret_60d"].to_list()
+
+        benchmark_symbol = PRIMARY_BENCHMARK if PRIMARY_BENCHMARK in benchmark_maps else None
+        if benchmark_symbol:
+            prefix = benchmark_symbol.lower()
+            frame["benchmark_symbol"] = benchmark_symbol
+            frame["benchmark_ret_5d"] = frame[f"{prefix}_ret_5d"]
+            frame["benchmark_ret_20d"] = frame[f"{prefix}_ret_20d"]
+            frame["benchmark_ret_60d"] = frame[f"{prefix}_ret_60d"]
+            frame["excess_ret_5d"] = frame["future_ret_5d"] - frame["benchmark_ret_5d"]
+            frame["excess_ret_20d"] = frame["future_ret_20d"] - frame["benchmark_ret_20d"]
+            frame["excess_ret_60d"] = frame["future_ret_60d"] - frame["benchmark_ret_60d"]
+        else:
+            frame["benchmark_symbol"] = pd.NA
+            frame["benchmark_ret_5d"] = pd.NA
+            frame["benchmark_ret_20d"] = pd.NA
+            frame["benchmark_ret_60d"] = pd.NA
+            frame["excess_ret_5d"] = pd.NA
+            frame["excess_ret_20d"] = pd.NA
+            frame["excess_ret_60d"] = pd.NA
+
         enriched_frames.append(frame)
 
     return pd.concat(enriched_frames, ignore_index=True)
@@ -379,8 +463,20 @@ def save_features(feature_df: pd.DataFrame) -> int:
             "future_ret_5d": float(row["future_ret_5d"]) if pd.notna(row["future_ret_5d"]) else None,
             "future_ret_20d": float(row["future_ret_20d"]) if pd.notna(row["future_ret_20d"]) else None,
             "future_ret_60d": float(row["future_ret_60d"]) if pd.notna(row["future_ret_60d"]) else None,
+            "benchmark_symbol": row.get("benchmark_symbol") if pd.notna(row.get("benchmark_symbol")) else None,
+            "benchmark_ret_5d": float(row["benchmark_ret_5d"]) if pd.notna(row.get("benchmark_ret_5d")) else None,
+            "benchmark_ret_20d": float(row["benchmark_ret_20d"]) if pd.notna(row.get("benchmark_ret_20d")) else None,
+            "benchmark_ret_60d": float(row["benchmark_ret_60d"]) if pd.notna(row.get("benchmark_ret_60d")) else None,
+            "excess_ret_5d": float(row["excess_ret_5d"]) if pd.notna(row.get("excess_ret_5d")) else None,
+            "excess_ret_20d": float(row["excess_ret_20d"]) if pd.notna(row.get("excess_ret_20d")) else None,
+            "excess_ret_60d": float(row["excess_ret_60d"]) if pd.notna(row.get("excess_ret_60d")) else None,
             "builtAt": built_at,
         }
+        for symbol in BENCHMARK_SYMBOLS:
+            prefix = symbol.lower()
+            for horizon in (5, 20, 60):
+                key = f"{prefix}_ret_{horizon}d"
+                record[key] = float(row[key]) if pd.notna(row.get(key)) else None
         ops.append(
             UpdateOne(
                 {"symbol": record["symbol"], "date": record["date"]},
