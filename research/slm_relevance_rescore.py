@@ -127,7 +127,7 @@ def save_results(col, results: Iterable[dict]) -> int:
                             "relevant": row["relevant"],
                             "basis": row["basis"],
                             "version": RESCORE_VERSION,
-                            "model": os.getenv("SLM_MODEL", "qwen3-4b-bench"),
+                            "model": os.getenv("SLM_MODEL", "qwen3.5-4b"),
                             "provider": os.getenv("SLM_PROVIDER", "lmstudio"),
                             "scoredAt": now_iso,
                         }

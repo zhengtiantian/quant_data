@@ -194,7 +194,7 @@ def main() -> None:
     parser.add_argument("--sample-size", type=int, default=50)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--base-url", default="http://127.0.0.1:1234/v1")
-    parser.add_argument("--qwen-model", default="qwen3-4b")
+    parser.add_argument("--qwen-model", default="qwen3.5-4b")
     parser.add_argument("--gemma-model", default="google/gemma-4-e4b")
     parser.add_argument("--input-csv", default="")
     parser.add_argument("--progress-every", type=int, default=5)

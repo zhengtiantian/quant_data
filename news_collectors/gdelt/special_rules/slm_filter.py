@@ -79,7 +79,7 @@ class SLMFilter:
                 api_url = os.getenv("SLM_API_URL", os.getenv("OLLAMA_API", "http://127.0.0.1:11434"))
         if model is None:
             if self.provider == "lmstudio":
-                model = os.getenv("SLM_MODEL", os.getenv("LMSTUDIO_MODEL", "qwen3-4b-bench"))
+                model = os.getenv("SLM_MODEL", os.getenv("LMSTUDIO_MODEL", "qwen3.5-4b"))
             else:
                 model = os.getenv("SLM_MODEL", os.getenv("OLLAMA_MODEL", "qwen3:4b-q4_K_M"))
 
