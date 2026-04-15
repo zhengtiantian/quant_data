@@ -503,34 +503,28 @@ def seed_tasks(total_batches, resume_batch, batch_signatures):
     conn = get_mysql_conn()
     try:
         cur = conn.cursor()
-        # 确保所有批次都在任务表里
+        # 仅为新增批次补任务，避免启动时重开历史已完成批次。
         values = [(i,) for i in range(1, total_batches + 1)]
+        inserted_batches = 0
         if values:
             cur.executemany(
                 f"INSERT IGNORE INTO {MYSQL_TASK_TABLE} (batch_id, status) VALUES (%s, 'pending')",
                 values,
             )
-        # 批次签名变更则重开该批次；签名不变则保持 done，不重复跑。
-        changed_batches = 0
-        for batch_id, batch_sig in batch_signatures:
-            cur.execute(
-                f"""
-                UPDATE {MYSQL_TASK_TABLE}
-                SET status='pending', owner=NULL, owner_host=NULL, updated_at=NOW(), batch_sig=%s
-                WHERE batch_id=%s
-                  AND (batch_sig IS NULL OR batch_sig <> %s)
-                """,
-                (batch_sig, batch_id, batch_sig),
-            )
-            changed_batches += cur.rowcount
-        if changed_batches:
-            print(f"🔁 Reopened changed batches: {changed_batches}")
-        # 新增批次补齐签名
+            inserted_batches = cur.rowcount
+        if inserted_batches:
+            print(f"🆕 Added new queue batches: {inserted_batches}")
+
+        # 只给空签名任务补签名，不因为签名变化重开历史批次。
+        filled_signatures = 0
         for batch_id, batch_sig in batch_signatures:
             cur.execute(
                 f"UPDATE {MYSQL_TASK_TABLE} SET batch_sig=%s WHERE batch_id=%s AND batch_sig IS NULL",
                 (batch_sig, batch_id),
             )
+            filled_signatures += cur.rowcount
+        if filled_signatures:
+            print(f"🧾 Filled missing batch signatures: {filled_signatures}")
         # 进度语义：progress=N -> 1..N-1 已完成，N..end 待执行
         if resume_batch > 1:
             cur.execute(
