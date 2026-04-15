@@ -262,3 +262,77 @@ Then rerun the same:
 - `Ridge`
 
 and compare against this document as the baseline.
+
+## Earnings Event Layer Update
+An initial earnings-event layer has now been added to the research pipeline.
+
+Implemented components:
+
+- earnings source:
+  - `yfinance`
+- earnings collection:
+  - `earnings_events`
+- loader script:
+  - [research/load_earnings_events.py](/Users/xiz/Quant_trade/quant_data/research/load_earnings_events.py)
+- feature integration:
+  - [research/daily_symbol_features.py](/Users/xiz/Quant_trade/quant_data/research/daily_symbol_features.py)
+
+The first event features added are:
+
+- `days_to_earnings`
+- `days_since_earnings`
+- `is_earnings_window_5d`
+- `is_post_earnings_window_20d`
+
+Operational result:
+
+- earnings events loaded:
+  - `1,112`
+- feature table rebuilt:
+  - `40,009` rows in `daily_symbol_features_company_matched_v1`
+
+## Earnings Event Result
+The first earnings-event layer is useful, but not yet a major standalone edge.
+
+### `20d` baseline with earnings-event features
+Compared with the previous baseline:
+
+- previous `Ridge`
+  - Rank IC: `0.0207`
+  - Top 5 mean excess return: `+2.00%`
+- current `Ridge`
+  - Rank IC: `0.0285`
+  - Top 5 mean excess return: `+2.02%`
+
+Interpretation:
+
+- `20d` sees a small improvement
+- earnings timing provides some useful short-horizon context
+- the improvement is real but modest
+
+### `60d` baseline with earnings-event features
+Compared with the previous baseline:
+
+- previous `Ridge`
+  - Rank IC: `0.0762`
+  - Top 5 mean excess return: `+6.15%`
+- current `Ridge`
+  - Rank IC: `0.0730`
+  - Top 5 mean excess return: `+6.20%`
+
+Interpretation:
+
+- `Top 5` excess return improves slightly
+- overall rank correlation is slightly lower
+- this means the current earnings-event layer is helpful as context, but not
+  yet a decisive new alpha source
+
+## Updated Working Conclusion
+After adding the first earnings-event layer:
+
+- news quality is still the core signal
+- earnings timing adds useful context, especially for `20d`
+- the current earnings features should be treated as a support layer, not a
+  replacement for quality factors
+- the next event research step should focus on richer earnings surprise and
+  post-earnings structure features

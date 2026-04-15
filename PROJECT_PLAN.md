@@ -337,6 +337,46 @@ Use separate clean / derived layers.
 3. add sector / industry mapping
 4. add optional valuation/fundamental data
 
+Status update:
+
+- benchmark/index price collection:
+  - done for current research baseline
+- first earnings/event calendar layer:
+  - done
+  - source: `yfinance`
+  - collection: `earnings_events`
+  - loader: `research/load_earnings_events.py`
+  - integrated features:
+    - `days_to_earnings`
+    - `days_since_earnings`
+    - `is_earnings_window_5d`
+    - `is_post_earnings_window_20d`
+- sector mapping:
+  - basic version already integrated
+
+Next event-layer development after this release:
+
+1. add earnings surprise features
+- `eps_estimate`
+- `reported_eps`
+- `surprise_pct`
+- `is_positive_surprise`
+- `is_negative_surprise`
+
+2. add richer earnings timing buckets
+- `days_to_earnings_bucket`
+- `days_since_earnings_bucket`
+- tighter pre-earnings / post-earnings windows
+
+3. add post-earnings drift structure
+- post-earnings drift flag
+- surprise combined with drift window
+- event + news quality interaction tests
+
+4. rerun baseline and factor comparison
+- compare event features against the current written baseline
+- test whether event features help more on `20d` than `60d`
+
 ## Stage 3. Modeling
 
 1. build training-ready dataset
@@ -368,6 +408,7 @@ Use separate clean / derived layers.
 - `research/backtest_long_short.py`
 - `research/build_quality_factor.py`
 - `research/load_benchmark_prices.py`
+- `research/load_earnings_events.py`
 - `research/prepare_model_dataset.py`
 - `research/train_baseline_models.py`
 

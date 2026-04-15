@@ -58,7 +58,7 @@ def evaluate_predictions(df: pd.DataFrame, target: str, pred_col: str) -> dict:
 
 
 def walk_forward_train_eval(df: pd.DataFrame, features: list[str], target: str) -> None:
-    df = df.dropna(subset=[target] + features).copy()
+    df = df.dropna(subset=[target]).copy()
     if df.empty:
         print("Data is empty after dropping missing values.")
         return
@@ -155,7 +155,7 @@ def main():
     print(f"Data loaded: {len(df):,} rows.")
     
     # Check if necessary new features exist (we added past_ret and volatility)
-    required = ["past_ret_20d", "volatility_20d"]
+    required = ["past_ret_20d", "volatility_20d", "days_to_earnings", "is_earnings_window_5d"]
     missing = [c for c in required if c not in df.columns]
     if missing:
         print(f"Dataset is missing features: {missing}. Have you rebuilt daily symbol features?")
@@ -172,6 +172,10 @@ def main():
         "volatility_20d",
         "volatility_60d",
         "volume_shock_20d",
+        "days_to_earnings",
+        "days_since_earnings",
+        "is_earnings_window_5d",
+        "is_post_earnings_window_20d",
         "sector"
     ]
     

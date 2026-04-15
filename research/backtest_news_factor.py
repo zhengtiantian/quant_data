@@ -186,6 +186,10 @@ def load_feature_frame(
         "volatility_20d": 1,
         "volatility_60d": 1,
         "volume_shock_20d": 1,
+        "days_to_earnings": 1,
+        "days_since_earnings": 1,
+        "is_earnings_window_5d": 1,
+        "is_post_earnings_window_20d": 1,
     }
     rows = list(coll.find(query, projection))
     if not rows:

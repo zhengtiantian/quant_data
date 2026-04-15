@@ -28,6 +28,7 @@ NEWS_COLLECTION = os.getenv("FEATURE_NEWS_COLLECTION", "news_articles")
 PRICE_COLLECTION = os.getenv("FEATURE_PRICE_COLLECTION", "stock_prices_history")
 FEATURE_COLLECTION = os.getenv("FEATURE_OUTPUT_COLLECTION", "daily_symbol_features")
 UNIVERSE_COLLECTION = os.getenv("FEATURE_UNIVERSE_COLLECTION", "stock_universe")
+EARNINGS_COLLECTION = os.getenv("FEATURE_EARNINGS_COLLECTION", "earnings_events")
 BENCHMARK_SYMBOLS = [
     symbol.strip().upper()
     for symbol in os.getenv("FEATURE_BENCHMARK_SYMBOLS", "SPY,QQQ").split(",")
@@ -279,6 +280,42 @@ def load_price_frame() -> pd.DataFrame:
     return price_df
 
 
+def load_earnings_frame() -> pd.DataFrame:
+    _, end_date, effective_start = _resolve_range()
+    client = create_client()
+    col = client[DB_NAME][EARNINGS_COLLECTION]
+
+    cursor = col.find(
+        {"symbol": {"$exists": True, "$ne": None}},
+        {"_id": 0, "symbol": 1, "event_date": 1, "earnings_date": 1},
+    )
+
+    rows = []
+    for doc in cursor:
+        raw_event_date = doc.get("event_date") or doc.get("earnings_date")
+        if not raw_event_date:
+            continue
+        try:
+            event_date = pd.Timestamp(raw_event_date).normalize()
+        except Exception:
+            continue
+        if effective_start is not None and event_date < effective_start - pd.Timedelta(days=90):
+            continue
+        if end_date is not None and event_date > end_date + pd.Timedelta(days=120):
+            continue
+        rows.append({"symbol": doc["symbol"], "event_date": event_date})
+
+    if not rows:
+        return pd.DataFrame(columns=["symbol", "event_date"])
+
+    return (
+        pd.DataFrame(rows)
+        .drop_duplicates(subset=["symbol", "event_date"])
+        .sort_values(["symbol", "event_date"])
+        .reset_index(drop=True)
+    )
+
+
 def build_benchmark_return_maps(price_df: pd.DataFrame) -> dict[str, pd.DataFrame]:
     benchmark_maps: dict[str, pd.DataFrame] = {}
     if price_df.empty:
@@ -474,6 +511,98 @@ def attach_price_labels(feature_df: pd.DataFrame, price_df: pd.DataFrame) -> pd.
     return pd.concat(enriched_frames, ignore_index=True)
 
 
+def attach_earnings_event_features(
+    feature_df: pd.DataFrame,
+    price_df: pd.DataFrame,
+    earnings_df: pd.DataFrame,
+) -> pd.DataFrame:
+    columns = [
+        "days_to_earnings",
+        "days_since_earnings",
+        "is_earnings_window_5d",
+        "is_post_earnings_window_20d",
+    ]
+    if feature_df.empty:
+        for column in columns:
+            feature_df[column] = pd.NA
+        return feature_df
+
+    if earnings_df.empty or price_df.empty:
+        for column in columns:
+            feature_df[column] = pd.NA
+        return feature_df
+
+    enriched_frames = []
+    for symbol, frame in feature_df.groupby("symbol"):
+        symbol_prices = (
+            price_df[price_df["symbol"] == symbol]
+            .sort_values("trade_date")
+            .drop_duplicates(subset=["trade_date"], keep="last")
+        )
+        symbol_earnings = earnings_df[earnings_df["symbol"] == symbol].copy()
+
+        frame = frame.sort_values("date").copy()
+        if symbol_prices.empty or symbol_earnings.empty:
+            frame["days_to_earnings"] = pd.NA
+            frame["days_since_earnings"] = pd.NA
+            frame["is_earnings_window_5d"] = pd.NA
+            frame["is_post_earnings_window_20d"] = pd.NA
+            enriched_frames.append(frame)
+            continue
+
+        trade_dates = pd.DatetimeIndex(symbol_prices["trade_date"])
+        aligned_positions: list[int] = []
+        for event_date in symbol_earnings["event_date"]:
+            pos = int(trade_dates.searchsorted(event_date, side="left"))
+            if pos >= len(trade_dates):
+                continue
+            aligned_positions.append(pos)
+
+        aligned_positions = sorted(set(aligned_positions))
+        if not aligned_positions:
+            frame["days_to_earnings"] = pd.NA
+            frame["days_since_earnings"] = pd.NA
+            frame["is_earnings_window_5d"] = pd.NA
+            frame["is_post_earnings_window_20d"] = pd.NA
+            enriched_frames.append(frame)
+            continue
+
+        frame_trade_dates = pd.DatetimeIndex(frame["trade_date"])
+        current_positions = trade_dates.searchsorted(frame_trade_dates, side="left")
+
+        days_to = []
+        days_since = []
+        in_window = []
+        post_window = []
+
+        for current_pos in current_positions:
+            if current_pos >= len(trade_dates):
+                days_to.append(pd.NA)
+                days_since.append(pd.NA)
+                in_window.append(pd.NA)
+                post_window.append(pd.NA)
+                continue
+
+            next_pos = next((p for p in aligned_positions if p >= current_pos), None)
+            prev_pos = next((p for p in reversed(aligned_positions) if p <= current_pos), None)
+
+            next_gap = next_pos - current_pos if next_pos is not None else pd.NA
+            prev_gap = current_pos - prev_pos if prev_pos is not None else pd.NA
+
+            days_to.append(int(next_gap) if pd.notna(next_gap) else pd.NA)
+            days_since.append(int(prev_gap) if pd.notna(prev_gap) else pd.NA)
+            in_window.append(int(pd.notna(next_gap) and next_gap <= 5))
+            post_window.append(int(pd.notna(prev_gap) and 0 <= prev_gap <= 20))
+
+        frame["days_to_earnings"] = days_to
+        frame["days_since_earnings"] = days_since
+        frame["is_earnings_window_5d"] = in_window
+        frame["is_post_earnings_window_20d"] = post_window
+        enriched_frames.append(frame)
+
+    return pd.concat(enriched_frames, ignore_index=True)
+
+
 def save_features(feature_df: pd.DataFrame) -> int:
     base_start, _, _ = _resolve_range()
     if base_start is not None:
@@ -535,6 +664,10 @@ def save_features(feature_df: pd.DataFrame) -> int:
             "volatility_60d": float(row["volatility_60d"]) if pd.notna(row.get("volatility_60d")) else None,
             "volume_20d_avg": float(row["volume_20d_avg"]) if pd.notna(row.get("volume_20d_avg")) else None,
             "volume_shock_20d": float(row["volume_shock_20d"]) if pd.notna(row.get("volume_shock_20d")) else None,
+            "days_to_earnings": int(row["days_to_earnings"]) if pd.notna(row.get("days_to_earnings")) else None,
+            "days_since_earnings": int(row["days_since_earnings"]) if pd.notna(row.get("days_since_earnings")) else None,
+            "is_earnings_window_5d": int(row["is_earnings_window_5d"]) if pd.notna(row.get("is_earnings_window_5d")) else None,
+            "is_post_earnings_window_20d": int(row["is_post_earnings_window_20d"]) if pd.notna(row.get("is_post_earnings_window_20d")) else None,
             "benchmark_symbol": row.get("benchmark_symbol") if pd.notna(row.get("benchmark_symbol")) else None,
             "benchmark_ret_5d": float(row["benchmark_ret_5d"]) if pd.notna(row.get("benchmark_ret_5d")) else None,
             "benchmark_ret_20d": float(row["benchmark_ret_20d"]) if pd.notna(row.get("benchmark_ret_20d")) else None,
@@ -579,6 +712,9 @@ def build_daily_symbol_features() -> int:
     print(f"Loaded {len(price_df):,} price rows")
 
     feature_df = attach_price_labels(feature_df, price_df)
+    earnings_df = load_earnings_frame()
+    print(f"Loaded {len(earnings_df):,} earnings rows")
+    feature_df = attach_earnings_event_features(feature_df, price_df, earnings_df)
     saved = save_features(feature_df)
     print(f"Saved {saved:,} feature rows to {FEATURE_COLLECTION}")
     return saved
