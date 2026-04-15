@@ -20,6 +20,7 @@ import builtins
 import signal
 import traceback
 import sys
+import hashlib
 from bs4 import BeautifulSoup
 
 # ============================
@@ -477,12 +478,28 @@ def ensure_task_table():
         cur.execute(f"SHOW COLUMNS FROM {MYSQL_TASK_TABLE} LIKE 'owner_host'")
         if cur.fetchone() is None:
             cur.execute(f"ALTER TABLE {MYSQL_TASK_TABLE} ADD COLUMN owner_host VARCHAR(128) DEFAULT NULL AFTER owner")
+        cur.execute(f"SHOW COLUMNS FROM {MYSQL_TASK_TABLE} LIKE 'batch_sig'")
+        if cur.fetchone() is None:
+            cur.execute(f"ALTER TABLE {MYSQL_TASK_TABLE} ADD COLUMN batch_sig VARCHAR(64) DEFAULT NULL AFTER batch_id")
         conn.commit()
     finally:
         conn.close()
 
 
-def seed_tasks(total_batches, resume_batch):
+def build_batch_signatures(urls, batch_size):
+    signatures = []
+    total_batches = (len(urls) + batch_size - 1) // batch_size
+    for batch_idx in range(1, total_batches + 1):
+        i = (batch_idx - 1) * batch_size
+        batch_urls = urls[i : i + batch_size]
+        if not batch_urls:
+            continue
+        digest = hashlib.sha1("\n".join(batch_urls).encode("utf-8")).hexdigest()
+        signatures.append((batch_idx, digest))
+    return signatures
+
+
+def seed_tasks(total_batches, resume_batch, batch_signatures):
     conn = get_mysql_conn()
     try:
         cur = conn.cursor()
@@ -492,6 +509,27 @@ def seed_tasks(total_batches, resume_batch):
             cur.executemany(
                 f"INSERT IGNORE INTO {MYSQL_TASK_TABLE} (batch_id, status) VALUES (%s, 'pending')",
                 values,
+            )
+        # 批次签名变更则重开该批次；签名不变则保持 done，不重复跑。
+        changed_batches = 0
+        for batch_id, batch_sig in batch_signatures:
+            cur.execute(
+                f"""
+                UPDATE {MYSQL_TASK_TABLE}
+                SET status='pending', owner=NULL, owner_host=NULL, updated_at=NOW(), batch_sig=%s
+                WHERE batch_id=%s
+                  AND (batch_sig IS NULL OR batch_sig <> %s)
+                """,
+                (batch_sig, batch_id, batch_sig),
+            )
+            changed_batches += cur.rowcount
+        if changed_batches:
+            print(f"🔁 Reopened changed batches: {changed_batches}")
+        # 新增批次补齐签名
+        for batch_id, batch_sig in batch_signatures:
+            cur.execute(
+                f"UPDATE {MYSQL_TASK_TABLE} SET batch_sig=%s WHERE batch_id=%s AND batch_sig IS NULL",
+                (batch_sig, batch_id),
             )
         # 进度语义：progress=N -> 1..N-1 已完成，N..end 待执行
         if resume_batch > 1:
@@ -1618,7 +1656,8 @@ if __name__ == "__main__":
         ensure_task_table()
         queue_resume_batch = 1
         print("🧭 Queue resume source: MySQL task table only")
-        seed_tasks(total_batches, queue_resume_batch)
+        batch_signatures = build_batch_signatures(urls, BATCH_SIZE)
+        seed_tasks(total_batches, queue_resume_batch, batch_signatures)
 
         total_insert_lock = threading.Lock()
 

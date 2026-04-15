@@ -12,14 +12,20 @@ from pymongo import MongoClient
 CURRENT = Path(__file__).resolve()
 ROOT = CURRENT.parents[2]
 GLOBAL_ENV = ROOT / ".env"
+FINNHUB_ENV = ROOT / "news_collectors" / "finnhub" / ".env"
 
 load_dotenv(GLOBAL_ENV, override=False)
+load_dotenv(FINNHUB_ENV, override=False)
 
-FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY")
+FINNHUB_API_KEY = (
+    os.getenv("FINNHUB_API_KEY")
+    or os.getenv("FINNHUB_TOKEN")
+    or os.getenv("FINNHUB_KEY")
+)
 MONGO_URI = os.getenv("MONGO_URI")
 
 if not FINNHUB_API_KEY:
-    raise RuntimeError("FINNHUB_API_KEY missing")
+    raise RuntimeError("FINNHUB API key missing (checked FINNHUB_API_KEY/FINNHUB_TOKEN/FINNHUB_KEY)")
 if not MONGO_URI:
     raise RuntimeError("MONGO_URI missing")
 
