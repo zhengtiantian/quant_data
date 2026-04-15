@@ -563,42 +563,56 @@ def seed_tasks(total_batches, resume_batch, batch_signatures):
 
 
 def claim_next_batch(owner):
-    conn = get_mysql_conn()
-    try:
-        cur = conn.cursor(dictionary=True)
-        cur.execute("START TRANSACTION")
-        cur.execute(
-            f"""
-            SELECT batch_id
-            FROM {MYSQL_TASK_TABLE}
-            WHERE status IN ('pending', 'failed')
-               OR (status='running' AND updated_at < (NOW() - INTERVAL %s MINUTE))
-            ORDER BY batch_id ASC
-            LIMIT 1
-            FOR UPDATE SKIP LOCKED
-            """,
-            (RUNNING_RECLAIM_MINUTES,),
-        )
-        row = cur.fetchone()
-        if not row:
+    max_attempts = 5
+    for attempt in range(1, max_attempts + 1):
+        conn = get_mysql_conn()
+        try:
+            cur = conn.cursor(dictionary=True)
+            cur.execute("START TRANSACTION")
+            cur.execute(
+                f"""
+                SELECT batch_id
+                FROM {MYSQL_TASK_TABLE}
+                WHERE status IN ('pending', 'failed')
+                   OR (status='running' AND updated_at < (NOW() - INTERVAL %s MINUTE))
+                ORDER BY batch_id ASC
+                LIMIT 1
+                FOR UPDATE SKIP LOCKED
+                """,
+                (RUNNING_RECLAIM_MINUTES,),
+            )
+            row = cur.fetchone()
+            if not row:
+                conn.commit()
+                return None
+            batch_id = int(row["batch_id"])
+            cur.execute(
+                f"""
+                UPDATE {MYSQL_TASK_TABLE}
+                SET status='running', owner=%s, owner_host=%s, started_at=NOW(), updated_at=NOW(), last_error=NULL
+                WHERE batch_id=%s
+                """,
+                (owner, HOST_ID, batch_id),
+            )
             conn.commit()
-            return None
-        batch_id = int(row["batch_id"])
-        cur.execute(
-            f"""
-            UPDATE {MYSQL_TASK_TABLE}
-            SET status='running', owner=%s, owner_host=%s, started_at=NOW(), updated_at=NOW(), last_error=NULL
-            WHERE batch_id=%s
-            """,
-            (owner, HOST_ID, batch_id),
-        )
-        conn.commit()
-        return batch_id
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        conn.close()
+            return batch_id
+        except mysql.connector.Error as err:
+            conn.rollback()
+            if getattr(err, "errno", None) in {1205, 1213} and attempt < max_attempts:
+                wait = min(0.2 * attempt, 1.0) + random.uniform(0.0, 0.2)
+                print(
+                    f"[{owner}] ⚠️ claim_next_batch deadlock/lock-timeout "
+                    f"(attempt {attempt}/{max_attempts}), retrying in {wait:.2f}s"
+                )
+                time.sleep(wait)
+                continue
+            raise
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+    return None
 
 
 def mark_batch_done(batch_id):
