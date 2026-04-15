@@ -287,7 +287,15 @@ def load_earnings_frame() -> pd.DataFrame:
 
     cursor = col.find(
         {"symbol": {"$exists": True, "$ne": None}},
-        {"_id": 0, "symbol": 1, "event_date": 1, "earnings_date": 1},
+        {
+            "_id": 0,
+            "symbol": 1,
+            "event_date": 1,
+            "earnings_date": 1,
+            "eps_estimate": 1,
+            "reported_eps": 1,
+            "surprise_pct": 1,
+        },
     )
 
     rows = []
@@ -303,10 +311,16 @@ def load_earnings_frame() -> pd.DataFrame:
             continue
         if end_date is not None and event_date > end_date + pd.Timedelta(days=120):
             continue
-        rows.append({"symbol": doc["symbol"], "event_date": event_date})
+        rows.append({
+            "symbol": doc["symbol"],
+            "event_date": event_date,
+            "eps_estimate": doc.get("eps_estimate"),
+            "reported_eps": doc.get("reported_eps"),
+            "surprise_pct": doc.get("surprise_pct"),
+        })
 
     if not rows:
-        return pd.DataFrame(columns=["symbol", "event_date"])
+        return pd.DataFrame(columns=["symbol", "event_date", "eps_estimate", "reported_eps", "surprise_pct"])
 
     return (
         pd.DataFrame(rows)
@@ -511,16 +525,46 @@ def attach_price_labels(feature_df: pd.DataFrame, price_df: pd.DataFrame) -> pd.
     return pd.concat(enriched_frames, ignore_index=True)
 
 
+def _bucket_days(days: int | None) -> int | None:
+    """Map a trading-day gap to an ordinal bucket (0=0-5, 1=6-15, 2=16-30, 3=31+)."""
+    if days is None or (isinstance(days, float) and pd.isna(days)):
+        return None
+    if days <= 5:
+        return 0
+    if days <= 15:
+        return 1
+    if days <= 30:
+        return 2
+    return 3
+
+
 def attach_earnings_event_features(
     feature_df: pd.DataFrame,
     price_df: pd.DataFrame,
     earnings_df: pd.DataFrame,
 ) -> pd.DataFrame:
     columns = [
+        # existing
         "days_to_earnings",
         "days_since_earnings",
         "is_earnings_window_5d",
         "is_post_earnings_window_20d",
+        # new: surprise
+        "eps_estimate_last",
+        "reported_eps_last",
+        "surprise_pct_last",
+        "is_positive_surprise",
+        "is_negative_surprise",
+        # new: timing buckets
+        "days_to_earnings_bucket",
+        "days_since_earnings_bucket",
+        # new: tighter windows
+        "is_pre_earnings_10d",
+        "is_post_earnings_5d",
+        "is_post_earnings_10d",
+        # new: drift + surprise
+        "is_post_positive_surprise_20d",
+        "is_post_negative_surprise_20d",
     ]
     if feature_df.empty:
         for column in columns:
@@ -543,44 +587,64 @@ def attach_earnings_event_features(
 
         frame = frame.sort_values("date").copy()
         if symbol_prices.empty or symbol_earnings.empty:
-            frame["days_to_earnings"] = pd.NA
-            frame["days_since_earnings"] = pd.NA
-            frame["is_earnings_window_5d"] = pd.NA
-            frame["is_post_earnings_window_20d"] = pd.NA
+            for column in columns:
+                frame[column] = pd.NA
             enriched_frames.append(frame)
             continue
 
         trade_dates = pd.DatetimeIndex(symbol_prices["trade_date"])
-        aligned_positions: list[int] = []
-        for event_date in symbol_earnings["event_date"]:
+
+        # Build per-earnings-event lookup: trading-day position -> EPS/surprise data
+        earnings_events_by_pos: dict[int, dict] = {}
+        for _, earnings_row in symbol_earnings.iterrows():
+            event_date = earnings_row["event_date"]
             pos = int(trade_dates.searchsorted(event_date, side="left"))
             if pos >= len(trade_dates):
                 continue
-            aligned_positions.append(pos)
+            earnings_events_by_pos[pos] = {
+                "eps_estimate": earnings_row.get("eps_estimate"),
+                "reported_eps": earnings_row.get("reported_eps"),
+                "surprise_pct": earnings_row.get("surprise_pct"),
+            }
 
-        aligned_positions = sorted(set(aligned_positions))
+        aligned_positions = sorted(earnings_events_by_pos.keys())
         if not aligned_positions:
-            frame["days_to_earnings"] = pd.NA
-            frame["days_since_earnings"] = pd.NA
-            frame["is_earnings_window_5d"] = pd.NA
-            frame["is_post_earnings_window_20d"] = pd.NA
+            for column in columns:
+                frame[column] = pd.NA
             enriched_frames.append(frame)
             continue
 
         frame_trade_dates = pd.DatetimeIndex(frame["trade_date"])
         current_positions = trade_dates.searchsorted(frame_trade_dates, side="left")
 
-        days_to = []
-        days_since = []
-        in_window = []
-        post_window = []
+        days_to: list = []
+        days_since: list = []
+        in_window: list = []
+        post_window: list = []
+        eps_estimate_last: list = []
+        reported_eps_last: list = []
+        surprise_pct_last: list = []
+        is_positive_surprise: list = []
+        is_negative_surprise: list = []
+        days_to_bucket: list = []
+        days_since_bucket: list = []
+        pre_10d: list = []
+        post_5d: list = []
+        post_10d: list = []
+        post_pos_surp: list = []
+        post_neg_surp: list = []
 
         for current_pos in current_positions:
             if current_pos >= len(trade_dates):
-                days_to.append(pd.NA)
-                days_since.append(pd.NA)
-                in_window.append(pd.NA)
-                post_window.append(pd.NA)
+                for lst in (
+                    days_to, days_since, in_window, post_window,
+                    eps_estimate_last, reported_eps_last, surprise_pct_last,
+                    is_positive_surprise, is_negative_surprise,
+                    days_to_bucket, days_since_bucket,
+                    pre_10d, post_5d, post_10d,
+                    post_pos_surp, post_neg_surp,
+                ):
+                    lst.append(pd.NA)
                 continue
 
             next_pos = next((p for p in aligned_positions if p >= current_pos), None)
@@ -589,15 +653,56 @@ def attach_earnings_event_features(
             next_gap = next_pos - current_pos if next_pos is not None else pd.NA
             prev_gap = current_pos - prev_pos if prev_pos is not None else pd.NA
 
+            # Existing timing features
             days_to.append(int(next_gap) if pd.notna(next_gap) else pd.NA)
             days_since.append(int(prev_gap) if pd.notna(prev_gap) else pd.NA)
             in_window.append(int(pd.notna(next_gap) and next_gap <= 5))
             post_window.append(int(pd.notna(prev_gap) and 0 <= prev_gap <= 20))
 
+            # Earnings surprise from most recent past event
+            prev_event = earnings_events_by_pos.get(prev_pos, {}) if prev_pos is not None else {}
+            eps_est = prev_event.get("eps_estimate")
+            rep_eps = prev_event.get("reported_eps")
+            surp_pct = prev_event.get("surprise_pct")
+
+            eps_estimate_last.append(float(eps_est) if eps_est is not None and pd.notna(eps_est) else pd.NA)
+            reported_eps_last.append(float(rep_eps) if rep_eps is not None and pd.notna(rep_eps) else pd.NA)
+            surprise_pct_last.append(float(surp_pct) if surp_pct is not None and pd.notna(surp_pct) else pd.NA)
+
+            surp_valid = surp_pct is not None and pd.notna(surp_pct)
+            is_positive_surprise.append(int(surp_valid and float(surp_pct) > 0))
+            is_negative_surprise.append(int(surp_valid and float(surp_pct) < 0))
+
+            # Timing buckets
+            days_to_bucket.append(_bucket_days(int(next_gap) if pd.notna(next_gap) else None))
+            days_since_bucket.append(_bucket_days(int(prev_gap) if pd.notna(prev_gap) else None))
+
+            # Tighter pre/post windows
+            pre_10d.append(int(pd.notna(next_gap) and next_gap <= 10))
+            post_5d.append(int(pd.notna(prev_gap) and 0 <= prev_gap <= 5))
+            post_10d.append(int(pd.notna(prev_gap) and 0 <= prev_gap <= 10))
+
+            # Post-earnings drift combined with surprise sign
+            is_post_20d = pd.notna(prev_gap) and 0 <= prev_gap <= 20
+            post_pos_surp.append(int(is_post_20d and surp_valid and float(surp_pct) > 0))
+            post_neg_surp.append(int(is_post_20d and surp_valid and float(surp_pct) < 0))
+
         frame["days_to_earnings"] = days_to
         frame["days_since_earnings"] = days_since
         frame["is_earnings_window_5d"] = in_window
         frame["is_post_earnings_window_20d"] = post_window
+        frame["eps_estimate_last"] = eps_estimate_last
+        frame["reported_eps_last"] = reported_eps_last
+        frame["surprise_pct_last"] = surprise_pct_last
+        frame["is_positive_surprise"] = is_positive_surprise
+        frame["is_negative_surprise"] = is_negative_surprise
+        frame["days_to_earnings_bucket"] = days_to_bucket
+        frame["days_since_earnings_bucket"] = days_since_bucket
+        frame["is_pre_earnings_10d"] = pre_10d
+        frame["is_post_earnings_5d"] = post_5d
+        frame["is_post_earnings_10d"] = post_10d
+        frame["is_post_positive_surprise_20d"] = post_pos_surp
+        frame["is_post_negative_surprise_20d"] = post_neg_surp
         enriched_frames.append(frame)
 
     return pd.concat(enriched_frames, ignore_index=True)
@@ -668,6 +773,18 @@ def save_features(feature_df: pd.DataFrame) -> int:
             "days_since_earnings": int(row["days_since_earnings"]) if pd.notna(row.get("days_since_earnings")) else None,
             "is_earnings_window_5d": int(row["is_earnings_window_5d"]) if pd.notna(row.get("is_earnings_window_5d")) else None,
             "is_post_earnings_window_20d": int(row["is_post_earnings_window_20d"]) if pd.notna(row.get("is_post_earnings_window_20d")) else None,
+            "eps_estimate_last": float(row["eps_estimate_last"]) if pd.notna(row.get("eps_estimate_last")) else None,
+            "reported_eps_last": float(row["reported_eps_last"]) if pd.notna(row.get("reported_eps_last")) else None,
+            "surprise_pct_last": float(row["surprise_pct_last"]) if pd.notna(row.get("surprise_pct_last")) else None,
+            "is_positive_surprise": int(row["is_positive_surprise"]) if pd.notna(row.get("is_positive_surprise")) else None,
+            "is_negative_surprise": int(row["is_negative_surprise"]) if pd.notna(row.get("is_negative_surprise")) else None,
+            "days_to_earnings_bucket": int(row["days_to_earnings_bucket"]) if pd.notna(row.get("days_to_earnings_bucket")) else None,
+            "days_since_earnings_bucket": int(row["days_since_earnings_bucket"]) if pd.notna(row.get("days_since_earnings_bucket")) else None,
+            "is_pre_earnings_10d": int(row["is_pre_earnings_10d"]) if pd.notna(row.get("is_pre_earnings_10d")) else None,
+            "is_post_earnings_5d": int(row["is_post_earnings_5d"]) if pd.notna(row.get("is_post_earnings_5d")) else None,
+            "is_post_earnings_10d": int(row["is_post_earnings_10d"]) if pd.notna(row.get("is_post_earnings_10d")) else None,
+            "is_post_positive_surprise_20d": int(row["is_post_positive_surprise_20d"]) if pd.notna(row.get("is_post_positive_surprise_20d")) else None,
+            "is_post_negative_surprise_20d": int(row["is_post_negative_surprise_20d"]) if pd.notna(row.get("is_post_negative_surprise_20d")) else None,
             "benchmark_symbol": row.get("benchmark_symbol") if pd.notna(row.get("benchmark_symbol")) else None,
             "benchmark_ret_5d": float(row["benchmark_ret_5d"]) if pd.notna(row.get("benchmark_ret_5d")) else None,
             "benchmark_ret_20d": float(row["benchmark_ret_20d"]) if pd.notna(row.get("benchmark_ret_20d")) else None,

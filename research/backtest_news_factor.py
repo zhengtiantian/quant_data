@@ -86,7 +86,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--factors",
         nargs="+",
-        default=["article_count", "news_burst_20d", "full_ratio", "quality_score"],
+        default=["article_count", "news_burst_20d", "full_ratio", "quality_score", "surprise_pct_last"],
         help="Feature columns to rank on",
     )
     parser.add_argument(
@@ -190,6 +190,18 @@ def load_feature_frame(
         "days_since_earnings": 1,
         "is_earnings_window_5d": 1,
         "is_post_earnings_window_20d": 1,
+        "eps_estimate_last": 1,
+        "reported_eps_last": 1,
+        "surprise_pct_last": 1,
+        "is_positive_surprise": 1,
+        "is_negative_surprise": 1,
+        "days_to_earnings_bucket": 1,
+        "days_since_earnings_bucket": 1,
+        "is_pre_earnings_10d": 1,
+        "is_post_earnings_5d": 1,
+        "is_post_earnings_10d": 1,
+        "is_post_positive_surprise_20d": 1,
+        "is_post_negative_surprise_20d": 1,
     }
     rows = list(coll.find(query, projection))
     if not rows:

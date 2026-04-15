@@ -263,8 +263,8 @@ Then rerun the same:
 
 and compare against this document as the baseline.
 
-## Earnings Event Layer Update
-An initial earnings-event layer has now been added to the research pipeline.
+## Earnings Event Layer — Layer 1 (Timing Only)
+An initial earnings-event layer was added using timing features only.
 
 Implemented components:
 
@@ -277,12 +277,16 @@ Implemented components:
 - feature integration:
   - [research/daily_symbol_features.py](/Users/xiz/Quant_trade/quant_data/research/daily_symbol_features.py)
 
-The first event features added are:
+Layer 1 features:
 
 - `days_to_earnings`
+  - trading days until the next scheduled earnings date
 - `days_since_earnings`
+  - trading days since the most recent past earnings date
 - `is_earnings_window_5d`
+  - 1 if earnings is within the next 5 trading days
 - `is_post_earnings_window_20d`
+  - 1 if the most recent earnings was within the past 20 trading days
 
 Operational result:
 
@@ -291,48 +295,142 @@ Operational result:
 - feature table rebuilt:
   - `40,009` rows in `daily_symbol_features_company_matched_v1`
 
-## Earnings Event Result
-The first earnings-event layer is useful, but not yet a major standalone edge.
+Layer 1 model result (`Ridge`):
 
-### `20d` baseline with earnings-event features
-Compared with the previous baseline:
-
-- previous `Ridge`
-  - Rank IC: `0.0207`
-  - Top 5 mean excess return: `+2.00%`
-- current `Ridge`
-  - Rank IC: `0.0285`
-  - Top 5 mean excess return: `+2.02%`
+- `20d` Rank IC: `0.0285` / Top 5 excess return: `+2.02%`
+- `60d` Rank IC: `0.0730` / Top 5 excess return: `+6.20%`
 
 Interpretation:
 
-- `20d` sees a small improvement
-- earnings timing provides some useful short-horizon context
-- the improvement is real but modest
+- timing alone is useful context but not a decisive new alpha source
+- the improvement over the news-only baseline was real but modest
 
-### `60d` baseline with earnings-event features
-Compared with the previous baseline:
+## Earnings Event Layer — Layer 2 (Surprise + Richer Timing)
+A second earnings-event layer was added with EPS surprise and richer
+timing structure.
 
-- previous `Ridge`
-  - Rank IC: `0.0762`
-  - Top 5 mean excess return: `+6.15%`
-- current `Ridge`
-  - Rank IC: `0.0730`
-  - Top 5 mean excess return: `+6.20%`
+### New features in Layer 2
+
+**Surprise features** (from the most recent past earnings event):
+
+- `surprise_pct_last`
+  - EPS surprise percentage at the most recent past earnings:
+    `(reported_eps - eps_estimate) / abs(eps_estimate) * 100`
+  - positive means the company beat estimates
+  - negative means the company missed
+- `eps_estimate_last`
+  - analyst EPS estimate for the most recent past earnings
+- `reported_eps_last`
+  - actual reported EPS for the most recent past earnings
+- `is_positive_surprise`
+  - 1 if `surprise_pct_last > 0`
+- `is_negative_surprise`
+  - 1 if `surprise_pct_last < 0`
+
+**Timing bucket features**:
+
+- `days_to_earnings_bucket`
+  - ordinal bucket of `days_to_earnings`:
+    0 = 0–5d (imminent), 1 = 6–15d (near), 2 = 16–30d (upcoming), 3 = 31+d
+- `days_since_earnings_bucket`
+  - ordinal bucket of `days_since_earnings` using the same scale
+
+**Tighter pre/post windows**:
+
+- `is_pre_earnings_10d`
+  - 1 if earnings is within the next 10 trading days
+- `is_post_earnings_5d`
+  - 1 if the most recent earnings was within the past 5 trading days
+- `is_post_earnings_10d`
+  - 1 if the most recent earnings was within the past 10 trading days
+
+**Post-earnings drift combined with surprise sign**:
+
+- `is_post_positive_surprise_20d`
+  - 1 if within 20-day post-earnings window AND most recent surprise was positive
+- `is_post_negative_surprise_20d`
+  - 1 if within 20-day post-earnings window AND most recent surprise was negative
+
+Operational result:
+
+- earnings events loaded:
+  - `1,100`
+- feature table rebuilt:
+  - `40,009` rows in `daily_symbol_features_company_matched_v1`
+
+### `surprise_pct_last` as a standalone factor
+
+`surprise_pct_last` was tested as a single cross-sectional ranking factor.
+
+Key results (`top 3`, benchmark excess return):
+
+- `5d top 3` mean excess return: `+0.16%`
+- `20d top 3` mean excess return: `+0.40%`
+- `60d top 3` mean excess return: `+1.05%`
+- `60d long_short top3-bottom3` mean excess return: `-0.20%`
 
 Interpretation:
 
-- `Top 5` excess return improves slightly
-- overall rank correlation is slightly lower
-- this means the current earnings-event layer is helpful as context, but not
-  yet a decisive new alpha source
+- has a small short-horizon edge (`5d`) slightly stronger than `full_ratio`
+- at `20d` and `60d`, weaker than `full_ratio` and `quality_score`
+- the `60d` long-short spread turns negative, meaning EPS surprise direction
+  does not provide stable medium-horizon directional alpha on its own
+- the EPS surprise signal is most useful as a model feature, not as a
+  standalone ranking factor
+
+## Layer 2 Model Results
+
+### `20d` target
+
+| Model | Rank IC | Top 5 mean excess return |
+|---|---|---|
+| `Ridge` (Layer 1 baseline) | `0.0285` | `+2.02%` |
+| `Ridge` (Layer 2) | **`0.0555`** | **`+2.05%`** |
+| `HistGB` (Layer 1 baseline) | `-0.0008` | `+1.52%` |
+| `HistGB` (Layer 2) | **`0.0384`** | **`+2.07%`** |
+
+### `60d` target
+
+| Model | Rank IC | Top 5 mean excess return |
+|---|---|---|
+| `Ridge` (Layer 1 baseline) | `0.0730` | `+6.20%` |
+| `Ridge` (Layer 2) | **`0.1214`** | **`+6.58%`** |
+| `HistGB` (Layer 1 baseline) | `0.0095` | `+4.21%` |
+| `HistGB` (Layer 2) | **`0.1181`** | **`+6.32%`** |
+
+Interpretation:
+
+- `Ridge` IC on `60d` improved from `0.073` to `0.121`, a 66% improvement
+- `HistGB` IC on `60d` improved from near zero to `0.118`, now comparable
+  to `Ridge`
+- `20d` IC roughly doubled from `0.029` to `0.056`
+- the Layer 2 improvement is substantial, not marginal
+- the two models are now close in `60d` performance, suggesting the feature
+  set is doing more of the work than the model architecture
 
 ## Updated Working Conclusion
-After adding the first earnings-event layer:
+After adding the Layer 2 earnings-event feature set:
 
-- news quality is still the core signal
-- earnings timing adds useful context, especially for `20d`
-- the current earnings features should be treated as a support layer, not a
-  replacement for quality factors
-- the next event research step should focus on richer earnings surprise and
-  post-earnings structure features
+- news quality (`full_ratio`, `quality_score`) remains the core ranking signal
+- EPS surprise features provide a meaningful second layer of information,
+  especially for the `60d` prediction target
+- `surprise_pct_last` is not a strong standalone factor but is a valuable
+  model input when combined with quality and timing features
+- `HistGB` is now competitive with `Ridge` at `60d`, suggesting the feature
+  set is richer and nonlinear relationships are being captured
+- the primary working setup is updated to:
+  - primary factors: `full_ratio`, `quality_score`
+  - primary target: `excess_ret_60d`
+  - primary portfolio lens: `top 3`
+  - baseline model: `Ridge` or `HistGB` (now comparable)
+
+## What This Means For Next Development
+The next stage should focus on:
+
+- testing whether the event features are stable year-by-year
+  (the yearly walk-forward results show high variance in 2022 and 2024)
+- adding richer post-earnings drift structure:
+  - surprise magnitude buckets
+  - interaction between surprise sign and news quality
+- expanding the universe beyond 14 names to test whether signals survive
+- only after universe expansion, consider more advanced modeling

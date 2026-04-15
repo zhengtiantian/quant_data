@@ -155,7 +155,12 @@ def main():
     print(f"Data loaded: {len(df):,} rows.")
     
     # Check if necessary new features exist (we added past_ret and volatility)
-    required = ["past_ret_20d", "volatility_20d", "days_to_earnings", "is_earnings_window_5d"]
+    required = [
+        "past_ret_20d", "volatility_20d",
+        "days_to_earnings", "is_earnings_window_5d",
+        "surprise_pct_last", "is_positive_surprise",
+        "days_to_earnings_bucket", "is_post_positive_surprise_20d",
+    ]
     missing = [c for c in required if c not in df.columns]
     if missing:
         print(f"Dataset is missing features: {missing}. Have you rebuilt daily symbol features?")
@@ -163,20 +168,38 @@ def main():
 
     # Baseline features specified by the project plan
     features = [
+        # news quality
         "full_ratio",
         "quality_score",
         "article_count",
         "news_burst_20d",
+        # price momentum / risk
         "past_ret_20d",
         "past_ret_60d",
         "volatility_20d",
         "volatility_60d",
         "volume_shock_20d",
+        # earnings timing
         "days_to_earnings",
         "days_since_earnings",
         "is_earnings_window_5d",
         "is_post_earnings_window_20d",
-        "sector"
+        "days_to_earnings_bucket",
+        "days_since_earnings_bucket",
+        "is_pre_earnings_10d",
+        "is_post_earnings_5d",
+        "is_post_earnings_10d",
+        # earnings surprise
+        "eps_estimate_last",
+        "reported_eps_last",
+        "surprise_pct_last",
+        "is_positive_surprise",
+        "is_negative_surprise",
+        # drift + surprise
+        "is_post_positive_surprise_20d",
+        "is_post_negative_surprise_20d",
+        # sector
+        "sector",
     ]
     
     print("\nRunning Walk-forward Evaluation for 20d Target...")
