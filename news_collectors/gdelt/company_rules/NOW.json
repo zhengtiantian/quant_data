@@ -1,0 +1,33 @@
+{
+    "symbol": "NOW",
+    "name": "ServiceNow",
+    "primary_keywords": [
+        "ServiceNow",
+        "NOW"
+    ],
+    "expansion_keywords": [
+        "Bill McDermott",
+        "Digital workflow",
+        "ITSM",
+        "Vancouver Release",
+        "Xanadu Release",
+        "GenAI Chatbot"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "'Now' is a pervasive common word",
+            "required_keywords": [
+                "NOW"
+            ],
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "ServiceNow",
+                "Workflow"
+            ]
+        }
+    },
+    "strict_validation_keywords": [
+        "ServiceNow",
+        "Workflow"
+    ]
+}

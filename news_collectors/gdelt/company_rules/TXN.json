@@ -1,0 +1,36 @@
+{
+    "symbol": "TXN",
+    "name": "Texas Instruments",
+    "primary_keywords": [
+        "TXN",
+        "Texas Instruments"
+    ],
+    "expansion_keywords": [
+        "Rich Templeton",
+        "Haviv Ilan",
+        "Analog devices",
+        "Embedded processing",
+        "300mm wafer",
+        "DLP technology",
+        "Kilby Labs",
+        "Industrial automation",
+        "Automotive electronics",
+        "TI-84",
+        "MSP430"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "General term usage and entity confusion over 10 years",
+            "required_keywords": [
+                "TXN"
+            ],
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "Texas Instruments"
+            ]
+        }
+    },
+    "strict_validation_keywords": [
+        "Texas Instruments"
+    ]
+}

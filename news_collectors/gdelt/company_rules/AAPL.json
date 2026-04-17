@@ -58,16 +58,17 @@
     ],
     "special_rules": {
         "ambiguous": {
-            "problem": "确保是Apple公司相关",
+            "problem": "Apple is a fruit",
             "required_keywords": [
-                "Apple",
-                "iPhone",
-                "iPad",
-                "Mac",
-                "iOS",
-                "Tim Cook"
+                "AAPL",
+                "Apple Inc."
             ],
-            "min_matches": 1
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "Apple Inc",
+                "iPhone",
+                "MacBook"
+            ]
         }
     }
 }

@@ -28,11 +28,17 @@
     ],
     "special_rules": {
         "ambiguous": {
+            "problem": "Micron is a unit of measurement (micrometer)",
             "required_keywords": [
                 "MU",
-                "Micron"
+                "Micron Technology"
             ],
-            "min_matches": 1
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "Micron",
+                "DRAM",
+                "memory chip"
+            ]
         }
     },
     "strict_validation_keywords": [

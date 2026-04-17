@@ -36,33 +36,17 @@
     ],
     "special_rules": {
         "ambiguous": {
-            "is_ambiguous": true,
-            "problem": "Generic name matches rainforest or unrelated tech/philanthropy labels in GDELT.",
+            "problem": "Amazon is a rainforest or a river",
             "required_keywords": [
-                "Amazon.com",
+                "AWS",
+                "Retail",
+                "Ecommerce",
+                "Cloud",
                 "Jeff Bezos",
                 "Andy Jassy",
-                "AWS",
-                "Cloud Services",
-                "Prime Video",
-                "Prime Day",
                 "Kindle",
-                "Alexa",
-                "Whole Foods",
-                "Amazon Marketplace",
-                "Fulfillment",
-                "e-commerce",
-                "online retail",
-                "NASDAQ: AMZN"
-            ],
-            "exclude_patterns": [
-                "Prime Minister",
-                "SpaceX",
-                "Falcon 9",
-                "Panama Papers",
-                "cancer research",
-                "Amazon Rainforest",
-                "Amazon River"
+                "Prime Video",
+                "Logistics"
             ],
             "min_matches": 1
         }

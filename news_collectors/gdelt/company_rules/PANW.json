@@ -1,0 +1,36 @@
+{
+    "symbol": "PANW",
+    "name": "Palo Alto Networks",
+    "primary_keywords": [
+        "PANW",
+        "Palo Alto Networks"
+    ],
+    "expansion_keywords": [
+        "Nikesh Arora",
+        "Mark McLaughlin",
+        "Cortex",
+        "Prisma",
+        "WildFire",
+        "Strata",
+        "Cybersecurity",
+        "Zero Trust",
+        "SASE"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "General term usage and entity confusion over 10 years",
+            "required_keywords": [
+                "PANW"
+            ],
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "Palo Alto Networks",
+                "Cybersecurity"
+            ]
+        }
+    },
+    "strict_validation_keywords": [
+        "Palo Alto Networks",
+        "Cybersecurity"
+    ]
+}

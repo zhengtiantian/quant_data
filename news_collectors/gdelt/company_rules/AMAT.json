@@ -1,0 +1,39 @@
+{
+    "symbol": "AMAT",
+    "name": "Applied Materials",
+    "primary_keywords": [
+        "AMAT",
+        "Applied Materials"
+    ],
+    "expansion_keywords": [
+        "Gary Dickerson",
+        "WFE",
+        "Wafer fab equipment",
+        "Centura",
+        "Producer",
+        "Endura",
+        "Epitaxy",
+        "Etch",
+        "Deposition",
+        "CMP",
+        "Metrology",
+        "Materials engineering"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "General term usage and entity confusion over 10 years",
+            "required_keywords": [
+                "AMAT"
+            ],
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "Applied Materials",
+                "Gary Dickerson"
+            ]
+        }
+    },
+    "strict_validation_keywords": [
+        "Applied Materials",
+        "Gary Dickerson"
+    ]
+}

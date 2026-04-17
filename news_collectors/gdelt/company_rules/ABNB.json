@@ -1,0 +1,36 @@
+{
+    "symbol": "ABNB",
+    "name": "Airbnb",
+    "primary_keywords": [
+        "ABNB",
+        "Airbnb"
+    ],
+    "expansion_keywords": [
+        "Brian Chesky",
+        "Joe Gebbia",
+        "Nathan Blecharczyk",
+        "Short-term rental",
+        "Superhost",
+        "Experiences",
+        "Travel recovery",
+        "IPO",
+        "Regulation battles"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "General term usage and entity confusion over 10 years",
+            "required_keywords": [
+                "ABNB"
+            ],
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "Airbnb",
+                "Brian Chesky"
+            ]
+        }
+    },
+    "strict_validation_keywords": [
+        "Airbnb",
+        "Brian Chesky"
+    ]
+}

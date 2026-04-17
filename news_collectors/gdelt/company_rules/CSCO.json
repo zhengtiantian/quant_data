@@ -1,0 +1,41 @@
+{
+    "symbol": "CSCO",
+    "name": "Cisco",
+    "primary_keywords": [
+        "CSCO",
+        "Cisco"
+    ],
+    "expansion_keywords": [
+        "John Chambers",
+        "Chuck Robbins",
+        "Networking",
+        "Catalyst",
+        "Nexus",
+        "Splunk acquisition",
+        "AppDynamics",
+        "Meraki",
+        "Webex",
+        "Duo Security",
+        "SD-WAN",
+        "CCIE",
+        "Silicon One",
+        "Data center switching"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "General term usage and entity confusion over 10 years",
+            "required_keywords": [
+                "CSCO"
+            ],
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "Cisco Systems",
+                "Chuck Robbins"
+            ]
+        }
+    },
+    "strict_validation_keywords": [
+        "Cisco Systems",
+        "Chuck Robbins"
+    ]
+}

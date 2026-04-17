@@ -52,35 +52,17 @@
     ],
     "special_rules": {
         "ambiguous": {
-            "problem": "ARM可能指手臂、武器",
-            "case_sensitive": true,
+            "problem": "Arm is a body part or refers to weapons/firearms",
             "required_keywords": [
-                "Arm Holdings",
-                "Arm Ltd",
-                "SoftBank",
-                "Cortex",
-                "Neoverse",
-                "Armv9",
-                "Snapdragon",
-                "Exynos",
-                "Dimensity",
-                "Mali GPU",
-                "Rene Haas",
-                "IP licensing",
-                "chip design",
-                "chip architecture"
+                "ARM",
+                "Arm Holdings"
             ],
-            "min_matches": 1
-        },
-        "special_periods": {
-            "privatization": {
-                "start_date": "2016-09-05",
-                "end_date": "2023-09-14",
-                "additional_keywords": [
-                    "SoftBank ARM",
-                    "SoftBank Group"
-                ]
-            }
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "Arm Holdings",
+                "Arm CPU",
+                "SoftBank"
+            ]
         }
     },
     "strict_validation_keywords": [

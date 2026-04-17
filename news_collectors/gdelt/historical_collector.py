@@ -22,6 +22,21 @@ import traceback
 import sys
 import hashlib
 from bs4 import BeautifulSoup
+import socket
+import platform
+
+# ============================
+# 启用 SLM 过滤器
+# ============================
+import argparse
+
+# ============================
+# 参数解析：支持动态指定股票和目标表
+# ============================
+parser = argparse.ArgumentParser(description="GDELT Historical News Collector")
+parser.add_argument("--symbols", type=str, help="Comma-separated symbols to track (e.g. TSM,ASML)")
+parser.add_argument("--dst_collection", type=str, help="Target MongoDB collection name")
+args, unknown = parser.parse_known_args()
 
 # ============================
 # 启用 SLM 过滤器
@@ -78,9 +93,19 @@ def get_rule_manager():
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://root:root@127.0.0.1:37018/")
 DB_NAME = "quant_data"
 SRC_COLLECTION = "stock_universe"
-DST_COLLECTION = "news_articles"  # 正式数据集合
 
-YEARS_BACK = 10  # 10年历史数据
+# 动态决定目标集合：优先用 CLI 参数 -> 其次用环境变量 -> 最后默认 news_articles
+DST_COLLECTION = args.dst_collection or os.getenv("DST_COLLECTION", "news_articles")
+
+# 筛选股票列表
+TARGET_SYMBOLS_LIMIT = None
+if args.symbols:
+    TARGET_SYMBOLS_LIMIT = [s.strip().upper() for s in args.symbols.split(",")]
+elif os.getenv("TARGET_SYMBOLS"):
+    TARGET_SYMBOLS_LIMIT = [s.strip().upper() for s in os.getenv("TARGET_SYMBOLS").split(",")]
+
+YEARS_BACK = 11  # 扩大范围以确保覆盖到 2016-01-01
+START_DATE_STR = os.getenv("START_DATE", "2016-01-01")  # 锁定缓存起始日
 MAX_FILES = None  # 全量
 TEST_MODE = False  # 正式模式
 CACHE_DIR = os.getenv("GDELT_CACHE_DIR", "/Volumes/data24T/docker-volumes/gdelt_cache")
@@ -90,6 +115,16 @@ os.makedirs(FILES_DIR, exist_ok=True)
 
 BASE_URL = "http://data.gdeltproject.org/gdeltv2"
 MASTER_FILE = os.path.join(CACHE_DIR, "masterfilelist.txt")
+
+# 获取系统短标识
+def get_system_label():
+    sys_name = platform.system().lower()
+    if 'darwin' in sys_name: return 'mac'
+    if 'win' in sys_name: return 'win'
+    return sys_name
+
+_HOSTNAME = socket.gethostname().split('.')[0]
+HOST_ID = f"{get_system_label()}-{_HOSTNAME}"
 
 # User-Agent 配置
 user_agent = (
@@ -119,7 +154,6 @@ RUNNING_RECLAIM_MINUTES = int(os.getenv("RUNNING_RECLAIM_MINUTES", "720"))
 RESET_ALL_RUNNING_ON_START = os.getenv("RESET_ALL_RUNNING_ON_START", "true").lower() == "true"
 STARTUP_PREDOWNLOAD_ENABLED = os.getenv("STARTUP_PREDOWNLOAD_ENABLED", "true").lower() == "true"
 STARTUP_PREDOWNLOAD_RECENT_FILES = int(os.getenv("STARTUP_PREDOWNLOAD_RECENT_FILES", "288"))
-HOST_ID = os.getenv("HOST_ID", "mac")
 QUEUE_INSTANCE_ID = os.getenv("QUEUE_INSTANCE_ID", HOST_ID)
 QUEUE_HEARTBEAT_SECONDS = int(os.getenv("QUEUE_HEARTBEAT_SECONDS", "30"))
 
@@ -500,75 +534,44 @@ def build_batch_signatures(urls, batch_size):
 
 
 def seed_tasks(total_batches, resume_batch, batch_signatures):
+    """播种任务，确保整整 10 年的任务都在列表中"""
     conn = get_mysql_conn()
     try:
         cur = conn.cursor()
-        # 仅为新增批次补任务，避免启动时重开历史已完成批次。
-        values = [(i,) for i in range(1, total_batches + 1)]
-        inserted_batches = 0
-        if values:
+        # 批量检查和插入。如果有 35 万个文件，总批次应该是 3500 左右。
+        print(f"🌱 Seeding {total_batches} batches into {MYSQL_TASK_TABLE}...")
+        
+        # 分块插入提高性能
+        chunk_size = 500
+        for i in range(0, total_batches, chunk_size):
+            chunk = [(b_id, 'pending') for b_id in range(i + 1, min(i + chunk_size + 1, total_batches + 1))]
             cur.executemany(
-                f"INSERT IGNORE INTO {MYSQL_TASK_TABLE} (batch_id, status) VALUES (%s, 'pending')",
-                values,
+                f"INSERT IGNORE INTO {MYSQL_TASK_TABLE} (batch_id, status) VALUES (%s, %s)",
+                chunk
             )
-            inserted_batches = cur.rowcount
-        if inserted_batches:
-            print(f"🆕 Added new queue batches: {inserted_batches}")
-
-        # 只给空签名任务补签名，不因为签名变化重开历史批次。
-        filled_signatures = 0
+        
+        # 填充签名（如有缺失）
         for batch_id, batch_sig in batch_signatures:
             cur.execute(
                 f"UPDATE {MYSQL_TASK_TABLE} SET batch_sig=%s WHERE batch_id=%s AND batch_sig IS NULL",
-                (batch_sig, batch_id),
+                (batch_sig, batch_id)
             )
-            filled_signatures += cur.rowcount
-        if filled_signatures:
-            print(f"🧾 Filled missing batch signatures: {filled_signatures}")
-        # 进度语义：progress=N -> 1..N-1 已完成，N..end 待执行
-        if resume_batch > 1:
-            cur.execute(
-                f"""
-                UPDATE {MYSQL_TASK_TABLE}
-                SET status='done', owner=NULL, finished_at=IFNULL(finished_at, NOW()), updated_at=NOW()
-                WHERE batch_id < %s AND status <> 'done'
-                """,
-                (resume_batch,),
-            )
-        if RESET_ALL_RUNNING_ON_START:
-            # 仅回收当前主机遗留的 running，避免多主机互相打断
-            cur.execute(
-                f"""
-                UPDATE {MYSQL_TASK_TABLE}
-                SET status='pending', owner=NULL, owner_host=NULL, updated_at=NOW()
-                WHERE status='running'
-                  AND owner_host=%s
-                """
-                ,
-                (HOST_ID,),
-            )
-        else:
-            cur.execute(
-                f"""
-                UPDATE {MYSQL_TASK_TABLE}
-                SET status='pending', owner=NULL, owner_host=NULL, updated_at=NOW()
-                WHERE status='running'
-                  AND updated_at < (NOW() - INTERVAL %s MINUTE)
-                """,
-                (RUNNING_RECLAIM_MINUTES,),
-            )
+            
         conn.commit()
     finally:
         conn.close()
 
 
 def claim_next_batch(owner):
-    max_attempts = 5
+    """认领下一个任务。针对分布式进行了死锁保护和 HOST_ID 绑定。"""
+    max_attempts = 10
     for attempt in range(1, max_attempts + 1):
         conn = get_mysql_conn()
         try:
             cur = conn.cursor(dictionary=True)
             cur.execute("START TRANSACTION")
+            
+            # 查找待处理任务：支持认领 pending、failed 或者掉线的 running
             cur.execute(
                 f"""
                 SELECT batch_id
@@ -585,7 +588,9 @@ def claim_next_batch(owner):
             if not row:
                 conn.commit()
                 return None
+                
             batch_id = int(row["batch_id"])
+            # 关键：更新 owner 和 owner_host 为当前 worker 身份
             cur.execute(
                 f"""
                 UPDATE {MYSQL_TASK_TABLE}
@@ -598,17 +603,9 @@ def claim_next_batch(owner):
             return batch_id
         except mysql.connector.Error as err:
             conn.rollback()
-            if getattr(err, "errno", None) in {1205, 1213} and attempt < max_attempts:
-                wait = min(0.2 * attempt, 1.0) + random.uniform(0.0, 0.2)
-                print(
-                    f"[{owner}] ⚠️ claim_next_batch deadlock/lock-timeout "
-                    f"(attempt {attempt}/{max_attempts}), retrying in {wait:.2f}s"
-                )
-                time.sleep(wait)
+            if getattr(err, "errno", None) in {1205, 1213}:
+                time.sleep(0.5 * attempt)
                 continue
-            raise
-        except Exception:
-            conn.rollback()
             raise
         finally:
             conn.close()
@@ -707,7 +704,13 @@ def get_db():
 def load_companies():
     db = get_db()
     col = db[SRC_COLLECTION]
-    data = list(col.find({}, {"_id": 0, "symbol": 1, "name": 1, "related_keywords": 1}))
+    
+    query = {}
+    if TARGET_SYMBOLS_LIMIT:
+        query["symbol"] = {"$in": TARGET_SYMBOLS_LIMIT}
+        print(f"🎯 Filtering active: Only collecting for {TARGET_SYMBOLS_LIMIT}")
+
+    data = list(col.find(query, {"_id": 0, "symbol": 1, "name": 1, "related_keywords": 1}))
     print(f"✅ Loaded {len(data)} companies from {SRC_COLLECTION}")
     return data
 
@@ -916,7 +919,7 @@ def get_gkg_file_urls(years_back, max_files=None):
     start_dt = datetime(2016, 1, 1)
     end_dt = datetime.utcnow()
     
-    print(f"📅 Collecting GKG files from 2016-01-01 to {end_dt.date()}...")
+    print(f"📅 Generating URL list from 2016-01-01 to {end_dt.date()}...")
     
     for line in lines:
         if ".gkg.csv.zip" not in line:
@@ -925,23 +928,19 @@ def get_gkg_file_urls(years_back, max_files=None):
         ts_str = os.path.basename(url).split(".")[0]
         try:
             ts = datetime.strptime(ts_str, "%Y%m%d%H%M%S")
+            if start_dt <= ts <= end_dt:
+                urls.append(url)
         except:
             continue
-        if start_dt <= ts <= end_dt:
-            urls.append(url)
-        if max_files and len(urls) >= max_files:
-            break
+    
+    # ⚠️ 关键修正：必须正序排列，否则会从 2026年倒着跑，导致找不到缓存文件
+    urls.sort()
+    
+    if max_files:
+        urls = urls[:max_files]
     
     if urls:
-        # 提取日期范围
-        first_file = os.path.basename(urls[0]).split(".")[0]
-        last_file = os.path.basename(urls[-1]).split(".")[0]
-        try:
-            first_date = datetime.strptime(first_file, "%Y%m%d%H%M%S").date()
-            last_date = datetime.strptime(last_file, "%Y%m%d%H%M%S").date()
-            print(f"✅ Found {len(urls)} GKG files from {first_date} → {last_date}")
-        except:
-            print(f"✅ Found {len(urls)} GKG files")
+        print(f"✅ Sorted {len(urls)} GKG files chronologically starting from 2016.")
     
     return urls
 
@@ -1051,12 +1050,107 @@ def process_single_file(url, companies, rule_manager, avg_date):
         pass
     return matches
 
+def process_file_task(url, rule_manager, all_keywords_map, global_pattern, symbol_to_company, progress_lock, progress, worker_name=None):
+    filename = os.path.basename(url)
+    cache_path = os.path.join(FILES_DIR, filename)
+    if not os.path.exists(cache_path):
+        return {"matches": [], "rows": 0, "candidates": 0, "sample": "", "filename": filename}
+
+    try:
+        t_start = time.time()
+        with zipfile.ZipFile(cache_path) as z:
+            with z.open(z.namelist()[0]) as f:
+                df = read_gkg_tsv(f)
+        t_parse = time.time()
+
+        if df.empty:
+            return {"matches": [], "rows": 0, "candidates": 0, "sample": "", "filename": filename}
+
+        # 探测格式
+        has_xml = (26 in df.columns) and (df[26].notna().any()) and ("<PAGE_LINKS>" in str(df.iloc[0].get(26, "")))
+        if has_xml:
+            df["URL"] = df[26].astype(str).str.extract(r"(?s)<PAGE_LINKS>(.*?)</PAGE_LINKS>", expand=False).fillna("").str.split(";").str[0]
+            df["Title"] = df[26].astype(str).str.extract(r"(?s)<PAGE_TITLE>(.*?)</PAGE_TITLE>", expand=False).fillna("")
+            df["Raw"] = df[26].astype(str).map(strip_urls_and_xml)
+        else:
+            df["URL"] = df[4].astype(str) if 4 in df.columns else ""
+            df["Title"] = ""
+            entity_cols = [7, 9, 11, 23, 24, 26, 28]
+            found_cols = [c for c in entity_cols if c in df.columns]
+            df["Raw"] = df[found_cols].fillna("").agg(" ".join, axis=1).map(strip_urls_and_xml)
+
+        df = df[df["URL"].str.startswith("http", na=False)]
+        social_domains = r"(?:instagram\.com|facebook\.com|twitter\.com|x\.com|tiktok\.com|linkedin\.com)/(?!.*\b(?:news|blog|article|press)\b)"
+        df = df[~df["URL"].str.contains(social_domains, case=False, na=False, regex=True)]
+        
+        if df.empty: return {"matches": [], "rows": 0, "candidates": 0, "sample": "", "filename": filename}
+
+        combined_text = (df["Title"].fillna("") + " " + df["Raw"].fillna("")).str.lower()
+        t_combine = time.time()
+        mask = combined_text.str.contains(global_pattern, case=False, na=False, regex=True)
+
+        matched_df = df[mask]
+        t_regex = time.time()
+        file_matches = []
+        sample_text = ""
+        if not matched_df.empty:
+            srow = matched_df.iloc[0]
+            sample_text = f"title='{str(srow.get('Title', ''))[:50]}' url='{str(srow.get('URL', ''))[:80]}'"
+
+        if progress_lock:
+            with progress_lock:
+                progress["rules_total_discovered"] += len(matched_df)
+
+        for idx, row in matched_df.iterrows():
+            row_text = combined_text.loc[idx]
+            hit_symbols = set()
+            for kw, symbols in all_keywords_map.items():
+                if kw in row_text: hit_symbols.update(symbols)
+            
+            for sym in hit_symbols:
+                time_info = parse_gdelt_timestamp(filename)
+                article_data = {
+                    "title": row["Title"], "content": row["Raw"],
+                    "date": time_info['date_str'] if time_info else filename[:8],
+                    "source_file": filename, "url": row["URL"],
+                }
+                if rule_manager.should_include(sym, article_data):
+                    file_matches.append({
+                        "row": {
+                            "URL": row["URL"], "Title": row["Title"] or f"News about {sym}", 
+                            "Date": time_info['date_str'] if time_info else filename[:8],
+                            "Timestamp": time_info['timestamp_str'] if time_info else filename[:14],
+                            "PublishedAt": time_info['iso'] if time_info else None
+                        },
+                        "company": symbol_to_company.get(sym)
+                    })
+
+            if progress_lock:
+                with progress_lock:
+                    progress["rules_processed"] += 1
+                    if SCAN_RULE_PROGRESS_EVERY_RECORDS > 0 and progress["rules_processed"] % SCAN_RULE_PROGRESS_EVERY_RECORDS == 0:
+                        worker = worker_name or threading.current_thread().name
+                        print(f"[{worker}] 🧪 Rule check progress: {progress['rules_processed']} records")
+        
+        t_rules = time.time()
+        return {
+            "matches": file_matches, "rows": len(df), "candidates": len(matched_df),
+            "sample": sample_text, "filename": filename,
+            "timings": {
+                "total": t_rules - t_start, "parse": t_parse - t_start,
+                "combine": t_combine - t_parse, "regex": t_regex - t_combine, "rules": t_rules - t_regex,
+            },
+        }
+    except Exception as e:
+        print(f"❌ Error processing {filename}: {e}")
+        return {"matches": [], "rows": 0, "candidates": 0, "sample": "", "error": str(e), "filename": filename}
+
 def process_batch_files(batch_urls, companies, worker_name=None):
     """并行处理一批 GKG 文件并高效匹配所有公司"""
     import numpy as np
     rule_manager = get_rule_manager()
     
-    # 1. 计算平均日期用于获取动态关键词
+    # 1. 计算平均日期
     batch_dates = []
     for url in batch_urls:
         try: batch_dates.append(datetime.strptime(os.path.basename(url)[:8], "%Y%m%d"))
@@ -1066,16 +1160,14 @@ def process_batch_files(batch_urls, companies, worker_name=None):
         avg_date = min(batch_dates) + (max(batch_dates) - min(batch_dates)) / 2
     avg_date = avg_date.replace(tzinfo=None)
 
-    # 2. 预构建全局关键词映射表（超级正则）
+    # 2. 预构建全局关键词
     all_keywords_map = {}
     case_insensitive_keywords = []
-    
     for company in companies:
         symbol = company['symbol']
         keywords = rule_manager.get_keywords(symbol, avg_date)
         if not keywords:
             keywords = [company.get('cleaned_name', symbol)]
-        
         for k in keywords:
             if not isinstance(k, str) or len(k) <= 1: continue
             k_lower = k.lower()
@@ -1084,15 +1176,10 @@ def process_batch_files(batch_urls, companies, worker_name=None):
             all_keywords_map[k_lower].append(symbol)
             case_insensitive_keywords.append(re.escape(k_lower))
 
-    # 构建统一匹配正则（移除 \b 以兼容带点的公司名，改为之后精确校验）
-    # 使用简单包含初筛，后续用 RuleManager 精筛
     global_pattern = "|".join(case_insensitive_keywords)
-    if not global_pattern:
-        return []
-
-    if SHUTDOWN_EVENT.is_set():
-        print("⚠️ Skip scanning because shutdown is in progress")
-        return []
+    if not global_pattern: return []
+    if SHUTDOWN_EVENT.is_set(): return []
+    
     print(f"📂 Scanning {len(batch_urls)} files in parallel (Unified Regex)...")
     
     all_combined_matches = []
@@ -1108,148 +1195,23 @@ def process_batch_files(batch_urls, companies, worker_name=None):
     }
     symbol_to_company = {c['symbol']: c for c in companies}
 
-    def process_file_task(url):
-        filename = os.path.basename(url)
-        cache_path = os.path.join(FILES_DIR, filename)
-        if not os.path.exists(cache_path):
-            return {
-                "matches": [],
-                "rows": 0,
-                "candidates": 0,
-                "sample": "",
-            }
-
-        try:
-            t_start = time.time()
-            with zipfile.ZipFile(cache_path) as z:
-                with z.open(z.namelist()[0]) as f:
-                    df = read_gkg_tsv(f)
-            t_parse = time.time()
-
-            if df.empty:
-                return {
-                    "matches": [],
-                    "rows": 0,
-                    "candidates": 0,
-                    "sample": "",
-                }
-
-            # 统一列名并增强字段覆盖
-            if (26 in df.columns) and (df[26].notna().any()):
-                # V2 XML 格式 (2021+)
-                df["URL"] = df[26].astype(str).str.extract(r"(?s)<PAGE_LINKS>(.*?)</PAGE_LINKS>", expand=False).fillna("").str.split(";").str[0]
-                df["Title"] = df[26].astype(str).str.extract(r"(?s)<PAGE_TITLE>(.*?)</PAGE_TITLE>", expand=False).fillna("")
-                df["Raw"] = df[26].astype(str).map(strip_urls_and_xml)
-            else:
-                # 传统格式 (2016-2020): 同时扫描 V1 和 V2 字段
-                df["URL"] = df[4].astype(str) if 4 in df.columns else ""
-                df["Title"] = ""
-                # GDELT GKG 字段索引: 7,9,11 是 V1 实体; 22,26,28 是 V2 实体
-                entity_cols = [7, 9, 11, 22, 26, 28]
-                found_cols = [c for c in entity_cols if c in df.columns]
-                raw_text = df[found_cols].fillna("").agg(" ".join, axis=1) if found_cols else ""
-                df["Raw"] = raw_text.map(strip_urls_and_xml) if hasattr(raw_text, "map") else ""
-
-            df = df[df["URL"].str.startswith("http", na=False)]
-            # 过滤社交媒体主页链接（不是新闻）
-            social_domains = r"(?:instagram\.com|facebook\.com|twitter\.com|x\.com|tiktok\.com|linkedin\.com)/(?!.*\b(?:news|blog|article|press)\b)"
-            df = df[~df["URL"].str.contains(social_domains, case=False, na=False, regex=True)]
-            if df.empty:
-                return {
-                    "matches": [],
-                    "rows": 0,
-                    "candidates": 0,
-                    "sample": "",
-                }
-
-            # 核心匹配逻辑：大小写不敏感初筛（仅 Title + Raw 实体字段，不含 URL）
-            combined_text = (df["Title"].fillna("") + " " + df["Raw"].fillna("")).str.lower()
-            t_combine = time.time()
-            mask = combined_text.str.contains(global_pattern, case=False, na=False, regex=True)
-
-            matched_df = df[mask]
-            t_regex = time.time()
-            file_matches = []
-            sample_text = ""
-            if not matched_df.empty:
-                srow = matched_df.iloc[0]
-                sample_text = f"title='{str(srow.get('Title', ''))[:50]}' url='{str(srow.get('URL', ''))[:80]}'"
-
-            # 记录已发现的候选记录总数（分母会逐步增长，最终收敛）
-            with progress_lock:
-                progress["rules_total_discovered"] += len(matched_df)
-
-            for idx, row in matched_df.iterrows():
-                row_text = combined_text.loc[idx]
-                # 找出究竟是哪个 symbol 被命中
-                hit_symbols = set()
-                for kw, symbols in all_keywords_map.items():
-                    if kw in row_text:
-                        hit_symbols.update(symbols)
-                
-                for sym in hit_symbols:
-                    # 解析完整时间戳
-                    time_info = parse_gdelt_timestamp(filename)
-                    article_data = {
-                        "title": row["Title"],
-                        "content": row["Raw"],
-                        "date": time_info['date_str'] if time_info else filename[:8],
-                        "source_file": filename,
-                        "url": row["URL"],
-                    }
-                    if rule_manager.should_include(sym, article_data):
-                        file_matches.append({
-                            "row": {
-                                "URL": row["URL"], 
-                                "Title": row["Title"] or f"News about {sym}", 
-                                "Date": time_info['date_str'] if time_info else filename[:8],
-                                "Timestamp": time_info['timestamp_str'] if time_info else filename[:14],
-                                "PublishedAt": time_info['iso'] if time_info else None
-                            },
-                            "company": symbol_to_company.get(sym)
-                        })
-
-                # 按“候选记录”粒度输出规则进度（每100条）
-                with progress_lock:
-                    progress["rules_processed"] += 1
-                    rp = progress["rules_processed"]
-                    rt = progress["rules_total_discovered"]
-                    if SCAN_RULE_PROGRESS_EVERY_RECORDS > 0 and rp % SCAN_RULE_PROGRESS_EVERY_RECORDS == 0:
-                        worker = worker_name or threading.current_thread().name
-                        print(f"[{worker}] 🧪 Rule check progress: {rp} records processed")
-            t_rules = time.time()
-            total_time = t_rules - t_start
-            return {
-                "matches": file_matches,
-                "rows": len(df),
-                "candidates": len(matched_df),
-                "sample": sample_text,
-                "filename": filename,
-                "timings": {
-                    "total": total_time,
-                    "parse": t_parse - t_start,
-                    "combine": t_combine - t_parse,
-                    "regex": t_regex - t_combine,
-                    "rules": t_rules - t_regex,
-                },
-            }
-        except Exception as e:
-            print(f"❌ Error processing {filename}: {e}")
-            return {
-                "matches": [],
-                "rows": 0,
-                "candidates": 0,
-                "sample": "",
-                "error": str(e),
-                "filename": filename,
-            }
-
     prefix = f"{worker_name}-scan" if worker_name else f"{threading.current_thread().name}-scan"
     scan_start_time = time.time()
-    # 每10个文件打印一次进度，方便排查卡住
     SCAN_FILE_PROGRESS_INTERVAL = int(os.getenv("SCAN_FILE_PROGRESS_INTERVAL", "10"))
+    
     with ThreadPoolExecutor(max_workers=SCAN_WORKERS, thread_name_prefix=prefix) as executor:
-        futures = [executor.submit(process_file_task, url) for url in batch_urls]
+        futures = [executor.submit(
+            process_file_task, 
+            url, 
+            rule_manager, 
+            all_keywords_map, 
+            global_pattern, 
+            symbol_to_company, 
+            progress_lock, 
+            progress, 
+            worker_name
+        ) for url in batch_urls]
+        
         for future in as_completed(futures):
             res = future.result()
             all_combined_matches.extend(res["matches"])
@@ -1671,10 +1633,12 @@ if __name__ == "__main__":
 
         def worker_loop(worker_id):
             global total_inserted
-            owner = QUEUE_INSTANCE_ID
+            # 使用更细粒度的标识：mac-hostname-worker1
             worker_name = f"{HOST_ID}-worker{worker_id}"
+            owner = worker_name
             threading.current_thread().name = worker_name
-            print("started")
+            print(f"🚀 Started on {platform.system()} as {owner}")
+            
             while not SHUTDOWN_EVENT.is_set():
                 batch_idx = claim_next_batch(owner)
                 if batch_idx is None:

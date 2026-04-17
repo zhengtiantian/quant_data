@@ -332,57 +332,120 @@ Use separate clean / derived layers.
 
 ## Stage 2. Near-Term Data Expansion
 
-1. add benchmark/index price collection
-2. add earnings/event calendar
-3. add sector / industry mapping
-4. add optional valuation/fundamental data
+Status: substantially complete.
 
-Status update:
+### Completed items
 
 - benchmark/index price collection:
-  - done for current research baseline
-- first earnings/event calendar layer:
+  - done (`SPY`, `QQQ` daily prices, `benchmark_ret_5d/20d/60d`, `excess_ret_*`)
+- earnings event Layer 1 (timing only):
   - done
-  - source: `yfinance`
-  - collection: `earnings_events`
-  - loader: `research/load_earnings_events.py`
-  - integrated features:
-    - `days_to_earnings`
-    - `days_since_earnings`
-    - `is_earnings_window_5d`
-    - `is_post_earnings_window_20d`
-- sector mapping:
-  - basic version already integrated
+  - features: `days_to_earnings`, `days_since_earnings`,
+    `is_earnings_window_5d`, `is_post_earnings_window_20d`
+- earnings event Layer 2 (surprise + richer timing):
+  - done
+  - features: `eps_estimate_last`, `reported_eps_last`, `surprise_pct_last`,
+    `is_positive_surprise`, `is_negative_surprise`,
+    `days_to_earnings_bucket`, `days_since_earnings_bucket`,
+    `is_pre_earnings_10d`, `is_post_earnings_5d`, `is_post_earnings_10d`,
+    `is_post_positive_surprise_20d`, `is_post_negative_surprise_20d`
+  - result: Ridge `60d` IC improved from `0.073` to `0.121` (+66%)
+- sector mapping: basic version integrated
 
-Next event-layer development after this release:
+### Next: earnings event Layer 3
 
-1. add earnings surprise features
-- `eps_estimate`
-- `reported_eps`
-- `surprise_pct`
-- `is_positive_surprise`
-- `is_negative_surprise`
+Build on Layer 2 with deeper surprise structure and interaction features.
 
-2. add richer earnings timing buckets
-- `days_to_earnings_bucket`
-- `days_since_earnings_bucket`
-- tighter pre-earnings / post-earnings windows
+1. surprise magnitude buckets
+   - split `surprise_pct_last` into ordinal buckets:
+     - large miss (< -5%), small miss (-5% to 0), small beat (0 to +5%),
+       large beat (> +5%)
+   - rationale: the market reacts non-linearly to surprise size
 
-3. add post-earnings drift structure
-- post-earnings drift flag
-- surprise combined with drift window
-- event + news quality interaction tests
+2. news quality × earnings interaction features
+   - `full_ratio_x_post_positive`: `full_ratio` × `is_post_positive_surprise_20d`
+   - `quality_score_x_post_negative`: `quality_score` × `is_post_negative_surprise_20d`
+   - rationale: a positive surprise with high-quality news coverage is a
+     stronger combined signal than either alone
 
-4. rerun baseline and factor comparison
-- compare event features against the current written baseline
-- test whether event features help more on `20d` than `60d`
+3. earnings recency decay
+   - `earnings_recency_weight`: exponential decay of `days_since_earnings`
+     (weight = exp(-days_since / 20))
+   - rationale: the post-earnings drift effect weakens as time passes
+
+4. rerun backtest and model after Layer 3
+   - compare against the Layer 2 baseline (Ridge `60d` IC = `0.121`)
+
+### Most important next step: universe expansion
+
+The current universe is 14 symbols.
+This is the single biggest constraint on signal reliability.
+
+Why this matters:
+
+- at 14 symbols, one bad year (e.g. 2022, 2024) can make the IC negative
+  due to sampling noise alone
+- cross-sectional ranking needs depth: `top 3 / top 5` out of 14 is not
+  robust; `top 5 / top 10` out of 50-100 is meaningfully more stable
+- the current signals may be real but cannot be confirmed at this universe size
+
+Target: expand to 50-100 symbols.
+
+What is required:
+
+1. extend `stock_universe` collection with new symbols
+   - suggested scope: S&P 500 tech/growth names, or a defined sector basket
+   - keep sector distribution balanced
+
+2. collect historical news for new symbols
+   - extend GDELT / news collector coverage
+   - run `company_match_rescore` on new articles
+
+3. collect price history for new symbols
+   - extend `stock_prices_history`
+
+4. rebuild feature table
+   - `FEATURE_REBUILD_ALL=true` after data is ready
+
+5. rerun all backtests and models on expanded universe
+   - compare single-factor IC at 50-symbol vs 14-symbol universe
+   - a good signal should survive and become more stable
 
 ## Stage 3. Modeling
 
-1. build training-ready dataset
-2. define train/validation/test windows
-3. baseline linear / tree models
-4. compare to simple factor ranking
+Status: first-pass baselines done.
+
+Current baseline results (14-symbol universe):
+
+- `Ridge` `60d` Rank IC: `0.121` / Top 5 excess return: `+6.58%`
+- `HistGB` `60d` Rank IC: `0.118` / Top 5 excess return: `+6.32%`
+
+Known issue: year-by-year variance is high.
+
+- strong years: 2020 (IC = 0.35), 2023 (IC = 0.19), 2025 (IC = 0.24)
+- weak years: 2022 (IC = -0.06), 2024 (IC = -0.04)
+- likely cause: macro regime shifts (2022: rate hikes + war; 2024: election
+  + rate pivot) break the news-quality thesis temporarily
+
+Next modeling steps (do only after universe expansion):
+
+1. year stability analysis
+   - run `--group-by-year` on factor backtest with full feature set
+   - identify which features drive the 2022/2024 failures
+   - test whether regime-aware features (e.g. VIX level, market vol) help
+
+2. simple Ridge + HistGB ensemble
+   - average predictions from both models
+   - rationale: the two models now have comparable IC and different error
+     patterns; blending should reduce variance
+
+3. sector-relative feature normalization
+   - normalize `full_ratio`, `quality_score` within sector on each day
+   - reduces bias from sectors that structurally attract more/less news
+
+4. ranking model
+   - convert to a pairwise ranking objective (LambdaRank or similar)
+   - more directly aligned with the top-N portfolio construction goal
 
 ## Stage 4. Production Readiness
 
@@ -399,18 +462,20 @@ Next event-layer development after this release:
 - `research/daily_symbol_features.py`
 - `research/company_match_rescore.py`
 - `research/backtest_news_factor.py`
+- `research/load_earnings_events.py`
+- `research/load_benchmark_prices.py`
+- `research/train_baseline_models.py`
 - `news_collectors/gdelt/special_rules/slm_filter.py`
 - `news_collectors/gdelt/special_rules/slm_skills.py`
 
 ### Suggested Next Files
 
-- `research/backtest_factor_groups.py`
-- `research/backtest_long_short.py`
-- `research/build_quality_factor.py`
-- `research/load_benchmark_prices.py`
-- `research/load_earnings_events.py`
-- `research/prepare_model_dataset.py`
-- `research/train_baseline_models.py`
+- `research/backtest_year_stability.py`
+  - year-by-year IC breakdown with the full feature set
+- `research/build_interaction_features.py`
+  - earnings × news quality interaction features (Layer 3)
+- `research/expand_universe.py`
+  - helper to onboard new symbols into stock_universe and trigger collection
 
 ## Recommended Success Criteria
 
@@ -424,25 +489,31 @@ The project should be considered healthy if:
 
 ## Current Practical Recommendation
 
-Do next:
+Do next (in priority order):
 
-1. extend factor backtest to top/bottom and long-short
-2. add benchmark-relative evaluation
-3. test a multi-factor quality basket
+1. **universe expansion** — most important; expand to 50+ symbols before
+   further feature or model work; current 14-symbol results cannot be
+   reliably confirmed
+2. **year stability analysis** — run group-by-year on current full feature
+   set; understand what drives 2022/2024 IC failures before adding more
+   features
+3. **earnings Layer 3** — surprise magnitude buckets and news × earnings
+   interaction features; do after stability analysis confirms value
 
 Do not do next:
 
 - live trading automation
-- complex deep learning modeling
-- expanding to too many new data sources before validating current alpha
+- complex deep learning or LLM-based modeling
+- adding more data sources before validating signals on expanded universe
+- switching local SLM model without accuracy benchmarking
 
 ## Notes
 
-The clean matched-news dataset is research-usable, but it is not yet a perfect high-value event dataset.
+The clean matched-news dataset is research-usable at the current scale.
 
-That means:
+The two-layer earnings feature set has produced a meaningful model
+improvement (Ridge `60d` IC: `0.073` → `0.121`).
 
-- it is ready for factor research and first-pass backtesting
-- it is not yet the final production-grade event intelligence layer
-
-The right next move is research validation, not more raw data collection.
+The signal looks real but the universe is too small to confirm it with
+confidence. Universe expansion is the gating step before any further
+research investment makes sense.

@@ -50,18 +50,18 @@
     ],
     "special_rules": {
         "ambiguous": {
-            "problem": "Chip可能匹配到人名Chip Kelly",
+            "problem": "Intel often refers to intelligence (CIA, Military)",
             "required_keywords": [
-                "Intel",
-                "semiconductor",
-                "processor",
-                "CPU",
-                "Xeon",
-                "Core i"
-            ],
-            "exclude_patterns": [
-                "Chip Kelly",
-                "Chip Mularkey"
+                "Processor",
+                "Chip",
+                "Pat Gelsinger",
+                "Fab",
+                "x86",
+                "Foundry",
+                "Semiconductor",
+                "Arrow Lake",
+                "Lunar Lake",
+                "Core Ultra"
             ],
             "min_matches": 1
         }

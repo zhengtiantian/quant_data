@@ -1,0 +1,36 @@
+{
+    "symbol": "INTU",
+    "name": "Intuit",
+    "primary_keywords": [
+        "INTU",
+        "Intuit"
+    ],
+    "expansion_keywords": [
+        "Brad Smith",
+        "Sasan Goodarzi",
+        "TurboTax",
+        "QuickBooks",
+        "Mint",
+        "Credit Karma",
+        "Mailchimp",
+        "Personal finance",
+        "Tax prep"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "General term usage and entity confusion over 10 years",
+            "required_keywords": [
+                "INTU"
+            ],
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "Intuit",
+                "QuickBooks"
+            ]
+        }
+    },
+    "strict_validation_keywords": [
+        "Intuit",
+        "QuickBooks"
+    ]
+}

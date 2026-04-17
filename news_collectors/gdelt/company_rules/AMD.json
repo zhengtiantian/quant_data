@@ -66,7 +66,11 @@
                 "AMD",
                 "Advanced Micro Devices"
             ],
-            "min_matches": 1
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "Advanced Micro Devices",
+                "Lisa Su"
+            ]
         }
     },
     "strict_validation_keywords": [

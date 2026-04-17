@@ -1,0 +1,35 @@
+{
+    "symbol": "FTNT",
+    "name": "Fortinet",
+    "primary_keywords": [
+        "FTNT",
+        "Fortinet"
+    ],
+    "expansion_keywords": [
+        "Ken Xie",
+        "Michael Xie",
+        "FortiGate",
+        "FortiOS",
+        "SD-WAN",
+        "Security Fabric",
+        "ASIC",
+        "Cybersecurity"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "General term usage and entity confusion over 10 years",
+            "required_keywords": [
+                "FTNT"
+            ],
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "Fortinet",
+                "Ken Xie"
+            ]
+        }
+    },
+    "strict_validation_keywords": [
+        "Fortinet",
+        "Ken Xie"
+    ]
+}

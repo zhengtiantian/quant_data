@@ -1,0 +1,41 @@
+{
+    "symbol": "DELL",
+    "name": "Dell",
+    "primary_keywords": [
+        "DELL",
+        "Dell Technologies"
+    ],
+    "expansion_keywords": [
+        "Michael Dell",
+        "Jeff Clarke",
+        "EMC acquisition",
+        "VMware spin-off",
+        "PowerEdge",
+        "PowerStore",
+        "Alienware",
+        "Latitude",
+        "Precision",
+        "OptiPlex",
+        "AI PCs",
+        "Apex",
+        "Direct sales model",
+        "Pivotal"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "General term usage and entity confusion over 10 years",
+            "required_keywords": [
+                "DELL"
+            ],
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "Dell Technologies",
+                "Michael Dell"
+            ]
+        }
+    },
+    "strict_validation_keywords": [
+        "Dell Technologies",
+        "Michael Dell"
+    ]
+}

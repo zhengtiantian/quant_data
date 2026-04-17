@@ -1,0 +1,42 @@
+{
+    "symbol": "SNOW",
+    "name": "Snowflake",
+    "primary_keywords": [
+        "Snowflake",
+        "SNOW"
+    ],
+    "expansion_keywords": [
+        "Frank Slootman",
+        "Sridhar Ramaswamy",
+        "Benoit Dageville",
+        "Thierry Cruanes",
+        "Bob Muglia",
+        "Data Cloud",
+        "Cloud data warehousing",
+        "Data lake",
+        "Data sharing",
+        "Snowpark",
+        "Cortex",
+        "Berkshire Hathaway investment",
+        "IPO",
+        "Cloud native",
+        "Iceberg tables"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "Snow is a weather phenomenon",
+            "required_keywords": [
+                "SNOW"
+            ],
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "Snowflake Inc",
+                "Data Cloud"
+            ]
+        }
+    },
+    "strict_validation_keywords": [
+        "Snowflake Inc",
+        "Data Cloud"
+    ]
+}

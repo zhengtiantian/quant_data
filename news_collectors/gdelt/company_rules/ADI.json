@@ -1,0 +1,34 @@
+{
+    "symbol": "ADI",
+    "name": "Analog Devices",
+    "primary_keywords": [
+        "ADI",
+        "Analog Devices"
+    ],
+    "expansion_keywords": [
+        "Vincent Roche",
+        "Jerry Fishman",
+        "Maxim Integrated acquisition",
+        "Linear Technology",
+        "Signal processing",
+        "Data converters",
+        "Amplifiers",
+        "MEMS",
+        "Power by Linear"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "General term usage and entity confusion over 10 years",
+            "required_keywords": [
+                "ADI"
+            ],
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "Analog Devices"
+            ]
+        }
+    },
+    "strict_validation_keywords": [
+        "Analog Devices"
+    ]
+}

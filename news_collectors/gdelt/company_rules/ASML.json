@@ -1,0 +1,51 @@
+{
+    "symbol": "ASML",
+    "name": "ASML",
+    "primary_keywords": [
+        "ASML"
+    ],
+    "expansion_keywords": [
+        "Peter Wennink",
+        "Christophe Fouquet",
+        "Martin van den Brink",
+        "Eric Meurice",
+        "Lithography",
+        "EUV",
+        "Extreme Ultraviolet",
+        "DUV",
+        "Deep Ultraviolet",
+        "ArF",
+        "KrF",
+        "Immersion lithography",
+        "High-NA EUV",
+        "EXE:5000",
+        "EXE:5200",
+        "TWINSCAN",
+        "NXE:3400C",
+        "NXE:3600D",
+        "Veldhoven",
+        "Cymer acquisition",
+        "Intel investment",
+        "Samsung investment",
+        "TSMC investment",
+        "Export controls",
+        "China sales"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "General term usage and entity confusion over 10 years",
+            "required_keywords": [
+                "ASML"
+            ],
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "ASML Holding",
+                "Lithography"
+            ]
+        }
+    },
+    "strict_validation_keywords": [
+        "ASML Holding",
+        "Lithography"
+    ]
+}

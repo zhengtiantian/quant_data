@@ -1,0 +1,46 @@
+{
+    "symbol": "ORCL",
+    "name": "Oracle",
+    "primary_keywords": [
+        "ORCL",
+        "Oracle"
+    ],
+    "expansion_keywords": [
+        "Larry Ellison",
+        "Safra Catz",
+        "Mark Hurd",
+        "Jeff Henley",
+        "Oracle Database",
+        "Exadata",
+        "OCI",
+        "Oracle Cloud Infrastructure",
+        "Java",
+        "Sun Microsystems",
+        "NetSuite acquisition",
+        "Cerner acquisition",
+        "PeopleSoft",
+        "Siebel",
+        "Enterprise software",
+        "Cloud database",
+        "TikTok deal",
+        "MySQL",
+        "PL/SQL"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "General term usage and entity confusion over 10 years",
+            "required_keywords": [
+                "ORCL"
+            ],
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "Oracle Corp",
+                "Larry Ellison"
+            ]
+        }
+    },
+    "strict_validation_keywords": [
+        "Oracle Corp",
+        "Larry Ellison"
+    ]
+}

@@ -1,0 +1,41 @@
+{
+    "symbol": "IBM",
+    "name": "IBM",
+    "primary_keywords": [
+        "IBM",
+        "International Business Machines"
+    ],
+    "expansion_keywords": [
+        "Ginni Rometty",
+        "Arvind Krishna",
+        "James Whitehurst",
+        "Red Hat acquisition",
+        "Watson",
+        "Watsonx",
+        "Quantum computing",
+        "Qiskit",
+        "Kyndryl spin-off",
+        "Mainframe",
+        "z16",
+        "Cloud Paks",
+        "Hybrid cloud",
+        "Cognitive computing"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "General term usage and entity confusion over 10 years",
+            "required_keywords": [
+                "IBM"
+            ],
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "International Business Machines",
+                "Watson"
+            ]
+        }
+    },
+    "strict_validation_keywords": [
+        "International Business Machines",
+        "Watson"
+    ]
+}

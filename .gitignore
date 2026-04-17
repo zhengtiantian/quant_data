@@ -29,3 +29,4 @@ tmp_*.json
 *.pid
 __pycache__/
 *.pyc
+tools/scratch/

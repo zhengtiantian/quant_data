@@ -1,0 +1,40 @@
+{
+    "symbol": "CRWD",
+    "name": "CrowdStrike",
+    "primary_keywords": [
+        "CRWD",
+        "CrowdStrike"
+    ],
+    "expansion_keywords": [
+        "George Kurtz",
+        "Dmitri Alperovitch",
+        "Shawn Henry",
+        "Falcon platform",
+        "Endpoint security",
+        "EDR",
+        "XDR",
+        "Threat Intelligence",
+        "OverWatch",
+        "Democratic National Committee hack",
+        "Log4j",
+        "SolarWinds",
+        "Falcon Complete"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "General term usage and entity confusion over 10 years",
+            "required_keywords": [
+                "CRWD"
+            ],
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "CrowdStrike",
+                "George Kurtz"
+            ]
+        }
+    },
+    "strict_validation_keywords": [
+        "CrowdStrike",
+        "George Kurtz"
+    ]
+}

@@ -79,19 +79,14 @@
         "ambiguous": {
             "problem": "Blackwell, Grace, Hopper\u662f\u5e38\u89c1\u4eba\u540d",
             "required_keywords": [
-                "Nvidia",
                 "NVDA",
-                "GPU",
-                "GeForce",
-                "RTX",
-                "Jensen Huang",
-                "H100",
-                "B200",
-                "CUDA",
-                "Blackwell GPU",
-                "Hopper architecture"
+                "Nvidia"
             ],
-            "min_matches": 1
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "NVIDIA",
+                "GPU"
+            ]
         }
     }
 }

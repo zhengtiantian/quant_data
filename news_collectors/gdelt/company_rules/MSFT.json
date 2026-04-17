@@ -33,15 +33,16 @@
     ],
     "special_rules": {
         "ambiguous": {
-            "problem": "确保是Microsoft公司相关",
+            "problem": "\u786e\u4fdd\u662fMicrosoft\u516c\u53f8\u76f8\u5173",
             "required_keywords": [
-                "Microsoft",
-                "Azure",
-                "Office 365",
-                "Game Pass",
-                "Satya Nadella"
+                "MSFT",
+                "Microsoft"
             ],
-            "min_matches": 1
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "Microsoft",
+                "Azure"
+            ]
         }
     },
     "strict_validation_keywords": [

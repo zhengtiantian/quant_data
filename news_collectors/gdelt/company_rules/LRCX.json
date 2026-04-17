@@ -1,0 +1,37 @@
+{
+    "symbol": "LRCX",
+    "name": "Lam Research",
+    "primary_keywords": [
+        "LRCX",
+        "Lam Research"
+    ],
+    "expansion_keywords": [
+        "Martin Anstice",
+        "Tim Archer",
+        "Etch technology",
+        "Deposition",
+        "Sense.i",
+        "Vantier",
+        "Altos",
+        "Corvus",
+        "Vector",
+        "Sabre"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "General term usage and entity confusion over 10 years",
+            "required_keywords": [
+                "LRCX"
+            ],
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "Lam Research",
+                "Tim Archer"
+            ]
+        }
+    },
+    "strict_validation_keywords": [
+        "Lam Research",
+        "Tim Archer"
+    ]
+}

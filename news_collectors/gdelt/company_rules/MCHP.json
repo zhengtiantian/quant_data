@@ -1,0 +1,33 @@
+{
+    "symbol": "MCHP",
+    "name": "Microchip",
+    "primary_keywords": [
+        "MCHP",
+        "Microchip Technology"
+    ],
+    "expansion_keywords": [
+        "Steve Sanghi",
+        "Ganesh Moorthy",
+        "PIC microcontroller",
+        "Atmel acquisition",
+        "Microsemi acquisition",
+        "Mixed-signal",
+        "FPGA",
+        "PolarFire"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "General term usage and entity confusion over 10 years",
+            "required_keywords": [
+                "MCHP"
+            ],
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "Microchip Technology"
+            ]
+        }
+    },
+    "strict_validation_keywords": [
+        "Microchip Technology"
+    ]
+}

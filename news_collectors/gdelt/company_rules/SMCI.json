@@ -1,0 +1,40 @@
+{
+    "symbol": "SMCI",
+    "name": "Super Micro Computer",
+    "primary_keywords": [
+        "SMCI",
+        "Super Micro Computer",
+        "Supermicro"
+    ],
+    "expansion_keywords": [
+        "Charles Liang",
+        "Sara Liu",
+        "Building Block Solutions",
+        "Green computing",
+        "Blade servers",
+        "GPU servers",
+        "Liquid cooling",
+        "AI racks",
+        "Hindenburg Research",
+        "Internal control",
+        "Earnings restatement",
+        "Nasdaq delisting risk"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "General term usage and entity confusion over 10 years",
+            "required_keywords": [
+                "SMCI"
+            ],
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "Super Micro Computer",
+                "Charles Liang"
+            ]
+        }
+    },
+    "strict_validation_keywords": [
+        "Super Micro Computer",
+        "Charles Liang"
+    ]
+}

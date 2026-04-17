@@ -1,0 +1,43 @@
+{
+    "symbol": "UBER",
+    "name": "Uber",
+    "primary_keywords": [
+        "UBER",
+        "Uber"
+    ],
+    "expansion_keywords": [
+        "Travis Kalanick",
+        "Dara Khosrowshahi",
+        "Garrett Camp",
+        "Ride-sharing",
+        "Uber Eats",
+        "Uber Freight",
+        "Postmates acquisition",
+        "Careem",
+        "Self-driving car unit",
+        "Advanced Technologies Group",
+        "ATG sale",
+        "IPO",
+        "Gig economy",
+        "Contractor vs Employee",
+        "SoftBank investment",
+        "Airlift"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "General term usage and entity confusion over 10 years",
+            "required_keywords": [
+                "UBER"
+            ],
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "Uber Technologies",
+                "Dara Khosrowshahi"
+            ]
+        }
+    },
+    "strict_validation_keywords": [
+        "Uber Technologies",
+        "Dara Khosrowshahi"
+    ]
+}

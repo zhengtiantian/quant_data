@@ -1,0 +1,47 @@
+{
+    "symbol": "CRM",
+    "name": "Salesforce",
+    "primary_keywords": [
+        "CRM",
+        "Salesforce"
+    ],
+    "expansion_keywords": [
+        "Marc Benioff",
+        "Keith Block",
+        "Bret Taylor",
+        "Parker Harris",
+        "SaaS",
+        "Cloud computing",
+        "PaaS",
+        "Force.com",
+        "AppExchange",
+        "Slack acquisition",
+        "Tableau acquisition",
+        "MuleSoft acquisition",
+        "Demandware",
+        "ExactTarget",
+        "Customer 360",
+        "Einstein AI",
+        "Agentforce",
+        "Dreamforce",
+        "Veloce",
+        "Net Zero Cloud"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "CRM is a general industry category",
+            "required_keywords": [
+                "CRM"
+            ],
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "Salesforce",
+                "Benioff"
+            ]
+        }
+    },
+    "strict_validation_keywords": [
+        "Salesforce",
+        "Benioff"
+    ]
+}

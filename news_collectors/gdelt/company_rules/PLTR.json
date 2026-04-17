@@ -1,0 +1,43 @@
+{
+    "symbol": "PLTR",
+    "name": "Palantir",
+    "primary_keywords": [
+        "PLTR",
+        "Palantir"
+    ],
+    "expansion_keywords": [
+        "Alex Karp",
+        "Peter Thiel",
+        "Stephen Cohen",
+        "Joe Lonsdale",
+        "Gotham",
+        "Foundry",
+        "Apollo",
+        "AIP",
+        "Big data analytics",
+        "Counter-terrorism",
+        "Government contracts",
+        "SPAC investments",
+        "Metropolis",
+        "Skywise",
+        "NHS handle",
+        "CIA investment"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "General term usage and entity confusion over 10 years",
+            "required_keywords": [
+                "PLTR"
+            ],
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "Palantir",
+                "Alex Karp"
+            ]
+        }
+    },
+    "strict_validation_keywords": [
+        "Palantir",
+        "Alex Karp"
+    ]
+}

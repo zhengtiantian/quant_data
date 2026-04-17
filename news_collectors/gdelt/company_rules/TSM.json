@@ -1,0 +1,66 @@
+{
+    "symbol": "TSM",
+    "name": "Taiwan Semiconductor",
+    "primary_keywords": [
+        "TSM",
+        "TSMC",
+        "Taiwan Semiconductor"
+    ],
+    "expansion_keywords": [
+        "Morris Chang",
+        "Mark Liu",
+        "C.C. Wei",
+        "Rick Tsai",
+        "28nm",
+        "20nm",
+        "16nm",
+        "10nm",
+        "7nm",
+        "5nm",
+        "4nm",
+        "3nm",
+        "2nm",
+        "A16",
+        "CoWoS",
+        "InFO",
+        "SoIC",
+        "EUV",
+        "DUV",
+        "Foundry",
+        "Pure-play",
+        "Hsinchu Fab",
+        "Tainan Fab",
+        "Taichung Fab",
+        "Arizona Fab",
+        "Kumamoto Fab",
+        "JASM",
+        "Apple A-series",
+        "Snapdragon",
+        "HiSilicon",
+        "Wafer shortage",
+        "Capacity utilization"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "General term usage and entity confusion over 10 years",
+            "required_keywords": [
+                "TSM"
+            ],
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "Taiwan Semiconductor",
+                "TSMC"
+            ]
+        }
+    },
+    "negative_keywords": [
+        "scotsman",
+        "talkingpointsmemo",
+        "scotsman",
+        "talkingpointsmemo"
+    ],
+    "strict_validation_keywords": [
+        "Taiwan Semiconductor",
+        "TSMC"
+    ]
+}

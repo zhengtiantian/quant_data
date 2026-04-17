@@ -1,0 +1,45 @@
+{
+    "symbol": "NFLX",
+    "name": "Netflix",
+    "primary_keywords": [
+        "NFLX",
+        "Netflix"
+    ],
+    "expansion_keywords": [
+        "Reed Hastings",
+        "Ted Sarandos",
+        "Greg Peters",
+        "Marc Randolph",
+        "Streaming wars",
+        "DVD-by-mail",
+        "Binge-watching",
+        "Original programming",
+        "House of Cards",
+        "Stranger Things",
+        "Squid Game",
+        "Subscribers count",
+        "Churn rate",
+        "Ad-supported tier",
+        "Password sharing crackdown",
+        "TUDUM",
+        "Content spend",
+        "Overseas expansion"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "General term usage and entity confusion over 10 years",
+            "required_keywords": [
+                "NFLX"
+            ],
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "Netflix",
+                "Streaming"
+            ]
+        }
+    },
+    "strict_validation_keywords": [
+        "Netflix",
+        "Streaming"
+    ]
+}
