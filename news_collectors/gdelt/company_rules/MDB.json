@@ -1,42 +1,37 @@
 {
     "symbol": "MDB",
-    "name": "MongoDB",
+    "company_name": "MongoDB",
     "primary_keywords": [
-        "MDB",
-        "MongoDB"
+        "MongoDB",
+        "MongoDB Inc"
     ],
     "expansion_keywords": [
         "Dev Ittycheria",
         "Max Schireson",
-        "Kevin Ryan",
         "Dwight Merriman",
         "Eliot Horowitz",
-        "NoSQL",
+        "MongoDB Atlas",
+        "MongoDB Realm",
+        "NoSQL database",
         "Document database",
-        "Atlas",
-        "Community Server",
-        "BSON",
-        "MQL",
-        "Aggregation framework",
-        "Sharding",
-        "Replication",
-        "WiredTiger"
+        "MongoDB Charts",
+        "MongoDB Compass",
+        "Vector search MongoDB",
+        "MongoDB AI"
     ],
     "special_rules": {
         "ambiguous": {
             "problem": "General term usage and entity confusion over 10 years",
             "required_keywords": [
-                "MDB"
+                "MongoDB"
             ],
             "min_matches": 1,
             "strict_validation_keywords": [
-                "MongoDB",
-                "Dev Ittycheria"
+                "MongoDB"
             ]
         }
     },
     "strict_validation_keywords": [
-        "MongoDB",
-        "Dev Ittycheria"
+        "MongoDB"
     ]
 }

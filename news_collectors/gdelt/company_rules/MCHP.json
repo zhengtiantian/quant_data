@@ -1,8 +1,6 @@
 {
     "symbol": "MCHP",
-    "name": "Microchip",
     "primary_keywords": [
-        "MCHP",
         "Microchip Technology"
     ],
     "expansion_keywords": [
@@ -19,7 +17,7 @@
         "ambiguous": {
             "problem": "General term usage and entity confusion over 10 years",
             "required_keywords": [
-                "MCHP"
+                "Microchip Technology"
             ],
             "min_matches": 1,
             "strict_validation_keywords": [
@@ -29,5 +27,6 @@
     },
     "strict_validation_keywords": [
         "Microchip Technology"
-    ]
+    ],
+    "company_name": "Microchip Technology"
 }

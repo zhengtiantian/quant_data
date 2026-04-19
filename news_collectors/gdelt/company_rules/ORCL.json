@@ -1,46 +1,40 @@
 {
     "symbol": "ORCL",
-    "name": "Oracle",
+    "company_name": "Oracle",
     "primary_keywords": [
-        "ORCL",
         "Oracle"
     ],
     "expansion_keywords": [
         "Larry Ellison",
         "Safra Catz",
         "Mark Hurd",
-        "Jeff Henley",
         "Oracle Database",
         "Exadata",
-        "OCI",
         "Oracle Cloud Infrastructure",
-        "Java",
-        "Sun Microsystems",
-        "NetSuite acquisition",
-        "Cerner acquisition",
-        "PeopleSoft",
-        "Siebel",
-        "Enterprise software",
-        "Cloud database",
-        "TikTok deal",
+        "OCI",
+        "NetSuite",
+        "Cerner",
         "MySQL",
-        "PL/SQL"
+        "HeatWave",
+        "Autonomous Database",
+        "Oracle APEX",
+        "Fusion Cloud",
+        "Oracle AI",
+        "Oracle earnings"
     ],
     "special_rules": {
         "ambiguous": {
-            "problem": "General term usage and entity confusion over 10 years",
+            "problem": "Oracle is unambiguous as company name",
             "required_keywords": [
-                "ORCL"
+                "Oracle"
             ],
             "min_matches": 1,
             "strict_validation_keywords": [
-                "Oracle Corp",
-                "Larry Ellison"
+                "Oracle"
             ]
         }
     },
     "strict_validation_keywords": [
-        "Oracle Corp",
-        "Larry Ellison"
+        "Oracle"
     ]
 }

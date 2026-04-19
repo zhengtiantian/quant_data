@@ -1,8 +1,6 @@
 {
     "symbol": "ADI",
-    "name": "Analog Devices",
     "primary_keywords": [
-        "ADI",
         "Analog Devices"
     ],
     "expansion_keywords": [
@@ -20,7 +18,7 @@
         "ambiguous": {
             "problem": "General term usage and entity confusion over 10 years",
             "required_keywords": [
-                "ADI"
+                "Analog Devices"
             ],
             "min_matches": 1,
             "strict_validation_keywords": [
@@ -30,5 +28,6 @@
     },
     "strict_validation_keywords": [
         "Analog Devices"
-    ]
+    ],
+    "company_name": "Analog Devices"
 }

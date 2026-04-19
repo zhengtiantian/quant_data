@@ -1,8 +1,6 @@
 {
     "symbol": "INTU",
-    "name": "Intuit",
     "primary_keywords": [
-        "INTU",
         "Intuit"
     ],
     "expansion_keywords": [
@@ -10,27 +8,31 @@
         "Sasan Goodarzi",
         "TurboTax",
         "QuickBooks",
-        "Mint",
+        "QuickBooks Online",
         "Credit Karma",
         "Mailchimp",
-        "Personal finance",
-        "Tax prep"
+        "Lacerte",
+        "ProConnect",
+        "ProSeries",
+        "QuickBooks Self-Employed",
+        "Small business accounting",
+        "Tax preparation software"
     ],
     "special_rules": {
         "ambiguous": {
             "problem": "General term usage and entity confusion over 10 years",
             "required_keywords": [
-                "INTU"
+                "Intuit"
             ],
             "min_matches": 1,
             "strict_validation_keywords": [
-                "Intuit",
-                "QuickBooks"
+                "Intuit"
             ]
         }
     },
     "strict_validation_keywords": [
         "Intuit",
         "QuickBooks"
-    ]
+    ],
+    "company_name": "Intuit"
 }

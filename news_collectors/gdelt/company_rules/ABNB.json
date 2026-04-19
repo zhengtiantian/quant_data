@@ -1,8 +1,6 @@
 {
     "symbol": "ABNB",
-    "name": "Airbnb",
     "primary_keywords": [
-        "ABNB",
         "Airbnb"
     ],
     "expansion_keywords": [
@@ -20,17 +18,17 @@
         "ambiguous": {
             "problem": "General term usage and entity confusion over 10 years",
             "required_keywords": [
-                "ABNB"
+                "Airbnb"
             ],
             "min_matches": 1,
             "strict_validation_keywords": [
-                "Airbnb",
-                "Brian Chesky"
+                "Airbnb"
             ]
         }
     },
     "strict_validation_keywords": [
         "Airbnb",
         "Brian Chesky"
-    ]
+    ],
+    "company_name": "Airbnb"
 }

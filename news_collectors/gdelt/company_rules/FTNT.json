@@ -1,8 +1,6 @@
 {
     "symbol": "FTNT",
-    "name": "Fortinet",
     "primary_keywords": [
-        "FTNT",
         "Fortinet"
     ],
     "expansion_keywords": [
@@ -19,17 +17,17 @@
         "ambiguous": {
             "problem": "General term usage and entity confusion over 10 years",
             "required_keywords": [
-                "FTNT"
+                "Fortinet"
             ],
             "min_matches": 1,
             "strict_validation_keywords": [
-                "Fortinet",
-                "Ken Xie"
+                "Fortinet"
             ]
         }
     },
     "strict_validation_keywords": [
         "Fortinet",
         "Ken Xie"
-    ]
+    ],
+    "company_name": "Fortinet"
 }

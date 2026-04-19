@@ -1,9 +1,8 @@
 {
     "symbol": "CSCO",
-    "name": "Cisco",
     "primary_keywords": [
-        "CSCO",
-        "Cisco"
+        "Cisco",
+        "Cisco Systems"
     ],
     "expansion_keywords": [
         "John Chambers",
@@ -25,17 +24,17 @@
         "ambiguous": {
             "problem": "General term usage and entity confusion over 10 years",
             "required_keywords": [
-                "CSCO"
+                "Cisco"
             ],
             "min_matches": 1,
             "strict_validation_keywords": [
-                "Cisco Systems",
-                "Chuck Robbins"
+                "Cisco"
             ]
         }
     },
     "strict_validation_keywords": [
         "Cisco Systems",
         "Chuck Robbins"
-    ]
+    ],
+    "company_name": "Cisco Systems"
 }

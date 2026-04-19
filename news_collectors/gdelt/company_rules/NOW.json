@@ -1,33 +1,41 @@
 {
     "symbol": "NOW",
-    "name": "ServiceNow",
+    "company_name": "ServiceNow",
     "primary_keywords": [
-        "ServiceNow",
-        "NOW"
+        "ServiceNow"
     ],
     "expansion_keywords": [
         "Bill McDermott",
+        "Frank Slootman",
         "Digital workflow",
-        "ITSM",
         "Vancouver Release",
         "Xanadu Release",
-        "GenAI Chatbot"
+        "Yokohama Release",
+        "Now Platform",
+        "Now Mobile",
+        "Service Portal",
+        "IT Service Management",
+        "HR Service Delivery",
+        "Customer Service Management",
+        "Field Service Management",
+        "Creator Workflows",
+        "Employee Center",
+        "ServiceNow AI",
+        "Now Assist"
     ],
     "special_rules": {
         "ambiguous": {
-            "problem": "'Now' is a pervasive common word",
+            "problem": "NOW ticker is a common word; require ServiceNow in content",
             "required_keywords": [
-                "NOW"
+                "ServiceNow"
             ],
             "min_matches": 1,
             "strict_validation_keywords": [
-                "ServiceNow",
-                "Workflow"
+                "ServiceNow"
             ]
         }
     },
     "strict_validation_keywords": [
-        "ServiceNow",
-        "Workflow"
+        "ServiceNow"
     ]
 }

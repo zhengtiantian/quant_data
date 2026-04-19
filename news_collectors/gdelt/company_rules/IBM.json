@@ -1,6 +1,5 @@
 {
     "symbol": "IBM",
-    "name": "IBM",
     "primary_keywords": [
         "IBM",
         "International Business Machines"
@@ -29,13 +28,13 @@
             ],
             "min_matches": 1,
             "strict_validation_keywords": [
-                "International Business Machines",
-                "Watson"
+                "IBM"
             ]
         }
     },
     "strict_validation_keywords": [
         "International Business Machines",
         "Watson"
-    ]
+    ],
+    "company_name": "IBM"
 }

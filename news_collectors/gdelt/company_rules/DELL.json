@@ -1,9 +1,8 @@
 {
     "symbol": "DELL",
-    "name": "Dell",
     "primary_keywords": [
-        "DELL",
-        "Dell Technologies"
+        "Dell Technologies",
+        "Dell"
     ],
     "expansion_keywords": [
         "Michael Dell",
@@ -25,17 +24,19 @@
         "ambiguous": {
             "problem": "General term usage and entity confusion over 10 years",
             "required_keywords": [
-                "DELL"
+                "Dell Technologies",
+                "Dell"
             ],
             "min_matches": 1,
             "strict_validation_keywords": [
                 "Dell Technologies",
-                "Michael Dell"
+                "Dell"
             ]
         }
     },
     "strict_validation_keywords": [
         "Dell Technologies",
         "Michael Dell"
-    ]
+    ],
+    "company_name": "Dell Technologies"
 }

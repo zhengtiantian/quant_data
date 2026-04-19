@@ -1,8 +1,7 @@
 {
     "symbol": "UBER",
-    "name": "Uber",
+    "company_name": "Uber Technologies",
     "primary_keywords": [
-        "UBER",
         "Uber"
     ],
     "expansion_keywords": [
@@ -12,27 +11,28 @@
         "Ride-sharing",
         "Uber Eats",
         "Uber Freight",
+        "Uber Driver",
         "Postmates acquisition",
         "Careem",
         "Self-driving car unit",
         "Advanced Technologies Group",
         "ATG sale",
-        "IPO",
         "Gig economy",
         "Contractor vs Employee",
-        "SoftBank investment",
-        "Airlift"
+        "Driver shortage",
+        "Surge pricing",
+        "Uber autonomous",
+        "Rideshare driver"
     ],
     "special_rules": {
         "ambiguous": {
             "problem": "General term usage and entity confusion over 10 years",
             "required_keywords": [
-                "UBER"
+                "Uber"
             ],
             "min_matches": 1,
             "strict_validation_keywords": [
-                "Uber Technologies",
-                "Dara Khosrowshahi"
+                "Uber"
             ]
         }
     },

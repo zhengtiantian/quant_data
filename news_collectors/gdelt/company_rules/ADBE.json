@@ -1,8 +1,6 @@
 {
     "symbol": "ADBE",
-    "name": "Adobe",
     "primary_keywords": [
-        "ADBE",
         "Adobe"
     ],
     "expansion_keywords": [
@@ -10,18 +8,22 @@
         "David Wadhwani",
         "Scott Belsky",
         "Creative Cloud",
-        "Marketing Cloud",
-        "Experience Cloud",
-        "Document Cloud",
+        "Adobe Marketing Cloud",
+        "Adobe Experience Cloud",
+        "Adobe Document Cloud",
         "Photoshop",
         "Illustrator",
+        "InDesign",
+        "Lightroom",
         "After Effects",
         "Premiere Pro",
-        "PDF",
-        "Acrobat",
+        "Adobe Acrobat",
         "Firefly",
         "Generative Fill",
-        "Figma acquisition attempt",
+        "Adobe Express",
+        "Adobe XD",
+        "Substance 3D",
+        "Figma acquisition",
         "Magento",
         "Marketo",
         "Frame.io"
@@ -30,17 +32,17 @@
         "ambiguous": {
             "problem": "General term usage and entity confusion over 10 years",
             "required_keywords": [
-                "ADBE"
+                "Adobe"
             ],
             "min_matches": 1,
             "strict_validation_keywords": [
-                "Adobe",
-                "Photoshop"
+                "Adobe"
             ]
         }
     },
     "strict_validation_keywords": [
         "Adobe",
         "Photoshop"
-    ]
+    ],
+    "company_name": "Adobe"
 }

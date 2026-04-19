@@ -1,8 +1,6 @@
 {
     "symbol": "AMAT",
-    "name": "Applied Materials",
     "primary_keywords": [
-        "AMAT",
         "Applied Materials"
     ],
     "expansion_keywords": [
@@ -23,17 +21,17 @@
         "ambiguous": {
             "problem": "General term usage and entity confusion over 10 years",
             "required_keywords": [
-                "AMAT"
+                "Applied Materials"
             ],
             "min_matches": 1,
             "strict_validation_keywords": [
-                "Applied Materials",
-                "Gary Dickerson"
+                "Applied Materials"
             ]
         }
     },
     "strict_validation_keywords": [
         "Applied Materials",
         "Gary Dickerson"
-    ]
+    ],
+    "company_name": "Applied Materials"
 }

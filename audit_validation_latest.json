@@ -1,0 +1,70 @@
+{
+    "timestamp": "2026-04-19T16:56:49.414654",
+    "results": {
+        "ABNB": {
+            "symbol": "ABNB",
+            "company_name": "Airbnb",
+            "keywords": [
+                "Short-term rental",
+                "IPO",
+                "Joe Gebbia",
+                "Travel recovery",
+                "Brian Chesky",
+                "Regulation battles",
+                "Experiences",
+                "Superhost",
+                "Nathan Blecharczyk",
+                "Airbnb"
+            ],
+            "kw_hits": 26,
+            "fetch_attempted": 26,
+            "confirmed": [
+                {
+                    "title": "How Airbnb CEO's job cuts stand in stark contrast to Meta and Twitter",
+                    "quality": "full",
+                    "content_len": 4615,
+                    "url": "https://fortune.com/2022/11/18/tech-layoffs-airbnb-versus-meta-twitter/",
+                    "date": "20240603"
+                },
+                {
+                    "title": "Founder Mode",
+                    "quality": "full",
+                    "content_len": 6970,
+                    "url": "https://paulgraham.com/foundermode.html",
+                    "date": "20240905"
+                },
+                {
+                    "title": "Founder Mode",
+                    "quality": "full",
+                    "content_len": 6970,
+                    "url": "https://paulgraham.com/foundermode.html",
+                    "date": "20240905"
+                },
+                {
+                    "title": "The Most Unique Hotel Experiences in New York State",
+                    "quality": "full",
+                    "content_len": 3794,
+                    "url": "https://lite987.com/the-most-unique-hotel-experiences-in-new-york-state/",
+                    "date": "20230728"
+                },
+                {
+                    "title": "Introducing social features for Airbnb Experiences: A new way to connect with other guests before, during, and after your trip",
+                    "quality": "full",
+                    "content_len": 7166,
+                    "url": "https://www.webwire.com/ViewPressRel.asp?aId=345578",
+                    "date": "20251022"
+                },
+                {
+                    "title": "During Discrimination Controversy, Airbnb To Host Civil Rights Media Event With BET",
+                    "quality": "full",
+                    "content_len": 2456,
+                    "url": "https://www.buzzfeed.com/carolineodonovan/during-discrimination-crisis-airbnb-to-host-civil-rights-med",
+                    "date": "20160726"
+                }
+            ],
+            "failed": 20,
+            "precision_pct": 23.1,
+            "status": "done"
+        }
+    }
+}

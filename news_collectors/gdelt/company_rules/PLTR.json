@@ -1,8 +1,7 @@
 {
     "symbol": "PLTR",
-    "name": "Palantir",
+    "company_name": "Palantir Technologies",
     "primary_keywords": [
-        "PLTR",
         "Palantir"
     ],
     "expansion_keywords": [
@@ -11,28 +10,26 @@
         "Stephen Cohen",
         "Joe Lonsdale",
         "Gotham",
-        "Foundry",
-        "Apollo",
         "AIP",
-        "Big data analytics",
-        "Counter-terrorism",
-        "Government contracts",
-        "SPAC investments",
+        "Palantir AIP",
+        "Palantir Foundry",
+        "Palantir Gotham",
         "Metropolis",
         "Skywise",
-        "NHS handle",
-        "CIA investment"
+        "Counter-terrorism software",
+        "Government data analytics",
+        "CIA investment Palantir",
+        "NHS data"
     ],
     "special_rules": {
         "ambiguous": {
-            "problem": "General term usage and entity confusion over 10 years",
+            "problem": "Palantir is unambiguous; no strict gating needed",
             "required_keywords": [
-                "PLTR"
+                "Palantir"
             ],
             "min_matches": 1,
             "strict_validation_keywords": [
-                "Palantir",
-                "Alex Karp"
+                "Palantir"
             ]
         }
     },

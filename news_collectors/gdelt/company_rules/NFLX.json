@@ -1,8 +1,6 @@
 {
     "symbol": "NFLX",
-    "name": "Netflix",
     "primary_keywords": [
-        "NFLX",
         "Netflix"
     ],
     "expansion_keywords": [
@@ -29,17 +27,17 @@
         "ambiguous": {
             "problem": "General term usage and entity confusion over 10 years",
             "required_keywords": [
-                "NFLX"
+                "Netflix"
             ],
             "min_matches": 1,
             "strict_validation_keywords": [
-                "Netflix",
-                "Streaming"
+                "Netflix"
             ]
         }
     },
     "strict_validation_keywords": [
         "Netflix",
         "Streaming"
-    ]
+    ],
+    "company_name": "Netflix"
 }

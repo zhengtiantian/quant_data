@@ -1,8 +1,6 @@
 {
     "symbol": "SMCI",
-    "name": "Super Micro Computer",
     "primary_keywords": [
-        "SMCI",
         "Super Micro Computer",
         "Supermicro"
     ],
@@ -24,17 +22,19 @@
         "ambiguous": {
             "problem": "General term usage and entity confusion over 10 years",
             "required_keywords": [
-                "SMCI"
+                "Supermicro",
+                "Super Micro Computer"
             ],
             "min_matches": 1,
             "strict_validation_keywords": [
-                "Super Micro Computer",
-                "Charles Liang"
+                "Supermicro",
+                "Super Micro Computer"
             ]
         }
     },
     "strict_validation_keywords": [
         "Super Micro Computer",
         "Charles Liang"
-    ]
+    ],
+    "company_name": "Super Micro Computer"
 }

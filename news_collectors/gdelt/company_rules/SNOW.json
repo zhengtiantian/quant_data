@@ -1,9 +1,10 @@
 {
     "symbol": "SNOW",
-    "name": "Snowflake",
+    "company_name": "Snowflake",
     "primary_keywords": [
         "Snowflake",
-        "SNOW"
+        "Snowflake Inc",
+        "Snowflake Computing"
     ],
     "expansion_keywords": [
         "Frank Slootman",
@@ -11,32 +12,29 @@
         "Benoit Dageville",
         "Thierry Cruanes",
         "Bob Muglia",
-        "Data Cloud",
-        "Cloud data warehousing",
-        "Data lake",
-        "Data sharing",
         "Snowpark",
-        "Cortex",
+        "Snowflake Cortex",
+        "Snowflake Data Cloud",
+        "Iceberg tables",
+        "Data sharing platform",
         "Berkshire Hathaway investment",
-        "IPO",
-        "Cloud native",
-        "Iceberg tables"
+        "Snowflake Summit",
+        "Snowflake IPO",
+        "Cloud data warehouse"
     ],
     "special_rules": {
         "ambiguous": {
-            "problem": "Snow is a weather phenomenon",
+            "problem": "Snowflake matches weather content; require company context",
             "required_keywords": [
-                "SNOW"
+                "Snowflake"
             ],
             "min_matches": 1,
             "strict_validation_keywords": [
-                "Snowflake Inc",
-                "Data Cloud"
+                "Snowflake"
             ]
         }
     },
     "strict_validation_keywords": [
-        "Snowflake Inc",
-        "Data Cloud"
+        "Snowflake"
     ]
 }

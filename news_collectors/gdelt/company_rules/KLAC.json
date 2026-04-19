@@ -1,35 +1,34 @@
 {
     "symbol": "KLAC",
-    "name": "KLA",
+    "company_name": "KLA Corporation",
     "primary_keywords": [
-        "KLAC",
+        "KLA Corporation",
+        "KLA-Tencor",
         "KLA Corp",
-        "KLA-Tencor"
+        "KLA"
     ],
     "expansion_keywords": [
         "Rick Wallace",
-        "Metrology",
-        "Yield management",
         "Wafer inspection",
-        "Patterning",
-        "Voyager",
-        "Surfscan",
-        "Teron",
-        "Acheron"
+        "Yield management",
+        "Semiconductor inspection",
+        "Process control equipment",
+        "KLA earnings",
+        "Patterning control"
     ],
     "special_rules": {
         "ambiguous": {
-            "problem": "General term usage and entity confusion over 10 years",
+            "problem": "KLA alone is ambiguous; require company name in content",
             "required_keywords": [
-                "KLAC"
+                "KLA"
             ],
             "min_matches": 1,
             "strict_validation_keywords": [
-                "KLA Corp"
+                "KLA"
             ]
         }
     },
     "strict_validation_keywords": [
-        "KLA Corp"
+        "KLA"
     ]
 }
