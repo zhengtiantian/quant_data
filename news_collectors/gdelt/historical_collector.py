@@ -844,7 +844,7 @@ def batch_download_files(urls, batch_size=20, worker_name=None):
     """并行批量下载 GDELT 文件，已缓存文件自动跳过"""
     to_download = [
         url for url in urls
-        if not os.path.exists(os.path.join(FILES_DIR, os.path.basename(url)))
+        if not _file_cached(url)
     ]
     skipped = len(urls) - len(to_download)
     print(f"📂 Cached files skipped: {skipped}")
@@ -866,9 +866,10 @@ def batch_download_files(urls, batch_size=20, worker_name=None):
                     content = future.result()
                     if content:
                         filename = os.path.basename(url)
-                        path = os.path.join(FILES_DIR, filename)
-                        with open(path, "wb") as f:
+                        zip_path = os.path.join(FILES_DIR, filename)
+                        with open(zip_path, "wb") as f:
                             f.write(content)
+                        _extract_and_delete_zip(zip_path)
                 except Exception as e:
                     print(f"❌ Unexpected error for {url}: {e}")
 
@@ -883,7 +884,7 @@ def get_latest_cached_gkg_timestamp():
     latest_dt = None
     try:
         for name in os.listdir(FILES_DIR):
-            if not name.endswith(".gkg.csv.zip"):
+            if not (name.endswith(".gkg.csv.zip") or name.endswith(".gkg.csv")):
                 continue
             ts = parse_gdelt_timestamp(name)
             if not ts:
@@ -918,7 +919,7 @@ def predownload_recent_missing_files(urls):
 
     missing = [
         url for url in candidate_urls
-        if not os.path.exists(os.path.join(FILES_DIR, os.path.basename(url)))
+        if not _file_cached(url)
     ]
     if not missing:
         print(f"📦 Startup predownload: nothing missing to catch up ({mode_desc})")
@@ -1006,6 +1007,46 @@ def read_gkg_tsv(file_obj):
     )
 
 
+def _csv_name(filename):
+    """把 .gkg.csv.zip 文件名转为解压后的 .gkg.csv 文件名。"""
+    return filename[:-4] if filename.endswith(".zip") else filename
+
+
+def _file_cached(url_or_filename):
+    """检查文件是否已缓存（优先检查解压后的 .csv，兼容旧 .zip）。"""
+    name = os.path.basename(url_or_filename)
+    return (
+        os.path.exists(os.path.join(FILES_DIR, _csv_name(name))) or
+        os.path.exists(os.path.join(FILES_DIR, name))
+    )
+
+
+def _read_cached_file(filename):
+    """读取已缓存的 GKG 文件，优先读 .csv，兼容旧 .zip。"""
+    csv_path = os.path.join(FILES_DIR, _csv_name(filename))
+    zip_path = os.path.join(FILES_DIR, filename)
+    if os.path.exists(csv_path):
+        return read_gkg_tsv(csv_path)
+    if os.path.exists(zip_path):
+        with zipfile.ZipFile(zip_path) as z:
+            with z.open(z.namelist()[0]) as f:
+                return read_gkg_tsv(f)
+    return None
+
+
+def _extract_and_delete_zip(zip_path):
+    """解压 zip 文件为同名 .csv，删除原 zip。"""
+    csv_path = zip_path[:-4]  # remove .zip
+    try:
+        with zipfile.ZipFile(zip_path) as z:
+            inner = z.namelist()[0]
+            with z.open(inner) as src, open(csv_path, "wb") as dst:
+                dst.write(src.read())
+        os.remove(zip_path)
+    except Exception as e:
+        print(f"⚠️ Extract failed for {zip_path}: {e}")
+
+
 # 全局去重，防止同一个 URL 在一次运行中被多次分析
 processed_urls = set()
 
@@ -1015,17 +1056,13 @@ processed_urls = set()
 def process_single_file(url, companies, rule_manager, avg_date):
     """处理单个 GKG 文件的协程/线程函数"""
     filename = os.path.basename(url)
-    cache_path = os.path.join(FILES_DIR, filename)
-    if not os.path.exists(cache_path):
+    if not _file_cached(filename):
         return []
 
     matches = []
     try:
-        with zipfile.ZipFile(cache_path) as z:
-            with z.open(z.namelist()[0]) as f:
-                df = read_gkg_tsv(f)
-        
-        if df.empty:
+        df = _read_cached_file(filename)
+        if df is None or df.empty:
             return []
 
         # 判断并提取格式
@@ -1074,18 +1111,15 @@ def process_single_file(url, companies, rule_manager, avg_date):
 
 def process_file_task(url, rule_manager, all_keywords_map, global_pattern, symbol_to_company, progress_lock, progress, worker_name=None):
     filename = os.path.basename(url)
-    cache_path = os.path.join(FILES_DIR, filename)
-    if not os.path.exists(cache_path):
+    if not _file_cached(filename):
         return {"matches": [], "rows": 0, "candidates": 0, "sample": "", "filename": filename}
 
     try:
         t_start = time.time()
-        with zipfile.ZipFile(cache_path) as z:
-            with z.open(z.namelist()[0]) as f:
-                df = read_gkg_tsv(f)
+        df = _read_cached_file(filename)
         t_parse = time.time()
 
-        if df.empty:
+        if df is None or df.empty:
             return {"matches": [], "rows": 0, "candidates": 0, "sample": "", "filename": filename}
 
         # 探测格式
