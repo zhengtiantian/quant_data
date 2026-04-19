@@ -520,6 +520,28 @@ def ensure_task_table():
         conn.close()
 
 
+def requeue_host_running_batches():
+    """启动时把本机之前未完成的 running 批次重置为 pending，避免崩溃/强制关闭后任务卡死。"""
+    conn = get_mysql_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            f"""
+            UPDATE {MYSQL_TASK_TABLE}
+            SET status='pending', owner=NULL, owner_host=NULL, updated_at=NOW(),
+                last_error='requeued on host restart'
+            WHERE status='running' AND owner_host=%s
+            """,
+            (HOST_ID,),
+        )
+        affected = cur.rowcount
+        conn.commit()
+        if affected:
+            print(f"🔁 Requeued {affected} stale running batch(es) from previous run on {HOST_ID}")
+    finally:
+        conn.close()
+
+
 def build_batch_signatures(urls, batch_size):
     signatures = []
     total_batches = (len(urls) + batch_size - 1) // batch_size
@@ -1624,6 +1646,7 @@ if __name__ == "__main__":
     if USE_MYSQL_BATCH_QUEUE:
         print(f"🗂️ MySQL queue mode enabled: workers={BATCH_WORKERS}")
         ensure_task_table()
+        requeue_host_running_batches()
         queue_resume_batch = 1
         print("🧭 Queue resume source: MySQL task table only")
         batch_signatures = build_batch_signatures(urls, BATCH_SIZE)
