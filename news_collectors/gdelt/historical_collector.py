@@ -205,6 +205,48 @@ def append_stuck_urls(urls):
         pass
 
 
+def enqueue_retry_urls(timed_out_matches, dst_collection):
+    """把 timeout 的抓取任务写入 MongoDB retry 队列，供后续定时任务重试。"""
+    if not timed_out_matches:
+        return
+    try:
+        db = get_db()
+        col = db["url_retry_queue"]
+        col.create_index("url", unique=True)
+        now = datetime.now(timezone.utc).isoformat()
+        ops = []
+        for m in timed_out_matches:
+            row = m.get("row", {})
+            company = m.get("company", {})
+            url = row.get("URL", "")
+            if not url:
+                continue
+            ops.append(UpdateOne(
+                {"url": url},
+                {"$setOnInsert": {
+                    "url": url,
+                    "symbol": company.get("symbol", ""),
+                    "company_name": company.get("name", ""),
+                    "title": row.get("Title", ""),
+                    "date": row.get("Date", ""),
+                    "timestamp": row.get("Timestamp", ""),
+                    "publishedAt": row.get("PublishedAt"),
+                    "dst_collection": dst_collection,
+                    "retry_count": 0,
+                    "max_retries": 3,
+                    "status": "pending",
+                    "added_at": now,
+                    "last_timeout_at": now,
+                }},
+                upsert=True,
+            ))
+        if ops:
+            col.bulk_write(ops, ordered=False)
+            print(f"📥 Enqueued {len(ops)} timeout URLs for later retry")
+    except Exception as e:
+        print(f"⚠️ Failed to enqueue retry URLs: {e}")
+
+
 def get_mysql_conn():
     return mysql.connector.connect(
         host=MYSQL_HOST,
@@ -1407,6 +1449,7 @@ def process_one_batch(
         future_to_match = {}
         future_start_ts = {}
         pending = set()
+        timed_out_matches = []
         timed_out_urls = []
         total_task_elapsed = 0.0
         total_task_count = 0
@@ -1525,6 +1568,7 @@ def process_one_batch(
                     future_to_meta.pop(sf, None)
                     pending_match = future_to_match.pop(sf, None)
                     if pending_match:
+                        timed_out_matches.append(pending_match)
                         fallback = build_title_only_fallback(
                             pending_match["row"],
                             pending_match["company"],
@@ -1555,6 +1599,7 @@ def process_one_batch(
             with stuck_urls_lock:
                 stuck_urls.update(timed_out_urls)
             wlog(f"⛔ Added {len(set(timed_out_urls))} URLs to stuck blacklist")
+            enqueue_retry_urls(timed_out_matches, DST_COLLECTION)
     finally:
         if timed_out:
             executor.shutdown(wait=False, cancel_futures=True)
