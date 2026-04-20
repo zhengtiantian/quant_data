@@ -880,21 +880,26 @@ def batch_download_files(urls, batch_size=20, worker_name=None):
 
 
 def get_latest_cached_gkg_timestamp():
-    """返回本地缓存中最新 GKG 文件的时间戳；没有缓存则返回 None。"""
-    latest_dt = None
+    """返回本地缓存中最新 GKG 文件的时间戳，从 masterfilelist 倒序查找避免遍历30万文件目录。"""
+    if not os.path.exists(MASTER_FILE):
+        return None
     try:
-        for name in os.listdir(FILES_DIR):
-            if not (name.endswith(".gkg.csv.zip") or name.endswith(".gkg.csv")):
+        with open(MASTER_FILE, "r") as f:
+            lines = f.readlines()
+        # masterfilelist 按时间正序，从末尾往前找第一个已缓存文件
+        for line in reversed(lines):
+            if ".gkg.csv.zip" not in line:
+                continue
+            url = line.split()[-1]
+            name = os.path.basename(url)
+            if not _file_cached(name):
                 continue
             ts = parse_gdelt_timestamp(name)
-            if not ts:
-                continue
-            dt = ts["datetime"]
-            if latest_dt is None or dt > latest_dt:
-                latest_dt = dt
-    except FileNotFoundError:
+            if ts:
+                return ts["datetime"]
+    except Exception:
         return None
-    return latest_dt
+    return None
 
 
 def predownload_recent_missing_files(urls):
@@ -1109,7 +1114,7 @@ def process_single_file(url, companies, rule_manager, avg_date):
         pass
     return matches
 
-def process_file_task(url, rule_manager, all_keywords_map, global_pattern, symbol_to_company, progress_lock, progress, worker_name=None):
+def process_file_task(url, rule_manager, all_keywords_map, compiled_pattern, symbol_to_company, progress_lock, progress, worker_name=None):
     filename = os.path.basename(url)
     if not _file_cached(filename):
         return {"matches": [], "rows": 0, "candidates": 0, "sample": "", "filename": filename}
@@ -1143,7 +1148,7 @@ def process_file_task(url, rule_manager, all_keywords_map, global_pattern, symbo
 
         combined_text = (df["Title"].fillna("") + " " + df["Raw"].fillna("")).str.lower()
         t_combine = time.time()
-        mask = combined_text.str.contains(global_pattern, case=False, na=False, regex=True)
+        mask = combined_text.str.contains(compiled_pattern, na=False, regex=True)
 
         matched_df = df[mask]
         t_regex = time.time()
@@ -1235,6 +1240,7 @@ def process_batch_files(batch_urls, companies, worker_name=None):
     global_pattern = "|".join(case_insensitive_keywords)
     if not global_pattern: return []
     if SHUTDOWN_EVENT.is_set(): return []
+    compiled_pattern = re.compile(global_pattern)
     
     print(f"📂 Scanning {len(batch_urls)} files in parallel (Unified Regex)...")
     
@@ -1257,14 +1263,14 @@ def process_batch_files(batch_urls, companies, worker_name=None):
     
     with ThreadPoolExecutor(max_workers=SCAN_WORKERS, thread_name_prefix=prefix) as executor:
         futures = [executor.submit(
-            process_file_task, 
-            url, 
-            rule_manager, 
-            all_keywords_map, 
-            global_pattern, 
-            symbol_to_company, 
-            progress_lock, 
-            progress, 
+            process_file_task,
+            url,
+            rule_manager,
+            all_keywords_map,
+            compiled_pattern,
+            symbol_to_company,
+            progress_lock,
+            progress,
             worker_name
         ) for url in batch_urls]
         

@@ -422,7 +422,29 @@ class AmbiguousNameRule(BaseRule):
             "AMD": [r"lisa\s+su", r"ryzen", r"radeon", r"epyc", r"threadripper", r"mi300"],
             "ARM": [r"rene\s+haas", r"arm\s+architecture", r"cortex-", r"neoverse", r"mali\s+gpu"],
             "QCOM": [r"cristiano\s+amon", r"snapdragon", r"\bcdma\b", r"qualcomm\s+hexagon"],
-            "AVGO": [r"hock\s+tan", r"\bvmware\b", r"symantec", r"broadcom\s+software"]
+            "AVGO": [r"hock\s+tan", r"\bvmware\b", r"symantec", r"broadcom\s+software"],
+            "ORCL": [r"larry\s+ellison", r"safra\s+catz", r"oracle\s+cloud", r"oracle\s+database", r"oracle\s+earnings", r"\bexadata\b", r"\bnetsuite\b"],
+            "CSCO": [r"chuck\s+robbins", r"cisco\s+systems", r"\bwebex\b", r"cisco\s+router", r"cisco\s+switch"],
+            "IBM": [r"arvind\s+krishna", r"\bred\s+hat\b", r"ibm\s+cloud", r"\bwatson\b", r"ibm\s+mainframe"],
+            "DELL": [r"michael\s+dell", r"dell\s+technologies", r"\bpoweredge\b", r"dell\s+emc", r"vmware"],
+            "INTU": [r"sasan\s+goodarzi", r"\bturbotax\b", r"\bquickbooks\b", r"\bmailchimp\b", r"intuit\s+platform"],
+            "TSM": [r"\btsmc\b", r"cc\s+wei", r"taiwan\s+semiconductor", r"\b3nm\b", r"\b5nm\b", r"\b2nm\b"],
+            "MU": [r"sanjay\s+mehrotra", r"\bhbm\b", r"micron\s+technology", r"\bdram\b", r"\bnand\s+flash\b"],
+            "AMAT": [r"gary\s+dickerson", r"applied\s+materials", r"semiconductor\s+equipment"],
+            "LRCX": [r"tim\s+archer", r"lam\s+research", r"\betch\s+equipment\b"],
+            "KLAC": [r"rick\s+wallace", r"\bkla\b", r"kla\s+tencor", r"process\s+control\s+equipment"],
+            "MRVL": [r"matt\s+murphy", r"marvell\s+technology", r"marvell\s+semiconductor"],
+            "ADI": [r"vincent\s+roche", r"analog\s+devices", r"\blinear\s+technology\b"],
+            "NXPI": [r"kurt\s+sievers", r"nxp\s+semiconductors", r"\bnxp\b"],
+            "ON": [r"hassane\s+el.khoury", r"\bonsemi\b", r"on\s+semiconductor"],
+            "STX": [r"dave\s+mosley", r"seagate\s+technology", r"\bseagate\b"],
+            "WDC": [r"david\s+goeckeler", r"western\s+digital", r"\bsandisk\b"],
+            "SWKS": [r"liam\s+griffin", r"skyworks\s+solutions", r"skyworks\s+semiconductor"],
+            "FTNT": [r"ken\s+xie", r"\bfortigate\b", r"fortinet\s+firewall", r"fortinet\s+security"],
+            "ABNB": [r"brian\s+chesky", r"airbnb\s+host", r"airbnb\s+listing", r"airbnb\s+revenue"],
+            "INTC": [r"pat\s+gelsinger", r"\bxeon\b", r"\bcore\s+ultra\b", r"intel\s+foundry", r"gaudi\s+accelerator"],
+            "MCHP": [r"ganesh\s+moorthy", r"microchip\s+technology", r"\bpic\s+microcontroller\b"],
+            "ASML": [r"peter\s+wennink", r"\beuv\b", r"\bduv\b", r"asml\s+scanner", r"extreme\s+ultraviolet"],
         }
         
         if self.symbol in ABSOLUTE_BYPASS:
@@ -459,7 +481,13 @@ class AmbiguousNameRule(BaseRule):
 
         # 6. SLM 智能判断
         has_title = len(title.strip()) > 10
-        has_content = len(content) > 30 and not content.startswith("http")
+        # GDELT GKG 实体列数据（大量分号、无空格句子）不是真正的文章内容，不送 SLM
+        _content_stripped = content.strip()
+        _is_entity_data = (
+            _content_stripped.count(";") > 3
+            and len(_content_stripped.split()) < 20
+        )
+        has_content = len(_content_stripped) > 30 and not _content_stripped.startswith("http") and not _is_entity_data
 
         # Single weak identity hit should be verified semantically instead of default passing.
         if len(matches) == 1 and self.use_slm and (has_title or has_content):
