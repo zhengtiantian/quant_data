@@ -108,10 +108,16 @@ YEARS_BACK = 11  # 扩大范围以确保覆盖到 2016-01-01
 START_DATE_STR = os.getenv("START_DATE", "2016-01-01")  # 锁定缓存起始日
 MAX_FILES = None  # 全量
 TEST_MODE = False  # 正式模式
-CACHE_DIR = os.getenv("GDELT_CACHE_DIR", "/Volumes/data24T/docker-volumes/gdelt_cache")
-FILES_DIR = os.path.join(CACHE_DIR, "files")
+CACHE_DIR  = os.getenv("GDELT_CACHE_DIR",  "/Volumes/Data24T/docker-volumes/gdelt_cache")
+CACHE_DIR2 = os.getenv("GDELT_CACHE_DIR2", "/Volumes/Data6T/gdelt_cache")
+FILES_DIR  = os.path.join(CACHE_DIR,  "files")   # 偶数批次
+FILES_DIR2 = os.path.join(CACHE_DIR2, "files")   # 奇数批次
 os.makedirs(CACHE_DIR, exist_ok=True)
 os.makedirs(FILES_DIR, exist_ok=True)
+try:
+    os.makedirs(FILES_DIR2, exist_ok=True)
+except OSError:
+    pass  # Data6T 未挂载或无权限时不影响启动
 
 BASE_URL = "http://data.gdeltproject.org/gdeltv2"
 MASTER_FILE = os.path.join(CACHE_DIR, "masterfilelist.txt")
@@ -1077,12 +1083,17 @@ def _csv_name(filename):
     return filename[:-4] if filename.endswith(".zip") else filename
 
 
+def _batch_root(batch_id):
+    """根据批次奇偶返回对应盘的 files 根目录。"""
+    return FILES_DIR2 if batch_id % 2 == 1 else FILES_DIR
+
+
 def _batch_dir_for_file(filename):
-    """返回文件对应的批次目录路径（如 files/277/），未在映射表中则返回 None。"""
+    """返回文件对应的批次目录路径，奇数批次在 Data6T，偶数在 Data24T。"""
     name = os.path.basename(filename)
     batch_id = _filename_to_batch.get(name) or _filename_to_batch.get(_csv_name(name))
     if batch_id:
-        return os.path.join(FILES_DIR, str(batch_id))
+        return os.path.join(_batch_root(batch_id), str(batch_id))
     return None
 
 
