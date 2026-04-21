@@ -683,10 +683,11 @@ def mark_batch_done(batch_id):
         cur.execute(
             f"""
             UPDATE {MYSQL_TASK_TABLE}
-            SET status='done', owner=NULL, owner_host=NULL, finished_at=NOW(), updated_at=NOW(), last_error=NULL
+            SET status='done', owner=NULL, owner_host=NULL,
+                completed_by_host=%s, finished_at=NOW(), updated_at=NOW(), last_error=NULL
             WHERE batch_id=%s
             """,
-            (batch_id,),
+            (HOST_ID, batch_id),
         )
         conn.commit()
     finally:
