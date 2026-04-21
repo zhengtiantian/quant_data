@@ -163,6 +163,11 @@ MYSQL_USER = os.getenv("MYSQL_USER", "root")
 MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "root")
 MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "workflow")
 MYSQL_TASK_TABLE = os.getenv("MYSQL_TASK_TABLE", "gdelt_batch_tasks")
+BATCH_SIZE = 100  # 每次处理100个 GKG 文件，与 MySQL batch_id 一一对应
+
+# filename → batch_id 映射，由 get_gkg_file_urls() 在启动时填充
+_filename_to_batch: dict = {}
+
 SHUTDOWN_EVENT = threading.Event()
 SHUTDOWN_REASON = {"reason": None}
 
@@ -909,7 +914,10 @@ def batch_download_files(urls, batch_size=20, worker_name=None):
                     content = future.result()
                     if content:
                         filename = os.path.basename(url)
-                        zip_path = os.path.join(_year_dir(filename), filename)
+                        batch_dir = _batch_dir_for_file(filename)
+                        save_dir = batch_dir if batch_dir else os.path.join(FILES_DIR, filename[:4])
+                        os.makedirs(save_dir, exist_ok=True)
+                        zip_path = os.path.join(save_dir, filename)
                         with open(zip_path, "wb") as f:
                             f.write(content)
                         _extract_and_delete_zip(zip_path)
@@ -1006,13 +1014,22 @@ def get_gkg_file_urls(years_back, max_files=None):
     
     # ⚠️ 关键修正：必须正序排列，否则会从 2026年倒着跑，导致找不到缓存文件
     urls.sort()
-    
+
     if max_files:
         urls = urls[:max_files]
-    
+
+    # 构建 filename → batch_id 映射（供路径查找使用）
+    global _filename_to_batch
+    _filename_to_batch = {}
+    for i, url in enumerate(urls):
+        batch_id = i // BATCH_SIZE + 1
+        fname = os.path.basename(url)
+        _filename_to_batch[fname] = batch_id
+        _filename_to_batch[_csv_name(fname)] = batch_id
+
     if urls:
         print(f"✅ Sorted {len(urls)} GKG files chronologically starting from 2016.")
-    
+
     return urls
 
 
@@ -1060,35 +1077,41 @@ def _csv_name(filename):
     return filename[:-4] if filename.endswith(".zip") else filename
 
 
-def _year_dir(filename):
-    """返回文件对应的年份子目录，不存在则自动创建。"""
-    year = os.path.basename(filename)[:4]
-    d = os.path.join(FILES_DIR, year)
-    os.makedirs(d, exist_ok=True)
-    return d
+def _batch_dir_for_file(filename):
+    """返回文件对应的批次目录路径（如 files/277/），未在映射表中则返回 None。"""
+    name = os.path.basename(filename)
+    batch_id = _filename_to_batch.get(name) or _filename_to_batch.get(_csv_name(name))
+    if batch_id:
+        return os.path.join(FILES_DIR, str(batch_id))
+    return None
 
 
 def _file_cached(url_or_filename):
-    """检查文件是否已缓存，优先检查年份子目录，兼容旧平铺结构。"""
+    """检查文件是否已缓存，优先检查批次子目录，兼容年份目录和旧平铺结构。"""
     name = os.path.basename(url_or_filename)
-    csv_name = _csv_name(name)
+    csv_name_ = _csv_name(name)
+
+    batch_dir = _batch_dir_for_file(name)
     year_dir = os.path.join(FILES_DIR, name[:4])
-    return (
-        os.path.exists(os.path.join(year_dir, csv_name)) or
-        os.path.exists(os.path.join(year_dir, name)) or
-        os.path.exists(os.path.join(FILES_DIR, csv_name)) or
-        os.path.exists(os.path.join(FILES_DIR, name))
-    )
+
+    for base in filter(None, (batch_dir, year_dir, FILES_DIR)):
+        if os.path.exists(os.path.join(base, csv_name_)):
+            return True
+        if os.path.exists(os.path.join(base, name)):
+            return True
+    return False
 
 
 def _read_cached_file(filename):
-    """读取已缓存的 GKG 文件，优先读年份子目录，兼容旧平铺结构。"""
+    """读取已缓存的 GKG 文件，优先读批次子目录，兼容年份目录和旧平铺结构。"""
     name = os.path.basename(filename)
-    csv_name = _csv_name(name)
+    csv_name_ = _csv_name(name)
+
+    batch_dir = _batch_dir_for_file(name)
     year_dir = os.path.join(FILES_DIR, name[:4])
 
-    for base in (year_dir, FILES_DIR):
-        csv_path = os.path.join(base, csv_name)
+    for base in filter(None, (batch_dir, year_dir, FILES_DIR)):
+        csv_path = os.path.join(base, csv_name_)
         if os.path.exists(csv_path):
             return read_gkg_tsv(csv_path)
         zip_path = os.path.join(base, name)
@@ -1724,7 +1747,6 @@ if __name__ == "__main__":
     print(f"🏢 Prepared {len(valid_companies)} companies for matching (all stocks).")
     
     # 3. 按批次处理文件 (File-First Loop)
-    BATCH_SIZE = 100  # 每次处理100个zip文件
     db = get_db()
     dst_col = db[DST_COLLECTION]
     
