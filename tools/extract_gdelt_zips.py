@@ -31,9 +31,13 @@ def extract_one(zip_path):
 
 
 def main():
-    zips = sorted(glob(os.path.join(FILES_DIR, "*.gkg.csv.zip")))
+    # 扫描根目录和所有年份子目录
+    zips = sorted(
+        glob(os.path.join(FILES_DIR, "*.gkg.csv.zip")) +
+        glob(os.path.join(FILES_DIR, "*", "*.gkg.csv.zip"))
+    )
     total = len(zips)
-    print(f"📦 Found {total} zip files in {FILES_DIR}")
+    print(f"📦 Found {total} zip files in {FILES_DIR} (incl. year subdirs)")
     print(f"🔧 Workers: {WORKERS}\n")
 
     if total == 0:

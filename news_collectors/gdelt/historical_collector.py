@@ -909,7 +909,7 @@ def batch_download_files(urls, batch_size=20, worker_name=None):
                     content = future.result()
                     if content:
                         filename = os.path.basename(url)
-                        zip_path = os.path.join(FILES_DIR, filename)
+                        zip_path = os.path.join(_year_dir(filename), filename)
                         with open(zip_path, "wb") as f:
                             f.write(content)
                         _extract_and_delete_zip(zip_path)
@@ -1060,25 +1060,42 @@ def _csv_name(filename):
     return filename[:-4] if filename.endswith(".zip") else filename
 
 
+def _year_dir(filename):
+    """返回文件对应的年份子目录，不存在则自动创建。"""
+    year = os.path.basename(filename)[:4]
+    d = os.path.join(FILES_DIR, year)
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
 def _file_cached(url_or_filename):
-    """检查文件是否已缓存（优先检查解压后的 .csv，兼容旧 .zip）。"""
+    """检查文件是否已缓存，优先检查年份子目录，兼容旧平铺结构。"""
     name = os.path.basename(url_or_filename)
+    csv_name = _csv_name(name)
+    year_dir = os.path.join(FILES_DIR, name[:4])
     return (
-        os.path.exists(os.path.join(FILES_DIR, _csv_name(name))) or
+        os.path.exists(os.path.join(year_dir, csv_name)) or
+        os.path.exists(os.path.join(year_dir, name)) or
+        os.path.exists(os.path.join(FILES_DIR, csv_name)) or
         os.path.exists(os.path.join(FILES_DIR, name))
     )
 
 
 def _read_cached_file(filename):
-    """读取已缓存的 GKG 文件，优先读 .csv，兼容旧 .zip。"""
-    csv_path = os.path.join(FILES_DIR, _csv_name(filename))
-    zip_path = os.path.join(FILES_DIR, filename)
-    if os.path.exists(csv_path):
-        return read_gkg_tsv(csv_path)
-    if os.path.exists(zip_path):
-        with zipfile.ZipFile(zip_path) as z:
-            with z.open(z.namelist()[0]) as f:
-                return read_gkg_tsv(f)
+    """读取已缓存的 GKG 文件，优先读年份子目录，兼容旧平铺结构。"""
+    name = os.path.basename(filename)
+    csv_name = _csv_name(name)
+    year_dir = os.path.join(FILES_DIR, name[:4])
+
+    for base in (year_dir, FILES_DIR):
+        csv_path = os.path.join(base, csv_name)
+        if os.path.exists(csv_path):
+            return read_gkg_tsv(csv_path)
+        zip_path = os.path.join(base, name)
+        if os.path.exists(zip_path):
+            with zipfile.ZipFile(zip_path) as z:
+                with z.open(z.namelist()[0]) as f:
+                    return read_gkg_tsv(f)
     return None
 
 
