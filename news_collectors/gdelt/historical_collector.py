@@ -139,13 +139,13 @@ user_agent = (
 )
 config = Config()
 config.browser_user_agent = user_agent
-ARTICLE_REQUEST_TIMEOUT = int(os.getenv("ARTICLE_REQUEST_TIMEOUT", "6"))
+ARTICLE_REQUEST_TIMEOUT = int(os.getenv("ARTICLE_REQUEST_TIMEOUT", "15"))
 config.request_timeout = ARTICLE_REQUEST_TIMEOUT
 config.language = "en"
 
 FETCH_WORKERS = int(os.getenv("FETCH_WORKERS", "3"))
 PARSE_WORKERS = int(os.getenv("PARSE_WORKERS", "2"))
-FETCH_TASK_TIMEOUT = int(os.getenv("FETCH_TASK_TIMEOUT", "20"))
+FETCH_TASK_TIMEOUT = int(os.getenv("FETCH_TASK_TIMEOUT", "45"))
 PARSE_POOL_MAX_TASKS_PER_CHILD = int(os.getenv("PARSE_POOL_MAX_TASKS_PER_CHILD", "100"))
 SCAN_WORKERS = int(os.getenv("SCAN_WORKERS", "2"))
 SCAN_PROGRESS_EVERY_FILES = int(os.getenv("SCAN_PROGRESS_EVERY_FILES", "100"))
