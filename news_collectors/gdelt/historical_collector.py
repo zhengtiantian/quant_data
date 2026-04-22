@@ -173,6 +173,7 @@ BATCH_SIZE = 100  # 每次处理100个 GKG 文件，与 MySQL batch_id 一一对
 
 # filename → batch_id 映射，由 get_gkg_file_urls() 在启动时填充
 _filename_to_batch: dict = {}
+_cache_fallback_warned = {"empty_batch_map": False, "year_fallback": False}
 
 SHUTDOWN_EVENT = threading.Event()
 SHUTDOWN_REASON = {"reason": None}
@@ -1024,7 +1025,16 @@ def get_gkg_file_urls(years_back, max_files=None):
     if max_files:
         urls = urls[:max_files]
 
-    # 构建 filename → batch_id 映射（供路径查找使用）
+    _rebuild_filename_to_batch(urls)
+
+    if urls:
+        print(f"✅ Sorted {len(urls)} GKG files chronologically starting from 2016.")
+
+    return urls
+
+
+def _rebuild_filename_to_batch(urls):
+    """Rebuild filename -> batch_id mapping for the current process."""
     global _filename_to_batch
     _filename_to_batch = {}
     for i, url in enumerate(urls):
@@ -1032,11 +1042,6 @@ def get_gkg_file_urls(years_back, max_files=None):
         fname = os.path.basename(url)
         _filename_to_batch[fname] = batch_id
         _filename_to_batch[_csv_name(fname)] = batch_id
-
-    if urls:
-        print(f"✅ Sorted {len(urls)} GKG files chronologically starting from 2016.")
-
-    return urls
 
 
 # ============================
@@ -1104,6 +1109,13 @@ def _file_cached(url_or_filename):
 
     batch_dir = _batch_dir_for_file(name)
     year_dir = os.path.join(FILES_DIR, name[:4])
+
+    if not _filename_to_batch and not _cache_fallback_warned["empty_batch_map"]:
+        _cache_fallback_warned["empty_batch_map"] = True
+        print("⚠️ _filename_to_batch is empty in this process; cache lookup will fall back to year_dir/files_dir")
+    if batch_dir is None and not _cache_fallback_warned["year_fallback"]:
+        _cache_fallback_warned["year_fallback"] = True
+        print(f"⚠️ Cache lookup fallback hit for {name}; batch_dir unresolved, checking year_dir={year_dir}")
 
     for base in filter(None, (batch_dir, year_dir, FILES_DIR)):
         if os.path.exists(os.path.join(base, csv_name_)):
@@ -1773,6 +1785,9 @@ def _run_batch_worker(worker_id, shutdown_event, urls, valid_companies, total_ba
     # 子进程无缓冲输出
     import sys
     sys.stdout.reconfigure(line_buffering=True)
+
+    # spawn 子进程不会继承主进程中的模块级映射，这里必须重建
+    _rebuild_filename_to_batch(urls)
 
     db = get_db()
     dst_col = db[DST_COLLECTION]
