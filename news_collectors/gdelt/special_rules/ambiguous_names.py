@@ -109,7 +109,45 @@ def _parse_symbol_set(raw_value):
 
 class AmbiguousNameRule(BaseRule):
     """歧义名称规则"""
-    
+
+    _ABSOLUTE_BYPASS_RAW = {
+        "AAPL": [r"tim\s+cook", r"\biphone\b", r"\bipad\b", r"\bmacbook\b", r"\bios\b", r"app\s+store", r"apple\s+vision", r"steve\s+jobs", r"apple\s+watch", r"airpods"],
+        "MSFT": [r"satya\s+nadella", r"\bazure\b", r"office\s+365", r"\bmicrosoft\s+365\b", r"\bgame\s+pass\b", r"bill\s+gates", r"surface\s+pro", r"microsoft\s+teams", r"phil\s+spencer"],
+        "GOOGL": [r"sundar\s+pichai", r"\byoutube\b", r"\bandroid\b", r"google\s+cloud", r"google\s+ads", r"pixel\s+(phone|watch|tablet)", r"larry\s+page", r"sergey\s+brin", r"waymo"],
+        "AMZN": [r"jeff\s+bezos", r"andy\s+jassy", r"amazon\s+web\s+services", r"\baws\b", r"prime\s+video", r"\bkindle\b", r"\balexa\b", r"amazon\s+prime"],
+        "META": [r"oculus", r"meta\s+quest", r"facebook\s+ads", r"reality\s+labs", r"threads\s+app"],
+        "TSLA": [r"model\s+(s|3|x|y)", r"cybertruck", r"gigafactory", r"tesla\s+autopilot", r"supercharger", r"\btesla\s+energy\b", r"\bmegapack\b", r"\bspacex\b", r"\bstarlink\b", r"\bxai\b"],
+        "NVDA": [r"jensen\s+huang", r"geforce", r"rtx\s+\d{4}", r"cuda", r"h100", r"a100", r"nvidia\s+dgx", r"\bwith\s+nvidia\b", r"\bpowered\s+by\s+nvidia\b"],
+        "AMD": [r"lisa\s+su", r"ryzen", r"radeon", r"epyc", r"threadripper", r"mi300"],
+        "ARM": [r"rene\s+haas", r"arm\s+architecture", r"cortex-", r"neoverse", r"mali\s+gpu"],
+        "QCOM": [r"cristiano\s+amon", r"snapdragon", r"\bcdma\b", r"qualcomm\s+hexagon"],
+        "AVGO": [r"hock\s+tan", r"\bvmware\b", r"symantec", r"broadcom\s+software"],
+        "ORCL": [r"larry\s+ellison", r"safra\s+catz", r"oracle\s+cloud", r"oracle\s+database", r"oracle\s+earnings", r"\bexadata\b", r"\bnetsuite\b"],
+        "CSCO": [r"chuck\s+robbins", r"cisco\s+systems", r"\bwebex\b", r"cisco\s+router", r"cisco\s+switch"],
+        "IBM": [r"arvind\s+krishna", r"\bred\s+hat\b", r"ibm\s+cloud", r"\bwatson\b", r"ibm\s+mainframe"],
+        "DELL": [r"michael\s+dell", r"dell\s+technologies", r"\bpoweredge\b", r"dell\s+emc", r"vmware"],
+        "INTU": [r"sasan\s+goodarzi", r"\bturbotax\b", r"\bquickbooks\b", r"\bmailchimp\b", r"intuit\s+platform"],
+        "TSM": [r"\btsmc\b", r"cc\s+wei", r"taiwan\s+semiconductor", r"\b3nm\b", r"\b5nm\b", r"\b2nm\b"],
+        "MU": [r"sanjay\s+mehrotra", r"\bhbm\b", r"micron\s+technology", r"\bdram\b", r"\bnand\s+flash\b"],
+        "AMAT": [r"gary\s+dickerson", r"applied\s+materials", r"semiconductor\s+equipment"],
+        "LRCX": [r"tim\s+archer", r"lam\s+research", r"\betch\s+equipment\b"],
+        "KLAC": [r"rick\s+wallace", r"\bkla\b", r"kla\s+tencor", r"process\s+control\s+equipment"],
+        "MRVL": [r"matt\s+murphy", r"marvell\s+technology", r"marvell\s+semiconductor"],
+        "ADI": [r"vincent\s+roche", r"analog\s+devices", r"\blinear\s+technology\b"],
+        "NXPI": [r"kurt\s+sievers", r"nxp\s+semiconductors", r"\bnxp\b"],
+        "ON": [r"hassane\s+el.khoury", r"\bonsemi\b", r"on\s+semiconductor"],
+        "STX": [r"dave\s+mosley", r"seagate\s+technology", r"\bseagate\b"],
+        "WDC": [r"david\s+goeckeler", r"western\s+digital", r"\bsandisk\b"],
+        "SWKS": [r"liam\s+griffin", r"skyworks\s+solutions", r"skyworks\s+semiconductor"],
+        "FTNT": [r"ken\s+xie", r"\bfortigate\b", r"fortinet\s+firewall", r"fortinet\s+security"],
+        "ABNB": [r"brian\s+chesky", r"airbnb\s+host", r"airbnb\s+listing", r"airbnb\s+revenue"],
+        "INTC": [r"pat\s+gelsinger", r"\bxeon\b", r"\bcore\s+ultra\b", r"intel\s+foundry", r"gaudi\s+accelerator"],
+        "MCHP": [r"ganesh\s+moorthy", r"microchip\s+technology", r"\bpic\s+microcontroller\b"],
+        "ASML": [r"peter\s+wennink", r"\beuv\b", r"\bduv\b", r"asml\s+scanner", r"extreme\s+ultraviolet"],
+    }
+
+    _TOO_COMMON_TO_BYPASS = {"instagram", "facebook", "whatsapp", "youtube", "android", "chrome", "google", "amazon", "apple", "microsoft"}
+
     # 定义静态排除逻辑：秒杀已知的噪音 (Fast-Kill)
     STATIC_KILL_PATTERNS = {
         "MSFT": [
@@ -285,13 +323,13 @@ class AmbiguousNameRule(BaseRule):
         self.company_name = company_name or symbol
         self.problem = config.get('problem', '')
         self.required_keywords = config.get('required_keywords', [])
-        
+
         # 🚀 从全局配置中获取扩展词，用于强匹配
         full_config = full_config or {}
         self.primary_keywords = full_config.get('primary_keywords', [])
         self.expansion_keywords = full_config.get('expansion_keywords', [])
         self.strict_validation_keywords = full_config.get('strict_validation_keywords', []) # 🆕 从JSON加载强校验词
-        
+
         self.min_matches = config.get('min_matches', 1)
         self.exclude_patterns = config.get('exclude_patterns', [])
         self.case_sensitive = config.get('case_sensitive', False)
@@ -308,6 +346,42 @@ class AmbiguousNameRule(BaseRule):
         )
         self.rule_verbose = os.getenv("RULE_VERBOSE", "false").lower() == "true"
         self.log_slm_interceptions = os.getenv("SLM_LOG_INTERCEPTIONS", "false").lower() == "true"
+
+        # Pre-compile all patterns once at construction time to avoid per-call compilation overhead
+        self._compiled_static_kill = [
+            re.compile(p, re.IGNORECASE)
+            for p in self.STATIC_KILL_PATTERNS.get(symbol, [])
+        ]
+        self._compiled_contextual_reject = [
+            re.compile(p, re.IGNORECASE)
+            for p in self.CONTEXTUAL_REJECT_PATTERNS.get(symbol, [])
+        ]
+        self._compiled_contextual_keep = [
+            re.compile(p, re.IGNORECASE)
+            for p in self.CONTEXTUAL_KEEP_PATTERNS.get(symbol, [])
+        ]
+        self._compiled_bypass_patterns = [
+            re.compile(p, re.IGNORECASE)
+            for p in self._ABSOLUTE_BYPASS_RAW.get(symbol, [])
+        ]
+        self._compiled_required_patterns = [
+            (kw, re.compile(r'(?<!\w)' + re.escape(kw) + r'(?!\w)', re.IGNORECASE))
+            for kw in self.required_keywords
+        ]
+        too_common = self._TOO_COMMON_TO_BYPASS
+        _primary_lower = {pk.lower() for pk in self.primary_keywords}
+        strong_keywords = [
+            k for k in self.expansion_keywords
+            if len(k) > 3 and k.lower() not in _primary_lower and k.lower() not in too_common
+        ]
+        if strong_keywords:
+            strong_keywords.sort(key=len, reverse=True)
+            self._compiled_strong_pattern = re.compile(
+                r'\b(' + '|'.join(re.escape(k) for k in strong_keywords) + r')\b',
+                re.IGNORECASE,
+            )
+        else:
+            self._compiled_strong_pattern = None
     
     def get_keywords(self, article_date):
         """返回必需的关键词"""
@@ -332,22 +406,21 @@ class AmbiguousNameRule(BaseRule):
             return False
 
         # 2. 静态黑名单 (Static Kill)
-        if self.symbol in self.STATIC_KILL_PATTERNS:
-            for pattern in self.STATIC_KILL_PATTERNS[self.symbol]:
-                if re.search(pattern, full_text, re.IGNORECASE):
-                    track_filter_step("killed_by_static")
-                    if self.rule_verbose:
-                        emit_rule_event(
-                            "static_kill",
-                            self.symbol,
-                            f"🚫 Static Kill: {self.symbol} - Pattern: {pattern}",
-                        )
-                    return False
+        for _pat in self._compiled_static_kill:
+            if _pat.search(full_text):
+                track_filter_step("killed_by_static")
+                if self.rule_verbose:
+                    emit_rule_event(
+                        "static_kill",
+                        self.symbol,
+                        f"🚫 Static Kill: {self.symbol} - Pattern: {_pat.pattern}",
+                    )
+                return False
 
         # 3. 关键词匹配计数 (必需关键词)
         matches = []
-        for keyword in self.required_keywords:
-            if self._keyword_matches(full_text, keyword):
+        for keyword, _pat in self._compiled_required_patterns:
+            if _pat.search(full_text):
                 matches.append(keyword)
 
         if len(matches) < self.min_matches:
@@ -382,16 +455,10 @@ class AmbiguousNameRule(BaseRule):
                     )
 
         # 4.4 业务主体过滤：平台载体/商品页/外围品牌词不要直接因为品牌词而放行。
-        if self.symbol in self.CONTEXTUAL_REJECT_PATTERNS:
-            reject_patterns = self.CONTEXTUAL_REJECT_PATTERNS[self.symbol]
-            hit_contextual_reject = any(
-                re.search(pattern, full_text, re.IGNORECASE) for pattern in reject_patterns
-            )
+        if self._compiled_contextual_reject:
+            hit_contextual_reject = any(_pat.search(full_text) for _pat in self._compiled_contextual_reject)
             if hit_contextual_reject:
-                keep_patterns = self.CONTEXTUAL_KEEP_PATTERNS.get(self.symbol, [])
-                hit_contextual_keep = any(
-                    re.search(pattern, full_text, re.IGNORECASE) for pattern in keep_patterns
-                )
+                hit_contextual_keep = any(_pat.search(full_text) for _pat in self._compiled_contextual_keep)
 
                 # TSLA + Starlink 只有在同时强烈讲 Tesla 业务本体时才保留。
                 if self.symbol == "TSLA":
@@ -409,70 +476,22 @@ class AmbiguousNameRule(BaseRule):
                         track_filter_step("killed_by_contextual")
                         return False
 
-        # 4.5 绝对强关联直通车 (Absolute Strong Bypass)
-        # 极高概率能确定是正相关产品的关键词组合，直接绕过 SLM。这将极大降低 CPU 和 GPU 的排队耗时与发热！
-        ABSOLUTE_BYPASS = {
-            "AAPL": [r"tim\s+cook", r"\biphone\b", r"\bipad\b", r"\bmacbook\b", r"\bios\b", r"app\s+store", r"apple\s+vision", r"steve\s+jobs", r"apple\s+watch", r"airpods"],
-            "MSFT": [r"satya\s+nadella", r"\bazure\b", r"office\s+365", r"\bmicrosoft\s+365\b", r"\bgame\s+pass\b", r"bill\s+gates", r"surface\s+pro", r"microsoft\s+teams", r"phil\s+spencer"],
-            "GOOGL": [r"sundar\s+pichai", r"\byoutube\b", r"\bandroid\b", r"google\s+cloud", r"google\s+ads", r"pixel\s+(phone|watch|tablet)", r"larry\s+page", r"sergey\s+brin", r"waymo"],
-            "AMZN": [r"jeff\s+bezos", r"andy\s+jassy", r"amazon\s+web\s+services", r"\baws\b", r"prime\s+video", r"\bkindle\b", r"\balexa\b", r"amazon\s+prime"],
-            "META": [r"oculus", r"meta\s+quest", r"facebook\s+ads", r"reality\s+labs", r"threads\s+app"],
-            "TSLA": [r"model\s+(s|3|x|y)", r"cybertruck", r"gigafactory", r"tesla\s+autopilot", r"supercharger", r"\btesla\s+energy\b", r"\bmegapack\b", r"\bspacex\b", r"\bstarlink\b", r"\bxai\b"],
-            "NVDA": [r"jensen\s+huang", r"geforce", r"rtx\s+\d{4}", r"cuda", r"h100", r"a100", r"nvidia\s+dgx", r"\bwith\s+nvidia\b", r"\bpowered\s+by\s+nvidia\b"],
-            "AMD": [r"lisa\s+su", r"ryzen", r"radeon", r"epyc", r"threadripper", r"mi300"],
-            "ARM": [r"rene\s+haas", r"arm\s+architecture", r"cortex-", r"neoverse", r"mali\s+gpu"],
-            "QCOM": [r"cristiano\s+amon", r"snapdragon", r"\bcdma\b", r"qualcomm\s+hexagon"],
-            "AVGO": [r"hock\s+tan", r"\bvmware\b", r"symantec", r"broadcom\s+software"],
-            "ORCL": [r"larry\s+ellison", r"safra\s+catz", r"oracle\s+cloud", r"oracle\s+database", r"oracle\s+earnings", r"\bexadata\b", r"\bnetsuite\b"],
-            "CSCO": [r"chuck\s+robbins", r"cisco\s+systems", r"\bwebex\b", r"cisco\s+router", r"cisco\s+switch"],
-            "IBM": [r"arvind\s+krishna", r"\bred\s+hat\b", r"ibm\s+cloud", r"\bwatson\b", r"ibm\s+mainframe"],
-            "DELL": [r"michael\s+dell", r"dell\s+technologies", r"\bpoweredge\b", r"dell\s+emc", r"vmware"],
-            "INTU": [r"sasan\s+goodarzi", r"\bturbotax\b", r"\bquickbooks\b", r"\bmailchimp\b", r"intuit\s+platform"],
-            "TSM": [r"\btsmc\b", r"cc\s+wei", r"taiwan\s+semiconductor", r"\b3nm\b", r"\b5nm\b", r"\b2nm\b"],
-            "MU": [r"sanjay\s+mehrotra", r"\bhbm\b", r"micron\s+technology", r"\bdram\b", r"\bnand\s+flash\b"],
-            "AMAT": [r"gary\s+dickerson", r"applied\s+materials", r"semiconductor\s+equipment"],
-            "LRCX": [r"tim\s+archer", r"lam\s+research", r"\betch\s+equipment\b"],
-            "KLAC": [r"rick\s+wallace", r"\bkla\b", r"kla\s+tencor", r"process\s+control\s+equipment"],
-            "MRVL": [r"matt\s+murphy", r"marvell\s+technology", r"marvell\s+semiconductor"],
-            "ADI": [r"vincent\s+roche", r"analog\s+devices", r"\blinear\s+technology\b"],
-            "NXPI": [r"kurt\s+sievers", r"nxp\s+semiconductors", r"\bnxp\b"],
-            "ON": [r"hassane\s+el.khoury", r"\bonsemi\b", r"on\s+semiconductor"],
-            "STX": [r"dave\s+mosley", r"seagate\s+technology", r"\bseagate\b"],
-            "WDC": [r"david\s+goeckeler", r"western\s+digital", r"\bsandisk\b"],
-            "SWKS": [r"liam\s+griffin", r"skyworks\s+solutions", r"skyworks\s+semiconductor"],
-            "FTNT": [r"ken\s+xie", r"\bfortigate\b", r"fortinet\s+firewall", r"fortinet\s+security"],
-            "ABNB": [r"brian\s+chesky", r"airbnb\s+host", r"airbnb\s+listing", r"airbnb\s+revenue"],
-            "INTC": [r"pat\s+gelsinger", r"\bxeon\b", r"\bcore\s+ultra\b", r"intel\s+foundry", r"gaudi\s+accelerator"],
-            "MCHP": [r"ganesh\s+moorthy", r"microchip\s+technology", r"\bpic\s+microcontroller\b"],
-            "ASML": [r"peter\s+wennink", r"\beuv\b", r"\bduv\b", r"asml\s+scanner", r"extreme\s+ultraviolet"],
-        }
-        
-        if self.symbol in ABSOLUTE_BYPASS:
-            for pattern in ABSOLUTE_BYPASS[self.symbol]:
-                if re.search(pattern, full_text, re.IGNORECASE):
-                    track_filter_step("bypassed_by_absolute")
-                    if self.rule_verbose:
-                        emit_rule_event(
-                            "absolute_bypass",
-                            self.symbol,
-                            f"⚡ Absolute Bypass PASS: {self.symbol} - Pattern: {pattern} - Title: {title[:60]}",
-                        )
-                    return True
-
-        # 5. 强匹配逻辑：如果命中极其特殊的产品词，直接放行 Bypassing SLM
-        too_common_to_bypass = ["Instagram", "Facebook", "WhatsApp", "YouTube", "Android", "Chrome", "Google", "Amazon", "Apple", "Microsoft"]
-        strong_keywords = [
-            k for k in self.expansion_keywords
-            if len(k) > 3
-            and k.lower() not in [pk.lower() for pk in self.primary_keywords]
-            and k not in too_common_to_bypass
-        ]
-        if strong_keywords:
-            strong_keywords.sort(key=len, reverse=True)
-            strong_pattern = r'\b(' + '|'.join(re.escape(k) for k in strong_keywords) + r')\b'
-            if re.search(strong_pattern, full_text, re.IGNORECASE):
-                track_filter_step("bypassed_by_strong")
+        # 4.5 绝对强关联直通车 (Absolute Strong Bypass) — patterns pre-compiled in __init__
+        for _pat in self._compiled_bypass_patterns:
+            if _pat.search(full_text):
+                track_filter_step("bypassed_by_absolute")
+                if self.rule_verbose:
+                    emit_rule_event(
+                        "absolute_bypass",
+                        self.symbol,
+                        f"⚡ Absolute Bypass PASS: {self.symbol} - Pattern: {_pat.pattern} - Title: {title[:60]}",
+                    )
                 return True
+
+        # 5. 强匹配逻辑：如果命中极其特殊的产品词，直接放行 Bypassing SLM — pattern pre-compiled in __init__
+        if self._compiled_strong_pattern and self._compiled_strong_pattern.search(full_text):
+            track_filter_step("bypassed_by_strong")
+            return True
 
         # 5.5 Multiple identity hits are strong enough to pass without SLM.
         if len(matches) >= 2:

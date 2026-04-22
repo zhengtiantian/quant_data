@@ -8,6 +8,7 @@ import hashlib
 import os
 import re
 import threading
+import time
 from collections import defaultdict
 from typing import Dict, Optional
 
@@ -51,6 +52,7 @@ def get_slm_stats(owner: Optional[str] = None) -> Dict[str, int]:
         "yes": stats.get("yes", 0),
         "no": stats.get("no", 0),
         "errors": stats.get("errors", 0),
+        "elapsed_ms": stats.get("elapsed_ms", 0),
     }
 
 
@@ -153,6 +155,7 @@ class SLMFilter:
         )
 
         try:
+            _t_slm = time.time()
             with _slm_semaphore:
                 track_slm_stat("requests")
                 if self.provider == "lmstudio":
@@ -194,6 +197,7 @@ class SLMFilter:
                         timeout=45
                     )
 
+            track_slm_stat("elapsed_ms", int((time.time() - _t_slm) * 1000))
             if response.status_code == 200:
                 answer = self._extract_answer(response.json())
                 if answer not in {"YES", "NO"}:
@@ -208,10 +212,15 @@ class SLMFilter:
                 return result
             else:
                 track_slm_stat("errors")
-                print(f"⚠️ {self.provider} API error: {response.status_code}，默认拒绝")
+                try:
+                    err_body = response.text[:300]
+                except Exception:
+                    err_body = "(unreadable)"
+                print(f"⚠️ {self.provider} API error: {response.status_code} — {err_body}")
                 return False
 
         except Exception as e:
+            track_slm_stat("elapsed_ms", int((time.time() - _t_slm) * 1000))
             track_slm_stat("errors")
             print(f"⚠️ {self.provider} 调用失败/超时: {e}，默认拒绝")
             return False

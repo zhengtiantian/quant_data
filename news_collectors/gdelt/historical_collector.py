@@ -1208,7 +1208,7 @@ def process_single_file(url, companies, rule_manager, avg_date):
         pass
     return matches
 
-def process_file_task(url, rule_manager, all_keywords_map, compiled_pattern, symbol_to_company, progress_lock, progress, worker_name=None):
+def process_file_task(url, rule_manager, ac, all_keywords_map, symbol_to_company, progress_lock, progress, worker_name=None):
     filename = os.path.basename(url)
     if not _file_cached(filename):
         return {"matches": [], "rows": 0, "candidates": 0, "sample": "", "filename": filename}
@@ -1242,9 +1242,10 @@ def process_file_task(url, rule_manager, all_keywords_map, compiled_pattern, sym
 
         combined_text = (df["Title"].fillna("") + " " + df["Raw"].fillna("")).str.lower()
         t_combine = time.time()
-        mask = combined_text.str.contains(compiled_pattern, na=False, regex=True)
-
-        matched_df = df[mask]
+        texts = combined_text.tolist()
+        import numpy as np
+        mask_arr = np.fromiter((next(ac.iter(t), None) is not None for t in texts), dtype=bool, count=len(texts))
+        matched_df = df[mask_arr]
         t_regex = time.time()
         file_matches = []
         sample_text = ""
@@ -1256,12 +1257,24 @@ def process_file_task(url, rule_manager, all_keywords_map, compiled_pattern, sym
             with progress_lock:
                 progress["rules_total_discovered"] += len(matched_df)
 
+        t_iter = t_rule_check = 0.0
+        _rule_calls = _slm_req_before = _slm_elapsed_ms_before = 0
+        try:
+            from special_rules.slm_filter import get_slm_stats
+            _slm_stats_before = get_slm_stats()
+            _slm_req_before = _slm_stats_before.get("requests", 0)
+            _slm_elapsed_ms_before = _slm_stats_before.get("elapsed_ms", 0)
+        except Exception:
+            pass
+
         for idx, row in matched_df.iterrows():
+            _t0 = time.time()
             row_text = combined_text.loc[idx]
             hit_symbols = set()
-            for kw, symbols in all_keywords_map.items():
-                if kw in row_text: hit_symbols.update(symbols)
-            
+            for _, kw in ac.iter(row_text):
+                hit_symbols.update(all_keywords_map.get(kw, []))
+            t_iter += time.time() - _t0
+
             for sym in hit_symbols:
                 time_info = parse_gdelt_timestamp(filename)
                 article_data = {
@@ -1269,16 +1282,19 @@ def process_file_task(url, rule_manager, all_keywords_map, compiled_pattern, sym
                     "date": time_info['date_str'] if time_info else filename[:8],
                     "source_file": filename, "url": row["URL"],
                 }
+                _t1 = time.time()
                 if rule_manager.should_include(sym, article_data):
                     file_matches.append({
                         "row": {
-                            "URL": row["URL"], "Title": row["Title"] or f"News about {sym}", 
+                            "URL": row["URL"], "Title": row["Title"] or f"News about {sym}",
                             "Date": time_info['date_str'] if time_info else filename[:8],
                             "Timestamp": time_info['timestamp_str'] if time_info else filename[:14],
                             "PublishedAt": time_info['iso'] if time_info else None
                         },
                         "company": symbol_to_company.get(sym)
                     })
+                t_rule_check += time.time() - _t1
+                _rule_calls += 1
 
             if progress_lock:
                 with progress_lock:
@@ -1286,14 +1302,28 @@ def process_file_task(url, rule_manager, all_keywords_map, compiled_pattern, sym
                     if SCAN_RULE_PROGRESS_EVERY_RECORDS > 0 and progress["rules_processed"] % SCAN_RULE_PROGRESS_EVERY_RECORDS == 0:
                         worker = worker_name or threading.current_thread().name
                         print(f"[{worker}] 🧪 Rule check progress: {progress['rules_processed']} records")
-        
+
+        _slm_req_this_file = 0
+        _slm_elapsed_this_file = 0.0
+        try:
+            from special_rules.slm_filter import get_slm_stats
+            _slm_stats_after = get_slm_stats()
+            _slm_req_this_file = _slm_stats_after.get("requests", 0) - _slm_req_before
+            _slm_elapsed_this_file = (_slm_stats_after.get("elapsed_ms", 0) - _slm_elapsed_ms_before) / 1000.0
+        except Exception:
+            pass
+
         t_rules = time.time()
         return {
             "matches": file_matches, "rows": len(df), "candidates": len(matched_df),
             "sample": sample_text, "filename": filename,
             "timings": {
                 "total": t_rules - t_start, "parse": t_parse - t_start,
-                "combine": t_combine - t_parse, "regex": t_regex - t_combine, "rules": t_rules - t_regex,
+                "combine": t_combine - t_parse, "regex": t_regex - t_combine,
+                "rules": t_rules - t_regex,
+                "rules_iter": t_iter, "rules_check": t_rule_check,
+                "slm_elapsed": _slm_elapsed_this_file,
+                "rule_calls": _rule_calls, "slm_reqs": _slm_req_this_file,
             },
         }
     except Exception as e:
@@ -1303,6 +1333,7 @@ def process_file_task(url, rule_manager, all_keywords_map, compiled_pattern, sym
 def process_batch_files(batch_urls, companies, worker_name=None):
     """并行处理一批 GKG 文件并高效匹配所有公司"""
     import numpy as np
+    _batch_start = time.time()
     rule_manager = get_rule_manager()
     
     # 1. 计算平均日期
@@ -1315,9 +1346,10 @@ def process_batch_files(batch_urls, companies, worker_name=None):
         avg_date = min(batch_dates) + (max(batch_dates) - min(batch_dates)) / 2
     avg_date = avg_date.replace(tzinfo=None)
 
-    # 2. 预构建全局关键词
+    # 2. 预构建全局关键词 → Aho-Corasick 自动机
+    import ahocorasick
     all_keywords_map = {}
-    case_insensitive_keywords = []
+    ac = ahocorasick.Automaton()
     for company in companies:
         symbol = company['symbol']
         keywords = rule_manager.get_keywords(symbol, avg_date)
@@ -1328,15 +1360,14 @@ def process_batch_files(batch_urls, companies, worker_name=None):
             k_lower = k.lower()
             if k_lower not in all_keywords_map:
                 all_keywords_map[k_lower] = []
+                ac.add_word(k_lower, k_lower)
             all_keywords_map[k_lower].append(symbol)
-            case_insensitive_keywords.append(re.escape(k_lower))
 
-    global_pattern = "|".join(case_insensitive_keywords)
-    if not global_pattern: return []
+    if not all_keywords_map: return []
     if SHUTDOWN_EVENT.is_set(): return []
-    compiled_pattern = re.compile(global_pattern)
-    
-    print(f"📂 Scanning {len(batch_urls)} files in parallel (Unified Regex)...")
+    ac.make_automaton()
+
+    print(f"📂 Scanning {len(batch_urls)} files in parallel (Aho-Corasick)...")
     
     all_combined_matches = []
     total_files = len(batch_urls)
@@ -1352,22 +1383,27 @@ def process_batch_files(batch_urls, companies, worker_name=None):
     symbol_to_company = {c['symbol']: c for c in companies}
 
     prefix = f"{worker_name}-scan" if worker_name else f"{threading.current_thread().name}-scan"
-    scan_start_time = time.time()
+
     SCAN_FILE_PROGRESS_INTERVAL = int(os.getenv("SCAN_FILE_PROGRESS_INTERVAL", "10"))
-    
+    _last_progress_time = [time.time()]
+
     with ThreadPoolExecutor(max_workers=SCAN_WORKERS, thread_name_prefix=prefix) as executor:
         futures = [executor.submit(
             process_file_task,
             url,
             rule_manager,
+            ac,
             all_keywords_map,
-            compiled_pattern,
             symbol_to_company,
             progress_lock,
             progress,
             worker_name
         ) for url in batch_urls]
         
+        _acc = {"total": 0.0, "parse": 0.0, "combine": 0.0, "regex": 0.0,
+                "rules": 0.0, "rules_iter": 0.0, "rules_check": 0.0,
+                "slm_elapsed": 0.0, "rule_calls": 0, "slm_reqs": 0}
+
         for future in as_completed(futures):
             res = future.result()
             all_combined_matches.extend(res["matches"])
@@ -1376,21 +1412,28 @@ def process_batch_files(batch_urls, companies, worker_name=None):
                 progress["rows_scanned"] += res["rows"]
                 progress["candidates"] += res["candidates"]
                 progress["accepted"] += len(res["matches"])
+                t = res.get("timings", {})
+                for k in _acc:
+                    _acc[k] += t.get(k, 0)
                 done = progress["files_done"]
                 worker = worker_name or threading.current_thread().name
-                if done == 1 or done % SCAN_FILE_PROGRESS_INTERVAL == 0 or done == total_files:
-                    elapsed = time.time() - scan_start_time
-                    rate = done / elapsed if elapsed > 0 else 0
-                    timings = res.get("timings", {})
-                    file_name = res.get("filename", "?")
+                if done % SCAN_FILE_PROGRESS_INTERVAL == 0 or done == total_files:
+                    now = time.time()
+                    interval = now - _last_progress_time[0]
+                    _last_progress_time[0] = now
+                    _check_pure = _acc['rules_check'] - _acc['slm_elapsed']
                     print(
-                        f"[{worker}] 🔍 Scan progress: {done}/{total_files} files "
-                        f"({elapsed:.1f}s, {rate:.1f} files/s), "
+                        f"[{worker}] 🔍 Scan {done}/{total_files} "
                         f"rows={progress['rows_scanned']}, candidates={progress['candidates']}, accepted={progress['accepted']} | "
-                        f"last={file_name} total={timings.get('total', 0):.1f}s "
-                        f"(parse={timings.get('parse', 0):.2f}s, combine={timings.get('combine', 0):.2f}s, "
-                        f"regex={timings.get('regex', 0):.2f}s, rules={timings.get('rules', 0):.2f}s)"
+                        f"wall={interval:.1f}s cpu_sum={_acc['total']:.1f}s "
+                        f"(parse={_acc['parse']:.1f}s, combine={_acc['combine']:.1f}s, "
+                        f"regex={_acc['regex']:.1f}s, rules={_acc['rules']:.1f}s "
+                        f"[iter={_acc['rules_iter']:.1f}s, check={_acc['rules_check']:.1f}s"
+                        f"(pure={_check_pure:.1f}s, slm={_acc['slm_elapsed']:.1f}s), "
+                        f"calls={_acc['rule_calls']}, slm_reqs={_acc['slm_reqs']}])"
                     )
+                    for k in _acc:
+                        _acc[k] = 0
 
     # 去重
     seen = set()
@@ -1401,7 +1444,9 @@ def process_batch_files(batch_urls, companies, worker_name=None):
             seen.add(key)
             final_output.append(m)
 
-    print(f"✅ Parallel scan complete: {len(final_output)} matched tasks identified.")
+    _batch_elapsed = time.time() - _batch_start
+    w = worker_name or threading.current_thread().name
+    print(f"[{w}] ✅ Scan complete: {len(final_output)} matched, {len(batch_urls)} files, total={_batch_elapsed:.1f}s")
     if progress["rules_total_discovered"] > 0:
         print(
             f"🧪 Rule check done: {progress['rules_processed']}/{progress['rules_total_discovered']} records"
@@ -1409,7 +1454,6 @@ def process_batch_files(batch_urls, companies, worker_name=None):
 
     # 输出每步过滤汇总
     from special_rules.ambiguous_names import print_filter_summary
-    w = worker_name or threading.current_thread().name
     print_filter_summary(w)
 
     return final_output
@@ -1720,6 +1764,81 @@ def process_one_batch(
 
 
 # ============================
+# 多进程 batch worker（模块级，可 pickle）
+# ============================
+def _run_batch_worker(worker_id, shutdown_event, urls, valid_companies, total_batches, stuck_urls_initial):
+    global SHUTDOWN_EVENT
+    SHUTDOWN_EVENT = shutdown_event  # 让本进程内所有函数共享同一个 Event
+
+    # 子进程无缓冲输出
+    import sys
+    sys.stdout.reconfigure(line_buffering=True)
+
+    db = get_db()
+    dst_col = db[DST_COLLECTION]
+    stuck_urls = set(stuck_urls_initial)
+    stuck_urls_lock = threading.Lock()
+
+    worker_name = f"{HOST_ID}-worker{worker_id}"
+    owner = worker_name
+    # 设置主线程名，使 scan 日志显示正确 worker 标识
+    threading.current_thread().name = worker_name
+    total_inserted = 0
+    print(f"🚀 Started on {platform.system()} as {owner}", flush=True)
+
+    while not SHUTDOWN_EVENT.is_set():
+        batch_idx = claim_next_batch(owner)
+        if batch_idx is None:
+            break
+        WORKER_BATCH_CONTEXT[worker_name] = batch_idx
+        i = (batch_idx - 1) * BATCH_SIZE
+        batch_urls = urls[i: i + BATCH_SIZE]
+        heartbeat_stop = threading.Event()
+
+        def heartbeat_loop(b=batch_idx):
+            while not heartbeat_stop.wait(QUEUE_HEARTBEAT_SECONDS):
+                try:
+                    heartbeat_batch(b, owner)
+                except Exception as hb_err:
+                    print(f"[{owner}] ⚠️ heartbeat failed for batch {b}: {hb_err}")
+
+        heartbeat_thread = threading.Thread(target=heartbeat_loop, name=f"{worker_name}-heartbeat", daemon=True)
+        heartbeat_thread.start()
+        _batch_t0 = time.time()
+        try:
+            inserted = process_one_batch(
+                batch_idx=batch_idx,
+                total_batches=total_batches,
+                batch_urls=batch_urls,
+                valid_companies=valid_companies,
+                dst_col=dst_col,
+                stuck_urls=stuck_urls,
+                stuck_urls_lock=stuck_urls_lock,
+            )
+            total_inserted += inserted
+            mark_batch_done(batch_idx)
+            _batch_elapsed = time.time() - _batch_t0
+            print(f"[{owner}] 📈 batch {batch_idx}/{total_batches} done, elapsed={_batch_elapsed:.1f}s, inserted={inserted}, total={total_inserted}")
+        except Exception as e:
+            print(f"❌ [{owner}] failed on batch {batch_idx}: {e}")
+            if "interpreter shutdown" in str(e).lower():
+                _mark_shutdown(f"{owner} got interpreter shutdown")
+                try:
+                    requeue_batch(batch_idx, f"shutdown_requeue: {e}")
+                    print(f"🔁 requeued batch {batch_idx} to pending")
+                except Exception as requeue_err:
+                    print(f"⚠️ requeue failed for batch {batch_idx}: {requeue_err}")
+                break
+            mark_batch_failed(batch_idx, e)
+        finally:
+            heartbeat_stop.set()
+            heartbeat_thread.join(timeout=1)
+            WORKER_BATCH_CONTEXT.pop(worker_name, None)
+
+    print(f"✅ worker{worker_id} finished. total_inserted={total_inserted}")
+
+
+# ============================
 # 主逻辑
 # ============================
 if __name__ == "__main__":
@@ -1758,20 +1877,21 @@ if __name__ == "__main__":
     print(f"🏢 Prepared {len(valid_companies)} companies for matching (all stocks).")
     
     # 3. 按批次处理文件 (File-First Loop)
-    db = get_db()
-    dst_col = db[DST_COLLECTION]
-    
     total_inserted = 0
     stuck_urls = load_stuck_urls()
     print(f"⛔ Loaded {len(stuck_urls)} historical stuck URLs")
-    
+
     if TEST_MODE:
         print(f"🧪 TEST MODE: Starting from batch 1")
-    
+
     # 分批遍历 URL
     total_batches = (len(urls) + BATCH_SIZE - 1) // BATCH_SIZE
     total_files = len(urls)
     print(f"📌 Global scan target: files={total_files}, batches={total_batches}, batch_size={BATCH_SIZE}")
+
+    # else 分支（非 MySQL 队列模式）仍用单进程，保留这些变量
+    db = get_db()
+    dst_col = db[DST_COLLECTION]
     stuck_urls_lock = threading.Lock()
     progress_lock = threading.Lock()
     progress_state = {
@@ -1788,91 +1908,27 @@ if __name__ == "__main__":
         batch_signatures = build_batch_signatures(urls, BATCH_SIZE)
         seed_tasks(total_batches, queue_resume_batch, batch_signatures)
 
-        total_insert_lock = threading.Lock()
-
-        def worker_loop(worker_id):
-            global total_inserted
-            # 使用更细粒度的标识：mac-hostname-worker1
-            worker_name = f"{HOST_ID}-worker{worker_id}"
-            owner = worker_name
-            threading.current_thread().name = worker_name
-            print(f"🚀 Started on {platform.system()} as {owner}")
-            
-            while not SHUTDOWN_EVENT.is_set():
-                batch_idx = claim_next_batch(owner)
-                if batch_idx is None:
-                    break
-                WORKER_BATCH_CONTEXT[worker_name] = batch_idx
-                i = (batch_idx - 1) * BATCH_SIZE
-                batch_urls = urls[i : i + BATCH_SIZE]
-                heartbeat_stop = threading.Event()
-
-                def heartbeat_loop():
-                    while not heartbeat_stop.wait(QUEUE_HEARTBEAT_SECONDS):
-                        try:
-                            heartbeat_batch(batch_idx, owner)
-                        except Exception as hb_err:
-                            print(f"[{owner}] ⚠️ heartbeat failed for batch {batch_idx}: {hb_err}")
-
-                heartbeat_thread = threading.Thread(
-                    target=heartbeat_loop,
-                    name=f"{worker_name}-heartbeat",
-                    daemon=True,
-                )
-                heartbeat_thread.start()
-                try:
-                    inserted = process_one_batch(
-                        batch_idx=batch_idx,
-                        total_batches=total_batches,
-                        batch_urls=batch_urls,
-                        valid_companies=valid_companies,
-                        dst_col=dst_col,
-                        stuck_urls=stuck_urls,
-                        stuck_urls_lock=stuck_urls_lock,
-                    )
-                    with total_insert_lock:
-                        total_inserted += inserted
-                    mark_batch_done(batch_idx)
-                    with progress_lock:
-                        progress_state["scanned_files"] += len(batch_urls)
-                        progress_state["done_batches"] += 1
-                        pct = (progress_state["scanned_files"] / total_files * 100) if total_files else 0
-                        print(
-                            f"[{owner}] 📈 Global progress: "
-                            f"batches={progress_state['done_batches']}/{total_batches}, "
-                            f"files={progress_state['scanned_files']}/{total_files} ({pct:.2f}%)"
-                        )
-                except Exception as e:
-                    print(f"❌ failed on batch {batch_idx}: {e}")
-                    # 解释器退出阶段会触发该错误，避免误标失败并继续调度
-                    if "interpreter shutdown" in str(e).lower():
-                        _mark_shutdown(f"{owner} got interpreter shutdown")
-                        try:
-                            requeue_batch(batch_idx, f"shutdown_requeue: {e}")
-                            print(f"🔁 requeued batch {batch_idx} to pending")
-                        except Exception as requeue_err:
-                            print(f"⚠️ requeue failed for batch {batch_idx}: {requeue_err}")
-                        print("⚠️ interpreter is shutting down, stop worker loop")
-                        break
-                    mark_batch_failed(batch_idx, e)
-                finally:
-                    heartbeat_stop.set()
-                    heartbeat_thread.join(timeout=1)
-                    WORKER_BATCH_CONTEXT.pop(worker_name, None)
-            print("✅ finished.")
+        # 用 multiprocessing.Event 替换模块级 threading.Event，让子进程共享
+        mp_shutdown = multiprocessing.Event()
+        SHUTDOWN_EVENT = mp_shutdown  # 主进程的 _mark_shutdown 也用这个
 
         workers = []
         for wid in range(1, BATCH_WORKERS + 1):
-            t = threading.Thread(target=worker_loop, args=(wid,))
-            workers.append(t)
-            t.start()
+            p = multiprocessing.Process(
+                target=_run_batch_worker,
+                args=(wid, mp_shutdown, urls, valid_companies, total_batches, stuck_urls),
+                name=f"{HOST_ID}-worker{wid}",
+                daemon=False,
+            )
+            workers.append(p)
+            p.start()
         try:
-            for t in workers:
-                t.join()
+            for p in workers:
+                p.join()
         except KeyboardInterrupt:
             _mark_shutdown("KeyboardInterrupt in main join")
-            for t in workers:
-                t.join(timeout=5)
+            for p in workers:
+                p.join(timeout=5)
     else:
         for i in range(0, len(urls), BATCH_SIZE):
             batch_idx = (i // BATCH_SIZE) + 1
