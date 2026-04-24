@@ -41,8 +41,11 @@ RESCORE_DATA_QUALITY = [q.strip() for q in os.getenv("SLM_RESCORE_DATA_QUALITY",
 RESCORE_FORCE = os.getenv("SLM_RESCORE_FORCE", "false").lower() == "true"
 RESCORE_CONTENT_CHARS = int(os.getenv("SLM_RESCORE_CONTENT_CHARS", "3000"))
 RESCORE_SLEEP_MS = int(os.getenv("SLM_RESCORE_SLEEP_MS", "0"))
+SLM_MODELS = [m.strip() for m in os.getenv("SLM_MODELS", "").split(",") if m.strip()]
 
 _thread_local = threading.local()
+_thread_counter = 0
+_thread_counter_lock = threading.Lock()
 
 
 def get_client() -> MongoClient:
@@ -52,7 +55,15 @@ def get_client() -> MongoClient:
 def get_slm() -> SLMFilter:
     slm = getattr(_thread_local, "slm", None)
     if slm is None:
-        slm = SLMFilter(enabled=True)
+        if SLM_MODELS:
+            global _thread_counter
+            with _thread_counter_lock:
+                idx = _thread_counter % len(SLM_MODELS)
+                _thread_counter += 1
+            model = SLM_MODELS[idx]
+            slm = SLMFilter(enabled=True, model=model)
+        else:
+            slm = SLMFilter(enabled=True)
         _thread_local.slm = slm
     return slm
 
@@ -147,16 +158,19 @@ def run() -> None:
 
     total_query = build_query()
     total_to_process = col.count_documents(total_query)
+    already_done = col.count_documents({RESCORE_FIELD: {"$exists": True}})
+    grand_total = total_to_process + already_done
+    models_info = ",".join(SLM_MODELS) if SLM_MODELS else os.getenv("SLM_MODEL", "default")
     print(f"=== SLM relevance rescore start ===")
-    print(f"collection={COLLECTION} field={RESCORE_FIELD} version={RESCORE_VERSION}")
-    print(f"workers={RESCORE_WORKERS} batch_size={RESCORE_BATCH_SIZE} limit={RESCORE_LIMIT or 'ALL'}")
-    print(f"sleep_ms={RESCORE_SLEEP_MS}")
-    print(f"pending_docs={total_to_process:,}")
+    print(f"collection={COLLECTION}  field={RESCORE_FIELD}  version={RESCORE_VERSION}")
+    print(f"workers={RESCORE_WORKERS}  batch={RESCORE_BATCH_SIZE}  models={models_info}")
+    print(f"grand_total={grand_total:,}  already_done={already_done:,}  pending={total_to_process:,}")
 
     processed = 0
     relevant_yes = 0
     relevant_no = 0
     last_id: ObjectId | None = None
+    t_start = time.time()
 
     with ThreadPoolExecutor(max_workers=RESCORE_WORKERS, thread_name_prefix="slm-rescore") as executor:
         while True:
@@ -176,9 +190,16 @@ def run() -> None:
                     relevant_yes += int(row["relevant"])
                     relevant_no += int(not row["relevant"])
                     if processed % RESCORE_PROGRESS_EVERY == 0:
+                        elapsed = time.time() - t_start
+                        rate = processed / elapsed if elapsed > 0 else 0
+                        remaining = total_to_process - processed
+                        eta_s = int(remaining / rate) if rate > 0 else 0
+                        eta_str = f"{eta_s//3600}h{eta_s%3600//60}m" if eta_s >= 60 else f"{eta_s}s"
                         print(
-                            f"processed={processed:,} yes={relevant_yes:,} no={relevant_no:,} "
-                            f"yes_rate={(relevant_yes / processed * 100):.1f}%"
+                            f"[{processed:,}/{total_to_process:,}] "
+                            f"yes={relevant_yes:,} no={relevant_no:,} "
+                            f"yes_rate={(relevant_yes/processed*100):.1f}% "
+                            f"rate={rate:.1f}/s  ETA={eta_str}"
                         )
                     if RESCORE_LIMIT and processed >= RESCORE_LIMIT:
                         break

@@ -517,3 +517,209 @@ improvement (Ridge `60d` IC: `0.073` → `0.121`).
 The signal looks real but the universe is too small to confirm it with
 confidence. Universe expansion is the gating step before any further
 research investment makes sense.
+
+---
+
+# Stage 5. Engineering Extensions (post-research)
+
+Goal: after the research stages above produce a validated signal on a
+50+ symbol universe, harden the system into a production-quality full-stack
+showcase. These items are intentionally scoped to exercise three skill
+areas — **Java backend**, **data engineering**, and **AI/ML engineering** —
+so the project becomes a multi-role interview artifact.
+
+Do not start these until:
+- universe is expanded to 50+ symbols
+- year-stability analysis is complete
+- at least one signal has persistent positive excess return
+
+## 5.1 Java Backend Track
+
+### 5.1.1 Event-driven signal distribution (Kafka)
+- Spring Boot microservice publishes daily signals to a Kafka topic
+- Subscribers: UI push, alerting, risk control, audit log
+- Requirements: idempotent consumers, dead-letter queue, schema registry
+- Deliverables:
+  - `quant_signal_publisher` service
+  - Kafka broker + schema registry in docker-compose
+  - consumer reference implementations
+- Resume framing:
+  *"Designed event-driven signal distribution system using Kafka,
+  supporting 40+ symbols with sub-second latency and idempotent consumers."*
+
+### 5.1.2 Backtest orchestration API
+- REST endpoint to submit backtest jobs → async worker → WebSocket push
+  results
+- Resilience4j circuit breakers, Bucket4j rate limiting, Redis result cache
+- Keycloak JWT for auth, role-based access (researcher vs admin)
+- Deliverables:
+  - new endpoints under `quant_api`
+  - async job queue (RabbitMQ, already present)
+  - WebSocket progress stream
+- Resume framing:
+  *"Built async backtest orchestration service with circuit breakers,
+  rate limiting, and real-time result streaming over WebSocket."*
+
+### 5.1.3 Admin dashboard backend
+- CRUD for: stock universe, job schedules, backtest experiments,
+  model versions
+- Audit log of every mutation
+- Expand `quant_ui` with admin views
+- Resume framing:
+  *"Implemented admin control plane with auditable CRUD for universe,
+  scheduling, and model version management."*
+
+## 5.2 Data Engineering Track
+
+### 5.2.1 Airflow orchestration (replace `scheduler/task.py`)
+- Migrate the current monolithic scheduler to Airflow DAGs
+- One DAG per domain: news ingest, price history, feature build,
+  backtest, model refresh
+- Backfill support, SLA monitoring, retry policies
+- Deliverables:
+  - `airflow/dags/` directory
+  - docker-compose service for Airflow webserver + scheduler
+- Resume framing:
+  *"Migrated monolithic scheduler to Airflow DAGs orchestrating 15+
+  daily ETL jobs with backfill, SLA, and retry policies."*
+
+### 5.2.2 Streaming news pipeline (Kafka + Flink)
+- Replace batch GDELT collector with streaming ingest
+- Flink jobs: dedup → content extraction → SLM relevance → fan-out to
+  MongoDB (raw) and Qdrant (embeddings)
+- Exactly-once semantics where possible
+- Deliverables:
+  - Flink job modules
+  - Kafka topic design doc
+- Resume framing:
+  *"Built streaming news ingestion pipeline with Kafka + Flink
+  processing 1M+ articles with exactly-once semantics."*
+
+### 5.2.3 MLflow experiment tracking
+- Every backtest + model training run logged to MLflow
+- Parameters, metrics, artifacts, model registry
+- Deliverables:
+  - MLflow server in docker-compose (Postgres backend)
+  - wrapper in `research/` scripts to log runs
+- Resume framing:
+  *"Implemented experiment tracking with MLflow, managing 100+ backtest
+  runs and model versions across Ridge / HistGB / ensemble baselines."*
+
+### 5.2.4 dbt transformations
+- Model the MySQL / MongoDB feature derivations as dbt models
+- Lineage graphs, schema tests, documentation
+- Deliverables:
+  - `dbt_project/` with staging / intermediate / mart layers
+- Resume framing:
+  *"Introduced dbt for data transformations, providing lineage graphs,
+  automated tests, and self-documenting feature logic."*
+
+## 5.3 AI / ML Engineering Track
+
+### 5.3.1 RAG news search system
+- Qdrant already deployed for Dify — add a second collection for
+  news article embeddings
+- Service: `/search?q=NVIDIA earnings beat` → semantic recall + LLM summary
+- Embedding model: `text-embedding-nomic-embed-text-v1.5` (already in
+  LM Studio)
+- Deliverables:
+  - embedding batch job for news_articles_company_matched_v2
+  - FastAPI / Spring search service
+  - simple UI search page
+- Resume framing:
+  *"Built RAG system over 1M+ financial news articles using Qdrant
+  and local LLM, supporting semantic search and summarization."*
+
+### 5.3.2 Multi-agent research assistant (LangGraph)
+- Expand the existing `langchain-agent` container into a multi-agent graph:
+  - data agent: pulls relevant news / prices / earnings
+  - analysis agent: extracts events, generates hypotheses
+  - strategy agent: proposes factor / portfolio adjustments
+  - risk agent: validates constraints
+- Orchestrated with LangGraph (stateful, branching)
+- Deliverables:
+  - `quant_langchain/` extension with agent graph
+  - demo UI or CLI
+- Resume framing:
+  *"Designed multi-agent financial research system using LangGraph with
+  specialized agents for news analysis, signal generation, and risk
+  assessment."*
+
+### 5.3.3 SLM fine-tuning for company-match
+- Use the v2 matched dataset as labeled training data
+- Fine-tune Qwen3.5-4B on the company-relevance task (LoRA)
+- Benchmark: base vs fine-tuned on held-out set
+- Target: +5% accuracy or -30% latency at equal accuracy
+- Deliverables:
+  - `research/finetune_slm.py` training script
+  - before/after benchmark report
+- Resume framing:
+  *"Fine-tuned Qwen3.5-4B with LoRA on 500K+ article classification
+  dataset, improving accuracy from X% to Y% and reducing inference
+  latency by Z%."*
+
+### 5.3.4 LLM-based feature generation
+- Use a larger LLM to generate enrichment features per article:
+  - sentiment (-1..+1)
+  - event type (earnings / product / M&A / regulation / macro)
+  - entity list (companies / people)
+- Store as additional fields in v2
+- Feed into feature pipeline as new daily aggregates
+- Deliverables:
+  - batch enrichment job
+  - 5-10 new daily features
+- Resume framing:
+  *"Added LLM-based feature extraction (sentiment, event type, entities)
+  to enrich 1M+ articles, contributing to a +X% lift in model IC."*
+
+## 5.4 Integration: End-to-End MLOps Showcase
+
+Single flagship deliverable that ties the three tracks together:
+
+```
+Kafka (news) → Flink (clean + SLM) → Feature Store
+  → Model Inference API (Spring Boot) → Kafka (signals)
+  → UI + Alerts + Audit
+  → Prometheus / Grafana / OpenTelemetry (monitoring)
+```
+
+This touches: event streaming, Java backend, ML inference, observability,
+cloud-native deployment — interview-ready for backend, data engineer,
+and AI / ML engineer roles simultaneously.
+
+Deliverables:
+- architecture diagram (`docs/architecture.md`)
+- all pieces deployable via a single `docker-compose up`
+- README walkthrough of the full signal lifecycle
+
+## 5.5 Execution Order (Stage 5)
+
+Recommended build order, each item ~1-2 weeks:
+
+1. **5.3.1 RAG news search** — quickest AI win, reuses existing Qdrant
+2. **5.2.1 Airflow migration** — immediate data-engineering credential
+3. **5.2.3 MLflow tracking** — low effort, high resume value
+4. **5.1.1 Kafka signal publisher** — core event-driven piece
+5. **5.3.2 Multi-agent system** — deepest AI showcase
+6. **5.2.2 Flink streaming** — headline data-engineering item
+7. **5.3.3 SLM fine-tuning** — after enough v2 data accumulates
+8. **5.4 End-to-end integration** — final polish
+
+## 5.6 Resume Skill Coverage Matrix
+
+| Skill                       | Covered by              |
+|-----------------------------|-------------------------|
+| Spring Boot microservices   | 5.1.1, 5.1.2, 5.1.3     |
+| Kafka / event-driven        | 5.1.1, 5.2.2, 5.4       |
+| Resilience patterns         | 5.1.2                   |
+| WebSocket / real-time       | 5.1.2                   |
+| Airflow / orchestration     | 5.2.1                   |
+| Flink / stream processing   | 5.2.2                   |
+| MLflow / experiment tracking| 5.2.3                   |
+| dbt / data modeling         | 5.2.4                   |
+| RAG / vector search         | 5.3.1                   |
+| LangGraph / multi-agent     | 5.3.2                   |
+| LLM fine-tuning (LoRA)      | 5.3.3                   |
+| LLM inference at scale      | 5.3.4, existing pipeline|
+| Observability / monitoring  | 5.4                     |
+| Docker / K8s deployment     | 5.4                     |

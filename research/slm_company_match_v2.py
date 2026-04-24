@@ -63,6 +63,25 @@ SLM_MODELS = [m.strip() for m in os.getenv("SLM_MODELS", "").split(",") if m.str
 SCAN_OTHER = os.getenv("V2_SCAN_OTHER", "true").lower() == "true"
 CONTENT_CHARS = int(os.getenv("V2_CONTENT_CHARS", "1500"))
 
+# Multi-endpoint support: SLM_ENDPOINTS="url1|model1|workers1,url2|model2|workers2"
+# e.g. "http://192.168.31.226:1234/v1|qwen3.5-4b|15,http://127.0.0.1:1234/v1|qwen3-4b|5"
+def _parse_endpoints() -> list[tuple[str, str]]:
+    raw = os.getenv("SLM_ENDPOINTS", "").strip()
+    if not raw:
+        return []
+    assignments: list[tuple[str, str]] = []
+    for entry in raw.split(","):
+        parts = entry.strip().split("|")
+        if len(parts) < 2:
+            continue
+        url = parts[0].strip().rstrip("/")
+        model = parts[1].strip()
+        workers = int(parts[2].strip()) if len(parts) >= 3 else 1
+        assignments.extend([(url, model)] * workers)
+    return assignments
+
+_ENDPOINT_ASSIGNMENTS = _parse_endpoints()
+
 # 40-stock universe: symbol → (company_name, scan_keywords)
 COMPANY_UNIVERSE: dict[str, tuple[str, list[str]]] = {
     "AAPL":  ("Apple Inc.",                 ["Apple", "iPhone", "iPad", "MacBook", "Tim Cook"]),
@@ -131,12 +150,15 @@ def get_client() -> MongoClient:
 def get_slm() -> SLMFilter:
     slm = getattr(_thread_local, "slm", None)
     if slm is None:
-        if SLM_MODELS:
-            global _thread_counter
-            with _thread_counter_lock:
-                idx = _thread_counter % len(SLM_MODELS)
-                _thread_counter += 1
-            slm = SLMFilter(enabled=True, model=SLM_MODELS[idx])
+        global _thread_counter
+        with _thread_counter_lock:
+            idx = _thread_counter
+            _thread_counter += 1
+        if _ENDPOINT_ASSIGNMENTS:
+            url, model = _ENDPOINT_ASSIGNMENTS[idx % len(_ENDPOINT_ASSIGNMENTS)]
+            slm = SLMFilter(api_url=url, model=model, enabled=True)
+        elif SLM_MODELS:
+            slm = SLMFilter(enabled=True, model=SLM_MODELS[idx % len(SLM_MODELS)])
         else:
             slm = SLMFilter(enabled=True)
         _thread_local.slm = slm
@@ -337,13 +359,23 @@ def run() -> None:
     reassigned = int(progress_doc.get("reassigned", 0)) if progress_doc else 0
     rejected = int(progress_doc.get("rejected", 0)) if progress_doc else 0
     title_only = int(progress_doc.get("titleOnly", 0)) if progress_doc else 0
+    prior_processed = processed  # articles done before this session
 
     total_pending = source_col.count_documents(build_query(last_id))
-    models_info = ",".join(SLM_MODELS) if SLM_MODELS else os.getenv("SLM_MODEL", "default")
+    total_all = prior_processed + total_pending  # grand total across all sessions
+    if _ENDPOINT_ASSIGNMENTS:
+        from collections import Counter
+        ep_counts = Counter(_ENDPOINT_ASSIGNMENTS)
+        models_info = "  ".join(f"{m}@{u.split('//')[1].split('/')[0]}×{n}" for (u, m), n in ep_counts.items())
+    elif SLM_MODELS:
+        models_info = ",".join(SLM_MODELS)
+    else:
+        models_info = os.getenv("SLM_MODEL", "default")
 
     print("=== SLM Company Match v2 ===")
     print(f"source={SOURCE_COLLECTION}  target={TARGET_COLLECTION}")
-    print(f"workers={WORKERS}  batch={BATCH_SIZE}  models={models_info}  scan_other={SCAN_OTHER}")
+    print(f"workers={WORKERS}  batch={BATCH_SIZE}  scan_other={SCAN_OTHER}")
+    print(f"models={models_info}")
     print(f"pending={total_pending:,}  prior_processed={processed:,}")
     if progress_doc:
         print(f"resuming from last_id={last_id}")
@@ -386,13 +418,17 @@ def run() -> None:
                     if processed % PROGRESS_EVERY == 0:
                         elapsed = time.time() - t_start
                         rate = processed / elapsed if elapsed > 0 else 0
-                        remaining = total_pending - processed
+                        session_done = processed - prior_processed
+                        rate = session_done / elapsed if elapsed > 0 else 0
+                        remaining = total_pending - session_done
                         eta_s = int(remaining / rate) if rate > 0 else 0
                         eta_str = f"{eta_s//3600}h{eta_s%3600//60}m" if eta_s >= 60 else f"{eta_s}s"
+                        el_s = int(elapsed)
+                        el_str = f"{el_s//3600}h{el_s%3600//60}m{el_s%60}s" if el_s >= 3600 else f"{el_s//60}m{el_s%60}s"
                         print(
-                            f"[{processed:,}/{total_pending:,}] "
+                            f"[{processed:,}/{total_all:,}] "
                             f"match={matched:,} reassign={reassigned:,} title_only={title_only:,} reject={rejected:,} "
-                            f"rate={rate:.1f}/s  ETA={eta_str}"
+                            f"rate={rate:.1f}/s  elapsed={el_str}  ETA={eta_str}"
                         )
 
                 if LIMIT and processed >= LIMIT:

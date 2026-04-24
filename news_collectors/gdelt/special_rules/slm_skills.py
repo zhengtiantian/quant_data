@@ -42,7 +42,7 @@ class CompanyMatchSkill(BaseSLMSkill):
 
     def build_prompt(self, context: SkillContext) -> str:
         display_name = self.SIMPLE_NAMES.get(context.company_name, context.company_name)
-        content_preview = " ".join((context.content or "").split())[:1200]
+        content_preview = " ".join((context.content or "").split())[:600]
         trigger_line = f"Trigger Keywords: {context.trigger_keywords}\n" if context.trigger_keywords else ""
 
         return (
