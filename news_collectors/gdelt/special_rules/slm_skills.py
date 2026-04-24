@@ -42,18 +42,19 @@ class CompanyMatchSkill(BaseSLMSkill):
 
     def build_prompt(self, context: SkillContext) -> str:
         display_name = self.SIMPLE_NAMES.get(context.company_name, context.company_name)
-        content_preview = " ".join((context.content or "").split())[:320]
+        content_preview = " ".join((context.content or "").split())[:1200]
         trigger_line = f"Trigger Keywords: {context.trigger_keywords}\n" if context.trigger_keywords else ""
 
         return (
-            "Binary classification task.\n"
+            "Binary relevance task.\n"
             f"Company: {display_name} ({context.symbol})\n"
             f"Title: {context.title}\n"
             f"Body: {content_preview}\n"
             f"{trigger_line}"
-            "Answer YES only if the article is primarily about the company, its business, products, policies, earnings, major product updates, or company-controlled platforms.\n"
-            "Answer NO if the company/platform is only incidental, if this is a product listing/accessory page, a generic post on a platform, or unrelated content.\n"
+            "Answer YES if the article substantially discusses the company, including: its products/services/features, earnings, business strategy, executives, partnerships, platform content it produces, or company-specific news.\n"
+            "Answer NO only if the company or its products are a minor background mention, or the article is about something entirely unrelated.\n"
             "Output exactly one token: YES or NO.\n"
+            "<think>\n\n</think>\n"
             "Answer:"
         )
 

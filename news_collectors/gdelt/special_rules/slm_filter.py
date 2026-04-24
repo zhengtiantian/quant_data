@@ -172,10 +172,10 @@ class SLMFilter:
                         )
                     else:
                         response = requests.post(
-                            f"{self.api_url}/chat/completions",
+                            f"{self.api_url}/completions",
                             json={
                                 "model": self.model,
-                                "messages": [{"role": "user", "content": f"/no_think\n{prompt}"}],
+                                "prompt": prompt,
                                 "max_tokens": 6,
                                 "temperature": 0,
                             },
@@ -252,6 +252,10 @@ class SLMFilter:
                 choices = data.get("choices", [])
                 if not choices:
                     return ""
+                # /completions returns text; /chat/completions returns message.content
+                text = choices[0].get("text")
+                if text is not None:
+                    return normalize(text)
                 message = choices[0].get("message", {})
                 answer = normalize(message.get("content") or "")
                 if answer:
