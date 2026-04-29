@@ -93,39 +93,41 @@ def walk_forward_train_eval(df: pd.DataFrame, features: list[str], target: str) 
     print(f"Target: {target}")
     print(f"Features: {features}")
     
+    # Collect per-year predictions from each model for ensemble
+    model_year_preds: dict[str, dict[int, pd.DataFrame]] = {m: {} for m in models}
+
     for model_name, model in models.items():
         print(f"\nModel: {model_name}")
         print(f"{'Year':>6} | {'Train Obs':>10} | {'Test Obs':>10} | {'Rank IC':>10} | {'Top 5 Ex Ret':>15}")
         print("-" * 65)
-        
+
         all_preds = []
         for test_year in years:
             if test_year <= years[0] + 1:
-                # Need at least 2 years of training data to start
-                continue 
-            
-            # Walk-forward: train on everything before test_year
+                continue
+
             train = df[df["year"] < test_year]
             test = df[df["year"] == test_year]
-            
+
             if len(train) < 500 or len(test) < 100:
                 continue
-                
+
             model.fit(train[features], train[target])
             preds = model.predict(test[features])
-            
+
             test_copy = test.copy()
             test_copy["pred"] = preds
             all_preds.append(test_copy)
-            
+            model_year_preds[model_name][test_year] = test_copy
+
             res = evaluate_predictions(test_copy, target, "pred")
             ic = res["Rank IC"]
             topN = res["Top N Mean Ex Ret"]
-            
+
             ic_str = f"{ic:.4f}" if pd.notna(ic) else "n/a"
             top_str = f"{topN:.2%}" if pd.notna(topN) else "n/a"
             print(f"{test_year:>6} | {len(train):>10} | {len(test):>10} | {ic_str:>10} | {top_str:>15}")
-            
+
         if all_preds:
             total_test = pd.concat(all_preds)
             res = evaluate_predictions(total_test, target, "pred")
@@ -135,6 +137,36 @@ def walk_forward_train_eval(df: pd.DataFrame, features: list[str], target: str) 
             top_str = f"{topN:.2%}" if pd.notna(topN) else "n/a"
             print("-" * 65)
             print(f"{'ALL':>6} | {'-':>10} | {len(total_test):>10} | {ic_str:>10} | {top_str:>15}")
+
+    # Ensemble: average predictions from Ridge and LightGBM
+    model_names = list(models.keys())
+    common_years = set(model_year_preds[model_names[0]]) & set(model_year_preds[model_names[1]])
+    if common_years:
+        print(f"\nModel: Ensemble (Ridge + LightGBM avg)")
+        print(f"{'Year':>6} | {'Train Obs':>10} | {'Test Obs':>10} | {'Rank IC':>10} | {'Top 5 Ex Ret':>15}")
+        print("-" * 65)
+        ensemble_all = []
+        for test_year in sorted(common_years):
+            df_a = model_year_preds[model_names[0]][test_year]
+            df_b = model_year_preds[model_names[1]][test_year]
+            merged = df_a.copy()
+            merged["pred"] = (df_a["pred"].values + df_b["pred"].values) / 2.0
+            ensemble_all.append(merged)
+            res = evaluate_predictions(merged, target, "pred")
+            ic = res["Rank IC"]
+            topN = res["Top N Mean Ex Ret"]
+            train_size = len(df[df["year"] < test_year])
+            ic_str = f"{ic:.4f}" if pd.notna(ic) else "n/a"
+            top_str = f"{topN:.2%}" if pd.notna(topN) else "n/a"
+            print(f"{test_year:>6} | {train_size:>10} | {len(merged):>10} | {ic_str:>10} | {top_str:>15}")
+        total = pd.concat(ensemble_all)
+        res = evaluate_predictions(total, target, "pred")
+        ic = res["Rank IC"]
+        topN = res["Top N Mean Ex Ret"]
+        ic_str = f"{ic:.4f}" if pd.notna(ic) else "n/a"
+        top_str = f"{topN:.2%}" if pd.notna(topN) else "n/a"
+        print("-" * 65)
+        print(f"{'ALL':>6} | {'-':>10} | {len(total):>10} | {ic_str:>10} | {top_str:>15}")
 
 
 def main():
@@ -198,6 +230,13 @@ def main():
         # drift + surprise
         "is_post_positive_surprise_20d",
         "is_post_negative_surprise_20d",
+        # layer 3: surprise magnitude
+        "surprise_bucket",
+        # layer 3: news quality × earnings interaction
+        "full_ratio_x_post_positive",
+        "quality_score_x_post_negative",
+        # layer 3: earnings recency decay
+        "earnings_recency_weight",
         # sector
         "sector",
     ]

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import math
 import os
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -35,6 +36,8 @@ BENCHMARK_SYMBOLS = [
     if symbol.strip()
 ]
 PRIMARY_BENCHMARK = os.getenv("FEATURE_PRIMARY_BENCHMARK", "QQQ").strip().upper()
+
+FORWARD_HORIZONS = [5, 10, 15, 20, 30, 45, 60]
 
 FEATURE_REBUILD_ALL = os.getenv("FEATURE_REBUILD_ALL", "false").lower() == "true"
 FEATURE_LOOKBACK_DAYS = int(os.getenv("FEATURE_LOOKBACK_DAYS", "180"))
@@ -160,6 +163,7 @@ def load_news_frame() -> pd.DataFrame:
             "collectedAt": 1,
             "data_quality": 1,
             "content_length": 1,
+            "content": 1,
             "url": 1,
             "note": 1,
             "source": 1,
@@ -184,13 +188,14 @@ def load_news_frame() -> pd.DataFrame:
             source_platform = source.get("platform") or "unknown"
             source_name = source.get("name") or source_platform
         note = doc.get("note") or ""
+        content_length = int(doc.get("content_length") or len(doc.get("content") or ""))
         rows.append(
             {
                 "symbol": doc.get("symbol"),
                 "name": doc.get("name"),
                 "date": date_ts,
                 "data_quality": doc.get("data_quality") or "unknown",
-                "content_length": int(doc.get("content_length") or 0),
+                "content_length": content_length,
                 "url": doc.get("url"),
                 "source_platform": source_platform,
                 "source_name": source_name,
@@ -348,13 +353,12 @@ def build_benchmark_return_maps(price_df: pd.DataFrame) -> dict[str, pd.DataFram
                 return pd.NA
             return float(closes[pos + offset] / closes[pos] - 1.0)
 
-        bench[f"{symbol.lower()}_ret_5d"] = [_forward_return(i, 5) for i in range(len(bench))]
-        bench[f"{symbol.lower()}_ret_20d"] = [_forward_return(i, 20) for i in range(len(bench))]
-        bench[f"{symbol.lower()}_ret_60d"] = [_forward_return(i, 60) for i in range(len(bench))]
+        for h in FORWARD_HORIZONS:
+            bench[f"{symbol.lower()}_ret_{h}d"] = [_forward_return(i, h) for i in range(len(bench))]
 
         bench["trade_date_key"] = bench["trade_date"].dt.strftime("%Y-%m-%d")
         benchmark_maps[symbol] = bench.set_index("trade_date_key")[
-            [f"{symbol.lower()}_ret_5d", f"{symbol.lower()}_ret_20d", f"{symbol.lower()}_ret_60d"]
+            [f"{symbol.lower()}_ret_{h}d" for h in FORWARD_HORIZONS]
         ]
 
     return benchmark_maps
@@ -364,25 +368,16 @@ def attach_price_labels(feature_df: pd.DataFrame, price_df: pd.DataFrame) -> pd.
     benchmark_maps = build_benchmark_return_maps(price_df)
     benchmark_columns = []
     for symbol in BENCHMARK_SYMBOLS:
-        benchmark_columns.extend(
-            [f"{symbol.lower()}_ret_5d", f"{symbol.lower()}_ret_20d", f"{symbol.lower()}_ret_60d"]
-        )
-    excess_columns = [
-        "benchmark_symbol",
-        "benchmark_ret_5d",
-        "benchmark_ret_20d",
-        "benchmark_ret_60d",
-        "excess_ret_5d",
-        "excess_ret_20d",
-        "excess_ret_60d",
-    ]
+        benchmark_columns.extend([f"{symbol.lower()}_ret_{h}d" for h in FORWARD_HORIZONS])
+    excess_columns = ["benchmark_symbol"] + \
+        [f"benchmark_ret_{h}d" for h in FORWARD_HORIZONS] + \
+        [f"excess_ret_{h}d" for h in FORWARD_HORIZONS]
 
     if feature_df.empty or price_df.empty:
         feature_df["trade_date"] = pd.NaT
         feature_df["close"] = pd.NA
-        feature_df["future_ret_5d"] = pd.NA
-        feature_df["future_ret_20d"] = pd.NA
-        feature_df["future_ret_60d"] = pd.NA
+        for h in FORWARD_HORIZONS:
+            feature_df[f"future_ret_{h}d"] = pd.NA
         for column in benchmark_columns + excess_columns:
             feature_df[column] = pd.NA
         return feature_df
@@ -403,9 +398,8 @@ def attach_price_labels(feature_df: pd.DataFrame, price_df: pd.DataFrame) -> pd.
         if prices.empty:
             frame["trade_date"] = pd.NaT
             frame["close"] = pd.NA
-            frame["future_ret_5d"] = pd.NA
-            frame["future_ret_20d"] = pd.NA
-            frame["future_ret_60d"] = pd.NA
+            for h in FORWARD_HORIZONS:
+                frame[f"future_ret_{h}d"] = pd.NA
             frame["past_ret_5d"] = pd.NA
             frame["past_ret_20d"] = pd.NA
             frame["past_ret_60d"] = pd.NA
@@ -424,9 +418,7 @@ def attach_price_labels(feature_df: pd.DataFrame, price_df: pd.DataFrame) -> pd.
 
         mapped_trade_dates = []
         mapped_closes = []
-        ret_5d = []
-        ret_20d = []
-        ret_60d = []
+        ret_by_horizon: dict[int, list] = {h: [] for h in FORWARD_HORIZONS}
         past_ret_5d = []
         past_ret_20d = []
         past_ret_60d = []
@@ -447,9 +439,8 @@ def attach_price_labels(feature_df: pd.DataFrame, price_df: pd.DataFrame) -> pd.
             if pos >= len(prices):
                 mapped_trade_dates.append(pd.NaT)
                 mapped_closes.append(pd.NA)
-                ret_5d.append(pd.NA)
-                ret_20d.append(pd.NA)
-                ret_60d.append(pd.NA)
+                for h in FORWARD_HORIZONS:
+                    ret_by_horizon[h].append(pd.NA)
                 past_ret_5d.append(pd.NA)
                 past_ret_20d.append(pd.NA)
                 past_ret_60d.append(pd.NA)
@@ -463,15 +454,12 @@ def attach_price_labels(feature_df: pd.DataFrame, price_df: pd.DataFrame) -> pd.
             mapped_trade_dates.append(trade_dates[pos])
             mapped_closes.append(close_now)
 
-            def _forward_return(offset: int):
-                if pos + offset >= len(prices):
-                    return pd.NA
-                return float(closes[pos + offset] / close_now - 1.0)
+            for h in FORWARD_HORIZONS:
+                if pos + h >= len(prices):
+                    ret_by_horizon[h].append(pd.NA)
+                else:
+                    ret_by_horizon[h].append(float(closes[pos + h] / close_now - 1.0))
 
-            ret_5d.append(_forward_return(5))
-            ret_20d.append(_forward_return(20))
-            ret_60d.append(_forward_return(60))
-            
             past_ret_5d.append(past_ret_5_arr[pos])
             past_ret_20d.append(past_ret_20_arr[pos])
             past_ret_60d.append(past_ret_60_arr[pos])
@@ -482,9 +470,8 @@ def attach_price_labels(feature_df: pd.DataFrame, price_df: pd.DataFrame) -> pd.
 
         frame["trade_date"] = mapped_trade_dates
         frame["close"] = mapped_closes
-        frame["future_ret_5d"] = ret_5d
-        frame["future_ret_20d"] = ret_20d
-        frame["future_ret_60d"] = ret_60d
+        for h in FORWARD_HORIZONS:
+            frame[f"future_ret_{h}d"] = ret_by_horizon[h]
         frame["past_ret_5d"] = past_ret_5d
         frame["past_ret_20d"] = past_ret_20d
         frame["past_ret_60d"] = past_ret_60d
@@ -497,32 +484,60 @@ def attach_price_labels(feature_df: pd.DataFrame, price_df: pd.DataFrame) -> pd.
             prefix = bench_symbol.lower()
             mapped_keys = [ts.strftime("%Y-%m-%d") if pd.notna(ts) else None for ts in frame["trade_date"]]
             mapped = bench_frame.reindex(pd.Index(mapped_keys))
-            frame[f"{prefix}_ret_5d"] = mapped[f"{prefix}_ret_5d"].to_list()
-            frame[f"{prefix}_ret_20d"] = mapped[f"{prefix}_ret_20d"].to_list()
-            frame[f"{prefix}_ret_60d"] = mapped[f"{prefix}_ret_60d"].to_list()
+            for h in FORWARD_HORIZONS:
+                frame[f"{prefix}_ret_{h}d"] = mapped[f"{prefix}_ret_{h}d"].to_list()
 
         benchmark_symbol = PRIMARY_BENCHMARK if PRIMARY_BENCHMARK in benchmark_maps else None
         if benchmark_symbol:
             prefix = benchmark_symbol.lower()
             frame["benchmark_symbol"] = benchmark_symbol
-            frame["benchmark_ret_5d"] = frame[f"{prefix}_ret_5d"]
-            frame["benchmark_ret_20d"] = frame[f"{prefix}_ret_20d"]
-            frame["benchmark_ret_60d"] = frame[f"{prefix}_ret_60d"]
-            frame["excess_ret_5d"] = frame["future_ret_5d"] - frame["benchmark_ret_5d"]
-            frame["excess_ret_20d"] = frame["future_ret_20d"] - frame["benchmark_ret_20d"]
-            frame["excess_ret_60d"] = frame["future_ret_60d"] - frame["benchmark_ret_60d"]
+            for h in FORWARD_HORIZONS:
+                frame[f"benchmark_ret_{h}d"] = frame[f"{prefix}_ret_{h}d"]
+                frame[f"excess_ret_{h}d"] = frame[f"future_ret_{h}d"] - frame[f"benchmark_ret_{h}d"]
         else:
             frame["benchmark_symbol"] = pd.NA
-            frame["benchmark_ret_5d"] = pd.NA
-            frame["benchmark_ret_20d"] = pd.NA
-            frame["benchmark_ret_60d"] = pd.NA
-            frame["excess_ret_5d"] = pd.NA
-            frame["excess_ret_20d"] = pd.NA
-            frame["excess_ret_60d"] = pd.NA
+            for h in FORWARD_HORIZONS:
+                frame[f"benchmark_ret_{h}d"] = pd.NA
+                frame[f"excess_ret_{h}d"] = pd.NA
 
         enriched_frames.append(frame)
 
     return pd.concat(enriched_frames, ignore_index=True)
+
+
+def add_quality_score(feature_df: pd.DataFrame) -> pd.DataFrame:
+    quality_components = {
+        "full_ratio": 1.0,
+        "unique_source_count": 1.0,
+        "avg_content_length": 1.0,
+        "extraction_failed_count": -1.0,
+        "news_burst_20d": 0.5,
+    }
+    result = feature_df.copy()
+    result["quality_score"] = 0.0
+    result["quality_component_count"] = 0
+
+    group_col = "trade_date" if "trade_date" in result.columns else "date"
+    for _, idx in result.groupby(group_col).groups.items():
+        group = result.loc[idx].copy()
+        score = pd.Series(0.0, index=group.index, dtype="float64")
+        count = pd.Series(0, index=group.index, dtype="int64")
+        for col, weight in quality_components.items():
+            if col not in group.columns:
+                continue
+            values = pd.to_numeric(group[col], errors="coerce")
+            valid = values.notna()
+            if valid.sum() == 0:
+                continue
+            ranked = values[valid].rank(method="average", pct=True)
+            score.loc[valid.index] += (ranked - 0.5) * weight
+            count.loc[valid.index] += 1
+        valid_count = count > 0
+        score.loc[valid_count] = score.loc[valid_count] / count.loc[valid_count]
+        score.loc[~valid_count] = pd.NA
+        result.loc[idx, "quality_score"] = score
+        result.loc[idx, "quality_component_count"] = count
+    return result
 
 
 def _bucket_days(days: int | None) -> int | None:
@@ -565,6 +580,13 @@ def attach_earnings_event_features(
         # new: drift + surprise
         "is_post_positive_surprise_20d",
         "is_post_negative_surprise_20d",
+        # layer 3: surprise magnitude buckets
+        "surprise_bucket",
+        # layer 3: news quality × earnings interaction
+        "full_ratio_x_post_positive",
+        "quality_score_x_post_negative",
+        # layer 3: earnings recency decay
+        "earnings_recency_weight",
     ]
     if feature_df.empty:
         for column in columns:
@@ -633,6 +655,10 @@ def attach_earnings_event_features(
         post_10d: list = []
         post_pos_surp: list = []
         post_neg_surp: list = []
+        surprise_bucket: list = []
+        full_ratio_x_post_positive: list = []
+        quality_score_x_post_negative: list = []
+        earnings_recency_weight: list = []
 
         for current_pos in current_positions:
             if current_pos >= len(trade_dates):
@@ -643,6 +669,8 @@ def attach_earnings_event_features(
                     days_to_bucket, days_since_bucket,
                     pre_10d, post_5d, post_10d,
                     post_pos_surp, post_neg_surp,
+                    surprise_bucket, full_ratio_x_post_positive,
+                    quality_score_x_post_negative, earnings_recency_weight,
                 ):
                     lst.append(pd.NA)
                 continue
@@ -687,6 +715,39 @@ def attach_earnings_event_features(
             post_pos_surp.append(int(is_post_20d and surp_valid and float(surp_pct) > 0))
             post_neg_surp.append(int(is_post_20d and surp_valid and float(surp_pct) < 0))
 
+            # Layer 3: surprise magnitude bucket
+            # -2=large miss(<-5%), -1=small miss(-5%~0), 1=small beat(0~5%), 2=large beat(>5%)
+            if surp_valid:
+                sp = float(surp_pct)
+                if sp < -5.0:
+                    sbucket = -2
+                elif sp < 0.0:
+                    sbucket = -1
+                elif sp <= 5.0:
+                    sbucket = 1
+                else:
+                    sbucket = 2
+            else:
+                sbucket = pd.NA
+            surprise_bucket.append(sbucket)
+
+            # Layer 3: news quality × earnings interaction
+            row_idx = len(surprise_bucket) - 1
+            fr_col = frame["full_ratio"].to_numpy() if "full_ratio" in frame.columns else None
+            qs_col = frame["quality_score"].to_numpy() if "quality_score" in frame.columns else None
+            fr = fr_col[row_idx] if fr_col is not None and row_idx < len(fr_col) else pd.NA
+            qs = qs_col[row_idx] if qs_col is not None and row_idx < len(qs_col) else pd.NA
+            is_pp20 = int(is_post_20d and surp_valid and float(surp_pct) > 0)
+            is_pn20 = int(is_post_20d and surp_valid and float(surp_pct) < 0)
+            full_ratio_x_post_positive.append(float(fr) * is_pp20 if pd.notna(fr) else pd.NA)
+            quality_score_x_post_negative.append(float(qs) * is_pn20 if pd.notna(qs) else pd.NA)
+
+            # Layer 3: earnings recency decay — exp(-days_since / 20)
+            if pd.notna(prev_gap):
+                earnings_recency_weight.append(float(math.exp(-int(prev_gap) / 20.0)))
+            else:
+                earnings_recency_weight.append(pd.NA)
+
         frame["days_to_earnings"] = days_to
         frame["days_since_earnings"] = days_since
         frame["is_earnings_window_5d"] = in_window
@@ -703,6 +764,10 @@ def attach_earnings_event_features(
         frame["is_post_earnings_10d"] = post_10d
         frame["is_post_positive_surprise_20d"] = post_pos_surp
         frame["is_post_negative_surprise_20d"] = post_neg_surp
+        frame["surprise_bucket"] = surprise_bucket
+        frame["full_ratio_x_post_positive"] = full_ratio_x_post_positive
+        frame["quality_score_x_post_negative"] = quality_score_x_post_negative
+        frame["earnings_recency_weight"] = earnings_recency_weight
         enriched_frames.append(frame)
 
     return pd.concat(enriched_frames, ignore_index=True)
@@ -743,6 +808,7 @@ def save_features(feature_df: pd.DataFrame) -> int:
             "title_only_count": int(row["title_only_count"]),
             "url_only_count": int(row["url_only_count"]),
             "full_ratio": float(row["full_ratio"]) if pd.notna(row["full_ratio"]) else None,
+            "quality_score": float(row["quality_score"]) if pd.notna(row.get("quality_score")) else None,
             "title_only_ratio": float(row["title_only_ratio"]) if pd.notna(row["title_only_ratio"]) else None,
             "avg_content_length": float(row["avg_content_length"]) if pd.notna(row["avg_content_length"]) else 0.0,
             "max_content_length": int(row["max_content_length"]) if pd.notna(row["max_content_length"]) else 0,
@@ -759,9 +825,6 @@ def save_features(feature_df: pd.DataFrame) -> int:
             "news_burst_20d": float(row["news_burst_20d"]) if pd.notna(row["news_burst_20d"]) else None,
             "trade_date": row["trade_date"].date().isoformat() if pd.notna(row["trade_date"]) else None,
             "close": float(row["close"]) if pd.notna(row["close"]) else None,
-            "future_ret_5d": float(row["future_ret_5d"]) if pd.notna(row["future_ret_5d"]) else None,
-            "future_ret_20d": float(row["future_ret_20d"]) if pd.notna(row["future_ret_20d"]) else None,
-            "future_ret_60d": float(row["future_ret_60d"]) if pd.notna(row["future_ret_60d"]) else None,
             "past_ret_5d": float(row["past_ret_5d"]) if pd.notna(row.get("past_ret_5d")) else None,
             "past_ret_20d": float(row["past_ret_20d"]) if pd.notna(row.get("past_ret_20d")) else None,
             "past_ret_60d": float(row["past_ret_60d"]) if pd.notna(row.get("past_ret_60d")) else None,
@@ -785,19 +848,21 @@ def save_features(feature_df: pd.DataFrame) -> int:
             "is_post_earnings_10d": int(row["is_post_earnings_10d"]) if pd.notna(row.get("is_post_earnings_10d")) else None,
             "is_post_positive_surprise_20d": int(row["is_post_positive_surprise_20d"]) if pd.notna(row.get("is_post_positive_surprise_20d")) else None,
             "is_post_negative_surprise_20d": int(row["is_post_negative_surprise_20d"]) if pd.notna(row.get("is_post_negative_surprise_20d")) else None,
+            "surprise_bucket": int(row["surprise_bucket"]) if pd.notna(row.get("surprise_bucket")) else None,
+            "full_ratio_x_post_positive": float(row["full_ratio_x_post_positive"]) if pd.notna(row.get("full_ratio_x_post_positive")) else None,
+            "quality_score_x_post_negative": float(row["quality_score_x_post_negative"]) if pd.notna(row.get("quality_score_x_post_negative")) else None,
+            "earnings_recency_weight": float(row["earnings_recency_weight"]) if pd.notna(row.get("earnings_recency_weight")) else None,
             "benchmark_symbol": row.get("benchmark_symbol") if pd.notna(row.get("benchmark_symbol")) else None,
-            "benchmark_ret_5d": float(row["benchmark_ret_5d"]) if pd.notna(row.get("benchmark_ret_5d")) else None,
-            "benchmark_ret_20d": float(row["benchmark_ret_20d"]) if pd.notna(row.get("benchmark_ret_20d")) else None,
-            "benchmark_ret_60d": float(row["benchmark_ret_60d"]) if pd.notna(row.get("benchmark_ret_60d")) else None,
-            "excess_ret_5d": float(row["excess_ret_5d"]) if pd.notna(row.get("excess_ret_5d")) else None,
-            "excess_ret_20d": float(row["excess_ret_20d"]) if pd.notna(row.get("excess_ret_20d")) else None,
-            "excess_ret_60d": float(row["excess_ret_60d"]) if pd.notna(row.get("excess_ret_60d")) else None,
             "builtAt": built_at,
         }
+        for h in FORWARD_HORIZONS:
+            record[f"future_ret_{h}d"] = float(row[f"future_ret_{h}d"]) if pd.notna(row.get(f"future_ret_{h}d")) else None
+            record[f"benchmark_ret_{h}d"] = float(row[f"benchmark_ret_{h}d"]) if pd.notna(row.get(f"benchmark_ret_{h}d")) else None
+            record[f"excess_ret_{h}d"] = float(row[f"excess_ret_{h}d"]) if pd.notna(row.get(f"excess_ret_{h}d")) else None
         for symbol in BENCHMARK_SYMBOLS:
             prefix = symbol.lower()
-            for horizon in (5, 20, 60):
-                key = f"{prefix}_ret_{horizon}d"
+            for h in FORWARD_HORIZONS:
+                key = f"{prefix}_ret_{h}d"
                 record[key] = float(row[key]) if pd.notna(row.get(key)) else None
         ops.append(
             UpdateOne(
@@ -829,6 +894,8 @@ def build_daily_symbol_features() -> int:
     print(f"Loaded {len(price_df):,} price rows")
 
     feature_df = attach_price_labels(feature_df, price_df)
+    feature_df = add_quality_score(feature_df)
+    print(f"Computed quality_score")
     earnings_df = load_earnings_frame()
     print(f"Loaded {len(earnings_df):,} earnings rows")
     feature_df = attach_earnings_event_features(feature_df, price_df, earnings_df)

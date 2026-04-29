@@ -167,6 +167,7 @@ def load_feature_frame(
         "article_count": 1,
         "news_burst_20d": 1,
         "full_ratio": 1,
+        "quality_score": 1,
         "unique_source_count": 1,
         "avg_content_length": 1,
         "extraction_failed_count": 1,
@@ -202,6 +203,10 @@ def load_feature_frame(
         "is_post_earnings_10d": 1,
         "is_post_positive_surprise_20d": 1,
         "is_post_negative_surprise_20d": 1,
+        "surprise_bucket": 1,
+        "full_ratio_x_post_positive": 1,
+        "quality_score_x_post_negative": 1,
+        "earnings_recency_weight": 1,
     }
     rows = list(coll.find(query, projection))
     if not rows:

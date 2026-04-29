@@ -447,6 +447,89 @@ Next modeling steps (do only after universe expansion):
    - convert to a pairwise ranking objective (LambdaRank or similar)
    - more directly aligned with the top-N portfolio construction goal
 
+## Stage 3.5 Event-Driven Strategy Research
+
+Goal: evolve the fixed-horizon model into a news event-driven strategy where
+signals trigger dynamic entry, hold, and exit decisions rather than fixed
+holding periods.
+
+This stage must be completed before Stage 5 engineering work begins.
+
+### 3.5.1 Article-level event tagging (LLM batch annotation)
+
+Use local Qwen via LM Studio to label every article in
+`news_articles_company_matched_v2` with:
+
+- `sentiment`: float -1.0 to +1.0
+- `event_type`: one of `earnings / product / M&A / regulation / macro /
+  competition / other`
+- `signal_strength`: `high / medium / low`
+
+Storage: add fields directly to each document in v2, or write to a new
+`news_articles_enriched_v1` collection.
+
+Estimated scope: ~586K articles. At ~8 articles/sec (current LM Studio
+throughput) ≈ 20 hours GPU time on Windows machine.
+
+Deliverable: `research/llm_enrich_articles.py`
+
+Resume framing:
+*"Enriched 586K financial news articles with LLM-generated sentiment,
+event type, and signal strength labels using local Qwen inference."*
+
+### 3.5.2 Event-level daily features
+
+Aggregate article tags into the daily feature table:
+
+| Feature | Description |
+|---|---|
+| `avg_sentiment_3d` | 3-day rolling average sentiment |
+| `avg_sentiment_5d` | 5-day rolling average sentiment |
+| `sentiment_shift_5d` | today's sentiment minus 5-day prior mean |
+| `negative_event_count_5d` | negative event articles in past 5 days |
+| `has_regulatory_risk` | binary: regulatory/legal event in past 5 days |
+| `earnings_beat_signal` | binary: earnings beat mentioned in news |
+| `high_signal_count_3d` | high-strength articles in past 3 days |
+
+Rebuild `daily_symbol_features_company_matched_v2` with these new fields.
+
+Deliverable: extend `research/daily_symbol_features.py`
+
+### 3.5.3 Dynamic holding period backtest
+
+Replace the fixed-period backtest with an event-triggered framework:
+
+Entry: composite score > threshold → buy
+Hold check (daily):
+  - strong negative event → immediate exit
+  - sentiment declining 3+ days → reduce position
+  - no new signals → hold to max horizon
+Exit: event trigger OR max holding period reached (configurable: 10/20/30/60d)
+
+Compare against fixed-period baseline (current IC = 0.10, Top5 = +6.7%).
+
+Deliverable: `research/backtest_event_driven.py`
+
+### 3.5.4 Multi-horizon label expansion
+
+Add finer-grained forward return labels to the feature table:
+
+- `future_ret_10d`, `future_ret_15d`, `future_ret_30d`, `future_ret_45d`
+- corresponding `excess_ret_*` variants
+
+Allows the dynamic backtest to evaluate exits at any horizon, not just 5/20/60d.
+
+Deliverable: extend `research/daily_symbol_features.py`
+
+### Execution order
+
+1. 3.5.4 Multi-horizon labels — fast code change, no model dependency
+2. 3.5.1 Article tagging — long-running GPU job, start early
+3. 3.5.2 Event features — depends on 3.5.1
+4. 3.5.3 Dynamic backtest — depends on 3.5.2
+
+---
+
 ## Stage 4. Production Readiness
 
 1. schedule feature build from clean news
@@ -491,21 +574,29 @@ The project should be considered healthy if:
 
 Do next (in priority order):
 
-1. **universe expansion** — most important; expand to 50+ symbols before
-   further feature or model work; current 14-symbol results cannot be
-   reliably confirmed
-2. **year stability analysis** — run group-by-year on current full feature
-   set; understand what drives 2022/2024 IC failures before adding more
-   features
-3. **earnings Layer 3** — surprise magnitude buckets and news × earnings
-   interaction features; do after stability analysis confirms value
+1. **Stage 3.5.4 multi-horizon labels** — add 10/15/30/45d return labels,
+   fast code change, unblocks the dynamic backtest
+2. **Stage 3.5.1 LLM article tagging** — start the long-running Qwen batch
+   job on Windows; runs overnight, unblocks all event-driven features
+3. **Stage 3.5.2 event features** — after tagging completes, rebuild feature
+   table with sentiment + event_type aggregates
+4. **Stage 3.5.3 dynamic backtest** — validate event-driven strategy vs
+   fixed-horizon baseline (IC = 0.10, Top5 = +6.7%)
+5. **Stage 5 engineering** — RAG / Airflow / MLflow / Kafka after research
+   stages are validated
+
+Completed:
+
+- universe expansion to 40 symbols ✅
+- year stability analysis ✅
+- earnings Layer 1 / 2 / 3 ✅
+- Ridge + LightGBM + Ensemble baseline (60d IC = 0.10, Top5 = +6.7%) ✅
 
 Do not do next:
 
 - live trading automation
-- complex deep learning or LLM-based modeling
-- adding more data sources before validating signals on expanded universe
-- switching local SLM model without accuracy benchmarking
+- adding more data sources before event-driven backtest is validated
+- Stage 5 engineering before Stage 3.5 is complete
 
 ## Notes
 
