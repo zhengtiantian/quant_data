@@ -5,10 +5,8 @@ from __future__ import annotations
 
 import argparse
 import math
-import os
-import sys
-from pathlib import Path
 
+import mlflow
 import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
@@ -22,12 +20,29 @@ from dotenv import load_dotenv
 
 from backtest_news_factor import load_feature_frame
 
+SECTOR_REL_COLS = ["full_ratio", "quality_score", "news_burst_20d", "earnings_recency_weight"]
+
+
+def add_sector_relative_features(df: pd.DataFrame) -> pd.DataFrame:
+    """Add sector-relative rank features (within trade_date × sector)."""
+    df = df.copy()
+    for col in SECTOR_REL_COLS:
+        if col not in df.columns:
+            continue
+        df[f"{col}_sector_rel"] = (
+            df.groupby(["trade_date", "sector"])[col]
+            .transform(lambda x: pd.to_numeric(x, errors="coerce").rank(pct=True) - 0.5)
+        )
+    return df
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--collection", default="daily_symbol_features_company_matched_v1")
     parser.add_argument("--db", default="quant_data")
     parser.add_argument("--min-trade-date", default="2015-12-04")
     parser.add_argument("--target", default="excess_ret_20d", choices=["excess_ret_20d", "excess_ret_60d"])
+    parser.add_argument("--mlflow-uri", default="", help="MLflow tracking URI (empty = disabled)")
     return parser.parse_args()
 
 
@@ -57,12 +72,110 @@ def evaluate_predictions(df: pd.DataFrame, target: str, pred_col: str) -> dict:
     }
 
 
-def walk_forward_train_eval(df: pd.DataFrame, features: list[str], target: str) -> None:
+def walk_forward_rank_eval(df: pd.DataFrame, features: list[str], target: str) -> None:
+    """Walk-forward evaluation using LightGBM lambdarank objective."""
+    import lightgbm as lgb
+
+    df = df.dropna(subset=[target]).copy()
+    if df.empty:
+        return
+
+    df["year"] = df["trade_date"].dt.year
+    years = sorted(df["year"].unique())
+
+    categorical_features = ["sector"]
+    cat_cols = [c for c in categorical_features if c in features]
+    num_cols = [c for c in features if c not in cat_cols]
+
+    params = {
+        "objective": "lambdarank",
+        "metric": "ndcg",
+        "ndcg_eval_at": [5],
+        "learning_rate": 0.05,
+        "num_leaves": 15,
+        "min_data_in_leaf": 5,
+        "verbosity": -1,
+        "n_jobs": -1,
+    }
+
+    print(f"\n{'='*70}")
+    print(f"Target: {target}")
+    print(f"\nModel: LightGBM Ranker (lambdarank)")
+    print(f"{'Year':>6} | {'Train Obs':>10} | {'Test Obs':>10} | {'Rank IC':>10} | {'Top 5 Ex Ret':>15}")
+    print("-" * 65)
+
+    all_preds = []
+    for test_year in years:
+        if test_year <= years[0] + 1:
+            continue
+
+        train = df[df["year"] < test_year].sort_values("trade_date").reset_index(drop=True)
+        test = df[df["year"] == test_year].sort_values("trade_date").reset_index(drop=True)
+
+        if len(train) < 500 or len(test) < 100:
+            continue
+
+        # Quintile rank labels (0-4) within each trade_date
+        def make_labels(sub: pd.DataFrame) -> pd.Series:
+            return sub.groupby("trade_date")[target].transform(
+                lambda x: pd.qcut(x.rank(method="first"), q=min(5, len(x)),
+                                  labels=False, duplicates="drop")
+                if len(x) >= 2 else pd.Series(0, index=x.index)
+            ).fillna(0).astype(int)
+
+        train_labels = make_labels(train)
+        train_groups = train.groupby("trade_date", sort=False).size().values
+
+        # Prepare feature matrices
+        X_train = train[features].copy()
+        X_test = test[features].copy()
+        for col in num_cols:
+            med = X_train[col].median()
+            X_train[col] = X_train[col].fillna(med)
+            X_test[col] = X_test[col].fillna(med)
+        for col in cat_cols:
+            X_train[col] = X_train[col].fillna("unknown").astype("category")
+            X_test[col] = X_test[col].fillna("unknown").astype("category")
+
+        train_ds = lgb.Dataset(
+            X_train, label=train_labels, group=train_groups,
+            categorical_feature=cat_cols, free_raw_data=False
+        )
+        model = lgb.train(params, train_ds, num_boost_round=100,
+                          callbacks=[lgb.log_evaluation(period=-1)])
+
+        preds = model.predict(X_test)
+        test_copy = test.copy()
+        test_copy["pred"] = preds
+        all_preds.append(test_copy)
+
+        res = evaluate_predictions(test_copy, target, "pred")
+        ic = res["Rank IC"]
+        topN = res["Top N Mean Ex Ret"]
+        ic_str = f"{ic:.4f}" if pd.notna(ic) else "n/a"
+        top_str = f"{topN:.2%}" if pd.notna(topN) else "n/a"
+        print(f"{test_year:>6} | {len(train):>10} | {len(test):>10} | {ic_str:>10} | {top_str:>15}")
+
+    if all_preds:
+        total = pd.concat(all_preds)
+        res = evaluate_predictions(total, target, "pred")
+        ic = res["Rank IC"]
+        topN = res["Top N Mean Ex Ret"]
+        ic_str = f"{ic:.4f}" if pd.notna(ic) else "n/a"
+        top_str = f"{topN:.2%}" if pd.notna(topN) else "n/a"
+        print("-" * 65)
+        print(f"{'ALL':>6} | {'-':>10} | {len(total):>10} | {ic_str:>10} | {top_str:>15}")
+
+
+def walk_forward_train_eval(
+    df: pd.DataFrame, features: list[str], target: str,
+    collection: str = "unknown", use_mlflow: bool = False,
+) -> None:
     df = df.dropna(subset=[target]).copy()
     if df.empty:
         print("Data is empty after dropping missing values.")
         return
-    
+
     df["year"] = df["trade_date"].dt.year
     years = sorted(df["year"].unique())
     
@@ -102,6 +215,7 @@ def walk_forward_train_eval(df: pd.DataFrame, features: list[str], target: str) 
         print("-" * 65)
 
         all_preds = []
+        year_metrics: dict[int, dict] = {}
         for test_year in years:
             if test_year <= years[0] + 1:
                 continue
@@ -123,6 +237,7 @@ def walk_forward_train_eval(df: pd.DataFrame, features: list[str], target: str) 
             res = evaluate_predictions(test_copy, target, "pred")
             ic = res["Rank IC"]
             topN = res["Top N Mean Ex Ret"]
+            year_metrics[test_year] = res
 
             ic_str = f"{ic:.4f}" if pd.notna(ic) else "n/a"
             top_str = f"{topN:.2%}" if pd.notna(topN) else "n/a"
@@ -137,6 +252,22 @@ def walk_forward_train_eval(df: pd.DataFrame, features: list[str], target: str) 
             top_str = f"{topN:.2%}" if pd.notna(topN) else "n/a"
             print("-" * 65)
             print(f"{'ALL':>6} | {'-':>10} | {len(total_test):>10} | {ic_str:>10} | {top_str:>15}")
+
+            if use_mlflow:
+                with mlflow.start_run(run_name=f"{model_name} | {target}"):
+                    mlflow.log_params({
+                        "model": model_name, "target": target,
+                        "collection": collection, "n_features": len(features),
+                    })
+                    for yr, yr_res in year_metrics.items():
+                        if pd.notna(yr_res["Rank IC"]):
+                            mlflow.log_metric("rank_ic", yr_res["Rank IC"], step=yr)
+                        if pd.notna(yr_res["Top N Mean Ex Ret"]):
+                            mlflow.log_metric("top5_excess_ret", yr_res["Top N Mean Ex Ret"], step=yr)
+                    if pd.notna(ic):
+                        mlflow.log_metric("rank_ic_overall", float(ic))
+                    if pd.notna(topN):
+                        mlflow.log_metric("top5_overall", float(topN))
 
     # Ensemble: average predictions from Ridge and LightGBM
     model_names = list(models.keys())
@@ -168,6 +299,24 @@ def walk_forward_train_eval(df: pd.DataFrame, features: list[str], target: str) 
         print("-" * 65)
         print(f"{'ALL':>6} | {'-':>10} | {len(total):>10} | {ic_str:>10} | {top_str:>15}")
 
+        if use_mlflow:
+            with mlflow.start_run(run_name=f"Ensemble | {target}"):
+                mlflow.log_params({
+                    "model": "Ensemble", "target": target,
+                    "collection": collection, "n_features": len(features),
+                })
+                for yr_data in ensemble_all:
+                    yr = yr_data["year"].iloc[0]
+                    yr_res = evaluate_predictions(yr_data, target, "pred")
+                    if pd.notna(yr_res["Rank IC"]):
+                        mlflow.log_metric("rank_ic", yr_res["Rank IC"], step=yr)
+                    if pd.notna(yr_res["Top N Mean Ex Ret"]):
+                        mlflow.log_metric("top5_excess_ret", yr_res["Top N Mean Ex Ret"], step=yr)
+                if pd.notna(ic):
+                    mlflow.log_metric("rank_ic_overall", float(ic))
+                if pd.notna(topN):
+                    mlflow.log_metric("top5_overall", float(topN))
+
 
 def main():
     args = parse_args()
@@ -183,8 +332,16 @@ def main():
     if df.empty:
         print("No valid rows returned.")
         return
-        
+
     print(f"Data loaded: {len(df):,} rows.")
+    df = add_sector_relative_features(df)
+    print(f"Added sector-relative features: {[c+'_sector_rel' for c in SECTOR_REL_COLS if c in df.columns]}")
+
+    use_mlflow = bool(args.mlflow_uri)
+    if use_mlflow:
+        mlflow.set_tracking_uri(args.mlflow_uri)
+        mlflow.set_experiment("quant_baseline_models")
+        print(f"MLflow tracking: {args.mlflow_uri}")
     
     # Check if necessary new features exist (we added past_ret and volatility)
     required = [
@@ -237,15 +394,26 @@ def main():
         "quality_score_x_post_negative",
         # layer 3: earnings recency decay
         "earnings_recency_weight",
+        # sector-relative features
+        "full_ratio_sector_rel",
+        "quality_score_sector_rel",
+        "news_burst_20d_sector_rel",
+        "earnings_recency_weight_sector_rel",
         # sector
         "sector",
     ]
     
     print("\nRunning Walk-forward Evaluation for 20d Target...")
-    walk_forward_train_eval(df, features, target="excess_ret_20d")
-    
+    walk_forward_train_eval(df, features, target="excess_ret_20d",
+                            collection=args.collection, use_mlflow=use_mlflow)
+
     print("\nRunning Walk-forward Evaluation for 60d Target...")
-    walk_forward_train_eval(df, features, target="excess_ret_60d")
+    walk_forward_train_eval(df, features, target="excess_ret_60d",
+                            collection=args.collection, use_mlflow=use_mlflow)
+
+    print("\nRunning Ranking Model Evaluation...")
+    walk_forward_rank_eval(df, features, target="excess_ret_20d")
+    walk_forward_rank_eval(df, features, target="excess_ret_60d")
 
 
 if __name__ == "__main__":
