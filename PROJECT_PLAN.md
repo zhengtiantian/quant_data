@@ -521,12 +521,66 @@ Allows the dynamic backtest to evaluate exits at any horizon, not just 5/20/60d.
 
 Deliverable: extend `research/daily_symbol_features.py`
 
+### 3.5.5 Fine-tune small model for sentiment scoring
+
+After the two-pass LLM enrichment (3.5.1) completes, replace the slow LLM
+inference pipeline with a purpose-fine-tuned small model. This eliminates the
+need to keep Gemma + Qwen + a judge model running and reduces inference from
+days to minutes.
+
+**Training data**
+
+Use articles where Pass A (Gemma) and Pass B (Qwen) agree as high-confidence
+pseudo-labels:
+- `llm_sentiment_a` and `llm_sentiment_b` same sign AND |diff| ≤ 0.2
+- Expected: ~60-70% of 586K articles → ~350K+ clean training samples
+
+**Model**
+
+Fine-tune `ProsusAI/finbert` (110M params, already pre-trained on financial
+text) with three output heads:
+- sentiment: regression head, output -1.0 to +1.0
+- event_type: 7-class softmax (earnings / product / MA / regulation / macro /
+  competition / other)
+- signal_strength: 3-class softmax (high / medium / low)
+
+Training setup:
+- LoRA or full fine-tune (BERT is small enough for full fine-tune)
+- GPU: Windows machine (same as LM Studio)
+- Estimated training time: 1-2 hours on 350K samples
+- Framework: HuggingFace Transformers + PyTorch
+
+**Inference speed after fine-tuning**
+
+| Setup | Speed |
+|---|---|
+| Current LLM (Gemma via LM Studio) | ~3.9 art/s |
+| Fine-tuned FinBERT (GPU) | ~1000-2000 art/s |
+| Fine-tuned FinBERT (CPU only) | ~200 art/s |
+
+586K articles: current ~41h → fine-tuned ~5-10 min
+
+**Deliverables**
+
+- `research/finetune_sentiment.py` — training script
+- `research/infer_sentiment.py` — batch inference on remaining articles
+- benchmark report: fine-tuned vs LLM scores on held-out set
+
+**Resume framing**
+
+*"Fine-tuned FinBERT on 350K+ pseudo-labeled financial news articles
+(distilled from Gemma + Qwen ensemble), achieving 200x inference speedup
+while maintaining comparable sentiment, event classification, and signal
+strength accuracy."*
+
 ### Execution order
 
 1. 3.5.4 Multi-horizon labels — fast code change, no model dependency
 2. 3.5.1 Article tagging — long-running GPU job, start early
 3. 3.5.2 Event features — depends on 3.5.1
 4. 3.5.3 Dynamic backtest — depends on 3.5.2
+5. 3.5.5 Fine-tune small model — after both passes complete, use agreed labels
+   as training data; replaces LLM pipeline for any future re-scoring
 
 ---
 

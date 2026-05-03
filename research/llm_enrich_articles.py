@@ -33,7 +33,7 @@ import os
 import re
 import threading
 import time
-from concurrent.futures import Future, ThreadPoolExecutor, as_completed
+from concurrent.futures import Future, ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -55,10 +55,12 @@ API_URL = os.getenv("SLM_API_URL", "http://192.168.31.226:1234/v1").rstrip("/")
 MODEL_A  = os.getenv("SLM_MODEL_A",  "google/gemma-4-e4b")
 MODEL_A2 = os.getenv("SLM_MODEL_A2", "google/gemma-4-e4b:2")  # second Gemma instance
 MODEL_B  = os.getenv("SLM_MODEL_B",  "qwen/qwen3.5-9b")
+MODEL_B2 = os.getenv("SLM_MODEL_B2", "")  # second Qwen instance (optional)
 
 PASS          = os.getenv("ENRICH_PASS", "A")          # A | B | merge
 WORKERS       = int(os.getenv("ENRICH_WORKERS",       "8"))
 BATCH_SIZE    = int(os.getenv("ENRICH_BATCH_SIZE",    "200"))
+FETCH_BATCH   = int(os.getenv("ENRICH_FETCH_BATCH",   "500"))  # docs per paginated fetch
 PROGRESS_EVERY= int(os.getenv("ENRICH_PROGRESS_EVERY","500"))
 CONTENT_CHARS = int(os.getenv("ENRICH_CONTENT_CHARS", "500"))
 LLM_TIMEOUT   = int(os.getenv("ENRICH_LLM_TIMEOUT",  "30"))
@@ -189,14 +191,21 @@ def call_llm(title: str, content: str, symbol: str = "", name: str = "",
     }
     if model:
         payload["model"] = model
+    # Disable Qwen3 thinking mode via API parameter
+    if "qwen" in model.lower():
+        payload["thinking"] = {"type": "disabled"}
 
     try:
-        resp = requests.post(f"{API_URL}/chat/completions", json=payload, timeout=LLM_TIMEOUT)
+        resp = requests.post(
+            f"{API_URL}/chat/completions", json=payload,
+            timeout=(5, LLM_TIMEOUT),  # (connect, read) — hard ceiling per request
+        )
         resp.raise_for_status()
         partial = resp.json()["choices"][0]["message"]["content"].strip()
         raw = "{" + partial if not partial.startswith("{") else partial
 
-        m = re.search(r'\{[^{}]+\}', raw, re.DOTALL)
+        # Find the JSON block that contains "sentiment" — skips any <think> noise
+        m = re.search(r'\{[^{}]*"sentiment"[^{}]*\}', raw, re.DOTALL)
         if not m:
             return None
         parsed = json.loads(m.group())
@@ -221,7 +230,7 @@ def _build_model_cycle(pass_name: str):
     if pass_name == "A":
         models = [m for m in [MODEL_A, MODEL_A2] if m]
     else:
-        models = [MODEL_B]
+        models = [m for m in [MODEL_B, MODEL_B2] if m]
     it = itertools.cycle(models)
     lock = threading.Lock()
 
@@ -268,56 +277,80 @@ def run_loop(coll, query, projection, submit_fn) -> None:
         log.info("Nothing to do.")
         return
 
-    cursor = coll.find(query, projection)
-    if LIMIT:
-        cursor = cursor.limit(LIMIT)
-
     done = errors = 0
+    submitted = 0
     pending_ops: list[UpdateOne] = []
     start = time.time()
+    lock = threading.Lock()
+    sem = threading.Semaphore(WORKERS * 3)
+
+    def on_done(f: Future) -> None:
+        nonlocal done, errors
+        sem.release()
+        try:
+            op, _status, _latency = f.result()
+        except Exception:
+            op = None
+        with lock:
+            if op:
+                pending_ops.append(op)
+                done += 1
+            else:
+                errors += 1
+            n = done + errors
+            should_log = (n % PROGRESS_EVERY == 0 or n == total)
+        if should_log:
+            elapsed = time.time() - start
+            rate = done / elapsed if elapsed > 0 else 0
+            eta_h = (total - n) / rate / 3600 if rate > 0 else 0
+            eta_str = f"{eta_h:.1f}h" if eta_h >= 1 else f"{eta_h*60:.0f}min"
+            elapsed_str = (f"{elapsed/3600:.1f}h" if elapsed >= 3600
+                           else f"{elapsed/60:.1f}min")
+            log.info(
+                "[%d/%d] done=%d errors=%d | elapsed=%s | %.1f art/s | ETA %s",
+                n, total, done, errors, elapsed_str, rate, eta_str,
+            )
 
     with ThreadPoolExecutor(max_workers=WORKERS) as pool:
-        future_map: dict[Future, str] = {}  # future → symbol
+        last_id = None
+        while True:
+            if LIMIT and submitted >= LIMIT:
+                break
+            fetch_n = FETCH_BATCH if not LIMIT else min(FETCH_BATCH, LIMIT - submitted)
 
-        def flush(wait_all: bool = False) -> None:
-            nonlocal done, errors
-            ready = (list(as_completed(future_map)) if wait_all
-                     else [f for f in future_map if f.done()])
-            for f in ready:
-                op, status, latency = f.result()
-                if op:
-                    pending_ops.append(op)
-                    done += 1
-                else:
-                    errors += 1
-                del future_map[f]
+            # Paginate by _id — each fetch is a fresh short-lived query,
+            # so no server-side cursor can time out regardless of how long
+            # workers take between batches.
+            page_query = dict(query)
+            if last_id is not None:
+                page_query["_id"] = {"$gt": last_id}
+            batch = list(
+                coll.find(page_query, projection).sort("_id", 1).limit(fetch_n)
+            )
+            if not batch:
+                break
 
-                n = done + errors
-                if n % PROGRESS_EVERY == 0 or n == total:
-                    elapsed = time.time() - start
-                    rate = done / elapsed if elapsed > 0 else 0
-                    eta_h = (total - n) / rate / 3600 if rate > 0 else 0
-                    eta_str = f"{eta_h:.1f}h" if eta_h >= 1 else f"{eta_h*60:.0f}min"
-                    elapsed_str = (f"{elapsed/3600:.1f}h" if elapsed >= 3600
-                                   else f"{elapsed/60:.1f}min")
-                    log.info(
-                        "[%d/%d] done=%d errors=%d | elapsed=%s | %.1f art/s | ETA %s",
-                        n, total, done, errors, elapsed_str, rate, eta_str,
-                    )
+            last_id = batch[-1]["_id"]
+            submitted += len(batch)
 
-        for doc in cursor:
-            future_map[pool.submit(submit_fn, doc)] = doc.get("symbol", "")
+            for doc in batch:
+                sem.acquire()
+                f = pool.submit(submit_fn, doc)
+                f.add_done_callback(on_done)
 
-            if len(future_map) >= WORKERS * 3:
-                flush()
-            if len(pending_ops) >= BATCH_SIZE:
-                coll.bulk_write(pending_ops, ordered=False)
-                pending_ops.clear()
+                with lock:
+                    if len(pending_ops) >= BATCH_SIZE:
+                        ops = list(pending_ops)
+                        pending_ops.clear()
+                    else:
+                        ops = None
+                if ops:
+                    coll.bulk_write(ops, ordered=False)
 
-        flush(wait_all=True)
-
-    if pending_ops:
-        coll.bulk_write(pending_ops, ordered=False)
+    with lock:
+        remaining = list(pending_ops)
+    if remaining:
+        coll.bulk_write(remaining, ordered=False)
 
     elapsed = time.time() - start
     rate = done / elapsed if elapsed > 0 else 0
