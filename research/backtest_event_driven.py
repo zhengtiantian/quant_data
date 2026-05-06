@@ -26,6 +26,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlparse, urlunparse
 
+import mlflow
 import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
@@ -370,6 +371,8 @@ def parse_args() -> argparse.Namespace:
                    help="Require avg_sentiment_5d >= this to open a position (0=disabled)")
     p.add_argument("--block-miss-entry", action="store_true",
                    help="Block new entries when earnings_miss_signal=1")
+    p.add_argument("--mlflow-uri", default=os.getenv("MLFLOW_TRACKING_URI", ""),
+                   help="MLflow tracking URI (empty = disabled)")
     return p.parse_args()
 
 
@@ -428,12 +431,47 @@ def main() -> None:
     print("\n=== Fixed-Horizon Baseline (same entry signal) ===")
     print(f"{'Horizon':<10} {'Mean ExRet':>11} {'Hit Rate':>9} {'Obs':>7}")
     print("-" * 40)
+    baselines: dict[int, dict] = {}
     for h in FORWARD_HORIZONS:
         baseline = run_fixed_baseline(df, h, args.top_n)
         if not baseline:
             continue
+        baselines[h] = baseline
         print(f"{h}d{'':<8} {baseline['mean_excess_ret']:>10.2%} "
               f"{baseline['hit_rate']:>8.1%} {baseline['observations']:>7,}")
+
+    if args.mlflow_uri:
+        mlflow.set_tracking_uri(args.mlflow_uri)
+        mlflow.set_experiment("quant_event_driven_backtest")
+        with mlflow.start_run():
+            mlflow.log_params({
+                "collection": args.collection,
+                "min_date": args.min_date,
+                "top_n": args.top_n,
+                "min_hold": args.min_hold,
+                "max_hold": args.max_hold,
+                "entry_threshold": args.entry_threshold,
+                "exit_threshold": args.exit_threshold,
+                "hold_threshold": args.hold_threshold,
+                "sentiment_exit": args.sentiment_exit,
+                "sentiment_shift_exit": args.sentiment_shift_exit,
+                "sentiment_entry_min": args.sentiment_entry_min,
+                "block_miss_entry": args.block_miss_entry,
+            })
+            mlflow.log_metrics({
+                "total_trades": result.total_trades,
+                "avg_hold_days": result.avg_hold_days,
+                "mean_excess_ret": result.mean_excess_ret,
+                "hit_rate": result.hit_rate,
+            })
+            for yr in sorted(result.yearly):
+                yr_data = result.yearly[yr]
+                er = yr_data["excess_rets"]
+                if er:
+                    mlflow.log_metric("yearly_mean_excess_ret", float(np.mean(er)), step=yr)
+                    mlflow.log_metric("yearly_hit_rate", float(np.mean([r > 0 for r in er])), step=yr)
+            for h, b in baselines.items():
+                mlflow.log_metric(f"baseline_{h}d_excess_ret", b["mean_excess_ret"])
 
 
 if __name__ == "__main__":

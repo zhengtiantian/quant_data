@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import math
+import os
 
 import mlflow
 import numpy as np
@@ -42,7 +43,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--db", default="quant_data")
     parser.add_argument("--min-trade-date", default="2015-12-04")
     parser.add_argument("--target", default="excess_ret_20d", choices=["excess_ret_20d", "excess_ret_60d"])
-    parser.add_argument("--mlflow-uri", default="", help="MLflow tracking URI (empty = disabled)")
+    parser.add_argument("--mlflow-uri", default=os.getenv("MLFLOW_TRACKING_URI", ""),
+                        help="MLflow tracking URI (empty = disabled)")
     return parser.parse_args()
 
 
@@ -72,7 +74,10 @@ def evaluate_predictions(df: pd.DataFrame, target: str, pred_col: str) -> dict:
     }
 
 
-def walk_forward_rank_eval(df: pd.DataFrame, features: list[str], target: str) -> None:
+def walk_forward_rank_eval(
+    df: pd.DataFrame, features: list[str], target: str,
+    collection: str = "unknown", use_mlflow: bool = False,
+) -> None:
     """Walk-forward evaluation using LightGBM lambdarank objective."""
     import lightgbm as lgb
 
@@ -165,6 +170,18 @@ def walk_forward_rank_eval(df: pd.DataFrame, features: list[str], target: str) -
         top_str = f"{topN:.2%}" if pd.notna(topN) else "n/a"
         print("-" * 65)
         print(f"{'ALL':>6} | {'-':>10} | {len(total):>10} | {ic_str:>10} | {top_str:>15}")
+
+        if use_mlflow:
+            with mlflow.start_run(run_name=f"LightGBM Ranker | {target}"):
+                mlflow.log_params({
+                    "model": "LightGBM Ranker", "target": target,
+                    "collection": collection, "n_features": len(features),
+                    "objective": "lambdarank",
+                })
+                if pd.notna(ic):
+                    mlflow.log_metric("rank_ic_overall", float(ic))
+                if pd.notna(topN):
+                    mlflow.log_metric("top5_overall", float(topN))
 
 
 def walk_forward_train_eval(
@@ -422,8 +439,10 @@ def main():
                             collection=args.collection, use_mlflow=use_mlflow)
 
     print("\nRunning Ranking Model Evaluation...")
-    walk_forward_rank_eval(df, features, target="excess_ret_20d")
-    walk_forward_rank_eval(df, features, target="excess_ret_60d")
+    walk_forward_rank_eval(df, features, target="excess_ret_20d",
+                           collection=args.collection, use_mlflow=use_mlflow)
+    walk_forward_rank_eval(df, features, target="excess_ret_60d",
+                           collection=args.collection, use_mlflow=use_mlflow)
 
 
 if __name__ == "__main__":

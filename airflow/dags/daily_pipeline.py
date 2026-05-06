@@ -7,18 +7,20 @@ Runs every day starting at 05:00:
   newsapi_news  ───┤
   yahoo_news    ───┘
 
-Replaces: scheduler/task.py (daily jobs)
+Replaces: scheduler/task.py (daily jobs).
+LLM enrichment runs in a separate DAG (quant_llm_enrichment) at 09:00.
 """
 
 from __future__ import annotations
 
+import os
 from datetime import datetime, timedelta
 
 from airflow import DAG
 from airflow.providers.docker.operators.docker import DockerOperator
 from docker.types import Mount
 
-QUANT_IMAGE = "xiz001/quant_data:5af1779"
+QUANT_IMAGE = os.getenv("QUANT_IMAGE", "xiz001/quant_data:5af1779")
 NETWORK = "quant_docker_project-net"
 QUANT_DATA_PATH = "/Users/xiz/Quant_trade/quant_data"
 
@@ -107,7 +109,18 @@ with DAG(
     features = make_task(
         "feature_build",
         "research/daily_symbol_features.py",
+        extra_env={
+            "FEATURE_OUTPUT_COLLECTION": "daily_symbol_features",
+            "FEATURE_LLM_COLLECTION": "news_articles_company_matched_v2",
+        },
         execution_timeout=timedelta(hours=2),
     )
 
-    [gdelt, finnhub, newsapi, yahoo] >> price >> features
+    signal_score = make_task(
+        "score_daily_signals",
+        "research/score_daily_signals.py",
+        extra_env={"SIGNAL_TOP_N": "10"},
+        execution_timeout=timedelta(minutes=10),
+    )
+
+    [gdelt, finnhub, newsapi, yahoo] >> price >> features >> signal_score
