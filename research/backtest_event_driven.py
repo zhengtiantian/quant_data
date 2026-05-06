@@ -81,6 +81,11 @@ def load_feature_frame(collection: str, db: str = "quant_data", min_date: str = 
         "surprise_bucket": 1, "earnings_recency_weight": 1,
         "full_ratio_x_post_positive": 1, "quality_score_x_post_negative": 1,
         "days_to_earnings": 1, "days_since_earnings": 1,
+        # LLM sentiment features (Stage 3.5.2)
+        "avg_sentiment_3d": 1, "avg_sentiment_5d": 1, "sentiment_shift_5d": 1,
+        "high_signal_count_3d": 1, "has_regulatory_risk_5d": 1,
+        "earnings_beat_signal": 1, "earnings_miss_signal": 1,
+        "disagreement_avg_5d": 1, "negative_event_count_5d": 1,
     }
     for h in FORWARD_HORIZONS:
         projection[f"future_ret_{h}d"] = 1
@@ -104,6 +109,12 @@ def compute_composite_score(df: pd.DataFrame) -> pd.DataFrame:
         "quality_score": 1.0,
         "news_burst_20d": 0.5,
         "earnings_recency_weight": 0.5,
+        # LLM sentiment
+        "avg_sentiment_5d": 1.5,
+        "sentiment_shift_5d": 0.8,
+        # LLM event quality
+        "earnings_beat_signal": 1.2,
+        "high_signal_count_3d": 0.6,
     }
     df["composite_score"] = 0.0
     df["composite_count"] = 0
@@ -161,16 +172,22 @@ def run_event_driven_backtest(
     min_hold: int = 5,
     max_hold: int = 60,
     top_n: int = 5,
+    sentiment_exit_threshold: float = -0.20,
+    sentiment_shift_exit: float = -0.20,
+    sentiment_entry_min: float = 0.0,
+    block_miss_entry: bool = False,
 ) -> EventDrivenBacktestResult:
     """
     Simulate event-driven positions.
 
-    entry_threshold: composite_score percentile (0-1) to enter.
-    exit_threshold:  if score drops below this percentile → forced exit.
-    hold_threshold:  after min_hold days, exit if score <= this percentile.
-    min_hold:        minimum days before signal-based exit is allowed.
-    max_hold:        maximum days to hold regardless of signal.
-    top_n:           max simultaneous positions.
+    entry_threshold:          composite_score percentile (0-1) to enter.
+    exit_threshold:           if score drops below this percentile → forced exit.
+    hold_threshold:           after min_hold days, exit if score <= this percentile.
+    min_hold:                 minimum days before signal-based exit is allowed.
+    max_hold:                 maximum days to hold regardless of signal.
+    top_n:                    max simultaneous positions.
+    sentiment_exit_threshold: avg_sentiment_5d below this + regulatory risk → immediate exit.
+    sentiment_shift_exit:     sentiment_shift_5d below this after min_hold → exit.
     """
     dates = sorted(df["trade_date"].unique())
     date_to_df: dict[pd.Timestamp, pd.DataFrame] = {
@@ -188,14 +205,34 @@ def run_event_driven_backtest(
         still_open = []
         for pos in open_positions:
             pos.days_held += 1
-            score_now = day_df.loc[pos.symbol, "composite_score"] if pos.symbol in day_df.index else pd.NA
+            row_now = day_df.loc[pos.symbol] if pos.symbol in day_df.index else None
+            score_now = row_now["composite_score"] if row_now is not None else pd.NA
+
+            # LLM event signals
+            has_reg_risk   = bool(row_now["has_regulatory_risk_5d"]) if row_now is not None and pd.notna(row_now.get("has_regulatory_risk_5d")) else False
+            sent_5d        = float(row_now["avg_sentiment_5d"])       if row_now is not None and pd.notna(row_now.get("avg_sentiment_5d")) else None
+            sent_shift     = float(row_now["sentiment_shift_5d"])     if row_now is not None and pd.notna(row_now.get("sentiment_shift_5d")) else None
+            earnings_miss  = bool(row_now["earnings_miss_signal"])    if row_now is not None and pd.notna(row_now.get("earnings_miss_signal")) else False
+            earnings_beat  = bool(row_now["earnings_beat_signal"])    if row_now is not None and pd.notna(row_now.get("earnings_beat_signal")) else False
+
+            # earnings_beat 锁仓：持有期内有正向收益信号，屏蔽情感退出，强持到 min_hold
+            beat_lock = earnings_beat and pos.days_held < min_hold
 
             exit_reason = None
             if pos.days_held >= max_hold:
                 exit_reason = f"max_hold_{max_hold}d"
             elif pd.notna(score_now) and score_now < exit_threshold:
                 exit_reason = "score_below_exit"
-            elif pos.days_held >= min_hold and pd.notna(score_now) and score_now <= hold_threshold:
+            # LLM: regulatory risk + negative sentiment → immediate exit (beat_lock 不保护)
+            elif not earnings_beat and has_reg_risk and sent_5d is not None and sent_5d < sentiment_exit_threshold:
+                exit_reason = "regulatory_risk_negative_sent"
+            # LLM: earnings miss → immediate exit (beat_lock 不保护)
+            elif not earnings_beat and earnings_miss and sent_5d is not None and sent_5d < sentiment_exit_threshold:
+                exit_reason = "earnings_miss_negative_sent"
+            # LLM: 情感动量逆转 — beat_lock 期间屏蔽
+            elif not beat_lock and pos.days_held >= min_hold and sent_shift is not None and sent_shift < sentiment_shift_exit:
+                exit_reason = "sentiment_reversal"
+            elif not beat_lock and pos.days_held >= min_hold and pd.notna(score_now) and score_now <= hold_threshold:
                 exit_reason = "score_weak_after_min_hold"
 
             if exit_reason:
@@ -225,6 +262,14 @@ def run_event_driven_backtest(
             for symbol, row in eligible.head(slots * 3).iterrows():
                 score = row["composite_score"]
                 if pd.isna(score) or score < entry_threshold:
+                    continue
+                # sentiment_entry_min 门控：要求 avg_sentiment_5d 高于最低阈值
+                if sentiment_entry_min > 0:
+                    sent = row.get("avg_sentiment_5d")
+                    if pd.isna(sent) or float(sent) < sentiment_entry_min:
+                        continue
+                # 屏蔽 earnings_miss：近期有负向收益信号时不开新仓
+                if block_miss_entry and row.get("earnings_miss_signal", 0):
                     continue
                 open_positions.append(Position(
                     symbol=symbol,
@@ -305,7 +350,7 @@ def run_fixed_baseline(df: pd.DataFrame, horizon: int, top_n: int = 5) -> dict:
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--collection", default="daily_symbol_features_company_matched_v2")
+    p.add_argument("--collection", default="daily_symbol_features")
     p.add_argument("--db", default="quant_data")
     p.add_argument("--min-date", default="2018-01-01")
     p.add_argument("--top-n", type=int, default=5)
@@ -317,6 +362,14 @@ def parse_args() -> argparse.Namespace:
                    help="Score below this triggers immediate exit")
     p.add_argument("--hold-threshold", type=float, default=0.0,
                    help="After min_hold days, exit if score <= this")
+    p.add_argument("--sentiment-exit", type=float, default=-0.20,
+                   help="avg_sentiment_5d threshold for event-driven exit")
+    p.add_argument("--sentiment-shift-exit", type=float, default=-0.20,
+                   help="sentiment_shift_5d threshold for momentum reversal exit")
+    p.add_argument("--sentiment-entry-min", type=float, default=0.0,
+                   help="Require avg_sentiment_5d >= this to open a position (0=disabled)")
+    p.add_argument("--block-miss-entry", action="store_true",
+                   help="Block new entries when earnings_miss_signal=1")
     return p.parse_args()
 
 
@@ -346,6 +399,10 @@ def main() -> None:
         min_hold=args.min_hold,
         max_hold=args.max_hold,
         top_n=args.top_n,
+        sentiment_exit_threshold=args.sentiment_exit,
+        sentiment_shift_exit=args.sentiment_shift_exit,
+        sentiment_entry_min=args.sentiment_entry_min,
+        block_miss_entry=args.block_miss_entry,
     )
 
     print(f"\nTotal trades:      {result.total_trades:,}")

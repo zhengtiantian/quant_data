@@ -207,6 +207,16 @@ def load_feature_frame(
         "full_ratio_x_post_positive": 1,
         "quality_score_x_post_negative": 1,
         "earnings_recency_weight": 1,
+        # LLM sentiment features (Stage 3.5.2)
+        "avg_sentiment_3d": 1,
+        "avg_sentiment_5d": 1,
+        "sentiment_shift_5d": 1,
+        "high_signal_count_3d": 1,
+        "has_regulatory_risk_5d": 1,
+        "earnings_beat_signal": 1,
+        "earnings_miss_signal": 1,
+        "disagreement_avg_5d": 1,
+        "negative_event_count_5d": 1,
     }
     rows = list(coll.find(query, projection))
     if not rows:

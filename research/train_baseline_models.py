@@ -394,6 +394,16 @@ def main():
         "quality_score_x_post_negative",
         # layer 3: earnings recency decay
         "earnings_recency_weight",
+        # LLM sentiment features (Stage 3.5.2)
+        "avg_sentiment_3d",
+        "avg_sentiment_5d",
+        "sentiment_shift_5d",
+        "high_signal_count_3d",
+        "has_regulatory_risk_5d",
+        "earnings_beat_signal",
+        "earnings_miss_signal",
+        "disagreement_avg_5d",
+        "negative_event_count_5d",
         # sector-relative features
         "full_ratio_sector_rel",
         "quality_score_sector_rel",

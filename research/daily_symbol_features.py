@@ -30,6 +30,7 @@ PRICE_COLLECTION = os.getenv("FEATURE_PRICE_COLLECTION", "stock_prices_history")
 FEATURE_COLLECTION = os.getenv("FEATURE_OUTPUT_COLLECTION", "daily_symbol_features")
 UNIVERSE_COLLECTION = os.getenv("FEATURE_UNIVERSE_COLLECTION", "stock_universe")
 EARNINGS_COLLECTION = os.getenv("FEATURE_EARNINGS_COLLECTION", "earnings_events")
+LLM_COLLECTION = os.getenv("FEATURE_LLM_COLLECTION", "news_articles_company_matched_v2")
 BENCHMARK_SYMBOLS = [
     symbol.strip().upper()
     for symbol in os.getenv("FEATURE_BENCHMARK_SYMBOLS", "SPY,QQQ").split(",")
@@ -244,8 +245,7 @@ def aggregate_news_features(news_df: pd.DataFrame) -> pd.DataFrame:
         frame["news_burst_20d"] = frame["article_count"] / prior_mean
         return frame
 
-    grouped = grouped.groupby("symbol", group_keys=True).apply(_add_rollups)
-    grouped = grouped.reset_index(level=0)
+    grouped = grouped.groupby("symbol", group_keys=False).apply(_add_rollups)
     return grouped.reset_index(drop=True)
 
 
@@ -773,6 +773,124 @@ def attach_earnings_event_features(
     return pd.concat(enriched_frames, ignore_index=True)
 
 
+_STRENGTH_WEIGHT = {"high": 1.0, "medium": 0.6, "low": 0.3}
+_EVENT_TYPES = ["earnings", "product", "MA", "regulation", "macro", "competition", "other"]
+
+
+def load_llm_sentiment_frame() -> pd.DataFrame:
+    _, end_date, effective_start = _resolve_range()
+    client = create_client()
+    col = client[DB_NAME][LLM_COLLECTION]
+
+    cursor = col.find(
+        {"llm_sentiment_final": {"$exists": True}},
+        {
+            "_id": 0,
+            "symbol": 1,
+            "date": 1,
+            "llm_sentiment_final": 1,
+            "llm_signal_strength_a": 1,
+            "llm_event_type_a": 1,
+            "llm_disagreement": 1,
+        },
+    )
+
+    rows = []
+    for doc in cursor:
+        news_date = _extract_news_date(doc)
+        if not news_date:
+            continue
+        date_ts = pd.Timestamp(news_date)
+        if effective_start is not None and date_ts < effective_start:
+            continue
+        if end_date is not None and date_ts > end_date:
+            continue
+        rows.append({
+            "symbol": doc.get("symbol"),
+            "date": date_ts,
+            "sentiment": float(doc.get("llm_sentiment_final", 0.0)),
+            "strength": doc.get("llm_signal_strength_a", "low"),
+            "event_type": doc.get("llm_event_type_a", "other"),
+            "disagreement": float(doc.get("llm_disagreement", 0.0)),
+        })
+
+    return pd.DataFrame(rows) if rows else pd.DataFrame(
+        columns=["symbol", "date", "sentiment", "strength", "event_type", "disagreement"]
+    )
+
+
+def aggregate_llm_sentiment_features(llm_df: pd.DataFrame) -> pd.DataFrame:
+    if llm_df.empty:
+        return pd.DataFrame(columns=["symbol", "date"])
+
+    llm_df = llm_df.copy()
+    llm_df["weight"] = llm_df["strength"].map(_STRENGTH_WEIGHT).fillna(0.3)
+
+    def _weighted_mean(grp: pd.DataFrame) -> float:
+        w = grp["weight"]
+        s = grp["sentiment"]
+        return float((s * w).sum() / w.sum()) if w.sum() > 0 else float(s.mean())
+
+    # ── daily aggregates ──────────────────────────────────────────────────────
+    daily_rows = []
+    for (symbol, date), grp in llm_df.groupby(["symbol", "date"]):
+        sent = grp["sentiment"]
+        ev = grp["event_type"]
+        daily_rows.append({
+            "symbol": symbol,
+            "date": date,
+            "sent_wavg":       _weighted_mean(grp),
+            "sent_std":        float(sent.std()) if len(sent) > 1 else 0.0,
+            "high_signal_n":   int((grp["strength"] == "high").sum()),
+            "has_earnings":    int((ev == "earnings").any()),
+            "has_regulation":  int((ev == "regulation").any()),
+            "has_ma":          int((ev == "MA").any()),
+            "disagreement_mean": float(grp["disagreement"].mean()),
+            "earnings_beat_n": int(((ev == "earnings") & (sent > 0.2)).sum()),
+            "earnings_miss_n": int(((ev == "earnings") & (sent < -0.2)).sum()),
+            "negative_n":      int((sent < -0.1).sum()),
+        })
+
+    daily = pd.DataFrame(daily_rows).sort_values(["symbol", "date"])
+
+    # ── rolling features per symbol ───────────────────────────────────────────
+    def _rollups(grp: pd.DataFrame) -> pd.DataFrame:
+        g = grp.sort_values("date").copy()
+        s = g["sent_wavg"]
+        g["avg_sentiment_3d"]       = s.rolling(3, min_periods=1).mean()
+        g["avg_sentiment_5d"]       = s.rolling(5, min_periods=1).mean()
+        g["sentiment_shift_5d"]     = s - s.shift(5)
+        g["high_signal_count_3d"]   = g["high_signal_n"].rolling(3, min_periods=1).sum()
+        g["has_regulatory_risk_5d"] = g["has_regulation"].rolling(5, min_periods=1).max()
+        g["earnings_beat_signal"]   = (g["earnings_beat_n"] > 0).astype(int).rolling(5, min_periods=1).max()
+        g["earnings_miss_signal"]   = (g["earnings_miss_n"] > 0).astype(int).rolling(5, min_periods=1).max()
+        g["disagreement_avg_5d"]    = g["disagreement_mean"].rolling(5, min_periods=1).mean()
+        g["negative_event_count_5d"]= g["negative_n"].rolling(5, min_periods=1).sum()
+        return g
+
+    result = daily.groupby("symbol", group_keys=False).apply(_rollups)
+    return result.reset_index(drop=True)
+
+
+def attach_llm_sentiment_features(
+    feature_df: pd.DataFrame, llm_features: pd.DataFrame
+) -> pd.DataFrame:
+    _LLM_COLS = [
+        "avg_sentiment_3d", "avg_sentiment_5d", "sentiment_shift_5d",
+        "high_signal_count_3d", "has_regulatory_risk_5d",
+        "earnings_beat_signal", "earnings_miss_signal",
+        "disagreement_avg_5d", "negative_event_count_5d",
+    ]
+    if llm_features.empty or feature_df.empty:
+        for col in _LLM_COLS:
+            feature_df[col] = pd.NA
+        return feature_df
+
+    llm_slim = llm_features[["symbol", "date"] + _LLM_COLS]
+    merged = feature_df.merge(llm_slim, on=["symbol", "date"], how="left")
+    return merged
+
+
 def save_features(feature_df: pd.DataFrame) -> int:
     base_start, _, _ = _resolve_range()
     if base_start is not None:
@@ -852,6 +970,16 @@ def save_features(feature_df: pd.DataFrame) -> int:
             "full_ratio_x_post_positive": float(row["full_ratio_x_post_positive"]) if pd.notna(row.get("full_ratio_x_post_positive")) else None,
             "quality_score_x_post_negative": float(row["quality_score_x_post_negative"]) if pd.notna(row.get("quality_score_x_post_negative")) else None,
             "earnings_recency_weight": float(row["earnings_recency_weight"]) if pd.notna(row.get("earnings_recency_weight")) else None,
+            # LLM sentiment features (Stage 3.5.2)
+            "avg_sentiment_3d":        float(row["avg_sentiment_3d"])        if pd.notna(row.get("avg_sentiment_3d"))        else None,
+            "avg_sentiment_5d":        float(row["avg_sentiment_5d"])        if pd.notna(row.get("avg_sentiment_5d"))        else None,
+            "sentiment_shift_5d":      float(row["sentiment_shift_5d"])      if pd.notna(row.get("sentiment_shift_5d"))      else None,
+            "high_signal_count_3d":    float(row["high_signal_count_3d"])    if pd.notna(row.get("high_signal_count_3d"))    else None,
+            "has_regulatory_risk_5d":  int(row["has_regulatory_risk_5d"])    if pd.notna(row.get("has_regulatory_risk_5d"))  else None,
+            "earnings_beat_signal":    int(row["earnings_beat_signal"])       if pd.notna(row.get("earnings_beat_signal"))    else None,
+            "earnings_miss_signal":    int(row["earnings_miss_signal"])       if pd.notna(row.get("earnings_miss_signal"))    else None,
+            "disagreement_avg_5d":     float(row["disagreement_avg_5d"])     if pd.notna(row.get("disagreement_avg_5d"))     else None,
+            "negative_event_count_5d": float(row["negative_event_count_5d"]) if pd.notna(row.get("negative_event_count_5d")) else None,
             "benchmark_symbol": row.get("benchmark_symbol") if pd.notna(row.get("benchmark_symbol")) else None,
             "builtAt": built_at,
         }
@@ -899,6 +1027,13 @@ def build_daily_symbol_features() -> int:
     earnings_df = load_earnings_frame()
     print(f"Loaded {len(earnings_df):,} earnings rows")
     feature_df = attach_earnings_event_features(feature_df, price_df, earnings_df)
+
+    llm_df = load_llm_sentiment_frame()
+    print(f"Loaded {len(llm_df):,} LLM-enriched article rows")
+    llm_features = aggregate_llm_sentiment_features(llm_df)
+    feature_df = attach_llm_sentiment_features(feature_df, llm_features)
+    print(f"Attached LLM sentiment features")
+
     saved = save_features(feature_df)
     print(f"Saved {saved:,} feature rows to {FEATURE_COLLECTION}")
     return saved
