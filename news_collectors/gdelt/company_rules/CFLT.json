@@ -1,0 +1,18 @@
+{
+  "symbol": "CFLT",
+  "name": "Confluent",
+  "primary_keywords": [
+    "Confluent",
+    "CFLT"
+  ],
+  "expansion_keywords": [
+    "Jay Kreps",
+    "Apache Kafka",
+    "data streaming",
+    "Confluent Cloud",
+    "Flink",
+    "real-time data",
+    "event streaming",
+    "stream processing"
+  ]
+}

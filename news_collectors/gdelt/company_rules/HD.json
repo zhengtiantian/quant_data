@@ -1,0 +1,34 @@
+{
+  "symbol": "HD",
+  "name": "Home Depot",
+  "primary_keywords": [
+    "Home Depot",
+    "HD"
+  ],
+  "expansion_keywords": [
+    "Ted Decker",
+    "comparable sales",
+    "Pro customer",
+    "SRS Distribution",
+    "home improvement",
+    "seasonal",
+    "housing market",
+    "contractor",
+    "big ticket",
+    "transaction",
+    "average ticket"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "'HD' means high-definition in most contexts",
+      "required_keywords": [
+        "Home Depot"
+      ],
+      "min_matches": 1,
+      "strict_validation_keywords": [
+        "Home Depot",
+        "home improvement"
+      ]
+    }
+  }
+}

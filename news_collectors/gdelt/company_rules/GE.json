@@ -1,0 +1,35 @@
+{
+  "symbol": "GE",
+  "name": "GE Aerospace",
+  "primary_keywords": [
+    "GE Aerospace",
+    "GE"
+  ],
+  "expansion_keywords": [
+    "Larry Culp",
+    "LEAP engine",
+    "GE9X",
+    "CFM International",
+    "commercial engine",
+    "defense engine",
+    "services revenue",
+    "installed base",
+    "aftermarket",
+    "turbofan"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "'GE' is extremely short and ambiguous",
+      "required_keywords": [
+        "GE Aerospace"
+      ],
+      "min_matches": 1,
+      "strict_validation_keywords": [
+        "GE Aerospace",
+        "GE Aviation",
+        "jet engine",
+        "aerospace"
+      ]
+    }
+  }
+}

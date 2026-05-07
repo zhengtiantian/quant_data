@@ -1,0 +1,38 @@
+{
+  "symbol": "V",
+  "name": "Visa",
+  "primary_keywords": [
+    "Visa Inc",
+    "Visa card",
+    "Visa payment",
+    "VISA"
+  ],
+  "expansion_keywords": [
+    "Ryan McInerney",
+    "payment volume",
+    "cross-border transactions",
+    "Visa Direct",
+    "tokenization",
+    "contactless payment",
+    "network revenue",
+    "tap-to-pay",
+    "Visa Checkout"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "'visa' also means travel visa/immigration visa",
+      "required_keywords": [
+        "Visa Inc",
+        "payment network",
+        "Visa card",
+        "VISA stock"
+      ],
+      "min_matches": 1,
+      "strict_validation_keywords": [
+        "Visa",
+        "payment",
+        "transaction"
+      ]
+    }
+  }
+}

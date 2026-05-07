@@ -1,0 +1,33 @@
+{
+  "symbol": "MA",
+  "name": "Mastercard",
+  "primary_keywords": [
+    "Mastercard",
+    "MA"
+  ],
+  "expansion_keywords": [
+    "Michael Miebach",
+    "payment volume",
+    "switched transactions",
+    "cross-border",
+    "Mastercard Send",
+    "Vocalink",
+    "open banking",
+    "Nudet",
+    "contactless",
+    "installment"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "'MA' is Massachusetts abbreviation and common suffix",
+      "required_keywords": [
+        "Mastercard"
+      ],
+      "min_matches": 1,
+      "strict_validation_keywords": [
+        "Mastercard",
+        "payment"
+      ]
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "symbol": "CAT",
+  "name": "Caterpillar",
+  "primary_keywords": [
+    "Caterpillar",
+    "CAT"
+  ],
+  "expansion_keywords": [
+    "Jim Umpleby",
+    "construction equipment",
+    "mining equipment",
+    "dealer inventory",
+    "Resource Industries",
+    "Energy & Transportation",
+    "EAME",
+    "backlog",
+    "machinery",
+    "services revenue"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "'cat' refers to animals and many other things",
+      "required_keywords": [
+        "Caterpillar"
+      ],
+      "min_matches": 1,
+      "strict_validation_keywords": [
+        "Caterpillar",
+        "equipment",
+        "machinery"
+      ]
+    }
+  }
+}

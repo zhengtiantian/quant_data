@@ -1,0 +1,37 @@
+{
+  "symbol": "BA",
+  "name": "Boeing",
+  "primary_keywords": [
+    "Boeing",
+    "BA"
+  ],
+  "expansion_keywords": [
+    "Kelly Ortberg",
+    "737 MAX",
+    "787 Dreamliner",
+    "777X",
+    "787 deliveries",
+    "737 production",
+    "defense contract",
+    "Space Launch System",
+    "Starliner",
+    "737 door plug",
+    "FAA certification",
+    "backlog",
+    "737-10"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "'BA' means British Airways and bachelor of arts",
+      "required_keywords": [
+        "Boeing"
+      ],
+      "min_matches": 1,
+      "strict_validation_keywords": [
+        "Boeing",
+        "aircraft",
+        "airplane"
+      ]
+    }
+  }
+}

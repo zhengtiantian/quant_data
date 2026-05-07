@@ -1,0 +1,31 @@
+{
+  "symbol": "S",
+  "name": "SentinelOne",
+  "primary_keywords": [
+    "SentinelOne"
+  ],
+  "expansion_keywords": [
+    "Tomer Weingarten",
+    "Singularity platform",
+    "EDR",
+    "endpoint detection",
+    "XDR",
+    "AI-powered security",
+    "Purple AI",
+    "threat hunting",
+    "ransomware protection"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "ticker 'S' matches almost everything",
+      "required_keywords": [
+        "SentinelOne"
+      ],
+      "min_matches": 1,
+      "strict_validation_keywords": [
+        "SentinelOne",
+        "cybersecurity"
+      ]
+    }
+  }
+}

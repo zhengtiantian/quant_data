@@ -1,0 +1,31 @@
+{
+  "symbol": "APP",
+  "name": "AppLovin",
+  "primary_keywords": [
+    "AppLovin",
+    "APP"
+  ],
+  "expansion_keywords": [
+    "Adam Foroughi",
+    "AXON",
+    "mobile gaming",
+    "in-app advertising",
+    "MAX mediation",
+    "game studios",
+    "AppDiscovery",
+    "e-commerce ads"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "'app' matches all app stores/applications",
+      "required_keywords": [
+        "AppLovin"
+      ],
+      "min_matches": 1,
+      "strict_validation_keywords": [
+        "AppLovin",
+        "AXON"
+      ]
+    }
+  }
+}

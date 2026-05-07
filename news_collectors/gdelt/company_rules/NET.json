@@ -1,0 +1,33 @@
+{
+  "symbol": "NET",
+  "name": "Cloudflare",
+  "primary_keywords": [
+    "Cloudflare",
+    "NET"
+  ],
+  "expansion_keywords": [
+    "Matthew Prince",
+    "Cloudflare Workers",
+    "Cloudflare CDN",
+    "DDoS protection",
+    "Zero Trust",
+    "SASE",
+    "Cloudflare One",
+    "R2 storage",
+    "Magic Transit",
+    "network security"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "'net' is extremely common",
+      "required_keywords": [
+        "Cloudflare"
+      ],
+      "min_matches": 1,
+      "strict_validation_keywords": [
+        "Cloudflare",
+        "cloud security"
+      ]
+    }
+  }
+}

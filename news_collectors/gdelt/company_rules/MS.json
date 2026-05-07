@@ -1,0 +1,34 @@
+{
+  "symbol": "MS",
+  "name": "Morgan Stanley",
+  "primary_keywords": [
+    "Morgan Stanley",
+    "MS"
+  ],
+  "expansion_keywords": [
+    "Ted Pick",
+    "wealth management",
+    "investment banking",
+    "E*Trade",
+    "equities trading",
+    "fixed income",
+    "asset management",
+    "institutional securities",
+    "financial advisor",
+    "AUM"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "'MS' means multiple sclerosis or Microsoft",
+      "required_keywords": [
+        "Morgan Stanley"
+      ],
+      "min_matches": 1,
+      "strict_validation_keywords": [
+        "Morgan Stanley",
+        "wealth management",
+        "investment bank"
+      ]
+    }
+  }
+}
