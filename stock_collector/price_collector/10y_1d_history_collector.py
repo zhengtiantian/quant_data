@@ -30,6 +30,11 @@ def load_stock_universe():
     client = MongoClient(MONGO_URI)
     col = client["quant_data"]["stock_universe"]
     symbols = [s["symbol"] for s in col.find({}, {"symbol": 1, "_id": 0})]
+    # Optional filter: SYMBOLS_FILTER=AAPL,MSFT,... runs only those symbols
+    sym_filter = os.getenv("SYMBOLS_FILTER", "")
+    if sym_filter:
+        allowed = {s.strip().upper() for s in sym_filter.split(",")}
+        symbols = [s for s in symbols if s in allowed]
     print(f"Loaded {len(symbols)} stock symbols")
     return symbols
 
