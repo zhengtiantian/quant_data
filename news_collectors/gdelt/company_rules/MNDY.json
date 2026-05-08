@@ -2,17 +2,25 @@
   "symbol": "MNDY",
   "name": "monday.com",
   "primary_keywords": [
-    "monday.com",
-    "MNDY"
+    "monday.com"
   ],
   "expansion_keywords": [
     "Roy Mann",
     "Eran Zinman",
-    "work OS",
-    "project management",
     "monday CRM",
     "monday Dev",
-    "Work Management",
-    "workflow automation"
-  ]
+    "monday Work Management",
+    "MNDY stock",
+    "MNDY shares",
+    "MNDY earnings",
+    "NASDAQ:MNDY"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Standalone 'monday' is an extremely common English word (day of the week); standalone 'MNDY' matches ticker widgets; generic project-management terms like 'workflow'/'task management'/'collaboration tool' appear in all PM-software articles (Asana, Notion, Jira)",
+      "required_keywords": ["monday.com", "Roy Mann", "Eran Zinman", "monday CRM", "monday Dev", "monday Work Management", "MNDY stock", "MNDY shares", "MNDY earnings", "NASDAQ:MNDY"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["monday.com", "Roy Mann", "Eran Zinman", "monday CRM", "monday Dev", "monday Work Management", "MNDY stock", "MNDY shares", "MNDY earnings", "NASDAQ:MNDY"]
+    }
+  }
 }

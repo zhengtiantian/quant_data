@@ -2,19 +2,26 @@
   "symbol": "SHOP",
   "name": "Shopify",
   "primary_keywords": [
-    "Shopify",
-    "SHOP"
+    "Shopify"
   ],
   "expansion_keywords": [
     "Tobi Lütke",
     "Shopify Payments",
     "Shopify Plus",
-    "merchant",
-    "e-commerce platform",
     "Shopify Capital",
     "Shop Pay",
     "Shopify Markets",
-    "gross merchandise volume",
-    "GMV"
-  ]
+    "SHOP stock",
+    "SHOP shares",
+    "SHOP earnings",
+    "NYSE:SHOP"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Standalone 'SHOP' is a common English word; 'SHOP stock' could match 'a shop stock'; generic e-commerce terms like 'merchant'/'checkout'/'payment gateway'/'GMV' appear in all e-commerce articles (Amazon, WooCommerce, BigCommerce)",
+      "required_keywords": ["Shopify", "Tobi Lütke", "Shopify Payments", "Shopify Plus", "Shopify Capital", "Shop Pay", "SHOP earnings", "NYSE:SHOP"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Shopify", "Tobi Lütke", "Shopify Payments", "Shopify Plus", "Shopify Capital", "Shop Pay", "SHOP earnings", "NYSE:SHOP"]
+    }
+  }
 }

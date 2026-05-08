@@ -2,8 +2,7 @@
   "symbol": "LMT",
   "name": "Lockheed Martin",
   "primary_keywords": [
-    "Lockheed Martin",
-    "LMT"
+    "Lockheed Martin"
   ],
   "expansion_keywords": [
     "Jim Taiclet",
@@ -12,9 +11,17 @@
     "Sikorsky",
     "Black Hawk",
     "HIMARS",
-    "missile defense",
-    "classified programs",
-    "space systems",
-    "defense backlog"
-  ]
+    "LMT stock",
+    "LMT shares",
+    "LMT earnings",
+    "NYSE:LMT"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Standalone 'LMT' matches ticker widgets; generic terms like 'missile defense'/'space systems'/'defense backlog'/'classified programs' appear in all defense contractor articles",
+      "required_keywords": ["Lockheed Martin", "Jim Taiclet", "F-35", "PAC-3", "Sikorsky", "HIMARS", "LMT stock", "LMT shares", "LMT earnings", "NYSE:LMT"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Lockheed Martin", "Jim Taiclet", "F-35", "PAC-3", "Sikorsky", "HIMARS", "LMT stock", "LMT shares", "LMT earnings", "NYSE:LMT"]
+    }
+  }
 }

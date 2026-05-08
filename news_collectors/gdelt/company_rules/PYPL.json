@@ -2,19 +2,26 @@
   "symbol": "PYPL",
   "name": "PayPal",
   "primary_keywords": [
-    "PayPal",
-    "PYPL"
+    "PayPal"
   ],
   "expansion_keywords": [
     "Alex Chriss",
+    "Dan Schulman",
     "Venmo",
-    "Braintree",
+    "Braintree Payments",
     "PayPal Checkout",
-    "buy now pay later",
-    "BNPL",
-    "total payment volume",
-    "Honey",
     "PayPal Commerce",
-    "digital wallet"
-  ]
+    "Honey app",
+    "PYPL stock",
+    "PYPL shares",
+    "PYPL earnings"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Standalone 'PYPL' matches ticker widgets; 'Braintree' alone matches Braintree town in Essex UK (braintreeandwithamtimes.co.uk generates many local news FPs); 'buy now pay later'/'BNPL'/'digital wallet' appear in articles about Klarna, Affirm, Afterpay, Apple Pay; 'Honey' alone matches many unrelated things",
+      "required_keywords": ["PayPal", "Venmo", "Braintree Payments", "PayPal Checkout", "PayPal Commerce", "Honey app", "PYPL stock", "PYPL shares", "PYPL earnings", "NASDAQ:PYPL", "Alex Chriss", "Dan Schulman"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["PayPal", "Venmo", "Braintree Payments", "PayPal Checkout", "PayPal Commerce", "Honey app", "PYPL stock", "PYPL shares", "PYPL earnings", "NASDAQ:PYPL", "Alex Chriss", "Dan Schulman"]
+    }
+  }
 }

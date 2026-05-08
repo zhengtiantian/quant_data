@@ -2,18 +2,25 @@
   "symbol": "DXCM",
   "name": "Dexcom",
   "primary_keywords": [
-    "Dexcom",
-    "DXCM"
+    "Dexcom"
   ],
   "expansion_keywords": [
     "Kevin Sayer",
-    "continuous glucose monitoring",
-    "CGM",
     "G7 sensor",
-    "G6",
-    "diabetes management",
-    "wearable glucose",
-    "real-time glucose",
-    "sensor patch"
-  ]
+    "G7 CGM",
+    "G6 sensor",
+    "G6 CGM",
+    "Stelo",
+    "DXCM stock",
+    "DXCM shares",
+    "DXCM earnings"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Standalone 'CGM' and 'G6' match Abbott FreeStyle Libre, Medtronic, phone/car model articles; 'diabetes management' is extremely generic",
+      "required_keywords": ["Dexcom", "G7 sensor", "G7 CGM", "G6 sensor", "G6 CGM", "Stelo", "DXCM stock", "DXCM shares", "DXCM earnings", "NASDAQ:DXCM", "Kevin Sayer"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Dexcom", "G7 sensor", "G7 CGM", "G6 sensor", "G6 CGM", "Stelo", "DXCM stock", "DXCM shares", "DXCM earnings", "NASDAQ:DXCM", "Kevin Sayer"]
+    }
+  }
 }

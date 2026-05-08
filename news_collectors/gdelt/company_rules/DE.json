@@ -2,36 +2,24 @@
   "symbol": "DE",
   "name": "Deere",
   "primary_keywords": [
-    "Deere",
     "John Deere",
-    "DE"
+    "Deere"
   ],
   "expansion_keywords": [
     "John May",
-    "agriculture equipment",
-    "precision agriculture",
-    "construction",
-    "tractor",
-    "combine harvester",
-    "SmartFire",
     "Hagie",
-    "crop care",
-    "large ag",
-    "small ag"
+    "See & Spray",
+    "DE stock",
+    "DE shares",
+    "DE earnings",
+    "NYSE:DE"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "'DE' is a German/Spanish preposition and state abbreviation",
-      "required_keywords": [
-        "Deere",
-        "John Deere"
-      ],
+      "problem": "Standalone 'DE' is German/Spanish preposition and state abbreviation; generic terms like 'agriculture'/'tractor'/'combine harvester'/'precision agriculture' appear in all farming equipment articles (CNH, AGCO, Kubota)",
+      "required_keywords": ["John Deere", "John May", "Hagie", "See & Spray", "DE earnings", "NYSE:DE"],
       "min_matches": 1,
-      "strict_validation_keywords": [
-        "Deere",
-        "agriculture",
-        "tractor"
-      ]
+      "strict_validation_keywords": ["John Deere", "John May", "Hagie", "See & Spray", "DE earnings", "NYSE:DE"]
     }
   }
 }

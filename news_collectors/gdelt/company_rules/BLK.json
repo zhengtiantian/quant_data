@@ -2,19 +2,26 @@
   "symbol": "BLK",
   "name": "BlackRock",
   "primary_keywords": [
-    "BlackRock",
-    "BLK"
+    "BlackRock"
   ],
   "expansion_keywords": [
     "Larry Fink",
-    "Aladdin",
+    "Rob Kapito",
     "iShares",
-    "ETF",
-    "assets under management",
-    "AUM",
-    "fixed income",
-    "alternatives",
+    "Aladdin platform",
     "Global Infrastructure Partners",
-    "HPS Investment Partners"
-  ]
+    "HPS Investment Partners",
+    "BLK stock",
+    "BLK shares",
+    "BLK earnings",
+    "NYSE:BLK"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Standalone 'BLK' matches ticker widgets; 'Aladdin' alone matches Disney film/game; generic terms like 'ETF'/'AUM'/'fixed income'/'alternatives' appear in all asset management articles",
+      "required_keywords": ["BlackRock", "Aladdin platform", "Global Infrastructure Partners", "HPS Investment Partners", "BLK stock", "BLK shares", "BLK earnings", "NYSE:BLK", "Larry Fink", "Rob Kapito"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["BlackRock", "Aladdin platform", "Global Infrastructure Partners", "HPS Investment Partners", "BLK stock", "BLK shares", "BLK earnings", "NYSE:BLK", "Larry Fink", "Rob Kapito"]
+    }
+  }
 }

@@ -3,18 +3,26 @@
   "name": "American Express",
   "primary_keywords": [
     "American Express",
-    "AmEx",
-    "AXP"
+    "AmEx"
   ],
   "expansion_keywords": [
     "Stephen Squeri",
-    "billed business",
-    "card member spending",
-    "travel rewards",
-    "premium card",
-    "Centurion",
+    "Amex Platinum",
+    "Amex Gold",
+    "Centurion Card",
+    "Centurion lounge",
     "Global Business Travel",
-    "merchant fee",
-    "net card fees"
-  ]
+    "AXP stock",
+    "AXP shares",
+    "AXP earnings",
+    "NYSE:AXP"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Standalone 'AXP' matches ticker widgets; 'Centurion' alone matches military units, other Centurion companies; generic terms like 'travel rewards'/'premium card'/'merchant fee' appear in all payments articles",
+      "required_keywords": ["American Express", "AmEx", "Stephen Squeri", "Amex Platinum", "Amex Gold", "Centurion Card", "Centurion lounge", "Global Business Travel", "AXP stock", "AXP shares", "AXP earnings", "NYSE:AXP"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["American Express", "AmEx", "Stephen Squeri", "Amex Platinum", "Amex Gold", "Centurion Card", "Centurion lounge", "Global Business Travel", "AXP stock", "AXP shares", "AXP earnings", "NYSE:AXP"]
+    }
+  }
 }

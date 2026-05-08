@@ -7,25 +7,17 @@
   "expansion_keywords": [
     "Tomer Weingarten",
     "Singularity platform",
-    "EDR",
-    "endpoint detection",
-    "XDR",
-    "AI-powered security",
     "Purple AI",
-    "threat hunting",
-    "ransomware protection"
+    "S stock",
+    "S shares",
+    "S earnings"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "ticker 'S' matches almost everything",
-      "required_keywords": [
-        "SentinelOne"
-      ],
+      "problem": "ticker 'S' matches almost everything; 'cybersecurity' is too generic",
+      "required_keywords": ["SentinelOne", "Tomer Weingarten", "Singularity platform", "Purple AI"],
       "min_matches": 1,
-      "strict_validation_keywords": [
-        "SentinelOne",
-        "cybersecurity"
-      ]
+      "strict_validation_keywords": ["SentinelOne", "Tomer Weingarten", "Singularity platform", "Purple AI"]
     }
   }
 }

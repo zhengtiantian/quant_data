@@ -2,19 +2,29 @@
   "symbol": "GILD",
   "name": "Gilead Sciences",
   "primary_keywords": [
-    "Gilead",
-    "GILD"
+    "Gilead Sciences",
+    "Gilead"
   ],
   "expansion_keywords": [
     "Daniel O'Day",
     "Veklury",
     "remdesivir",
     "Biktarvy",
-    "HIV treatment",
-    "hepatitis C",
     "lenacapavir",
-    "oncology",
-    "cell therapy",
-    "Trodelvy"
-  ]
+    "Trodelvy",
+    "Yescarta",
+    "Sunlenca",
+    "Descovy",
+    "GILD stock",
+    "GILD shares",
+    "GILD earnings"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "'Gilead' is a biblical/geographic place name in Israeli politics; requires pharma-specific identifier in headline",
+      "required_keywords": ["Gilead Sciences", "remdesivir", "Veklury", "Biktarvy", "lenacapavir", "Trodelvy", "Yescarta", "Sunlenca", "Descovy", "GILD stock", "GILD shares", "GILD earnings", "NASDAQ:GILD", "Daniel O'Day"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Gilead Sciences", "remdesivir", "Veklury", "Biktarvy", "lenacapavir", "Trodelvy", "Yescarta", "Sunlenca", "Descovy", "GILD stock", "GILD shares", "GILD earnings", "NASDAQ:GILD", "Daniel O'Day"]
+    }
+  }
 }

@@ -2,17 +2,23 @@
   "symbol": "RBLX",
   "name": "Roblox",
   "primary_keywords": [
-    "Roblox",
-    "RBLX"
+    "Roblox"
   ],
   "expansion_keywords": [
     "David Baszucki",
-    "metaverse",
-    "user-generated content",
     "Robux",
-    "avatar",
-    "virtual world",
     "Roblox Studio",
-    "daily active users"
-  ]
+    "RBLX stock",
+    "RBLX shares",
+    "RBLX earnings",
+    "NYSE:RBLX"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Standalone 'RBLX' matches ticker widgets; generic gaming terms like 'virtual world'/'metaverse'/'user-generated content'/'daily active users' appear in all gaming articles",
+      "required_keywords": ["Roblox", "David Baszucki", "Robux", "Roblox Studio", "RBLX stock", "RBLX shares", "RBLX earnings", "NYSE:RBLX"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Roblox", "David Baszucki", "Robux", "Roblox Studio", "RBLX stock", "RBLX shares", "RBLX earnings", "NYSE:RBLX"]
+    }
+  }
 }

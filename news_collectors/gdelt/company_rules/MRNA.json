@@ -2,17 +2,25 @@
   "symbol": "MRNA",
   "name": "Moderna",
   "primary_keywords": [
-    "Moderna",
-    "MRNA"
+    "Moderna"
   ],
   "expansion_keywords": [
-    "Stéphane Bancel",
-    "mRNA vaccine",
-    "COVID vaccine",
-    "RSV vaccine",
-    "flu vaccine",
-    "oncology vaccine",
+    "Stephane Bancel",
+    "Spikevax",
+    "mRNA-1273",
+    "mRESVia",
+    "mRNA-4157",
     "personalized cancer vaccine",
-    "respiratory vaccine"
-  ]
+    "MRNA stock",
+    "MRNA shares",
+    "MRNA earnings"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Standalone 'MRNA' is the scientific abbreviation for messenger RNA appearing in all gene therapy articles; 'Moderna' means 'modern' in Spanish/Italian/Portuguese; generic vaccine terms appear in Pfizer/BioNTech articles",
+      "required_keywords": ["Moderna", "Spikevax", "mRNA-1273", "mRESVia", "mRNA-4157", "personalized cancer vaccine", "MRNA stock", "MRNA shares", "MRNA earnings", "NASDAQ:MRNA", "Stephane Bancel"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Moderna", "Spikevax", "mRNA-1273", "mRESVia", "mRNA-4157", "personalized cancer vaccine", "MRNA stock", "MRNA shares", "MRNA earnings", "NASDAQ:MRNA", "Stephane Bancel"]
+    }
+  }
 }

@@ -3,33 +3,24 @@
   "name": "GE Aerospace",
   "primary_keywords": [
     "GE Aerospace",
-    "GE"
+    "GE Aviation"
   ],
   "expansion_keywords": [
     "Larry Culp",
     "LEAP engine",
     "GE9X",
     "CFM International",
-    "commercial engine",
-    "defense engine",
-    "services revenue",
-    "installed base",
-    "aftermarket",
-    "turbofan"
+    "GE stock",
+    "GE shares",
+    "GE earnings",
+    "NYSE:GE"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "'GE' is extremely short and ambiguous",
-      "required_keywords": [
-        "GE Aerospace"
-      ],
+      "problem": "Standalone 'GE' is extremely short and ambiguous (German abbreviations, General Electric pre-spinoff conglomerate); generic terms like 'jet engine'/'aerospace'/'turbofan'/'aftermarket' appear in all aviation articles (Rolls-Royce, Pratt & Whitney, CFM)",
+      "required_keywords": ["GE Aerospace", "GE Aviation", "Larry Culp", "LEAP engine", "GE9X", "CFM International", "GE stock", "GE shares", "GE earnings", "NYSE:GE"],
       "min_matches": 1,
-      "strict_validation_keywords": [
-        "GE Aerospace",
-        "GE Aviation",
-        "jet engine",
-        "aerospace"
-      ]
+      "strict_validation_keywords": ["GE Aerospace", "GE Aviation", "Larry Culp", "LEAP engine", "GE9X", "CFM International", "GE stock", "GE shares", "GE earnings", "NYSE:GE"]
     }
   }
 }

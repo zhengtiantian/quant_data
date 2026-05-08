@@ -2,33 +2,24 @@
   "symbol": "MS",
   "name": "Morgan Stanley",
   "primary_keywords": [
-    "Morgan Stanley",
-    "MS"
+    "Morgan Stanley"
   ],
   "expansion_keywords": [
     "Ted Pick",
-    "wealth management",
-    "investment banking",
+    "James Gorman",
     "E*Trade",
-    "equities trading",
-    "fixed income",
-    "asset management",
-    "institutional securities",
-    "financial advisor",
-    "AUM"
+    "Eaton Vance",
+    "MS stock",
+    "MS shares",
+    "MS earnings",
+    "NYSE:MS"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "'MS' means multiple sclerosis or Microsoft",
-      "required_keywords": [
-        "Morgan Stanley"
-      ],
+      "problem": "Standalone 'MS' means multiple sclerosis or Microsoft; generic finance terms like 'wealth management'/'investment banking'/'fixed income'/'AUM' appear in all finance articles",
+      "required_keywords": ["Morgan Stanley", "E*Trade", "Eaton Vance", "MS stock", "MS shares", "MS earnings", "NYSE:MS", "Ted Pick", "James Gorman"],
       "min_matches": 1,
-      "strict_validation_keywords": [
-        "Morgan Stanley",
-        "wealth management",
-        "investment bank"
-      ]
+      "strict_validation_keywords": ["Morgan Stanley", "E*Trade", "Eaton Vance", "MS stock", "MS shares", "MS earnings", "NYSE:MS", "Ted Pick", "James Gorman"]
     }
   }
 }

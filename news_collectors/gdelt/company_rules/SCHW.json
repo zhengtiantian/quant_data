@@ -2,20 +2,27 @@
   "symbol": "SCHW",
   "name": "Charles Schwab",
   "primary_keywords": [
-    "Charles Schwab",
-    "Schwab",
-    "SCHW"
+    "Charles Schwab"
   ],
   "expansion_keywords": [
     "Rick Wurster",
-    "brokerage",
-    "net interest revenue",
+    "Walt Bettinger",
+    "TD Ameritrade",
     "Ameritrade",
-    "advisor services",
-    "ETF",
-    "retail investor",
-    "bank sweep",
-    "margin lending",
-    "client assets"
-  ]
+    "Schwab",
+    "Schwab Bank",
+    "Schwab brokerage",
+    "SCHW stock",
+    "SCHW shares",
+    "SCHW earnings",
+    "NYSE:SCHW"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Standalone 'Schwab' matches Klaus Schwab (WEF founder, Davos articles); 'SCHW' matches ticker widgets; generic terms like 'brokerage'/'ETF'/'retail investor' appear in all finance articles",
+      "required_keywords": ["Charles Schwab", "TD Ameritrade", "Ameritrade", "Schwab Bank", "Schwab brokerage", "SCHW stock", "SCHW shares", "SCHW earnings", "NYSE:SCHW", "Rick Wurster", "Walt Bettinger"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Charles Schwab", "TD Ameritrade", "Ameritrade", "Schwab Bank", "Schwab brokerage", "SCHW stock", "SCHW shares", "SCHW earnings", "NYSE:SCHW", "Rick Wurster", "Walt Bettinger"]
+    }
+  }
 }

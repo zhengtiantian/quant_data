@@ -2,17 +2,24 @@
   "symbol": "GTLB",
   "name": "GitLab",
   "primary_keywords": [
-    "GitLab",
-    "GTLB"
+    "GitLab"
   ],
   "expansion_keywords": [
     "Sid Sijbrandij",
-    "DevSecOps",
-    "CI/CD",
-    "version control",
-    "DevOps platform",
     "GitLab Duo",
-    "source code management",
-    "software development lifecycle"
-  ]
+    "GitLab CI",
+    "GitLab Inc",
+    "GTLB stock",
+    "GTLB shares",
+    "GTLB earnings",
+    "NASDAQ:GTLB"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Standalone 'GTLB' matches ticker widgets; generic DevOps/DevSecOps terms like 'source control'/'CI/CD pipeline'/'code repository' appear in all developer-tools articles (GitHub, Bitbucket, Azure DevOps)",
+      "required_keywords": ["GitLab", "Sid Sijbrandij", "GitLab Duo", "GitLab CI", "GitLab Inc", "GTLB stock", "GTLB shares", "GTLB earnings", "NASDAQ:GTLB"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["GitLab", "Sid Sijbrandij", "GitLab Duo", "GitLab CI", "GitLab Inc", "GTLB stock", "GTLB shares", "GTLB earnings", "NASDAQ:GTLB"]
+    }
+  }
 }

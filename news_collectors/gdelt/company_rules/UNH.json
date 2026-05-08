@@ -3,18 +3,22 @@
   "name": "UnitedHealth",
   "primary_keywords": [
     "UnitedHealth",
-    "UNH"
+    "UnitedHealthcare"
   ],
   "expansion_keywords": [
     "Andrew Witty",
     "Optum",
-    "UnitedHealthcare",
-    "medical loss ratio",
-    "pharmacy benefit",
-    "claims",
-    "managed care",
     "Change Healthcare",
-    "health insurance",
-    "Medicare Advantage"
-  ]
+    "UNH stock",
+    "UNH shares",
+    "UNH earnings"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Generic terms like 'health insurance', 'managed care', 'Medicare Advantage', 'claims' appear in articles about all health insurers; standalone 'UNH' matches ticker widgets",
+      "required_keywords": ["UnitedHealth", "UnitedHealthcare", "Optum", "Change Healthcare", "UNH stock", "UNH shares", "UNH earnings", "NYSE:UNH", "Andrew Witty"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["UnitedHealth", "UnitedHealthcare", "Optum", "Change Healthcare", "UNH stock", "UNH shares", "UNH earnings", "NYSE:UNH", "Andrew Witty"]
+    }
+  }
 }

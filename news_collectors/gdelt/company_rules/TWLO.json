@@ -2,17 +2,27 @@
   "symbol": "TWLO",
   "name": "Twilio",
   "primary_keywords": [
-    "Twilio",
-    "TWLO"
+    "Twilio"
   ],
   "expansion_keywords": [
     "Jeff Lawson",
     "Khozema Shipchandler",
-    "communication API",
-    "SMS API",
     "SendGrid",
-    "Segment CDP",
-    "customer data platform",
-    "programmable communications"
-  ]
+    "Twilio Segment",
+    "Twilio Flex",
+    "Twilio Verify",
+    "Twilio Voice",
+    "TWLO stock",
+    "TWLO shares",
+    "TWLO earnings",
+    "NYSE:TWLO"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Standalone 'TWLO' matches ticker widgets; generic CPaaS/cloud-communications terms like 'SMS API'/'voice API'/'customer engagement' appear in all communications-platform articles",
+      "required_keywords": ["Twilio", "Jeff Lawson", "Khozema Shipchandler", "SendGrid", "Twilio Segment", "Twilio Flex", "Twilio Verify", "Twilio Voice", "TWLO stock", "TWLO shares", "TWLO earnings", "NYSE:TWLO"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Twilio", "Jeff Lawson", "Khozema Shipchandler", "SendGrid", "Twilio Segment", "Twilio Flex", "Twilio Verify", "Twilio Voice", "TWLO stock", "TWLO shares", "TWLO earnings", "NYSE:TWLO"]
+    }
+  }
 }

@@ -2,19 +2,25 @@
   "symbol": "SPOT",
   "name": "Spotify",
   "primary_keywords": [
-    "Spotify",
-    "SPOT"
+    "Spotify"
   ],
   "expansion_keywords": [
     "Daniel Ek",
-    "monthly active users",
-    "paid subscriber",
-    "podcast",
-    "audiobook",
-    "music streaming",
-    "gross profit",
-    "premium revenue",
     "Spotify Wrapped",
-    "ad-supported"
-  ]
+    "Spotify Premium",
+    "Spotify podcast",
+    "Joe Rogan Spotify",
+    "SPOT stock",
+    "SPOT shares",
+    "SPOT earnings",
+    "NYSE:SPOT"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Standalone 'SPOT' is a common English word and SPOT satellite brand; 'podcast'/'music streaming'/'audiobook'/'monthly active users' appear in articles about Apple Music, Amazon Music, Pocket Casts, etc.",
+      "required_keywords": ["Spotify", "Daniel Ek", "Spotify Wrapped", "Spotify Premium", "Spotify podcast", "Joe Rogan Spotify", "SPOT stock", "SPOT shares", "SPOT earnings", "NYSE:SPOT"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Spotify", "Daniel Ek", "Spotify Wrapped", "Spotify Premium", "Spotify podcast", "Joe Rogan Spotify", "SPOT stock", "SPOT shares", "SPOT earnings", "NYSE:SPOT"]
+    }
+  }
 }

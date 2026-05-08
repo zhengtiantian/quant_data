@@ -2,19 +2,25 @@
   "symbol": "ILMN",
   "name": "Illumina",
   "primary_keywords": [
-    "Illumina",
-    "ILMN"
+    "Illumina"
   ],
   "expansion_keywords": [
     "Jacob Thaysen",
-    "genome sequencing",
-    "NGS",
-    "next-generation sequencing",
+    "Francis deSouza",
     "NovaSeq",
     "Grail",
-    "liquid biopsy",
-    "cancer detection",
-    "genomic data",
-    "DNA sequencing"
-  ]
+    "Grail cancer",
+    "Grail acquisition",
+    "ILMN stock",
+    "ILMN shares",
+    "ILMN earnings"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "'Grail' alone matches 'Holy Grail' references; 'NGS'/'genome sequencing'/'liquid biopsy' appear in articles about Pacific Biosciences, Oxford Nanopore, Guardant Health; 'cancer detection' is extremely generic",
+      "required_keywords": ["Illumina", "NovaSeq", "Grail cancer", "Grail acquisition", "ILMN stock", "ILMN shares", "ILMN earnings", "NASDAQ:ILMN", "Jacob Thaysen", "Francis deSouza"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Illumina", "NovaSeq", "Grail cancer", "Grail acquisition", "ILMN stock", "ILMN shares", "ILMN earnings", "NASDAQ:ILMN", "Jacob Thaysen", "Francis deSouza"]
+    }
+  }
 }

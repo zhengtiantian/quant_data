@@ -9,7 +9,6 @@ import json
 import re
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from glob import glob
 
 project_root = "/Users/xiz/Quant_trade/quant_data"
 collector_dir = os.path.join(project_root, "news_collectors/gdelt")
@@ -20,14 +19,16 @@ for path in [project_root, collector_dir]:
 os.environ["USE_SLM_FILTER"] = "true"
 
 try:
+    import historical_collector as _hc
     from historical_collector import process_file_task, fetch_article, RuleManager
 except ImportError as e:
     print(f"❌ Import failed: {e}")
     sys.exit(1)
 
 BASE_DIR       = "/Volumes/Data24T/docker-volumes/gdelt_cache/files"
+BASE_DIR2      = "/Volumes/Data6T/gdelt_cache/files"   # odd batches
 RULES_DIR      = os.path.join(project_root, "news_collectors/gdelt/company_rules")
-FILES_PER_YEAR = 100
+FILES_PER_YEAR = 30    # files sampled per calendar year (10yr × 30 = ~300 total)
 FETCH_WORKERS  = 6
 MAX_FETCH      = 10   # 每个 symbol 最多抓取正文数
 
@@ -38,27 +39,79 @@ TECH_26 = [
     "DELL", "INTU",
 ]
 
+NEW_60 = [
+    "SHOP", "NET", "ZS", "HUBS", "WDAY", "VEEV", "TEAM", "TTD", "OKTA", "APP",
+    "RBLX", "COIN", "TWLO", "DUOL", "CFLT", "GTLB", "MNDY", "S",
+    "LLY", "JNJ", "AMGN", "GILD", "REGN", "VRTX", "ISRG", "UNH", "MRNA",
+    "ABBV", "PFE", "MDT", "SYK", "DXCM", "ILMN",
+    "V", "MA", "PYPL", "GS", "JPM", "MS", "BLK", "SCHW", "AXP", "COF",
+    "DIS", "SNAP", "SPOT", "RDDT", "PINS",
+    "NKE", "HD", "SBUX", "MCD", "TGT",
+    "CAT", "HON", "RTX", "LMT", "GE", "DE", "BA",
+]
+
+
+def _register_files(csv_paths):
+    """Register only the sampled CSV paths into _hc._filename_to_batch.
+
+    process_file_task does os.path.basename(url) then calls _file_cached(basename),
+    which needs _filename_to_batch to resolve the batch dir. We populate just the
+    ~100 sampled files instead of all 188K, so this is instant.
+    """
+    for full_path in csv_paths:
+        fname    = os.path.basename(full_path)
+        batch_id = int(os.path.basename(os.path.dirname(full_path)))
+        _hc._filename_to_batch[fname] = batch_id
+
 
 def _all_zips_by_year():
-    all_zips = glob(os.path.join(BASE_DIR, "*.gkg.csv.zip"))
+    """Quickly discover batch dirs; use only the first filename per batch for year detection.
+
+    Returns {year: [batch_dir_path, ...]} — individual files are listed on demand
+    inside _sample_files so we never scan all 188K files upfront.
+    """
     by_year = {}
-    for z in all_zips:
-        y = os.path.basename(z)[:4]
-        if y.isdigit() and 2016 <= int(y) <= datetime.now().year:
-            by_year.setdefault(y, []).append(z)
+    for base in [BASE_DIR, BASE_DIR2]:
+        if not os.path.exists(base):
+            continue
+        try:
+            entries = list(os.scandir(base))
+        except PermissionError as e:
+            print(f"  ⚠️  Skipping {base}: {e}")
+            continue
+        for entry in entries:
+            if not entry.is_dir():
+                continue
+            # Peek at first CSV to learn the year — fast, no full listing
+            try:
+                first = next(
+                    f for f in os.listdir(entry.path) if f.endswith(".gkg.csv")
+                )
+            except StopIteration:
+                continue
+            y = first[:4]
+            if y.isdigit() and 2015 <= int(y) <= datetime.now().year + 1:
+                by_year.setdefault(y, []).append(entry.path)
     return by_year
 
 
 def _sample_files(by_year, per_year=FILES_PER_YEAR):
+    """Sample `per_year` CSV files per year. by_year maps year → [batch_dir_paths]."""
     files = []
     for y in sorted(by_year):
-        files.extend(random.sample(by_year[y], min(per_year, len(by_year[y]))))
+        batch_dirs = by_year[y]
+        sampled_dirs = random.sample(batch_dirs, min(per_year, len(batch_dirs)))
+        for d in sampled_dirs:
+            # Pick one random CSV from each sampled batch dir
+            csvs = [os.path.join(d, f) for f in os.listdir(d) if f.endswith(".gkg.csv")]
+            if csvs:
+                files.append(random.choice(csvs))
     return files
 
 
-def _avg_date(zip_paths):
+def _avg_date(csv_paths):
     dates = []
-    for z in zip_paths:
+    for z in csv_paths:
         try:
             dates.append(datetime.strptime(os.path.basename(z)[:8], "%Y%m%d"))
         except Exception:
@@ -81,8 +134,9 @@ def _build_keyword_map(rule_manager, symbol, avg_date):
 
 
 def validate_symbol(symbol, rule_manager, by_year):
+    import ahocorasick
     cfg = rule_manager.company_configs.get(symbol, {})
-    company_name = cfg.get("company_name", symbol)
+    company_name = cfg.get("name", symbol)
     company = {"symbol": symbol, "name": company_name, "cleaned_name": company_name}
 
     print(f"\n{'='*65}")
@@ -90,21 +144,28 @@ def validate_symbol(symbol, rule_manager, by_year):
     print(f"{'='*65}")
 
     sample_files = _sample_files(by_year)
+    _register_files(sample_files)   # inject batch_id so _file_cached works
     avg_dt = _avg_date(sample_files)
-    kw_map, pattern, keywords = _build_keyword_map(rule_manager, symbol, avg_dt)
+    kw_map, _, keywords = _build_keyword_map(rule_manager, symbol, avg_dt)
 
     print(f"  Keywords ({len(keywords)}): {', '.join(keywords[:8])}{'...' if len(keywords)>8 else ''}")
     print(f"  Files: {len(sample_files)} ({FILES_PER_YEAR}/year)\n")
 
-    if not pattern:
+    if not kw_map:
         print("  ⚠️  No keywords — skipping")
         return {"symbol": symbol, "kw_hits": 0, "confirmed": [], "status": "no_keywords"}
 
-    # Phase 1: keyword regex + rule/SLM
+    # Build Aho-Corasick automaton (current process_file_task signature)
+    ac = ahocorasick.Automaton()
+    for kl in kw_map:
+        ac.add_word(kl, kl)
+    ac.make_automaton()
+
+    # Phase 1: keyword AC match → rule/SLM filter
     kw_hits = []
     sym_to_company = {symbol: company}
     for i, zp in enumerate(sample_files):
-        res = process_file_task(zp, rule_manager, kw_map, pattern, sym_to_company, None, {})
+        res = process_file_task(zp, rule_manager, ac, kw_map, sym_to_company, None, {})
         matches = res.get("matches", []) if res else []
         if matches:
             fname = os.path.basename(zp)
@@ -166,17 +227,28 @@ def main():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("symbol", nargs="?", default=None, help="Single symbol to validate")
+    parser.add_argument("--new", action="store_true", help="Validate all 60 new symbols")
+    parser.add_argument("--tech", action="store_true", help="Validate original TECH_26")
     args = parser.parse_args()
 
+    print("🔍 Discovering batch dirs by year...")
     by_year = _all_zips_by_year()
     years = sorted(by_year.keys())
-    print(f"📦 {sum(len(v) for v in by_year.values())} GKG files  |  years {years[0]}–{years[-1]}")
+    total_batches = sum(len(v) for v in by_year.values())
+    print(f"📦 {total_batches} batch dirs  |  years {years[0]}–{years[-1]}")
 
     rule_manager = RuleManager(RULES_DIR)
     all_results = {}
 
-    symbols = [args.symbol.upper()] if args.symbol else TECH_26
-    print(f"📋 Validating: {symbols}\n")
+    if args.symbol:
+        symbols = [args.symbol.upper()]
+    elif args.new:
+        symbols = NEW_60
+    elif args.tech:
+        symbols = TECH_26
+    else:
+        symbols = NEW_60   # default to new symbols
+    print(f"📋 Validating {len(symbols)} symbols: {symbols[:6]}{'...' if len(symbols)>6 else ''}\n")
 
     for symbol in symbols:
         result = validate_symbol(symbol, rule_manager, by_year)

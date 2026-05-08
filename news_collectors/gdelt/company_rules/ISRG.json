@@ -2,17 +2,28 @@
   "symbol": "ISRG",
   "name": "Intuitive Surgical",
   "primary_keywords": [
-    "Intuitive Surgical",
-    "ISRG"
+    "Intuitive Surgical"
   ],
   "expansion_keywords": [
     "Gary Guthart",
     "da Vinci",
-    "Ion endoluminal",
-    "surgical robot",
-    "robotic surgery",
-    "procedure growth",
+    "da Vinci system",
+    "da Vinci robot",
+    "da Vinci surgical system",
+    "da Vinci Xi",
+    "da Vinci X",
     "da Vinci 5",
-    "minimally invasive"
-  ]
+    "Ion endoluminal",
+    "ISRG stock",
+    "ISRG shares",
+    "ISRG earnings"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Standalone 'da Vinci' matches Leonardo da Vinci art/creativity/history articles; SLM unreliable at catching these; require compound forms in GKG title",
+      "required_keywords": ["Intuitive Surgical", "da Vinci system", "da Vinci robot", "da Vinci surgical system", "da Vinci surgical", "da Vinci Xi", "da Vinci X", "da Vinci 5", "Ion endoluminal", "ISRG stock", "ISRG shares", "ISRG earnings", "NASDAQ:ISRG", "Gary Guthart"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Intuitive Surgical", "da Vinci system", "da Vinci robot", "da Vinci surgical system", "da Vinci surgical", "da Vinci Xi", "da Vinci X", "da Vinci 5", "Ion endoluminal", "ISRG stock", "ISRG shares", "ISRG earnings", "NASDAQ:ISRG", "Gary Guthart"]
+    }
+  }
 }

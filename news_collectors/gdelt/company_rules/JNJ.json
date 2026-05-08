@@ -2,19 +2,28 @@
   "symbol": "JNJ",
   "name": "Johnson & Johnson",
   "primary_keywords": [
-    "Johnson & Johnson",
-    "JNJ"
+    "Johnson & Johnson"
   ],
   "expansion_keywords": [
     "Joaquin Duato",
-    "Darvol",
+    "Janssen Pharmaceutical",
     "Stelara",
     "Tremfya",
-    "talc lawsuit",
-    "MedTech",
-    "Janssen",
-    "cancer treatment",
-    "cardiovascular",
-    "surgical robot"
-  ]
+    "Darzalex",
+    "Carvykti",
+    "Tecvayli",
+    "Kenvue",
+    "JNJ stock",
+    "JNJ shares",
+    "JNJ earnings",
+    "NYSE:JNJ"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Standalone 'JNJ' matches ticker widgets; generic pharma terms like 'oncology'/'immunology'/'biosimilar'/'talc lawsuit' appear in all large-cap pharma articles; drug names like Stelara/Darzalex appear in clinical/competitor articles without J&J focus",
+      "required_keywords": ["Johnson & Johnson", "Joaquin Duato", "Janssen Pharmaceutical", "JNJ stock", "JNJ shares", "JNJ earnings", "NYSE:JNJ"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Johnson & Johnson", "Joaquin Duato", "Janssen Pharmaceutical", "JNJ stock", "JNJ shares", "JNJ earnings", "NYSE:JNJ"]
+    }
+  }
 }

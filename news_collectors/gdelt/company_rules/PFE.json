@@ -2,19 +2,30 @@
   "symbol": "PFE",
   "name": "Pfizer",
   "primary_keywords": [
-    "Pfizer",
-    "PFE"
+    "Pfizer"
   ],
   "expansion_keywords": [
     "Albert Bourla",
     "Paxlovid",
     "Comirnaty",
-    "COVID drug",
-    "oncology pipeline",
-    "Seagen acquisition",
     "Eliquis",
-    "weight loss",
-    "RSV vaccine",
-    "pipeline"
-  ]
+    "apixaban",
+    "Ibrance",
+    "palbociclib",
+    "Vyndaqel",
+    "tafamidis",
+    "Prevnar",
+    "Seagen",
+    "PFE stock",
+    "PFE shares",
+    "PFE earnings"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Standalone 'PFE' matches ticker widgets; generic terms like 'COVID drug', 'RSV vaccine', 'weight loss', 'pipeline' appear in articles about all pharma companies",
+      "required_keywords": ["Pfizer", "Paxlovid", "Comirnaty", "Eliquis", "apixaban", "Ibrance", "palbociclib", "Vyndaqel", "tafamidis", "Prevnar", "Seagen", "PFE stock", "PFE shares", "PFE earnings", "NYSE:PFE", "Albert Bourla"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Pfizer", "Paxlovid", "Comirnaty", "Eliquis", "apixaban", "Ibrance", "palbociclib", "Vyndaqel", "tafamidis", "Prevnar", "Seagen", "PFE stock", "PFE shares", "PFE earnings", "NYSE:PFE", "Albert Bourla"]
+    }
+  }
 }

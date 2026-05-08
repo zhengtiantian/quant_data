@@ -1,69 +1,128 @@
 {
-    "timestamp": "2026-04-19T16:56:49.414654",
+    "timestamp": "2026-05-08T16:04:33.856382",
     "results": {
-        "ABNB": {
-            "symbol": "ABNB",
-            "company_name": "Airbnb",
+        "JNJ": {
+            "symbol": "JNJ",
+            "company_name": "Johnson & Johnson",
             "keywords": [
-                "Short-term rental",
-                "IPO",
-                "Joe Gebbia",
-                "Travel recovery",
-                "Brian Chesky",
-                "Regulation battles",
-                "Experiences",
-                "Superhost",
-                "Nathan Blecharczyk",
-                "Airbnb"
+                "JNJ shares",
+                "Stelara",
+                "NYSE:JNJ",
+                "Tecvayli",
+                "JNJ earnings",
+                "Janssen Pharmaceutical",
+                "JNJ stock",
+                "Darzalex",
+                "Tremfya",
+                "Joaquin Duato",
+                "Johnson & Johnson",
+                "Carvykti",
+                "Kenvue"
             ],
-            "kw_hits": 26,
-            "fetch_attempted": 26,
+            "kw_hits": 34,
+            "fetch_attempted": 34,
             "confirmed": [
                 {
-                    "title": "How Airbnb CEO's job cuts stand in stark contrast to Meta and Twitter",
+                    "title": "J&J to end sales of baby powder with talc globally next year",
                     "quality": "full",
-                    "content_len": 4615,
-                    "url": "https://fortune.com/2022/11/18/tech-layoffs-airbnb-versus-meta-twitter/",
-                    "date": "20240603"
+                    "content_len": 2013,
+                    "url": "https://apnews.com/article/health-canada-lawsuits-cancer-40bbfd5bb494a3d31a1374195b287f3b",
+                    "date": "20251220"
                 },
                 {
-                    "title": "Founder Mode",
-                    "quality": "full",
-                    "content_len": 6970,
-                    "url": "https://paulgraham.com/foundermode.html",
-                    "date": "20240905"
+                    "title": "Johnson & Johnson (NYSE:JNJ) Position Lifted by AlTi Global Inc.",
+                    "quality": "title_only",
+                    "content_len": 0,
+                    "url": "https://report.stocknews.com/sign-up/ticker/",
+                    "date": "20240925"
                 },
                 {
-                    "title": "Founder Mode",
-                    "quality": "full",
-                    "content_len": 6970,
-                    "url": "https://paulgraham.com/foundermode.html",
-                    "date": "20240905"
+                    "title": "Johnson & Johnson (NYSE:JNJ)  Shares Down 0.5%",
+                    "quality": "title_only",
+                    "content_len": 0,
+                    "url": "https://report.stocknews.com/sign-up/ticker/",
+                    "date": "20240923"
                 },
                 {
-                    "title": "The Most Unique Hotel Experiences in New York State",
+                    "title": "Kenvue Stock Has Unusual Put Option Activity After Lower Q2 Sales and CEO Firing",
                     "quality": "full",
-                    "content_len": 3794,
-                    "url": "https://lite987.com/the-most-unique-hotel-experiences-in-new-york-state/",
-                    "date": "20230728"
+                    "content_len": 2501,
+                    "url": "https://finance.yahoo.com/news/kenvue-stock-unusual-put-option-173002440.html",
+                    "date": "20250718"
                 },
                 {
-                    "title": "Introducing social features for Airbnb Experiences: A new way to connect with other guests before, during, and after your trip",
-                    "quality": "full",
-                    "content_len": 7166,
-                    "url": "https://www.webwire.com/ViewPressRel.asp?aId=345578",
-                    "date": "20251022"
+                    "title": "Grove Bank & Trust Purchases 322 Shares of Johnson & Johnson (NYSE:JNJ)",
+                    "quality": "title_only",
+                    "content_len": 0,
+                    "url": "https://report.stocknews.com/sign-up/ticker/",
+                    "date": "20240828"
                 },
                 {
-                    "title": "During Discrimination Controversy, Airbnb To Host Civil Rights Media Event With BET",
+                    "title": "Congress Park Capital LLC Sells 297 Shares of Johnson & Johnson (NYSE:JNJ)",
+                    "quality": "title_only",
+                    "content_len": 0,
+                    "url": "https://report.stocknews.com/sign-up/ticker/",
+                    "date": "20240628"
+                },
+                {
+                    "title": "Bavarian Nordic Reports Omicron Data from Phase 2 Trial of its COVID-19 Booster Vaccine Candidate",
                     "quality": "full",
-                    "content_len": 2456,
-                    "url": "https://www.buzzfeed.com/carolineodonovan/during-discrimination-crisis-airbnb-to-host-civil-rights-med",
-                    "date": "20160726"
+                    "content_len": 5178,
+                    "url": "https://apnews.com/press-release/globe-newswire/covid-business-health-europe-denmark-bef51d642fac7e724580b693c1de2ec0",
+                    "date": "20220505"
+                },
+                {
+                    "title": "Johnson & Johnson COVID-19 Booster, Administered Six Months After Two-Dose Regimen of BNT162b2, Shows Substantial Increase in Antibody and T-cell Responses",
+                    "quality": "full",
+                    "content_len": 15714,
+                    "url": "https://www.prnewswire.com:443/news-releases/johnson--johnson-covid-19-booster-administered-six-months-after-two-dose-regimen-of-bnt162b2-shows-substantial-increase-in-antibody-and-t-cell-responses-301437591.html",
+                    "date": "20211205"
+                },
+                {
+                    "title": "Johnson & Johnson stock underperforms Monday when compared to competitors",
+                    "quality": "title_only",
+                    "content_len": 0,
+                    "url": "https://www.marketwatch.com/investing/index/DJIA",
+                    "date": "20211115"
+                },
+                {
+                    "title": "Event planned to distribute Johnson & Johnson COVID-19 vaccine doses at Hadley Park Community Center",
+                    "quality": "full",
+                    "content_len": 420,
+                    "url": "https://www.newschannel5.com/news/event-planned-to-distribute-johnson-johnson-covid-19-vaccine-doses-at-hadley-park-community-center",
+                    "date": "20210402"
+                },
+                {
+                    "title": "Johnson & Johnson votes $30 million compensation for CEO Gorsky",
+                    "quality": "full",
+                    "content_len": 2070,
+                    "url": "https://www.nigeriasun.com/news/269031001/johnson--johnson-votes-30-million-compensation-for-ceo-gorsky",
+                    "date": "20210427"
+                },
+                {
+                    "title": "Johnson & Johnson Announces Submission to World Health Organization for Emergency Use Listing of Investigational Single-Shot Janssen COVID-19 Vaccine Candidate",
+                    "quality": "title_only",
+                    "content_len": 0,
+                    "url": "http://www.janssen.com/&a=www.janssen.com",
+                    "date": "20210219"
+                },
+                {
+                    "title": "Character witness: Janssen tie vouches for Protagonist, pledges up to $990M in IBD",
+                    "quality": "full",
+                    "content_len": 477,
+                    "url": "http://www.bioworld.com/content/character-witness-janssen-tie-vouches-protagonist-pledges-990m-ibd",
+                    "date": "20170531"
+                },
+                {
+                    "title": "Johnson & Johnson to pay $100million to settle lawsuit claims that baby powder causes cancer",
+                    "quality": "full",
+                    "content_len": 2326,
+                    "url": "https://www.goodtoknow.co.uk/family/family-news/johnson-baby-powder-cancer-claims-lawsuit-561070",
+                    "date": "20201006"
                 }
             ],
             "failed": 20,
-            "precision_pct": 23.1,
+            "precision_pct": 41.2,
             "status": "done"
         }
     }

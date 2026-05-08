@@ -2,19 +2,24 @@
   "symbol": "HON",
   "name": "Honeywell",
   "primary_keywords": [
-    "Honeywell",
-    "HON"
+    "Honeywell"
   ],
   "expansion_keywords": [
     "Vimal Kapur",
-    "aerospace",
-    "building automation",
-    "safety products",
+    "Darius Adamczyk",
     "Quantinuum",
-    "quantum computing",
-    "warehouse automation",
     "UOP",
-    "process solutions",
-    "industrial software"
-  ]
+    "HON stock",
+    "HON shares",
+    "HON earnings",
+    "NASDAQ:HON"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Standalone 'HON' matches ticker widgets and informal abbreviations; generic terms like 'aerospace'/'building automation'/'industrial software'/'warehouse automation' appear in all industrial/tech articles",
+      "required_keywords": ["Honeywell", "Vimal Kapur", "Darius Adamczyk", "Quantinuum", "UOP", "HON stock", "HON shares", "HON earnings", "NASDAQ:HON"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Honeywell", "Vimal Kapur", "Darius Adamczyk", "Quantinuum", "UOP", "HON stock", "HON shares", "HON earnings", "NASDAQ:HON"]
+    }
+  }
 }

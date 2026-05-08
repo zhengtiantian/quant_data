@@ -2,19 +2,27 @@
   "symbol": "REGN",
   "name": "Regeneron",
   "primary_keywords": [
-    "Regeneron",
-    "REGN"
+    "Regeneron"
   ],
   "expansion_keywords": [
     "Leonard Schleifer",
     "Dupixent",
     "dupilumab",
     "EYLEA",
+    "aflibercept",
     "Kevzara",
     "Libtayo",
-    "antibody",
-    "bispecific",
     "VelocImmune",
-    "mRNA therapeutics"
-  ]
+    "REGN stock",
+    "REGN shares",
+    "REGN earnings"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Generic pharma reports list Regeneron among many companies; need headline-level identifier",
+      "required_keywords": ["Regeneron", "Dupixent", "dupilumab", "EYLEA", "aflibercept", "Kevzara", "Libtayo", "VelocImmune", "REGN stock", "REGN shares", "REGN earnings", "NASDAQ:REGN", "Leonard Schleifer"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Regeneron", "Dupixent", "dupilumab", "EYLEA", "aflibercept", "Kevzara", "Libtayo", "VelocImmune", "REGN stock", "REGN shares", "REGN earnings", "NASDAQ:REGN", "Leonard Schleifer"]
+    }
+  }
 }

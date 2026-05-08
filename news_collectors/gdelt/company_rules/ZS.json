@@ -2,18 +2,26 @@
   "symbol": "ZS",
   "name": "Zscaler",
   "primary_keywords": [
-    "Zscaler",
-    "ZS"
+    "Zscaler"
   ],
   "expansion_keywords": [
     "Jay Chaudhry",
     "Zero Trust Exchange",
+    "Zscaler Internet Access",
+    "Zscaler Private Access",
+    "secure web gateway",
     "ZIA",
     "ZPA",
+    "ZTNA",
     "cloud security",
-    "SASE",
-    "secure web gateway",
-    "Zscaler Internet Access",
-    "Zscaler Private Access"
-  ]
+    "SASE"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "'ZS' is too short; 'cloud security'/'SASE' are generic",
+      "required_keywords": ["Zscaler", "ZS stock", "ZS shares", "ZIA", "ZPA", "Jay Chaudhry"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Zscaler", "ZS stock", "ZS shares", "ZS earnings", "ticker ZS"]
+    }
+  }
 }

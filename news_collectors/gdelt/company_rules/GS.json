@@ -2,32 +2,23 @@
   "symbol": "GS",
   "name": "Goldman Sachs",
   "primary_keywords": [
-    "Goldman Sachs",
-    "GS"
+    "Goldman Sachs"
   ],
   "expansion_keywords": [
     "David Solomon",
-    "investment banking",
-    "trading revenue",
-    "asset management",
-    "Marcus",
-    "private equity",
-    "M&A advisory",
-    "IPO underwriting",
-    "fixed income",
-    "equities trading"
+    "John Waldron",
+    "Marcus by Goldman",
+    "GS stock",
+    "GS shares",
+    "GS earnings",
+    "NYSE:GS"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "'GS' is ambiguous abbreviation",
-      "required_keywords": [
-        "Goldman Sachs"
-      ],
+      "problem": "Standalone 'GS' is ambiguous abbreviation; generic finance terms like 'investment banking'/'trading revenue'/'fixed income'/'private equity' appear in all finance articles; 'Marcus' alone is a common name",
+      "required_keywords": ["Goldman Sachs", "Marcus by Goldman", "GS stock", "GS shares", "GS earnings", "NYSE:GS", "David Solomon", "John Waldron"],
       "min_matches": 1,
-      "strict_validation_keywords": [
-        "Goldman Sachs",
-        "investment bank"
-      ]
+      "strict_validation_keywords": ["Goldman Sachs", "Marcus by Goldman", "GS stock", "GS shares", "GS earnings", "NYSE:GS", "David Solomon", "John Waldron"]
     }
   }
 }

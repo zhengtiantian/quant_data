@@ -2,37 +2,24 @@
   "symbol": "V",
   "name": "Visa",
   "primary_keywords": [
+    "Visa",
     "Visa Inc",
-    "Visa card",
-    "Visa payment",
-    "VISA"
+    "Visa card"
   ],
   "expansion_keywords": [
     "Ryan McInerney",
-    "payment volume",
-    "cross-border transactions",
+    "Al Kelly",
     "Visa Direct",
-    "tokenization",
-    "contactless payment",
-    "network revenue",
-    "tap-to-pay",
-    "Visa Checkout"
+    "Visa Checkout",
+    "Visa payment",
+    "NYSE:V"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "'visa' also means travel visa/immigration visa",
-      "required_keywords": [
-        "Visa Inc",
-        "payment network",
-        "Visa card",
-        "VISA stock"
-      ],
+      "problem": "'visa' also means travel/immigration visa; generic payment terms like 'payment volume', 'contactless payment', 'tokenization' appear in all fintech/payment company articles",
+      "required_keywords": ["Visa", "Visa Inc", "Visa card", "Visa Direct", "Visa Checkout", "Visa payment", "NYSE:V", "Ryan McInerney", "Al Kelly"],
       "min_matches": 1,
-      "strict_validation_keywords": [
-        "Visa",
-        "payment",
-        "transaction"
-      ]
+      "strict_validation_keywords": ["Visa", "Visa Inc", "Visa card", "Visa Direct", "Visa Checkout", "Visa payment", "NYSE:V", "Ryan McInerney", "Al Kelly"]
     }
   }
 }

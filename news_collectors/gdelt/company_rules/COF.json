@@ -2,18 +2,25 @@
   "symbol": "COF",
   "name": "Capital One",
   "primary_keywords": [
-    "Capital One",
-    "COF"
+    "Capital One"
   ],
   "expansion_keywords": [
     "Richard Fairbank",
-    "Discover acquisition",
-    "credit card",
-    "auto loans",
-    "domestic card",
-    "net charge-off",
-    "Venture card",
-    "Walmart partnership",
-    "commercial banking"
-  ]
+    "Discover Financial",
+    "Capital One Venture",
+    "Capital One Quicksilver",
+    "Capital One Spark",
+    "COF stock",
+    "COF shares",
+    "COF earnings",
+    "NYSE:COF"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Standalone 'COF' matches ticker widgets; generic terms like 'credit card'/'auto loans'/'net charge-off'/'commercial banking' appear in all consumer finance articles; 'Venture card' alone matches venture capital articles",
+      "required_keywords": ["Capital One", "Richard Fairbank", "Discover Financial", "Capital One Venture", "Capital One Quicksilver", "Capital One Spark", "COF stock", "COF shares", "COF earnings", "NYSE:COF"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Capital One", "Richard Fairbank", "Discover Financial", "Capital One Venture", "Capital One Quicksilver", "Capital One Spark", "COF stock", "COF shares", "COF earnings", "NYSE:COF"]
+    }
+  }
 }

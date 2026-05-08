@@ -2,33 +2,23 @@
   "symbol": "HD",
   "name": "Home Depot",
   "primary_keywords": [
-    "Home Depot",
-    "HD"
+    "Home Depot"
   ],
   "expansion_keywords": [
     "Ted Decker",
-    "comparable sales",
-    "Pro customer",
+    "Craig Menear",
     "SRS Distribution",
-    "home improvement",
-    "seasonal",
-    "housing market",
-    "contractor",
-    "big ticket",
-    "transaction",
-    "average ticket"
+    "HD stock",
+    "HD shares",
+    "HD earnings",
+    "NYSE:HD"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "'HD' means high-definition in most contexts",
-      "required_keywords": [
-        "Home Depot"
-      ],
+      "problem": "Standalone 'HD' means high-definition in almost all contexts; 'home improvement'/'housing market'/'contractor'/'comparable sales' appear in all home improvement competitor articles (Lowe's, ACE Hardware)",
+      "required_keywords": ["Home Depot", "Ted Decker", "Craig Menear", "SRS Distribution", "HD stock", "HD shares", "HD earnings", "NYSE:HD"],
       "min_matches": 1,
-      "strict_validation_keywords": [
-        "Home Depot",
-        "home improvement"
-      ]
+      "strict_validation_keywords": ["Home Depot", "Ted Decker", "Craig Menear", "SRS Distribution", "HD stock", "HD shares", "HD earnings", "NYSE:HD"]
     }
   }
 }

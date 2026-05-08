@@ -2,19 +2,28 @@
   "symbol": "TEAM",
   "name": "Atlassian",
   "primary_keywords": [
-    "Atlassian",
-    "TEAM"
+    "Atlassian"
   ],
   "expansion_keywords": [
     "Mike Cannon-Brookes",
     "Scott Farquhar",
-    "Jira",
-    "Confluence",
+    "Jira Software",
+    "Atlassian Confluence",
     "Trello",
     "Bitbucket",
-    "DevOps",
-    "collaboration software",
     "Atlassian Cloud",
-    "Rovo AI"
-  ]
+    "Rovo AI",
+    "TEAM stock",
+    "TEAM shares",
+    "TEAM earnings",
+    "NASDAQ:TEAM"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Standalone 'TEAM' is an extremely common English word; 'TEAM stock'/'TEAM shares' substring-matches 'dream team stock picks'/'sports team shares'; generic DevOps terms like 'agile'/'project management'/'CI/CD' appear in all developer-tools articles",
+      "required_keywords": ["Atlassian", "Mike Cannon-Brookes", "Scott Farquhar", "Jira Software", "Atlassian Confluence", "Atlassian Cloud", "Rovo AI", "NASDAQ:TEAM"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Atlassian", "Mike Cannon-Brookes", "Scott Farquhar", "Jira Software", "Atlassian Confluence", "Atlassian Cloud", "Rovo AI", "NASDAQ:TEAM"]
+    }
+  }
 }

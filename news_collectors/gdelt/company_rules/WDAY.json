@@ -2,17 +2,25 @@
   "symbol": "WDAY",
   "name": "Workday",
   "primary_keywords": [
-    "Workday",
-    "WDAY"
+    "Workday"
   ],
   "expansion_keywords": [
     "Carl Eschenbach",
     "Aneel Bhusri",
-    "HCM",
-    "human capital management",
+    "Workday Inc",
     "Workday Finance",
-    "ERP",
     "Workday Adaptive Planning",
-    "workforce management"
-  ]
+    "WDAY stock",
+    "WDAY shares",
+    "WDAY earnings",
+    "NASDAQ:WDAY"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Standalone 'workday' is a common English word meaning a working day; case-insensitive match catches 'had a busy workday', 'workday hours', 'typical workday' etc.; generic HCM/ERP terms like 'human capital management'/'payroll software'/'enterprise software' appear in all HR-tech articles",
+      "required_keywords": ["Workday Inc", "Carl Eschenbach", "Aneel Bhusri", "Workday Finance", "Workday Adaptive Planning", "WDAY stock", "WDAY shares", "WDAY earnings", "NASDAQ:WDAY"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Workday Inc", "Carl Eschenbach", "Aneel Bhusri", "Workday Finance", "Workday Adaptive Planning", "WDAY stock", "WDAY shares", "WDAY earnings", "NASDAQ:WDAY"]
+    }
+  }
 }

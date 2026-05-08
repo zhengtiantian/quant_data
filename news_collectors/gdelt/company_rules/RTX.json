@@ -2,7 +2,6 @@
   "symbol": "RTX",
   "name": "RTX",
   "primary_keywords": [
-    "RTX",
     "Raytheon",
     "RTX Corp"
   ],
@@ -11,12 +10,19 @@
     "Chris Calio",
     "Pratt & Whitney",
     "Collins Aerospace",
-    "defense contract",
-    "missile systems",
     "F135 engine",
     "geared turbofan",
-    "GTF",
-    "radar systems",
-    "military aircraft"
-  ]
+    "RTX stock",
+    "RTX shares",
+    "RTX earnings",
+    "NYSE:RTX"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Standalone 'RTX' is ambiguous (Nvidia RTX graphics cards, RTX as abbreviation); generic terms like 'defense contract'/'missile systems'/'radar systems'/'military aircraft' appear in all defense articles (Lockheed, Northrop, BAE Systems)",
+      "required_keywords": ["Raytheon", "RTX Corp", "Greg Hayes", "Chris Calio", "Pratt & Whitney", "Collins Aerospace", "F135 engine", "geared turbofan", "RTX stock", "RTX shares", "RTX earnings", "NYSE:RTX"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Raytheon", "RTX Corp", "Greg Hayes", "Chris Calio", "Pratt & Whitney", "Collins Aerospace", "F135 engine", "geared turbofan", "RTX stock", "RTX shares", "RTX earnings", "NYSE:RTX"]
+    }
+  }
 }

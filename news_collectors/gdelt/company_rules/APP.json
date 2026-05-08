@@ -2,30 +2,23 @@
   "symbol": "APP",
   "name": "AppLovin",
   "primary_keywords": [
-    "AppLovin",
-    "APP"
+    "AppLovin"
   ],
   "expansion_keywords": [
     "Adam Foroughi",
-    "AXON",
-    "mobile gaming",
-    "in-app advertising",
-    "MAX mediation",
-    "game studios",
     "AppDiscovery",
-    "e-commerce ads"
+    "MAX mediation",
+    "APP stock",
+    "APP shares",
+    "APP earnings",
+    "NASDAQ:APP"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "'app' matches all app stores/applications",
-      "required_keywords": [
-        "AppLovin"
-      ],
+      "problem": "Standalone 'APP' is ubiquitous abbreviation for 'application'; 'APP stock'/'APP shares'/'APP earnings' substring-matches any mobile-app article; generic mobile ad terms like 'in-app advertising'/'mobile gaming'/'user acquisition' appear everywhere",
+      "required_keywords": ["AppLovin", "Adam Foroughi", "AppDiscovery", "MAX mediation", "NASDAQ:APP"],
       "min_matches": 1,
-      "strict_validation_keywords": [
-        "AppLovin",
-        "AXON"
-      ]
+      "strict_validation_keywords": ["AppLovin", "Adam Foroughi", "AppDiscovery", "MAX mediation", "NASDAQ:APP"]
     }
   }
 }

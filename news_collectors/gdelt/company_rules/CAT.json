@@ -2,33 +2,24 @@
   "symbol": "CAT",
   "name": "Caterpillar",
   "primary_keywords": [
-    "Caterpillar",
-    "CAT"
+    "Caterpillar"
   ],
   "expansion_keywords": [
     "Jim Umpleby",
-    "construction equipment",
-    "mining equipment",
-    "dealer inventory",
     "Resource Industries",
     "Energy & Transportation",
     "EAME",
-    "backlog",
-    "machinery",
-    "services revenue"
+    "CAT stock",
+    "CAT shares",
+    "CAT earnings",
+    "NYSE:CAT"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "'cat' refers to animals and many other things",
-      "required_keywords": [
-        "Caterpillar"
-      ],
+      "problem": "Standalone 'CAT' matches feline/animal content and 'Doja Cat' articles; 'CAT shares'/'CAT stock' as substrings match 'Doja Cat Shares...' article titles; generic terms like 'construction equipment'/'machinery' appear in all industrial articles",
+      "required_keywords": ["Caterpillar", "Jim Umpleby", "Resource Industries", "CAT stock", "CAT earnings", "NYSE:CAT"],
       "min_matches": 1,
-      "strict_validation_keywords": [
-        "Caterpillar",
-        "equipment",
-        "machinery"
-      ]
+      "strict_validation_keywords": ["Caterpillar", "Jim Umpleby", "Resource Industries", "CAT stock", "CAT earnings", "NYSE:CAT"]
     }
   }
 }

@@ -2,19 +2,28 @@
   "symbol": "AMGN",
   "name": "Amgen",
   "primary_keywords": [
-    "Amgen",
-    "AMGN"
+    "Amgen"
   ],
   "expansion_keywords": [
     "Robert Bradway",
     "Repatha",
     "Evenity",
-    "biosimilar",
     "MariTide",
-    "GLP-1",
+    "Enbrel",
+    "Otezla",
+    "Prolia",
     "Horizon Therapeutics",
-    "oncology",
-    "inflammation",
-    "rare disease"
-  ]
+    "Tepezza",
+    "AMGN stock",
+    "AMGN shares",
+    "AMGN earnings"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Generic pharma market reports list Amgen among many companies in body text but not in headline",
+      "required_keywords": ["Amgen", "Repatha", "Evenity", "MariTide", "Enbrel", "Otezla", "Prolia", "Tepezza", "Horizon Therapeutics", "AMGN stock", "AMGN shares", "AMGN earnings", "NASDAQ:AMGN", "Robert Bradway"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Amgen", "Repatha", "Evenity", "MariTide", "Enbrel", "Otezla", "Prolia", "Tepezza", "Horizon Therapeutics", "AMGN stock", "AMGN shares", "AMGN earnings", "NASDAQ:AMGN", "Robert Bradway"]
+    }
+  }
 }

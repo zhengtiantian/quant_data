@@ -2,19 +2,23 @@
   "symbol": "TTD",
   "name": "The Trade Desk",
   "primary_keywords": [
-    "Trade Desk",
-    "TTD"
+    "The Trade Desk"
   ],
   "expansion_keywords": [
-    "Jeff Green",
-    "programmatic advertising",
-    "DSP",
-    "demand-side platform",
-    "connected TV",
-    "CTV",
-    "Kokai",
+    "Jeff Green Trade Desk",
     "UID2",
     "OpenPath",
-    "retail media"
-  ]
+    "TTD stock",
+    "TTD shares",
+    "TTD earnings",
+    "NASDAQ:TTD"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Standalone 'TTD' matches ticker widgets; generic ad-tech terms like 'programmatic advertising'/'demand-side platform'/'connected TV' appear in all ad-tech articles (PubMatic, Magnite, DV360)",
+      "required_keywords": ["The Trade Desk", "Jeff Green Trade Desk", "UID2", "OpenPath", "TTD stock", "TTD shares", "TTD earnings", "NASDAQ:TTD"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["The Trade Desk", "Jeff Green Trade Desk", "UID2", "OpenPath", "TTD stock", "TTD shares", "TTD earnings", "NASDAQ:TTD"]
+    }
+  }
 }

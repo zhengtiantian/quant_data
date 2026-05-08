@@ -2,19 +2,23 @@
   "symbol": "COIN",
   "name": "Coinbase",
   "primary_keywords": [
-    "Coinbase",
-    "COIN"
+    "Coinbase"
   ],
   "expansion_keywords": [
     "Brian Armstrong",
-    "crypto exchange",
-    "Bitcoin trading",
-    "stablecoin",
-    "Base network",
-    "USDC",
-    "crypto custody",
-    "retail crypto",
-    "institutional crypto",
-    "staking rewards"
-  ]
+    "Coinbase Base",
+    "Coinbase Pro",
+    "Coinbase Wallet",
+    "COIN stock",
+    "COIN shares",
+    "COIN earnings"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "'Coinbase' appears in many generic crypto roundup articles not focused on the company",
+      "required_keywords": ["Coinbase earnings", "Coinbase Inc", "Coinbase stock", "Coinbase CEO", "Coinbase exchange", "Brian Armstrong", "COIN stock", "COIN shares", "COIN earnings", "NASDAQ:COIN", "Coinbase SEC", "Coinbase crypto"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Coinbase earnings", "Coinbase Inc", "Coinbase stock", "Coinbase CEO", "Coinbase exchange", "Brian Armstrong", "COIN stock", "COIN shares", "COIN earnings", "NASDAQ:COIN", "Coinbase SEC", "Coinbase crypto"]
+    }
+  }
 }

@@ -3,20 +3,27 @@
   "name": "Walt Disney",
   "primary_keywords": [
     "Disney",
-    "Walt Disney",
-    "DIS"
+    "Walt Disney"
   ],
   "expansion_keywords": [
     "Bob Iger",
+    "Bob Chapek",
     "Disney+",
     "ESPN",
-    "theme parks",
     "Hulu",
-    "ABC",
-    "Marvel",
-    "Star Wars",
     "Pixar",
-    "streaming subscriber",
-    "Parks revenue"
-  ]
+    "Disney Parks",
+    "DIS stock",
+    "DIS shares",
+    "DIS earnings",
+    "NYSE:DIS"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Standalone 'DIS' matches ticker widgets; 'Marvel' alone matches comics/toy articles; 'Star Wars' alone matches film/gaming articles; 'ABC' matches Australian Broadcasting Corporation; 'theme parks' matches Universal/Six Flags",
+      "required_keywords": ["Walt Disney", "Bob Iger", "Bob Chapek", "Disney+", "Hulu", "Pixar", "Disney Parks", "DIS stock", "DIS shares", "DIS earnings", "NYSE:DIS"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Walt Disney", "Bob Iger", "Bob Chapek", "Disney+", "Hulu", "Pixar", "Disney Parks", "DIS stock", "DIS shares", "DIS earnings", "NYSE:DIS"]
+    }
+  }
 }

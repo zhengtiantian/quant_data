@@ -2,19 +2,26 @@
   "symbol": "MDT",
   "name": "Medtronic",
   "primary_keywords": [
-    "Medtronic",
-    "MDT"
+    "Medtronic"
   ],
   "expansion_keywords": [
     "Geoff Martha",
-    "cardiac rhythm",
-    "spine surgery",
-    "insulin pump",
     "MiniMed",
-    "surgical robotics",
-    "Mazor",
-    "Hugo",
-    "neuromodulation",
-    "structural heart"
-  ]
+    "Mazor Robotics",
+    "Hugo robotic",
+    "Micra pacemaker",
+    "Micra AV",
+    "Evolut",
+    "MDT stock",
+    "MDT shares",
+    "MDT earnings"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Standalone 'MDT' matches ticker widgets; 'Micra' alone matches Nissan Micra car articles; generic medical terms appear in articles about many medical device companies",
+      "required_keywords": ["Medtronic", "MiniMed", "Mazor Robotics", "Hugo robotic", "Micra pacemaker", "Micra AV", "Evolut", "MDT stock", "MDT shares", "MDT earnings", "NYSE:MDT", "Geoff Martha"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Medtronic", "MiniMed", "Mazor Robotics", "Hugo robotic", "Micra pacemaker", "Micra AV", "Evolut", "MDT stock", "MDT shares", "MDT earnings", "NYSE:MDT", "Geoff Martha"]
+    }
+  }
 }

@@ -2,19 +2,23 @@
   "symbol": "OKTA",
   "name": "Okta",
   "primary_keywords": [
-    "Okta",
-    "OKTA"
+    "Okta"
   ],
   "expansion_keywords": [
     "Todd McKinnon",
-    "identity security",
-    "workforce identity",
-    "customer identity",
-    "CIAM",
-    "single sign-on",
-    "SSO",
-    "SCIM",
-    "zero trust",
-    "Okta Identity Engine"
-  ]
+    "Okta Identity Engine",
+    "Okta Workforce Identity",
+    "Okta Auth0",
+    "OKTA stock",
+    "OKTA shares",
+    "OKTA earnings"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "'okta' is a meteorological unit (cloud cover) causing massive false positives across unrelated news",
+      "required_keywords": ["Okta Inc", "OKTA stock", "OKTA shares", "OKTA earnings", "Todd McKinnon", "Okta Identity", "Okta Auth0"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Okta Inc", "OKTA stock", "OKTA shares", "OKTA earnings", "Todd McKinnon", "Okta Identity", "Okta Auth0", "NASDAQ:OKTA"]
+    }
+  }
 }

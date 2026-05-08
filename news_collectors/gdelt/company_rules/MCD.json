@@ -3,19 +3,25 @@
   "name": "McDonald's",
   "primary_keywords": [
     "McDonald's",
-    "McDonalds",
-    "MCD"
+    "McDonalds"
   ],
   "expansion_keywords": [
     "Chris Kempczinski",
     "Big Mac",
-    "comparable sales",
-    "systemwide sales",
-    "digital sales",
     "McValue",
-    "franchisee",
+    "Golden Arches",
     "E. coli",
-    "loyalty program",
-    "hamburger"
-  ]
+    "MCD stock",
+    "MCD shares",
+    "MCD earnings",
+    "NYSE:MCD"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Standalone 'MCD' matches ticker widgets; generic terms like 'comparable sales'/'systemwide sales'/'franchisee'/'hamburger'/'loyalty program' appear in all restaurant articles",
+      "required_keywords": ["McDonald's", "McDonalds", "Chris Kempczinski", "Big Mac", "McValue", "Golden Arches", "E. coli", "MCD stock", "MCD shares", "MCD earnings", "NYSE:MCD"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["McDonald's", "McDonalds", "Chris Kempczinski", "Big Mac", "McValue", "Golden Arches", "E. coli", "MCD stock", "MCD shares", "MCD earnings", "NYSE:MCD"]
+    }
+  }
 }

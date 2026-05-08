@@ -2,17 +2,22 @@
   "symbol": "HUBS",
   "name": "HubSpot",
   "primary_keywords": [
-    "HubSpot",
-    "HUBS"
+    "HubSpot"
   ],
   "expansion_keywords": [
     "Yamini Rangan",
-    "CRM platform",
-    "marketing hub",
-    "sales hub",
     "HubSpot CRM",
-    "inbound marketing",
-    "customer platform",
-    "HubSpot AI"
-  ]
+    "HubSpot AI",
+    "HubSpot earnings",
+    "HUBS stock",
+    "HUBS shares"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "'HUBS' matches 'hubs' everywhere; CRM/marketing keywords too generic",
+      "required_keywords": ["HubSpot", "HUBS stock", "HUBS shares", "Yamini Rangan"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["HubSpot", "HUBS stock", "HUBS shares"]
+    }
+  }
 }

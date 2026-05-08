@@ -2,19 +2,25 @@
   "symbol": "RDDT",
   "name": "Reddit",
   "primary_keywords": [
-    "Reddit",
-    "RDDT"
+    "Reddit"
   ],
   "expansion_keywords": [
     "Steve Huffman",
     "subreddit",
-    "daily active users",
-    "data licensing",
-    "advertising revenue",
-    "upvote",
     "Reddit Gold",
-    "r/",
-    "community platform",
-    "IPO"
-  ]
+    "Reddit Premium",
+    "Reddit API",
+    "RDDT stock",
+    "RDDT shares",
+    "RDDT earnings",
+    "NASDAQ:RDDT"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Standalone 'RDDT' matches ticker widgets; generic terms like 'upvote'/'r/'/'daily active users'/'community platform'/'IPO' appear in countless non-Reddit articles; 'data licensing' too generic",
+      "required_keywords": ["Reddit", "Steve Huffman", "subreddit", "Reddit Gold", "Reddit Premium", "Reddit API", "RDDT stock", "RDDT shares", "RDDT earnings", "NASDAQ:RDDT"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Reddit", "Steve Huffman", "subreddit", "Reddit Gold", "Reddit Premium", "Reddit API", "RDDT stock", "RDDT shares", "RDDT earnings", "NASDAQ:RDDT"]
+    }
+  }
 }

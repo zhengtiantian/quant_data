@@ -2,19 +2,24 @@
   "symbol": "SBUX",
   "name": "Starbucks",
   "primary_keywords": [
-    "Starbucks",
-    "SBUX"
+    "Starbucks"
   ],
   "expansion_keywords": [
     "Brian Niccol",
-    "comparable store sales",
-    "same-store sales",
-    "Rewards member",
-    "mobile order",
-    "China stores",
-    "Cold Brew",
+    "Howard Schultz",
     "Frappuccino",
-    "licensed stores",
-    "unionization"
-  ]
+    "Starbucks Rewards",
+    "SBUX stock",
+    "SBUX shares",
+    "SBUX earnings",
+    "NASDAQ:SBUX"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Standalone 'SBUX' matches ticker widgets; generic terms like 'comparable store sales'/'same-store sales'/'mobile order'/'unionization' appear in all restaurant/retail articles",
+      "required_keywords": ["Starbucks", "Brian Niccol", "Howard Schultz", "Frappuccino", "Starbucks Rewards", "SBUX stock", "SBUX shares", "SBUX earnings", "NASDAQ:SBUX"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Starbucks", "Brian Niccol", "Howard Schultz", "Frappuccino", "Starbucks Rewards", "SBUX stock", "SBUX shares", "SBUX earnings", "NASDAQ:SBUX"]
+    }
+  }
 }

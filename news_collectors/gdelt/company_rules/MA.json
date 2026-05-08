@@ -2,32 +2,23 @@
   "symbol": "MA",
   "name": "Mastercard",
   "primary_keywords": [
-    "Mastercard",
-    "MA"
+    "Mastercard"
   ],
   "expansion_keywords": [
     "Michael Miebach",
-    "payment volume",
-    "switched transactions",
-    "cross-border",
     "Mastercard Send",
     "Vocalink",
-    "open banking",
-    "Nudet",
-    "contactless",
-    "installment"
+    "NuData Security",
+    "MA stock",
+    "MA shares",
+    "MA earnings"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "'MA' is Massachusetts abbreviation and common suffix",
-      "required_keywords": [
-        "Mastercard"
-      ],
+      "problem": "Standalone 'MA' is Massachusetts abbreviation; 'Maestro' matches music conductor articles (Zakir Hussain, Netflix film, symphony orchestras); generic payment terms match all payment companies",
+      "required_keywords": ["Mastercard", "Mastercard Send", "Vocalink", "MA stock", "MA shares", "MA earnings", "NYSE:MA", "Michael Miebach"],
       "min_matches": 1,
-      "strict_validation_keywords": [
-        "Mastercard",
-        "payment"
-      ]
+      "strict_validation_keywords": ["Mastercard", "Mastercard Send", "Vocalink", "MA stock", "MA shares", "MA earnings", "NYSE:MA", "Michael Miebach"]
     }
   }
 }

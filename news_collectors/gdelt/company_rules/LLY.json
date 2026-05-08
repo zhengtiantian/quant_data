@@ -2,21 +2,25 @@
   "symbol": "LLY",
   "name": "Eli Lilly",
   "primary_keywords": [
-    "Eli Lilly",
-    "LLY"
+    "Eli Lilly"
   ],
   "expansion_keywords": [
     "David Ricks",
     "Mounjaro",
     "tirzepatide",
     "Zepbound",
-    "GLP-1",
-    "Alzheimer's",
     "donanemab",
-    "weight loss drug",
     "Kisunla",
-    "diabetes treatment",
-    "obesity drug",
-    "insulin"
-  ]
+    "LLY stock",
+    "LLY shares",
+    "LLY earnings"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Mounjaro/tirzepatide appear in Novo Nordisk comparison articles; standalone 'Lilly' matches person names",
+      "required_keywords": ["Eli Lilly", "Lilly's", "LLY stock", "LLY shares", "LLY earnings", "NYSE:LLY", "David Ricks"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Eli Lilly", "Lilly's", "LLY stock", "LLY shares", "LLY earnings", "NYSE:LLY", "David Ricks"]
+    }
+  }
 }

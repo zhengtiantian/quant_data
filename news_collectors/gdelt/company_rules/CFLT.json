@@ -2,17 +2,24 @@
   "symbol": "CFLT",
   "name": "Confluent",
   "primary_keywords": [
-    "Confluent",
-    "CFLT"
+    "Confluent"
   ],
   "expansion_keywords": [
     "Jay Kreps",
-    "Apache Kafka",
-    "data streaming",
     "Confluent Cloud",
-    "Flink",
-    "real-time data",
-    "event streaming",
-    "stream processing"
-  ]
+    "Confluent Platform",
+    "Apache Kafka",
+    "CFLT stock",
+    "CFLT shares",
+    "CFLT earnings",
+    "NASDAQ:CFLT"
+  ],
+  "special_rules": {
+    "ambiguous": {
+      "problem": "Standalone 'confluent' is an English word (rivers joining); 'CFLT' matches ticker widgets; generic data-streaming terms like 'event streaming'/'Kafka'/'real-time data' appear widely (Apache Kafka is open-source)",
+      "required_keywords": ["Confluent", "Jay Kreps", "Confluent Cloud", "Confluent Platform", "CFLT stock", "CFLT shares", "CFLT earnings", "NASDAQ:CFLT"],
+      "min_matches": 1,
+      "strict_validation_keywords": ["Confluent", "Jay Kreps", "Confluent Cloud", "Confluent Platform", "CFLT stock", "CFLT shares", "CFLT earnings", "NASDAQ:CFLT"]
+    }
+  }
 }
