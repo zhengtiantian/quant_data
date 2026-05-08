@@ -114,37 +114,32 @@ class SLMFilter:
 
         self._test_connection()
 
-    def _test_connection(self):
-        """测试本地推理服务连接"""
-        try:
-            if self.provider == "lmstudio":
-                if self.api_mode == "lmstudio_rest":
-                    resp = requests.get(f"{self.api_url}/models", timeout=3)
-                else:
-                    resp = requests.get(f"{self.api_url}/models", timeout=3)
-            else:
-                resp = requests.get(f"{self.api_url}/api/tags", timeout=3)
-            if resp.status_code == 200:
-                if self.provider == "lmstudio":
-                    payload = resp.json()
-                    if self.api_mode == "lmstudio_rest":
-                        models = [m.get("id") or m.get("identifier") or m.get("name") for m in payload.get("data", [])]
+    def _test_connection(self, retries: int = 3, retry_delay: float = 5.0):
+        """测试本地推理服务连接，失败时最多重试 retries 次"""
+        url = f"{self.api_url}/models" if self.provider == "lmstudio" else f"{self.api_url}/api/tags"
+        for attempt in range(1, retries + 1):
+            try:
+                resp = requests.get(url, timeout=15)
+                if resp.status_code == 200:
+                    if self.provider == "lmstudio":
+                        models = [m["id"] for m in resp.json().get("data", [])]
+                        provider_name = "LM Studio"
                     else:
-                        models = [m["id"] for m in payload.get("data", [])]
-                    provider_name = "LM Studio"
+                        models = [m["name"] for m in resp.json().get("models", [])]
+                        provider_name = "Ollama"
+                    print(
+                        f"✅ SLM Filter: Connected to {provider_name}, "
+                        f"provider={self.provider}, concurrency={_SLM_MAX_CONCURRENCY}, models={models}"
+                    )
+                    return
                 else:
-                    models = [m["name"] for m in resp.json().get("models", [])]
-                    provider_name = "Ollama"
-                print(
-                    f"✅ SLM Filter: Connected to {provider_name}, "
-                    f"provider={self.provider}, concurrency={_SLM_MAX_CONCURRENCY}, models={models}"
-                )
-            else:
-                print(f"⚠️ SLM Filter: {self.provider} returned {resp.status_code}")
-                self.enabled = False
-        except Exception as e:
-            print(f"⚠️ SLM Filter: Cannot connect to {self.provider} ({e}), filter disabled")
-            self.enabled = False
+                    print(f"⚠️ SLM Filter: {self.provider} returned {resp.status_code} (attempt {attempt}/{retries})")
+            except Exception as e:
+                print(f"⚠️ SLM Filter: Cannot connect to {self.provider} ({e}) (attempt {attempt}/{retries})")
+            if attempt < retries:
+                time.sleep(retry_delay)
+        print(f"⚠️ SLM Filter: All {retries} connection attempts failed, filter disabled")
+        self.enabled = False
 
     def is_relevant(self, symbol: str, company_name: str, title: str, content: str, trigger_keywords: str = "") -> bool:
         """
