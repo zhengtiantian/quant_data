@@ -111,15 +111,13 @@ class SLMFilter:
         self.skill = get_skill(self.skill_name)
         self.cache = {}
         self._cache_lock = threading.Lock()
-        self._session = requests.Session()  # persistent TCP connection per SLMFilter instance
-
         self._test_connection()
 
     def _test_connection(self):
         """测试本地推理服务连接，仅打印结果，不阻塞也不 disable filter"""
         url = f"{self.api_url}/models" if self.provider == "lmstudio" else f"{self.api_url}/api/tags"
         try:
-            resp = self._session.get(url, timeout=10)
+            resp = requests.get(url, timeout=10)
             if resp.status_code == 200:
                 if self.provider == "lmstudio":
                     models = [m["id"] for m in resp.json().get("data", [])]
@@ -170,7 +168,7 @@ class SLMFilter:
                 model = _next_model(self.model_pool, self._model_counter)
                 if self.provider == "lmstudio":
                     if self.api_mode == "lmstudio_rest":
-                        response = self._session.post(
+                        response = requests.post(
                             f"{self.api_url}/chat",
                             json={
                                 "model": model,
@@ -181,7 +179,7 @@ class SLMFilter:
                             timeout=(8, 60),
                         )
                     else:
-                        response = self._session.post(
+                        response = requests.post(
                             f"{self.api_url}/completions",
                             json={
                                 "model": model,
@@ -192,7 +190,7 @@ class SLMFilter:
                             timeout=(8, 60),
                         )
                 else:
-                    response = self._session.post(
+                    response = requests.post(
                         f"{self.api_url}/api/generate",
                         json={
                             "model": self.model,
