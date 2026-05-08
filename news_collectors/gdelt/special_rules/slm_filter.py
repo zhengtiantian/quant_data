@@ -111,35 +111,30 @@ class SLMFilter:
         self.skill = get_skill(self.skill_name)
         self.cache = {}
         self._cache_lock = threading.Lock()
+        self._session = requests.Session()  # persistent TCP connection per SLMFilter instance
 
         self._test_connection()
 
-    def _test_connection(self, retries: int = 3, retry_delay: float = 5.0):
-        """测试本地推理服务连接，失败时最多重试 retries 次"""
+    def _test_connection(self):
+        """测试本地推理服务连接，仅打印结果，不阻塞也不 disable filter"""
         url = f"{self.api_url}/models" if self.provider == "lmstudio" else f"{self.api_url}/api/tags"
-        for attempt in range(1, retries + 1):
-            try:
-                resp = requests.get(url, timeout=15)
-                if resp.status_code == 200:
-                    if self.provider == "lmstudio":
-                        models = [m["id"] for m in resp.json().get("data", [])]
-                        provider_name = "LM Studio"
-                    else:
-                        models = [m["name"] for m in resp.json().get("models", [])]
-                        provider_name = "Ollama"
-                    print(
-                        f"✅ SLM Filter: Connected to {provider_name}, "
-                        f"provider={self.provider}, concurrency={_SLM_MAX_CONCURRENCY}, models={models}"
-                    )
-                    return
+        try:
+            resp = self._session.get(url, timeout=10)
+            if resp.status_code == 200:
+                if self.provider == "lmstudio":
+                    models = [m["id"] for m in resp.json().get("data", [])]
+                    provider_name = "LM Studio"
                 else:
-                    print(f"⚠️ SLM Filter: {self.provider} returned {resp.status_code} (attempt {attempt}/{retries})")
-            except Exception as e:
-                print(f"⚠️ SLM Filter: Cannot connect to {self.provider} ({e}) (attempt {attempt}/{retries})")
-            if attempt < retries:
-                time.sleep(retry_delay)
-        print(f"⚠️ SLM Filter: All {retries} connection attempts failed, filter disabled")
-        self.enabled = False
+                    models = [m["name"] for m in resp.json().get("models", [])]
+                    provider_name = "Ollama"
+                print(
+                    f"✅ SLM Filter: Connected to {provider_name}, "
+                    f"provider={self.provider}, concurrency={_SLM_MAX_CONCURRENCY}, models={models}"
+                )
+            else:
+                print(f"⚠️ SLM Filter: {self.provider} returned {resp.status_code}, will retry on first request")
+        except Exception as e:
+            print(f"⚠️ SLM Filter: Cannot connect to {self.provider} ({e}), will retry on first request")
 
     def is_relevant(self, symbol: str, company_name: str, title: str, content: str, trigger_keywords: str = "") -> bool:
         """
@@ -175,7 +170,7 @@ class SLMFilter:
                 model = _next_model(self.model_pool, self._model_counter)
                 if self.provider == "lmstudio":
                     if self.api_mode == "lmstudio_rest":
-                        response = requests.post(
+                        response = self._session.post(
                             f"{self.api_url}/chat",
                             json={
                                 "model": model,
@@ -183,10 +178,10 @@ class SLMFilter:
                                 "max_tokens": 8,
                                 "temperature": 0,
                             },
-                            timeout=45,
+                            timeout=(8, 60),
                         )
                     else:
-                        response = requests.post(
+                        response = self._session.post(
                             f"{self.api_url}/completions",
                             json={
                                 "model": model,
@@ -194,10 +189,10 @@ class SLMFilter:
                                 "max_tokens": 6,
                                 "temperature": 0,
                             },
-                            timeout=45,
+                            timeout=(8, 60),
                         )
                 else:
-                    response = requests.post(
+                    response = self._session.post(
                         f"{self.api_url}/api/generate",
                         json={
                             "model": self.model,
@@ -209,7 +204,7 @@ class SLMFilter:
                                 "top_p": 0.9,
                             }
                         },
-                        timeout=45
+                        timeout=(8, 60),
                     )
 
             track_slm_stat("elapsed_ms", int((time.time() - _t_slm) * 1000))
