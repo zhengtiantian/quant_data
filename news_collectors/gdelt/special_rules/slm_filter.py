@@ -5,12 +5,13 @@ SLM-based Article Relevance Filter
 """
 
 import hashlib
+import itertools
 import os
 import re
 import threading
 import time
 from collections import defaultdict
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 import requests
 
@@ -21,6 +22,22 @@ _SLM_MAX_CONCURRENCY = max(1, int(os.getenv("SLM_MAX_CONCURRENCY", os.getenv("OL
 _slm_semaphore = threading.Semaphore(_SLM_MAX_CONCURRENCY)
 _slm_stats_lock = threading.Lock()
 _slm_stats = defaultdict(lambda: defaultdict(int))
+
+# 多模型轮询：SLM_MODELS="qwen3.5-4b,qwen3.5-4b:2" 时在多个实例间 round-robin
+def _build_model_pool(default_model: str) -> List[str]:
+    raw = os.getenv("SLM_MODELS", "")
+    if raw:
+        return [m.strip() for m in raw.split(",") if m.strip()]
+    return [default_model]
+
+_model_pool_lock = threading.Lock()
+_model_pool_iter: Optional[itertools.cycle] = None  # 延迟初始化（等 SLMFilter 构造后知道 default_model）
+
+def _next_model(pool: List[str], counter_holder: list) -> str:
+    with _model_pool_lock:
+        idx = counter_holder[0] % len(pool)
+        counter_holder[0] += 1
+    return pool[idx]
 
 
 def _thread_name(thread_name: Optional[str] = None) -> str:
@@ -87,6 +104,8 @@ class SLMFilter:
 
         self.api_url = api_url.rstrip('/')
         self.model = model
+        self.model_pool = _build_model_pool(model)
+        self._model_counter = [0]  # round-robin counter
         self.enabled = enabled
         self.skill_name = os.getenv("SLM_SKILL", "company_match_v1")
         self.skill = get_skill(self.skill_name)
@@ -158,12 +177,13 @@ class SLMFilter:
             _t_slm = time.time()
             with _slm_semaphore:
                 track_slm_stat("requests")
+                model = _next_model(self.model_pool, self._model_counter)
                 if self.provider == "lmstudio":
                     if self.api_mode == "lmstudio_rest":
                         response = requests.post(
                             f"{self.api_url}/chat",
                             json={
-                                "model": self.model,
+                                "model": model,
                                 "messages": [{"role": "user", "content": f"/no_think\n{prompt}"}],
                                 "max_tokens": 8,
                                 "temperature": 0,
@@ -174,7 +194,7 @@ class SLMFilter:
                         response = requests.post(
                             f"{self.api_url}/completions",
                             json={
-                                "model": self.model,
+                                "model": model,
                                 "prompt": prompt,
                                 "max_tokens": 6,
                                 "temperature": 0,
