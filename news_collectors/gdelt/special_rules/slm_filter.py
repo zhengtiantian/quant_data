@@ -173,7 +173,7 @@ class SLMFilter:
                             json={
                                 "model": model,
                                 "messages": [{"role": "user", "content": f"/no_think\n{prompt}"}],
-                                "max_tokens": 8,
+                                "max_tokens": 4,
                                 "temperature": 0,
                             },
                             timeout=(8, 60),
@@ -184,7 +184,7 @@ class SLMFilter:
                             json={
                                 "model": model,
                                 "prompt": prompt,
-                                "max_tokens": 6,
+                                "max_tokens": 4,
                                 "temperature": 0,
                             },
                             timeout=(8, 60),
