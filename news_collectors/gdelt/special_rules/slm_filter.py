@@ -192,7 +192,7 @@ class SLMFilter:
                 track_slm_stat("requests")
                 api_url, model = _next_endpoint(self._endpoint_pool, self._model_counter)
 
-                def _do_request():
+                def _do_request(connect_timeout=20):
                     if self.provider == "lmstudio":
                         if self.api_mode == "lmstudio_rest":
                             return requests.post(
@@ -203,7 +203,7 @@ class SLMFilter:
                                     "max_tokens": 4,
                                     "temperature": 0,
                                 },
-                                timeout=(20, 60),
+                                timeout=(connect_timeout, 60),
                             )
                         else:
                             return requests.post(
@@ -214,7 +214,7 @@ class SLMFilter:
                                     "max_tokens": 4,
                                     "temperature": 0,
                                 },
-                                timeout=(20, 60),
+                                timeout=(connect_timeout, 60),
                             )
                     else:
                         return requests.post(
@@ -229,14 +229,14 @@ class SLMFilter:
                                     "top_p": 0.9,
                                 }
                             },
-                            timeout=(20, 60),
+                            timeout=(connect_timeout, 60),
                         )
 
                 try:
-                    response = _do_request()
+                    response = _do_request(connect_timeout=20)
                 except requests.exceptions.ConnectTimeout:
                     time.sleep(2)
-                    response = _do_request()
+                    response = _do_request(connect_timeout=10)  # 重试用更短超时，避免长时间占用 semaphore
 
             track_slm_stat("elapsed_ms", int((time.time() - _t_slm) * 1000))
             if response.status_code == 200:
