@@ -191,44 +191,52 @@ class SLMFilter:
             with _slm_semaphore:
                 track_slm_stat("requests")
                 api_url, model = _next_endpoint(self._endpoint_pool, self._model_counter)
-                if self.provider == "lmstudio":
-                    if self.api_mode == "lmstudio_rest":
-                        response = requests.post(
-                            f"{api_url}/chat",
-                            json={
-                                "model": model,
-                                "messages": [{"role": "user", "content": f"/no_think\n{prompt}"}],
-                                "max_tokens": 4,
-                                "temperature": 0,
-                            },
-                            timeout=(8, 60),
-                        )
+
+                def _do_request():
+                    if self.provider == "lmstudio":
+                        if self.api_mode == "lmstudio_rest":
+                            return requests.post(
+                                f"{api_url}/chat",
+                                json={
+                                    "model": model,
+                                    "messages": [{"role": "user", "content": f"/no_think\n{prompt}"}],
+                                    "max_tokens": 4,
+                                    "temperature": 0,
+                                },
+                                timeout=(20, 60),
+                            )
+                        else:
+                            return requests.post(
+                                f"{api_url}/completions",
+                                json={
+                                    "model": model,
+                                    "prompt": prompt,
+                                    "max_tokens": 4,
+                                    "temperature": 0,
+                                },
+                                timeout=(20, 60),
+                            )
                     else:
-                        response = requests.post(
-                            f"{api_url}/completions",
+                        return requests.post(
+                            f"{self.api_url}/api/generate",
                             json={
-                                "model": model,
+                                "model": self.model,
                                 "prompt": prompt,
-                                "max_tokens": 4,
-                                "temperature": 0,
+                                "stream": False,
+                                "options": {
+                                    "num_predict": 3,
+                                    "temperature": 0.1,
+                                    "top_p": 0.9,
+                                }
                             },
-                            timeout=(8, 60),
+                            timeout=(20, 60),
                         )
-                else:
-                    response = requests.post(
-                        f"{self.api_url}/api/generate",
-                        json={
-                            "model": self.model,
-                            "prompt": prompt,
-                            "stream": False,
-                            "options": {
-                                "num_predict": 3,
-                                "temperature": 0.1,
-                                "top_p": 0.9,
-                            }
-                        },
-                        timeout=(8, 60),
-                    )
+
+                try:
+                    response = _do_request()
+                except requests.exceptions.ConnectTimeout:
+                    time.sleep(2)
+                    response = _do_request()
 
             track_slm_stat("elapsed_ms", int((time.time() - _t_slm) * 1000))
             if response.status_code == 200:
