@@ -16,10 +16,29 @@
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "Standalone 'MS' means multiple sclerosis or Microsoft; generic finance terms like 'wealth management'/'investment banking'/'fixed income'/'AUM' appear in all finance articles",
-      "required_keywords": ["Morgan Stanley", "E*Trade", "Eaton Vance", "MS stock", "MS shares", "MS earnings", "NYSE:MS", "Ted Pick", "James Gorman"],
+      "problem": "Morgan Stanley appears in general finance/markets articles",
+      "required_keywords": [
+        "E*Trade",
+        "Eaton Vance",
+        "MS stock",
+        "MS shares",
+        "MS earnings",
+        "NYSE:MS",
+        "Ted Pick",
+        "James Gorman"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["Morgan Stanley", "E*Trade", "Eaton Vance", "MS stock", "MS shares", "MS earnings", "NYSE:MS", "Ted Pick", "James Gorman"]
+      "strict_validation_keywords": [
+        "Morgan Stanley",
+        "E*Trade",
+        "Eaton Vance",
+        "MS stock",
+        "MS shares",
+        "MS earnings",
+        "NYSE:MS",
+        "Ted Pick",
+        "James Gorman"
+      ]
     }
   }
 }

@@ -18,10 +18,32 @@
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "Standalone 'SNAP' is the US food assistance program (food stamps/SNAP benefits) generating massive government welfare article FPs; 'Stories'/'Spotlight'/'AR glasses'/'DAU'/'advertising revenue' are too generic; 'Spectacles' alone matches eyeglasses",
-      "required_keywords": ["Snapchat", "Snap Inc", "Evan Spiegel", "Snap Map", "Snap+ subscription", "Snap camera", "Spectacles", "SNAP stock", "SNAP shares", "SNAP earnings", "NYSE:SNAP"],
+      "problem": "Snapchat/Snap Inc appears in social media trend articles not about the stock",
+      "required_keywords": [
+        "Evan Spiegel",
+        "Snap Map",
+        "Snap+ subscription",
+        "Snap camera",
+        "Spectacles",
+        "SNAP stock",
+        "SNAP shares",
+        "SNAP earnings",
+        "NYSE:SNAP"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["Snapchat", "Snap Inc", "Evan Spiegel", "Snap Map", "Snap+ subscription", "Snap camera", "Spectacles", "SNAP stock", "SNAP shares", "SNAP earnings", "NYSE:SNAP"]
+      "strict_validation_keywords": [
+        "Snapchat",
+        "Snap Inc",
+        "Evan Spiegel",
+        "Snap Map",
+        "Snap+ subscription",
+        "Snap camera",
+        "Spectacles",
+        "SNAP stock",
+        "SNAP shares",
+        "SNAP earnings",
+        "NYSE:SNAP"
+      ]
     }
   }
 }

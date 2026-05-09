@@ -8,6 +8,7 @@
   "expansion_keywords": [
     "Jamie Dimon",
     "Chase Bank",
+    "J.P. Morgan",
     "First Republic",
     "JPM stock",
     "JPM shares",
@@ -16,10 +17,10 @@
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "Standalone 'JPM' matches ticker widgets; generic finance terms like 'investment bank'/'trading revenue'/'credit card'/'net interest income' appear in all bank articles; 'Chase' alone matches the TV show, people named Chase, Chase Utley",
-      "required_keywords": ["JPMorgan", "JPMorgan Chase", "Jamie Dimon", "Chase Bank", "First Republic", "JPM stock", "JPM shares", "JPM earnings", "NYSE:JPM"],
+      "problem": "JPMorgan appears in general finance/economics articles not about the stock; required_keywords must NOT include JPMorgan/JPMorgan Chase themselves",
+      "required_keywords": ["Jamie Dimon", "Chase Bank", "J.P. Morgan", "JPM stock", "JPM shares", "JPM earnings", "NYSE:JPM"],
       "min_matches": 1,
-      "strict_validation_keywords": ["JPMorgan", "JPMorgan Chase", "Jamie Dimon", "Chase Bank", "First Republic", "JPM stock", "JPM shares", "JPM earnings", "NYSE:JPM"]
+      "strict_validation_keywords": ["Jamie Dimon", "Chase Bank", "JPM stock", "JPM shares", "JPM earnings", "NYSE:JPM"]
     }
   }
 }

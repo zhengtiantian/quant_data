@@ -10,6 +10,7 @@
     "Air Jordan",
     "Jordan Brand",
     "Nike Run Club",
+    "Nike Air Max",
     "Swoosh",
     "NKE stock",
     "NKE shares",
@@ -18,10 +19,10 @@
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "Standalone 'NKE' matches ticker widgets; generic terms like 'athletic footwear'/'DTC'/'wholesale'/'China revenue' appear in all sportswear competitor articles",
-      "required_keywords": ["Nike", "Elliott Hill", "John Donahoe", "Air Jordan", "Jordan Brand", "Nike Run Club", "Swoosh", "NKE stock", "NKE shares", "NKE earnings", "NYSE:NKE"],
+      "problem": "Standalone 'Nike' appears in sports/fashion/culture articles unrelated to the stock; required_keywords must NOT include 'Nike' itself or the filter is bypassed",
+      "required_keywords": ["Elliott Hill", "John Donahoe", "Air Jordan", "Jordan Brand", "Nike Run Club", "Nike Air Max", "Swoosh", "NKE stock", "NKE shares", "NKE earnings", "NYSE:NKE"],
       "min_matches": 1,
-      "strict_validation_keywords": ["Nike", "Elliott Hill", "John Donahoe", "Air Jordan", "Jordan Brand", "Nike Run Club", "Swoosh", "NKE stock", "NKE shares", "NKE earnings", "NYSE:NKE"]
+      "strict_validation_keywords": ["Elliott Hill", "John Donahoe", "Air Jordan", "Jordan Brand", "NKE stock", "NKE shares", "NKE earnings", "NYSE:NKE"]
     }
   }
 }

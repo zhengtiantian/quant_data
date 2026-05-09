@@ -10,7 +10,8 @@
     "Big Mac",
     "McValue",
     "Golden Arches",
-    "E. coli",
+    "McCafe",
+    "McNuggets",
     "MCD stock",
     "MCD shares",
     "MCD earnings",
@@ -18,10 +19,10 @@
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "Standalone 'MCD' matches ticker widgets; generic terms like 'comparable sales'/'systemwide sales'/'franchisee'/'hamburger'/'loyalty program' appear in all restaurant articles",
-      "required_keywords": ["McDonald's", "McDonalds", "Chris Kempczinski", "Big Mac", "McValue", "Golden Arches", "E. coli", "MCD stock", "MCD shares", "MCD earnings", "NYSE:MCD"],
+      "problem": "McDonald's appears in food/culture/politics articles unrelated to the stock; required_keywords must NOT include McDonald's itself",
+      "required_keywords": ["Chris Kempczinski", "Big Mac", "McValue", "Golden Arches", "McCafe", "McNuggets", "MCD stock", "MCD shares", "MCD earnings", "NYSE:MCD"],
       "min_matches": 1,
-      "strict_validation_keywords": ["McDonald's", "McDonalds", "Chris Kempczinski", "Big Mac", "McValue", "Golden Arches", "E. coli", "MCD stock", "MCD shares", "MCD earnings", "NYSE:MCD"]
+      "strict_validation_keywords": ["Chris Kempczinski", "MCD stock", "MCD shares", "MCD earnings", "NYSE:MCD"]
     }
   }
 }

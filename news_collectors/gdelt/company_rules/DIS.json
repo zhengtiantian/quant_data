@@ -9,10 +9,11 @@
     "Bob Iger",
     "Bob Chapek",
     "Disney+",
-    "ESPN",
+    "Disney Plus",
     "Hulu",
     "Pixar",
     "Disney Parks",
+    "ESPN",
     "DIS stock",
     "DIS shares",
     "DIS earnings",
@@ -20,10 +21,10 @@
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "Standalone 'DIS' matches ticker widgets; 'Marvel' alone matches comics/toy articles; 'Star Wars' alone matches film/gaming articles; 'ABC' matches Australian Broadcasting Corporation; 'theme parks' matches Universal/Six Flags",
-      "required_keywords": ["Walt Disney", "Bob Iger", "Bob Chapek", "Disney+", "Hulu", "Pixar", "Disney Parks", "DIS stock", "DIS shares", "DIS earnings", "NYSE:DIS"],
+      "problem": "Disney/Walt Disney appears in countless entertainment/movie/culture articles; required_keywords must NOT include Disney or Walt Disney themselves — only specific stock/business terms",
+      "required_keywords": ["Bob Iger", "Bob Chapek", "Disney+", "Disney Plus", "Hulu", "Pixar", "Disney Parks", "DIS stock", "DIS shares", "DIS earnings", "NYSE:DIS"],
       "min_matches": 1,
-      "strict_validation_keywords": ["Walt Disney", "Bob Iger", "Bob Chapek", "Disney+", "Hulu", "Pixar", "Disney Parks", "DIS stock", "DIS shares", "DIS earnings", "NYSE:DIS"]
+      "strict_validation_keywords": ["Bob Iger", "Bob Chapek", "Disney+", "Disney Plus", "DIS stock", "DIS shares", "DIS earnings", "NYSE:DIS"]
     }
   }
 }

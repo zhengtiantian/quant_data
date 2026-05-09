@@ -20,10 +20,37 @@
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "Standalone 'BA' means British Airways and Bachelor of Arts; generic terms like 'aircraft'/'airplane'/'defense contract'/'backlog'/'FAA certification' appear in all aviation articles (Airbus, Embraer, etc.)",
-      "required_keywords": ["Boeing", "Kelly Ortberg", "Dave Calhoun", "737 MAX", "787 Dreamliner", "777X", "Starliner", "737 door plug", "Space Launch System", "BA stock", "BA shares", "BA earnings", "NYSE:BA"],
+      "problem": "Boeing appears in aviation/defense/politics articles not about the stock",
+      "required_keywords": [
+        "Kelly Ortberg",
+        "Dave Calhoun",
+        "737 MAX",
+        "787 Dreamliner",
+        "777X",
+        "Starliner",
+        "737 door plug",
+        "Space Launch System",
+        "BA stock",
+        "BA shares",
+        "BA earnings",
+        "NYSE:BA"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["Boeing", "Kelly Ortberg", "Dave Calhoun", "737 MAX", "787 Dreamliner", "777X", "Starliner", "737 door plug", "Space Launch System", "BA stock", "BA shares", "BA earnings", "NYSE:BA"]
+      "strict_validation_keywords": [
+        "Boeing",
+        "Kelly Ortberg",
+        "Dave Calhoun",
+        "737 MAX",
+        "787 Dreamliner",
+        "777X",
+        "Starliner",
+        "737 door plug",
+        "Space Launch System",
+        "BA stock",
+        "BA shares",
+        "BA earnings",
+        "NYSE:BA"
+      ]
     }
   }
 }

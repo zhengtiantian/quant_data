@@ -15,10 +15,27 @@
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "Standalone 'GS' is ambiguous abbreviation; generic finance terms like 'investment banking'/'trading revenue'/'fixed income'/'private equity' appear in all finance articles; 'Marcus' alone is a common name",
-      "required_keywords": ["Goldman Sachs", "Marcus by Goldman", "GS stock", "GS shares", "GS earnings", "NYSE:GS", "David Solomon", "John Waldron"],
+      "problem": "Goldman Sachs appears in general finance articles; required must only have specific terms",
+      "required_keywords": [
+        "Marcus by Goldman",
+        "GS stock",
+        "GS shares",
+        "GS earnings",
+        "NYSE:GS",
+        "David Solomon",
+        "John Waldron"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["Goldman Sachs", "Marcus by Goldman", "GS stock", "GS shares", "GS earnings", "NYSE:GS", "David Solomon", "John Waldron"]
+      "strict_validation_keywords": [
+        "Goldman Sachs",
+        "Marcus by Goldman",
+        "GS stock",
+        "GS shares",
+        "GS earnings",
+        "NYSE:GS",
+        "David Solomon",
+        "John Waldron"
+      ]
     }
   }
 }

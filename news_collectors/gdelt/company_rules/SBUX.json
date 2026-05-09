@@ -16,10 +16,29 @@
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "Standalone 'SBUX' matches ticker widgets; generic terms like 'comparable store sales'/'same-store sales'/'mobile order'/'unionization' appear in all restaurant/retail articles",
-      "required_keywords": ["Starbucks", "Brian Niccol", "Howard Schultz", "Frappuccino", "Starbucks Rewards", "SBUX stock", "SBUX shares", "SBUX earnings", "NASDAQ:SBUX"],
+      "problem": "Starbucks appears in food/culture/politics articles; required must only have specific business terms",
+      "required_keywords": [
+        "Brian Niccol",
+        "Howard Schultz",
+        "Frappuccino",
+        "Starbucks Rewards",
+        "SBUX stock",
+        "SBUX shares",
+        "SBUX earnings",
+        "NASDAQ:SBUX"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["Starbucks", "Brian Niccol", "Howard Schultz", "Frappuccino", "Starbucks Rewards", "SBUX stock", "SBUX shares", "SBUX earnings", "NASDAQ:SBUX"]
+      "strict_validation_keywords": [
+        "Starbucks",
+        "Brian Niccol",
+        "Howard Schultz",
+        "Frappuccino",
+        "Starbucks Rewards",
+        "SBUX stock",
+        "SBUX shares",
+        "SBUX earnings",
+        "NASDAQ:SBUX"
+      ]
     }
   }
 }
