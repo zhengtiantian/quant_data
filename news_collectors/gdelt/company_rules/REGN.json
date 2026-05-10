@@ -12,17 +12,58 @@
     "aflibercept",
     "Kevzara",
     "Libtayo",
+    "Praluent",
+    "Itepekimab",
+    "Pozelimab",
     "VelocImmune",
     "REGN stock",
     "REGN shares",
-    "REGN earnings"
+    "REGN earnings",
+    "REGN revenue",
+    "Regeneron earnings",
+    "Regeneron revenue",
+    "Regeneron CEO",
+    "Regeneron acquisition",
+    "NASDAQ:REGN"
   ],
   "special_rules": {
     "ambiguous": {
       "problem": "Generic pharma reports list Regeneron among many companies; need headline-level identifier",
-      "required_keywords": ["Regeneron", "Dupixent", "dupilumab", "EYLEA", "aflibercept", "Kevzara", "Libtayo", "VelocImmune", "REGN stock", "REGN shares", "REGN earnings", "NASDAQ:REGN", "Leonard Schleifer"],
+      "required_keywords": [
+        "Regeneron",
+        "Dupixent",
+        "dupilumab",
+        "EYLEA",
+        "aflibercept",
+        "Kevzara",
+        "Libtayo",
+        "Praluent",
+        "VelocImmune",
+        "REGN stock",
+        "REGN shares",
+        "REGN earnings",
+        "REGN revenue",
+        "NASDAQ:REGN",
+        "Leonard Schleifer",
+        "Regeneron CEO",
+        "Regeneron acquisition"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["Regeneron", "Dupixent", "dupilumab", "EYLEA", "aflibercept", "Kevzara", "Libtayo", "VelocImmune", "REGN stock", "REGN shares", "REGN earnings", "NASDAQ:REGN", "Leonard Schleifer"]
+      "strict_validation_keywords": [
+        "Regeneron",
+        "Dupixent",
+        "dupilumab",
+        "EYLEA",
+        "aflibercept",
+        "Kevzara",
+        "Libtayo",
+        "VelocImmune",
+        "REGN stock",
+        "REGN shares",
+        "REGN earnings",
+        "NASDAQ:REGN",
+        "Leonard Schleifer"
+      ]
     }
   }
 }

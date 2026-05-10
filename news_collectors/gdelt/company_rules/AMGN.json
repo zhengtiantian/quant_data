@@ -12,18 +12,60 @@
     "Enbrel",
     "Otezla",
     "Prolia",
+    "Lumakras",
     "Horizon Therapeutics",
     "Tepezza",
+    "Tezspire",
     "AMGN stock",
     "AMGN shares",
-    "AMGN earnings"
+    "AMGN earnings",
+    "AMGN revenue",
+    "Amgen earnings",
+    "Amgen revenue",
+    "Amgen CEO",
+    "Amgen acquisition",
+    "NASDAQ:AMGN"
   ],
   "special_rules": {
     "ambiguous": {
       "problem": "Generic pharma market reports list Amgen among many companies in body text but not in headline",
-      "required_keywords": ["Amgen", "Repatha", "Evenity", "MariTide", "Enbrel", "Otezla", "Prolia", "Tepezza", "Horizon Therapeutics", "AMGN stock", "AMGN shares", "AMGN earnings", "NASDAQ:AMGN", "Robert Bradway"],
+      "required_keywords": [
+        "Amgen",
+        "Repatha",
+        "Evenity",
+        "MariTide",
+        "Enbrel",
+        "Otezla",
+        "Prolia",
+        "Tepezza",
+        "Lumakras",
+        "Horizon Therapeutics",
+        "AMGN stock",
+        "AMGN shares",
+        "AMGN earnings",
+        "AMGN revenue",
+        "NASDAQ:AMGN",
+        "Robert Bradway",
+        "Amgen CEO",
+        "Amgen acquisition"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["Amgen", "Repatha", "Evenity", "MariTide", "Enbrel", "Otezla", "Prolia", "Tepezza", "Horizon Therapeutics", "AMGN stock", "AMGN shares", "AMGN earnings", "NASDAQ:AMGN", "Robert Bradway"]
+      "strict_validation_keywords": [
+        "Amgen",
+        "Repatha",
+        "Evenity",
+        "MariTide",
+        "Enbrel",
+        "Otezla",
+        "Prolia",
+        "Tepezza",
+        "Horizon Therapeutics",
+        "AMGN stock",
+        "AMGN shares",
+        "AMGN earnings",
+        "NASDAQ:AMGN",
+        "Robert Bradway"
+      ]
     }
   }
 }

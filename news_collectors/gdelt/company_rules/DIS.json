@@ -17,14 +17,53 @@
     "DIS stock",
     "DIS shares",
     "DIS earnings",
-    "NYSE:DIS"
+    "NYSE:DIS",
+    "Disney earnings",
+    "Disney revenue",
+    "Disney profit",
+    "Disney CEO",
+    "Disney streaming",
+    "Disney layoff",
+    "Disney acquisition",
+    "Disney quarter",
+    "Disney subscriber",
+    "Disney dividend"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "Disney/Walt Disney appears in countless entertainment/movie/culture articles; required_keywords must NOT include Disney or Walt Disney themselves — only specific stock/business terms",
-      "required_keywords": ["Bob Iger", "Bob Chapek", "Disney+", "Disney Plus", "Hulu", "Pixar", "Disney Parks", "DIS stock", "DIS shares", "DIS earnings", "NYSE:DIS"],
+      "problem": "Bare 'Disney' appears in countless entertainment/movie/culture articles; removing Disney/Walt Disney from required_keywords forces a business-specific 2nd term, blocking entertainment FPs at keyword stage before SLM",
+      "required_keywords": [
+        "Bob Iger",
+        "Bob Chapek",
+        "Disney+",
+        "Disney Plus",
+        "Disney Parks",
+        "DIS stock",
+        "DIS shares",
+        "DIS earnings",
+        "NYSE:DIS",
+        "Disney earnings",
+        "Disney revenue",
+        "Disney profit",
+        "Disney CEO",
+        "Disney streaming",
+        "Disney layoff",
+        "Disney acquisition",
+        "Disney quarter",
+        "Disney subscriber",
+        "Disney dividend"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["Bob Iger", "Bob Chapek", "Disney+", "Disney Plus", "DIS stock", "DIS shares", "DIS earnings", "NYSE:DIS"]
+      "strict_validation_keywords": [
+        "Bob Iger",
+        "Bob Chapek",
+        "Disney+",
+        "Disney Plus",
+        "DIS stock",
+        "DIS shares",
+        "DIS earnings",
+        "NYSE:DIS"
+      ]
     }
   }
 }

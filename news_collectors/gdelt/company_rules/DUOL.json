@@ -8,17 +8,53 @@
     "Luis von Ahn",
     "Duolingo Max",
     "Super Duolingo",
+    "Duolingo English Test",
+    "Duolingo Math",
+    "Duolingo ABC",
+    "Duolingo Music",
+    "Duolingo streak",
     "DUOL stock",
     "DUOL shares",
     "DUOL earnings",
-    "NASDAQ:DUOL"
+    "DUOL revenue",
+    "NASDAQ:DUOL",
+    "Duolingo earnings",
+    "Duolingo revenue",
+    "Duolingo CEO",
+    "Duolingo IPO",
+    "Duolingo DAU"
   ],
   "special_rules": {
     "ambiguous": {
       "problem": "Standalone 'DUOL' matches ticker widgets; generic language-learning terms like 'gamified learning'/'streak'/'language app' appear in all EdTech articles",
-      "required_keywords": ["Duolingo", "Luis von Ahn", "Duolingo Max", "Super Duolingo", "DUOL stock", "DUOL shares", "DUOL earnings", "NASDAQ:DUOL"],
+      "required_keywords": [
+        "Duolingo",
+        "Luis von Ahn",
+        "Duolingo Max",
+        "Super Duolingo",
+        "Duolingo English Test",
+        "Duolingo Math",
+        "Duolingo ABC",
+        "DUOL stock",
+        "DUOL shares",
+        "DUOL earnings",
+        "DUOL revenue",
+        "NASDAQ:DUOL",
+        "Duolingo CEO",
+        "Duolingo IPO"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["Duolingo", "Luis von Ahn", "Duolingo Max", "Super Duolingo", "DUOL stock", "DUOL shares", "DUOL earnings", "NASDAQ:DUOL"]
+      "strict_validation_keywords": [
+        "Duolingo",
+        "Luis von Ahn",
+        "Duolingo Max",
+        "Super Duolingo",
+        "Duolingo English Test",
+        "DUOL stock",
+        "DUOL shares",
+        "DUOL earnings",
+        "NASDAQ:DUOL"
+      ]
     }
   }
 }

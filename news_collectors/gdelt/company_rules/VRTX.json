@@ -17,14 +17,54 @@
     "Journavx",
     "VRTX stock",
     "VRTX shares",
-    "VRTX earnings"
+    "VRTX earnings",
+    "VRTX revenue",
+    "Vertex Pharmaceuticals",
+    "Vertex earnings",
+    "Vertex revenue",
+    "Vertex CEO",
+    "NASDAQ:VRTX"
   ],
   "special_rules": {
     "ambiguous": {
       "problem": "Standalone 'Vertex' matches tech companies (Vertex AI, Vertex Energy); 'CRISPR'/'gene editing' appear in many biotech articles; 'cystic fibrosis' appears in competitor articles",
-      "required_keywords": ["Vertex Pharmaceuticals", "Trikafta", "elexacaftor", "Symdeko", "Orkambi", "Kalydeco", "ivacaftor", "Casgevy", "suzetrigine", "Journavx", "VRTX stock", "VRTX shares", "VRTX earnings", "NASDAQ:VRTX", "Reshma Kewalramani"],
+      "required_keywords": [
+        "Vertex Pharmaceuticals",
+        "Trikafta",
+        "elexacaftor",
+        "Symdeko",
+        "Orkambi",
+        "Kalydeco",
+        "ivacaftor",
+        "Casgevy",
+        "suzetrigine",
+        "Journavx",
+        "VRTX stock",
+        "VRTX shares",
+        "VRTX earnings",
+        "VRTX revenue",
+        "NASDAQ:VRTX",
+        "Reshma Kewalramani",
+        "Vertex CEO"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["Vertex Pharmaceuticals", "Trikafta", "elexacaftor", "Symdeko", "Orkambi", "Kalydeco", "ivacaftor", "Casgevy", "suzetrigine", "Journavx", "VRTX stock", "VRTX shares", "VRTX earnings", "NASDAQ:VRTX", "Reshma Kewalramani"]
+      "strict_validation_keywords": [
+        "Vertex Pharmaceuticals",
+        "Trikafta",
+        "elexacaftor",
+        "Symdeko",
+        "Orkambi",
+        "Kalydeco",
+        "ivacaftor",
+        "Casgevy",
+        "suzetrigine",
+        "Journavx",
+        "VRTX stock",
+        "VRTX shares",
+        "VRTX earnings",
+        "NASDAQ:VRTX",
+        "Reshma Kewalramani"
+      ]
     }
   }
 }

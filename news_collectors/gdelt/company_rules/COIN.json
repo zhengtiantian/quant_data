@@ -9,16 +9,66 @@
     "Coinbase Base",
     "Coinbase Pro",
     "Coinbase Wallet",
+    "Coinbase Prime",
+    "Coinbase Ventures",
+    "Coinbase International",
+    "Coinbase Layer",
+    "Base blockchain",
+    "Base chain",
     "COIN stock",
     "COIN shares",
-    "COIN earnings"
+    "COIN earnings",
+    "COIN revenue",
+    "Coinbase earnings",
+    "Coinbase revenue",
+    "Coinbase Inc",
+    "Coinbase stock",
+    "Coinbase CEO",
+    "Coinbase exchange",
+    "NASDAQ:COIN",
+    "Coinbase SEC",
+    "Coinbase crypto",
+    "Coinbase hack",
+    "Coinbase layoff"
   ],
   "special_rules": {
     "ambiguous": {
       "problem": "'Coinbase' appears in many generic crypto roundup articles not focused on the company",
-      "required_keywords": ["Coinbase earnings", "Coinbase Inc", "Coinbase stock", "Coinbase CEO", "Coinbase exchange", "Brian Armstrong", "COIN stock", "COIN shares", "COIN earnings", "NASDAQ:COIN", "Coinbase SEC", "Coinbase crypto"],
+      "required_keywords": [
+        "Coinbase",
+        "Coinbase earnings",
+        "Coinbase revenue",
+        "Coinbase Inc",
+        "Coinbase stock",
+        "Coinbase CEO",
+        "Coinbase exchange",
+        "Coinbase Prime",
+        "Coinbase Base",
+        "Brian Armstrong",
+        "COIN stock",
+        "COIN shares",
+        "COIN earnings",
+        "COIN revenue",
+        "NASDAQ:COIN",
+        "Coinbase SEC",
+        "Coinbase crypto",
+        "Coinbase hack",
+        "Coinbase layoff"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["Coinbase earnings", "Coinbase Inc", "Coinbase stock", "Coinbase CEO", "Coinbase exchange", "Brian Armstrong", "COIN stock", "COIN shares", "COIN earnings", "NASDAQ:COIN", "Coinbase SEC", "Coinbase crypto"]
+      "strict_validation_keywords": [
+        "Coinbase",
+        "Coinbase earnings",
+        "Coinbase revenue",
+        "Coinbase Inc",
+        "Coinbase stock",
+        "Coinbase CEO",
+        "Brian Armstrong",
+        "COIN stock",
+        "COIN shares",
+        "COIN earnings",
+        "NASDAQ:COIN"
+      ]
     }
   }
 }

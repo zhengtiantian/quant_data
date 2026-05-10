@@ -8,17 +8,43 @@
     "David Baszucki",
     "Robux",
     "Roblox Studio",
+    "Roblox Avatar",
+    "Roblox Education",
+    "Roblox Connect",
+    "Roblox DAU",
+    "Roblox metaverse",
     "RBLX stock",
     "RBLX shares",
     "RBLX earnings",
-    "NYSE:RBLX"
+    "NYSE:RBLX",
+    "Roblox earnings",
+    "Roblox revenue",
+    "Roblox Corporation"
   ],
   "special_rules": {
     "ambiguous": {
       "problem": "Standalone 'RBLX' matches ticker widgets; generic gaming terms like 'virtual world'/'metaverse'/'user-generated content'/'daily active users' appear in all gaming articles",
-      "required_keywords": ["Roblox", "David Baszucki", "Robux", "Roblox Studio", "RBLX stock", "RBLX shares", "RBLX earnings", "NYSE:RBLX"],
+      "required_keywords": [
+        "Roblox",
+        "David Baszucki",
+        "Robux",
+        "Roblox Studio",
+        "RBLX stock",
+        "RBLX shares",
+        "RBLX earnings",
+        "NYSE:RBLX"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["Roblox", "David Baszucki", "Robux", "Roblox Studio", "RBLX stock", "RBLX shares", "RBLX earnings", "NYSE:RBLX"]
+      "strict_validation_keywords": [
+        "Roblox",
+        "David Baszucki",
+        "Robux",
+        "Roblox Studio",
+        "RBLX stock",
+        "RBLX shares",
+        "RBLX earnings",
+        "NYSE:RBLX"
+      ]
     }
   }
 }

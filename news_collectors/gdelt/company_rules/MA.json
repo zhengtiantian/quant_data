@@ -7,18 +7,49 @@
   "expansion_keywords": [
     "Michael Miebach",
     "Mastercard Send",
+    "Mastercard Incorporated",
+    "Mastercard International",
     "Vocalink",
     "NuData Security",
+    "Mastercard Foundation",
     "MA stock",
     "MA shares",
-    "MA earnings"
+    "MA earnings",
+    "MA revenue",
+    "Mastercard earnings",
+    "Mastercard revenue",
+    "Mastercard CEO",
+    "NYSE:MA"
   ],
   "special_rules": {
     "ambiguous": {
       "problem": "Standalone 'MA' is Massachusetts abbreviation; 'Maestro' matches music conductor articles (Zakir Hussain, Netflix film, symphony orchestras); generic payment terms match all payment companies",
-      "required_keywords": ["Mastercard", "Mastercard Send", "Vocalink", "MA stock", "MA shares", "MA earnings", "NYSE:MA", "Michael Miebach"],
+      "required_keywords": [
+        "Mastercard",
+        "Mastercard Send",
+        "Mastercard Incorporated",
+        "Mastercard International",
+        "Vocalink",
+        "MA stock",
+        "MA shares",
+        "MA earnings",
+        "MA revenue",
+        "NYSE:MA",
+        "Michael Miebach",
+        "Mastercard CEO"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["Mastercard", "Mastercard Send", "Vocalink", "MA stock", "MA shares", "MA earnings", "NYSE:MA", "Michael Miebach"]
+      "strict_validation_keywords": [
+        "Mastercard",
+        "Mastercard Send",
+        "Mastercard Incorporated",
+        "Vocalink",
+        "MA stock",
+        "MA shares",
+        "MA earnings",
+        "NYSE:MA",
+        "Michael Miebach"
+      ]
     }
   }
 }

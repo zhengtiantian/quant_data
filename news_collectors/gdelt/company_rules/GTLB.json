@@ -9,17 +9,52 @@
     "GitLab Duo",
     "GitLab CI",
     "GitLab Inc",
+    "GitLab Ultimate",
+    "GitLab Premium",
+    "GitLab DevSecOps",
+    "GitLab Community",
     "GTLB stock",
     "GTLB shares",
     "GTLB earnings",
-    "NASDAQ:GTLB"
+    "GTLB revenue",
+    "NASDAQ:GTLB",
+    "GitLab earnings",
+    "GitLab revenue",
+    "GitLab CEO",
+    "GitLab IPO"
   ],
   "special_rules": {
     "ambiguous": {
       "problem": "Standalone 'GTLB' matches ticker widgets; generic DevOps/DevSecOps terms like 'source control'/'CI/CD pipeline'/'code repository' appear in all developer-tools articles (GitHub, Bitbucket, Azure DevOps)",
-      "required_keywords": ["GitLab", "Sid Sijbrandij", "GitLab Duo", "GitLab CI", "GitLab Inc", "GTLB stock", "GTLB shares", "GTLB earnings", "NASDAQ:GTLB"],
+      "required_keywords": [
+        "GitLab",
+        "Sid Sijbrandij",
+        "GitLab Duo",
+        "GitLab CI",
+        "GitLab Inc",
+        "GitLab Ultimate",
+        "GitLab DevSecOps",
+        "GTLB stock",
+        "GTLB shares",
+        "GTLB earnings",
+        "GTLB revenue",
+        "NASDAQ:GTLB",
+        "GitLab CEO",
+        "GitLab IPO"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["GitLab", "Sid Sijbrandij", "GitLab Duo", "GitLab CI", "GitLab Inc", "GTLB stock", "GTLB shares", "GTLB earnings", "NASDAQ:GTLB"]
+      "strict_validation_keywords": [
+        "GitLab",
+        "Sid Sijbrandij",
+        "GitLab Duo",
+        "GitLab CI",
+        "GitLab Inc",
+        "GitLab Ultimate",
+        "GTLB stock",
+        "GTLB shares",
+        "GTLB earnings",
+        "NASDAQ:GTLB"
+      ]
     }
   }
 }

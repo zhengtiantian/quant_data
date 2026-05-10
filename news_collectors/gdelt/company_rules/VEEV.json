@@ -6,20 +6,46 @@
   ],
   "expansion_keywords": [
     "Peter Gassner",
+    "Veeva Systems",
     "Veeva Vault",
     "Veeva CRM",
     "Veeva Commercial Cloud",
+    "Veeva Network",
     "VEEV stock",
     "VEEV shares",
     "VEEV earnings",
-    "NYSE:VEEV"
+    "NYSE:VEEV",
+    "Veeva earnings",
+    "Veeva revenue"
   ],
   "special_rules": {
     "ambiguous": {
       "problem": "Standalone 'VEEV' matches ticker widgets; generic terms like 'life sciences software'/'clinical trials'/'pharmaceutical CRM' appear in all pharma-tech articles",
-      "required_keywords": ["Veeva", "Peter Gassner", "Veeva Vault", "Veeva CRM", "Veeva Commercial Cloud", "VEEV stock", "VEEV shares", "VEEV earnings", "NYSE:VEEV"],
+      "required_keywords": [
+        "Veeva",
+        "Veeva Systems",
+        "Peter Gassner",
+        "Veeva Vault",
+        "Veeva CRM",
+        "Veeva Commercial Cloud",
+        "Veeva Network",
+        "VEEV stock",
+        "VEEV shares",
+        "VEEV earnings",
+        "NYSE:VEEV"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["Veeva", "Peter Gassner", "Veeva Vault", "Veeva CRM", "Veeva Commercial Cloud", "VEEV stock", "VEEV shares", "VEEV earnings", "NYSE:VEEV"]
+      "strict_validation_keywords": [
+        "Veeva",
+        "Veeva Systems",
+        "Peter Gassner",
+        "Veeva Vault",
+        "Veeva CRM",
+        "VEEV stock",
+        "VEEV shares",
+        "VEEV earnings",
+        "NYSE:VEEV"
+      ]
     }
   }
 }

@@ -16,16 +16,63 @@
     "tafamidis",
     "Prevnar",
     "Seagen",
+    "Xtandi",
+    "Abrysvo",
     "PFE stock",
     "PFE shares",
-    "PFE earnings"
+    "PFE earnings",
+    "PFE revenue",
+    "Pfizer earnings",
+    "Pfizer revenue",
+    "Pfizer CEO",
+    "Pfizer layoff",
+    "Pfizer acquisition",
+    "NYSE:PFE"
   ],
   "special_rules": {
     "ambiguous": {
       "problem": "Standalone 'PFE' matches ticker widgets; generic terms like 'COVID drug', 'RSV vaccine', 'weight loss', 'pipeline' appear in articles about all pharma companies",
-      "required_keywords": ["Pfizer", "Paxlovid", "Comirnaty", "Eliquis", "apixaban", "Ibrance", "palbociclib", "Vyndaqel", "tafamidis", "Prevnar", "Seagen", "PFE stock", "PFE shares", "PFE earnings", "NYSE:PFE", "Albert Bourla"],
+      "required_keywords": [
+        "Pfizer",
+        "Paxlovid",
+        "Comirnaty",
+        "Eliquis",
+        "apixaban",
+        "Ibrance",
+        "palbociclib",
+        "Vyndaqel",
+        "tafamidis",
+        "Prevnar",
+        "Seagen",
+        "PFE stock",
+        "PFE shares",
+        "PFE earnings",
+        "PFE revenue",
+        "NYSE:PFE",
+        "Albert Bourla",
+        "Pfizer CEO",
+        "Pfizer layoff",
+        "Pfizer acquisition"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["Pfizer", "Paxlovid", "Comirnaty", "Eliquis", "apixaban", "Ibrance", "palbociclib", "Vyndaqel", "tafamidis", "Prevnar", "Seagen", "PFE stock", "PFE shares", "PFE earnings", "NYSE:PFE", "Albert Bourla"]
+      "strict_validation_keywords": [
+        "Pfizer",
+        "Paxlovid",
+        "Comirnaty",
+        "Eliquis",
+        "apixaban",
+        "Ibrance",
+        "palbociclib",
+        "Vyndaqel",
+        "tafamidis",
+        "Prevnar",
+        "Seagen",
+        "PFE stock",
+        "PFE shares",
+        "PFE earnings",
+        "NYSE:PFE",
+        "Albert Bourla"
+      ]
     }
   }
 }

@@ -15,14 +15,63 @@
     "AXP stock",
     "AXP shares",
     "AXP earnings",
-    "NYSE:AXP"
+    "NYSE:AXP",
+    "American Express earnings",
+    "American Express revenue",
+    "American Express profit",
+    "American Express CEO",
+    "American Express stock",
+    "American Express shares",
+    "American Express deal",
+    "American Express quarter",
+    "American Express results",
+    "American Express layoff",
+    "AmEx earnings",
+    "AmEx revenue"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "Standalone 'AXP' matches ticker widgets; 'Centurion' alone matches military units, other Centurion companies; generic terms like 'travel rewards'/'premium card'/'merchant fee' appear in all payments articles",
-      "required_keywords": ["American Express", "AmEx", "Stephen Squeri", "Amex Platinum", "Amex Gold", "Centurion Card", "Centurion lounge", "Global Business Travel", "AXP stock", "AXP shares", "AXP earnings", "NYSE:AXP"],
-      "min_matches": 1,
-      "strict_validation_keywords": ["American Express", "AmEx", "Stephen Squeri", "Amex Platinum", "Amex Gold", "Centurion Card", "Centurion lounge", "Global Business Travel", "AXP stock", "AXP shares", "AXP earnings", "NYSE:AXP"]
+      "problem": "American Express/AmEx appears in credit card comparison and payments industry articles not primarily about AXP; min_matches=2 blocks articles with only bare brand name",
+      "required_keywords": [
+        "American Express",
+        "AmEx",
+        "Stephen Squeri",
+        "Amex Platinum",
+        "Amex Gold",
+        "Centurion Card",
+        "Centurion lounge",
+        "Global Business Travel",
+        "AXP stock",
+        "AXP shares",
+        "AXP earnings",
+        "NYSE:AXP",
+        "American Express earnings",
+        "American Express revenue",
+        "American Express profit",
+        "American Express CEO",
+        "American Express stock",
+        "American Express shares",
+        "American Express deal",
+        "American Express quarter",
+        "American Express results",
+        "AmEx earnings",
+        "AmEx revenue"
+      ],
+      "min_matches": 2,
+      "strict_validation_keywords": [
+        "American Express",
+        "AmEx",
+        "Stephen Squeri",
+        "Amex Platinum",
+        "Amex Gold",
+        "Centurion Card",
+        "Centurion lounge",
+        "Global Business Travel",
+        "AXP stock",
+        "AXP shares",
+        "AXP earnings",
+        "NYSE:AXP"
+      ]
     }
   }
 }

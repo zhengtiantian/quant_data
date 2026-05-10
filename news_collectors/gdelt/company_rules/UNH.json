@@ -7,18 +7,52 @@
   ],
   "expansion_keywords": [
     "Andrew Witty",
+    "Brian Thompson",
     "Optum",
+    "Optum Health",
+    "Optum Rx",
+    "Optum Insight",
     "Change Healthcare",
     "UNH stock",
     "UNH shares",
-    "UNH earnings"
+    "UNH earnings",
+    "UNH revenue",
+    "UnitedHealth Group",
+    "UnitedHealth revenue",
+    "UnitedHealth CEO",
+    "NYSE:UNH",
+    "UnitedHealth earnings"
   ],
   "special_rules": {
     "ambiguous": {
       "problem": "Generic terms like 'health insurance', 'managed care', 'Medicare Advantage', 'claims' appear in articles about all health insurers; standalone 'UNH' matches ticker widgets",
-      "required_keywords": ["UnitedHealth", "UnitedHealthcare", "Optum", "Change Healthcare", "UNH stock", "UNH shares", "UNH earnings", "NYSE:UNH", "Andrew Witty"],
+      "required_keywords": [
+        "UnitedHealth",
+        "UnitedHealthcare",
+        "Optum",
+        "Change Healthcare",
+        "UNH stock",
+        "UNH shares",
+        "UNH earnings",
+        "UNH revenue",
+        "NYSE:UNH",
+        "Andrew Witty",
+        "Brian Thompson",
+        "UnitedHealth CEO"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["UnitedHealth", "UnitedHealthcare", "Optum", "Change Healthcare", "UNH stock", "UNH shares", "UNH earnings", "NYSE:UNH", "Andrew Witty"]
+      "strict_validation_keywords": [
+        "UnitedHealth",
+        "UnitedHealthcare",
+        "Optum",
+        "Change Healthcare",
+        "UNH stock",
+        "UNH shares",
+        "UNH earnings",
+        "NYSE:UNH",
+        "Andrew Witty",
+        "Brian Thompson"
+      ]
     }
   }
 }

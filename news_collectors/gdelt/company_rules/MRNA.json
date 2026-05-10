@@ -11,16 +11,51 @@
     "mRESVia",
     "mRNA-4157",
     "personalized cancer vaccine",
+    "Moderna Inc",
     "MRNA stock",
     "MRNA shares",
-    "MRNA earnings"
+    "MRNA earnings",
+    "MRNA revenue",
+    "Moderna earnings",
+    "Moderna revenue",
+    "Moderna CEO",
+    "Moderna layoff",
+    "NASDAQ:MRNA"
   ],
   "special_rules": {
     "ambiguous": {
       "problem": "Standalone 'MRNA' is the scientific abbreviation for messenger RNA appearing in all gene therapy articles; 'Moderna' means 'modern' in Spanish/Italian/Portuguese; generic vaccine terms appear in Pfizer/BioNTech articles",
-      "required_keywords": ["Moderna", "Spikevax", "mRNA-1273", "mRESVia", "mRNA-4157", "personalized cancer vaccine", "MRNA stock", "MRNA shares", "MRNA earnings", "NASDAQ:MRNA", "Stephane Bancel"],
+      "required_keywords": [
+        "Moderna",
+        "Moderna Inc",
+        "Spikevax",
+        "mRNA-1273",
+        "mRESVia",
+        "mRNA-4157",
+        "personalized cancer vaccine",
+        "MRNA stock",
+        "MRNA shares",
+        "MRNA earnings",
+        "MRNA revenue",
+        "NASDAQ:MRNA",
+        "Stephane Bancel",
+        "Moderna CEO",
+        "Moderna layoff"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["Moderna", "Spikevax", "mRNA-1273", "mRESVia", "mRNA-4157", "personalized cancer vaccine", "MRNA stock", "MRNA shares", "MRNA earnings", "NASDAQ:MRNA", "Stephane Bancel"]
+      "strict_validation_keywords": [
+        "Moderna",
+        "Spikevax",
+        "mRNA-1273",
+        "mRESVia",
+        "mRNA-4157",
+        "personalized cancer vaccine",
+        "MRNA stock",
+        "MRNA shares",
+        "MRNA earnings",
+        "NASDAQ:MRNA",
+        "Stephane Bancel"
+      ]
     }
   }
 }

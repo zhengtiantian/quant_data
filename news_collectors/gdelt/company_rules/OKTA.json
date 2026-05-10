@@ -8,17 +8,50 @@
     "Todd McKinnon",
     "Okta Identity Engine",
     "Okta Workforce Identity",
+    "Okta Customer Identity",
     "Okta Auth0",
+    "Okta Privileged Access",
+    "Okta FastPass",
+    "Okta Verify",
+    "Auth0",
     "OKTA stock",
     "OKTA shares",
-    "OKTA earnings"
+    "OKTA earnings",
+    "OKTA revenue",
+    "NASDAQ:OKTA",
+    "Okta Inc",
+    "Okta Identity",
+    "Okta earnings",
+    "Okta revenue"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "'okta' is a meteorological unit (cloud cover) causing massive false positives across unrelated news",
-      "required_keywords": ["Okta Inc", "OKTA stock", "OKTA shares", "OKTA earnings", "Todd McKinnon", "Okta Identity", "Okta Auth0"],
+      "problem": "'okta' is a meteorological unit (cloud cover) causing false positives across weather/climate news",
+      "required_keywords": [
+        "Okta",
+        "Okta Inc",
+        "OKTA stock",
+        "OKTA shares",
+        "OKTA earnings",
+        "NASDAQ:OKTA",
+        "Todd McKinnon",
+        "Okta Identity",
+        "Okta Auth0",
+        "Auth0"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["Okta Inc", "OKTA stock", "OKTA shares", "OKTA earnings", "Todd McKinnon", "Okta Identity", "Okta Auth0", "NASDAQ:OKTA"]
+      "strict_validation_keywords": [
+        "Okta",
+        "Okta Inc",
+        "OKTA stock",
+        "OKTA shares",
+        "OKTA earnings",
+        "Todd McKinnon",
+        "Okta Identity",
+        "Okta Auth0",
+        "Auth0",
+        "NASDAQ:OKTA"
+      ]
     }
   }
 }

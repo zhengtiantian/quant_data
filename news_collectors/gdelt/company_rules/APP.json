@@ -8,17 +8,40 @@
     "Adam Foroughi",
     "AppDiscovery",
     "MAX mediation",
+    "AppLovin MAX",
+    "AppLovin Exchange",
+    "AppLovin Software",
+    "SparkLabs",
+    "MoPub acquisition",
+    "NASDAQ:APP",
     "APP stock",
     "APP shares",
     "APP earnings",
-    "NASDAQ:APP"
+    "AppLovin earnings",
+    "AppLovin revenue",
+    "AppLovin stock"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "Standalone 'APP' is ubiquitous abbreviation for 'application'; 'APP stock'/'APP shares'/'APP earnings' substring-matches any mobile-app article; generic mobile ad terms like 'in-app advertising'/'mobile gaming'/'user acquisition' appear everywhere",
-      "required_keywords": ["AppLovin", "Adam Foroughi", "AppDiscovery", "MAX mediation", "NASDAQ:APP"],
+      "problem": "Standalone 'APP' is ubiquitous abbreviation for 'application'; generic mobile ad terms everywhere",
+      "required_keywords": [
+        "AppLovin",
+        "Adam Foroughi",
+        "AppDiscovery",
+        "MAX mediation",
+        "AppLovin MAX",
+        "AppLovin Exchange",
+        "NASDAQ:APP"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["AppLovin", "Adam Foroughi", "AppDiscovery", "MAX mediation", "NASDAQ:APP"]
+      "strict_validation_keywords": [
+        "AppLovin",
+        "Adam Foroughi",
+        "AppDiscovery",
+        "MAX mediation",
+        "AppLovin MAX",
+        "NASDAQ:APP"
+      ]
     }
   }
 }

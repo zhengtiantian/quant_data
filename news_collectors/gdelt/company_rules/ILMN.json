@@ -8,19 +8,55 @@
     "Jacob Thaysen",
     "Francis deSouza",
     "NovaSeq",
+    "NextSeq",
+    "MiSeq",
     "Grail",
     "Grail cancer",
     "Grail acquisition",
+    "Galleri test",
     "ILMN stock",
     "ILMN shares",
-    "ILMN earnings"
+    "ILMN earnings",
+    "ILMN revenue",
+    "Illumina earnings",
+    "Illumina revenue",
+    "Illumina CEO",
+    "NASDAQ:ILMN"
   ],
   "special_rules": {
     "ambiguous": {
       "problem": "'Grail' alone matches 'Holy Grail' references; 'NGS'/'genome sequencing'/'liquid biopsy' appear in articles about Pacific Biosciences, Oxford Nanopore, Guardant Health; 'cancer detection' is extremely generic",
-      "required_keywords": ["Illumina", "NovaSeq", "Grail cancer", "Grail acquisition", "ILMN stock", "ILMN shares", "ILMN earnings", "NASDAQ:ILMN", "Jacob Thaysen", "Francis deSouza"],
+      "required_keywords": [
+        "Illumina",
+        "NovaSeq",
+        "NextSeq",
+        "MiSeq",
+        "Grail cancer",
+        "Grail acquisition",
+        "Galleri test",
+        "ILMN stock",
+        "ILMN shares",
+        "ILMN earnings",
+        "ILMN revenue",
+        "NASDAQ:ILMN",
+        "Jacob Thaysen",
+        "Francis deSouza",
+        "Illumina CEO"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["Illumina", "NovaSeq", "Grail cancer", "Grail acquisition", "ILMN stock", "ILMN shares", "ILMN earnings", "NASDAQ:ILMN", "Jacob Thaysen", "Francis deSouza"]
+      "strict_validation_keywords": [
+        "Illumina",
+        "NovaSeq",
+        "NextSeq",
+        "Grail cancer",
+        "Grail acquisition",
+        "ILMN stock",
+        "ILMN shares",
+        "ILMN earnings",
+        "NASDAQ:ILMN",
+        "Jacob Thaysen",
+        "Francis deSouza"
+      ]
     }
   }
 }

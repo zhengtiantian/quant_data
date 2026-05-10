@@ -15,16 +15,66 @@
     "Yescarta",
     "Sunlenca",
     "Descovy",
+    "Tecartus",
+    "Odefsey",
+    "Genvoya",
+    "Harvoni",
     "GILD stock",
     "GILD shares",
-    "GILD earnings"
+    "GILD earnings",
+    "GILD revenue",
+    "Gilead Sciences",
+    "Gilead earnings",
+    "Gilead revenue",
+    "Gilead CEO",
+    "Gilead acquisition",
+    "NASDAQ:GILD"
   ],
   "special_rules": {
     "ambiguous": {
       "problem": "'Gilead' is a biblical/geographic place name in Israeli politics; requires pharma-specific identifier in headline",
-      "required_keywords": ["Gilead Sciences", "remdesivir", "Veklury", "Biktarvy", "lenacapavir", "Trodelvy", "Yescarta", "Sunlenca", "Descovy", "GILD stock", "GILD shares", "GILD earnings", "NASDAQ:GILD", "Daniel O'Day"],
+      "required_keywords": [
+        "Gilead",
+        "Gilead Sciences",
+        "remdesivir",
+        "Veklury",
+        "Biktarvy",
+        "lenacapavir",
+        "Trodelvy",
+        "Yescarta",
+        "Sunlenca",
+        "Descovy",
+        "Tecartus",
+        "Odefsey",
+        "Genvoya",
+        "Harvoni",
+        "GILD stock",
+        "GILD shares",
+        "GILD earnings",
+        "GILD revenue",
+        "NASDAQ:GILD",
+        "Daniel O'Day",
+        "Gilead CEO",
+        "Gilead acquisition"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["Gilead Sciences", "remdesivir", "Veklury", "Biktarvy", "lenacapavir", "Trodelvy", "Yescarta", "Sunlenca", "Descovy", "GILD stock", "GILD shares", "GILD earnings", "NASDAQ:GILD", "Daniel O'Day"]
+      "strict_validation_keywords": [
+        "Gilead",
+        "Gilead Sciences",
+        "remdesivir",
+        "Veklury",
+        "Biktarvy",
+        "lenacapavir",
+        "Trodelvy",
+        "Yescarta",
+        "Sunlenca",
+        "Descovy",
+        "GILD stock",
+        "GILD shares",
+        "GILD earnings",
+        "NASDAQ:GILD",
+        "Daniel O'Day"
+      ]
     }
   }
 }

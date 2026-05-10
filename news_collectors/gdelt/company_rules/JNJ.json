@@ -13,17 +13,46 @@
     "Carvykti",
     "Tecvayli",
     "Kenvue",
+    "Rybrevant",
+    "Erleada",
     "JNJ stock",
     "JNJ shares",
     "JNJ earnings",
-    "NYSE:JNJ"
+    "JNJ revenue",
+    "NYSE:JNJ",
+    "Johnson & Johnson",
+    "J&J earnings",
+    "J&J revenue",
+    "J&J CEO",
+    "J&J acquisition",
+    "talc lawsuit"
   ],
   "special_rules": {
     "ambiguous": {
       "problem": "Standalone 'JNJ' matches ticker widgets; generic pharma terms like 'oncology'/'immunology'/'biosimilar'/'talc lawsuit' appear in all large-cap pharma articles; drug names like Stelara/Darzalex appear in clinical/competitor articles without J&J focus",
-      "required_keywords": ["Johnson & Johnson", "Joaquin Duato", "Janssen Pharmaceutical", "JNJ stock", "JNJ shares", "JNJ earnings", "NYSE:JNJ"],
+      "required_keywords": [
+        "Johnson & Johnson",
+        "Joaquin Duato",
+        "Janssen Pharmaceutical",
+        "JNJ stock",
+        "JNJ shares",
+        "JNJ earnings",
+        "JNJ revenue",
+        "NYSE:JNJ",
+        "J&J CEO",
+        "J&J acquisition",
+        "talc lawsuit"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["Johnson & Johnson", "Joaquin Duato", "Janssen Pharmaceutical", "JNJ stock", "JNJ shares", "JNJ earnings", "NYSE:JNJ"]
+      "strict_validation_keywords": [
+        "Johnson & Johnson",
+        "Joaquin Duato",
+        "Janssen Pharmaceutical",
+        "JNJ stock",
+        "JNJ shares",
+        "JNJ earnings",
+        "NYSE:JNJ"
+      ]
     }
   }
 }

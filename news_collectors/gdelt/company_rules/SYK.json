@@ -12,16 +12,58 @@
     "Trevo",
     "Wright Medical",
     "Vocera",
+    "Spine Division",
     "SYK stock",
     "SYK shares",
-    "SYK earnings"
+    "SYK earnings",
+    "SYK revenue",
+    "Stryker Corporation",
+    "Stryker Corp",
+    "Stryker earnings",
+    "Stryker revenue",
+    "Stryker CEO",
+    "Stryker acquisition",
+    "NYSE:SYK"
   ],
   "special_rules": {
     "ambiguous": {
       "problem": "Standalone 'Stryker' matches US Army Stryker combat vehicle in military news and the surname Stryker; generic terms like 'spine', 'endoscopy', 'medical device' match many competitors",
-      "required_keywords": ["Stryker", "Stryker Corporation", "Stryker Corp", "Mako robot", "Mako robotic", "LIFEPAK", "Trevo", "Wright Medical", "Vocera", "SYK stock", "SYK shares", "SYK earnings", "NYSE:SYK", "Kevin Lobo"],
+      "required_keywords": [
+        "Stryker",
+        "Stryker Corporation",
+        "Stryker Corp",
+        "Mako robot",
+        "Mako robotic",
+        "LIFEPAK",
+        "Trevo",
+        "Wright Medical",
+        "Vocera",
+        "SYK stock",
+        "SYK shares",
+        "SYK earnings",
+        "SYK revenue",
+        "NYSE:SYK",
+        "Kevin Lobo",
+        "Stryker CEO",
+        "Stryker acquisition"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["Stryker", "Stryker Corporation", "Stryker Corp", "Mako robot", "Mako robotic", "LIFEPAK", "Trevo", "Wright Medical", "Vocera", "SYK stock", "SYK shares", "SYK earnings", "NYSE:SYK", "Kevin Lobo"]
+      "strict_validation_keywords": [
+        "Stryker",
+        "Stryker Corporation",
+        "Stryker Corp",
+        "Mako robot",
+        "Mako robotic",
+        "LIFEPAK",
+        "Trevo",
+        "Wright Medical",
+        "Vocera",
+        "SYK stock",
+        "SYK shares",
+        "SYK earnings",
+        "NYSE:SYK",
+        "Kevin Lobo"
+      ]
     }
   }
 }

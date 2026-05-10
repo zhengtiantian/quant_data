@@ -8,16 +8,45 @@
     "Tomer Weingarten",
     "Singularity platform",
     "Purple AI",
-    "S stock",
-    "S shares",
-    "S earnings"
+    "SentinelOne XDR",
+    "SentinelOne endpoint",
+    "SentinelOne Vigilance",
+    "SentinelOne Marketplace",
+    "SentinelOne AI",
+    "NYSE:S",
+    "SentinelOne earnings",
+    "SentinelOne revenue",
+    "SentinelOne stock",
+    "SentinelOne IPO",
+    "SentinelOne CEO"
   ],
   "special_rules": {
     "ambiguous": {
       "problem": "ticker 'S' matches almost everything; 'cybersecurity' is too generic",
-      "required_keywords": ["SentinelOne", "Tomer Weingarten", "Singularity platform", "Purple AI"],
+      "required_keywords": [
+        "SentinelOne",
+        "Tomer Weingarten",
+        "Singularity platform",
+        "Purple AI",
+        "SentinelOne XDR",
+        "SentinelOne endpoint",
+        "NYSE:S",
+        "SentinelOne earnings",
+        "SentinelOne revenue",
+        "SentinelOne CEO",
+        "SentinelOne IPO"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["SentinelOne", "Tomer Weingarten", "Singularity platform", "Purple AI"]
+      "strict_validation_keywords": [
+        "SentinelOne",
+        "Tomer Weingarten",
+        "Singularity platform",
+        "Purple AI",
+        "SentinelOne XDR",
+        "NYSE:S",
+        "SentinelOne earnings",
+        "SentinelOne revenue"
+      ]
     }
   }
 }

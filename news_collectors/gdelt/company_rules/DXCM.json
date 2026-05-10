@@ -11,16 +11,48 @@
     "G6 sensor",
     "G6 CGM",
     "Stelo",
+    "continuous glucose monitor",
     "DXCM stock",
     "DXCM shares",
-    "DXCM earnings"
+    "DXCM earnings",
+    "DXCM revenue",
+    "Dexcom earnings",
+    "Dexcom revenue",
+    "Dexcom CEO",
+    "NASDAQ:DXCM"
   ],
   "special_rules": {
     "ambiguous": {
       "problem": "Standalone 'CGM' and 'G6' match Abbott FreeStyle Libre, Medtronic, phone/car model articles; 'diabetes management' is extremely generic",
-      "required_keywords": ["Dexcom", "G7 sensor", "G7 CGM", "G6 sensor", "G6 CGM", "Stelo", "DXCM stock", "DXCM shares", "DXCM earnings", "NASDAQ:DXCM", "Kevin Sayer"],
+      "required_keywords": [
+        "Dexcom",
+        "G7 sensor",
+        "G7 CGM",
+        "G6 sensor",
+        "G6 CGM",
+        "Stelo",
+        "DXCM stock",
+        "DXCM shares",
+        "DXCM earnings",
+        "DXCM revenue",
+        "NASDAQ:DXCM",
+        "Kevin Sayer",
+        "Dexcom CEO"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["Dexcom", "G7 sensor", "G7 CGM", "G6 sensor", "G6 CGM", "Stelo", "DXCM stock", "DXCM shares", "DXCM earnings", "NASDAQ:DXCM", "Kevin Sayer"]
+      "strict_validation_keywords": [
+        "Dexcom",
+        "G7 sensor",
+        "G7 CGM",
+        "G6 sensor",
+        "G6 CGM",
+        "Stelo",
+        "DXCM stock",
+        "DXCM shares",
+        "DXCM earnings",
+        "NASDAQ:DXCM",
+        "Kevin Sayer"
+      ]
     }
   }
 }

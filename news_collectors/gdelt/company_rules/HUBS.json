@@ -10,14 +10,28 @@
     "HubSpot AI",
     "HubSpot earnings",
     "HUBS stock",
-    "HUBS shares"
+    "HUBS shares",
+    "HubSpot revenue",
+    "HubSpot stock"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "'HUBS' matches 'hubs' everywhere; CRM/marketing keywords too generic",
-      "required_keywords": ["HubSpot", "HUBS stock", "HUBS shares", "Yamini Rangan"],
+      "problem": "'HUBS' matches 'hubs' everywhere; freepressjournal.in uses HubSpot tracking so every page matches",
+      "domain_kill": [
+        "freepressjournal.in"
+      ],
+      "required_keywords": [
+        "HubSpot",
+        "HUBS stock",
+        "HUBS shares",
+        "Yamini Rangan"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["HubSpot", "HUBS stock", "HUBS shares"]
+      "strict_validation_keywords": [
+        "HubSpot",
+        "HUBS stock",
+        "HUBS shares"
+      ]
     }
   }
 }

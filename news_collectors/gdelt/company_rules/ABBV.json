@@ -14,16 +14,59 @@
     "Rinvoq",
     "upadacitinib",
     "Allergan",
+    "Botox",
+    "Vraylar",
+    "Qulipta",
+    "Ubrelvy",
     "ABBV stock",
     "ABBV shares",
-    "ABBV earnings"
+    "ABBV earnings",
+    "ABBV revenue",
+    "AbbVie earnings",
+    "AbbVie revenue",
+    "AbbVie CEO",
+    "AbbVie acquisition",
+    "NYSE:ABBV"
   ],
   "special_rules": {
     "ambiguous": {
       "problem": "Standalone 'ABBV' matches ticker widgets; 'Botox' appears in beauty/lifestyle articles; 'immunology'/'neuroscience'/'oncology' are extremely generic",
-      "required_keywords": ["AbbVie", "Humira", "adalimumab", "Skyrizi", "risankizumab", "Rinvoq", "upadacitinib", "Allergan", "ABBV stock", "ABBV shares", "ABBV earnings", "NYSE:ABBV", "Richard Gonzalez", "Rob Michael"],
+      "required_keywords": [
+        "AbbVie",
+        "Humira",
+        "adalimumab",
+        "Skyrizi",
+        "risankizumab",
+        "Rinvoq",
+        "upadacitinib",
+        "Allergan",
+        "ABBV stock",
+        "ABBV shares",
+        "ABBV earnings",
+        "ABBV revenue",
+        "NYSE:ABBV",
+        "Richard Gonzalez",
+        "Rob Michael",
+        "AbbVie CEO",
+        "AbbVie acquisition"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["AbbVie", "Humira", "adalimumab", "Skyrizi", "risankizumab", "Rinvoq", "upadacitinib", "Allergan", "ABBV stock", "ABBV shares", "ABBV earnings", "NYSE:ABBV", "Richard Gonzalez", "Rob Michael"]
+      "strict_validation_keywords": [
+        "AbbVie",
+        "Humira",
+        "adalimumab",
+        "Skyrizi",
+        "risankizumab",
+        "Rinvoq",
+        "upadacitinib",
+        "Allergan",
+        "ABBV stock",
+        "ABBV shares",
+        "ABBV earnings",
+        "NYSE:ABBV",
+        "Richard Gonzalez",
+        "Rob Michael"
+      ]
     }
   }
 }

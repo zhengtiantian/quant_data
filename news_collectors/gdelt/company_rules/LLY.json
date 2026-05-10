@@ -11,16 +11,46 @@
     "Zepbound",
     "donanemab",
     "Kisunla",
+    "Trulicity",
+    "Verzenio",
+    "Taltz",
+    "Jardiance",
     "LLY stock",
     "LLY shares",
-    "LLY earnings"
+    "LLY earnings",
+    "LLY revenue",
+    "Eli Lilly",
+    "NYSE:LLY",
+    "Lilly earnings",
+    "Lilly revenue",
+    "Eli Lilly CEO",
+    "Eli Lilly acquisition"
   ],
   "special_rules": {
     "ambiguous": {
       "problem": "Mounjaro/tirzepatide appear in Novo Nordisk comparison articles; standalone 'Lilly' matches person names",
-      "required_keywords": ["Eli Lilly", "Lilly's", "LLY stock", "LLY shares", "LLY earnings", "NYSE:LLY", "David Ricks"],
+      "required_keywords": [
+        "Eli Lilly",
+        "Lilly's",
+        "LLY stock",
+        "LLY shares",
+        "LLY earnings",
+        "LLY revenue",
+        "NYSE:LLY",
+        "David Ricks",
+        "Eli Lilly CEO",
+        "Eli Lilly acquisition"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["Eli Lilly", "Lilly's", "LLY stock", "LLY shares", "LLY earnings", "NYSE:LLY", "David Ricks"]
+      "strict_validation_keywords": [
+        "Eli Lilly",
+        "Lilly's",
+        "LLY stock",
+        "LLY shares",
+        "LLY earnings",
+        "NYSE:LLY",
+        "David Ricks"
+      ]
     }
   }
 }

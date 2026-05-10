@@ -7,20 +7,57 @@
   "expansion_keywords": [
     "Carl Eschenbach",
     "Aneel Bhusri",
+    "Dave Duffield",
     "Workday Inc",
+    "Workday HCM",
     "Workday Finance",
+    "Workday Financial Management",
     "Workday Adaptive Planning",
+    "Workday Peakon",
+    "Workday Rising",
     "WDAY stock",
     "WDAY shares",
     "WDAY earnings",
-    "NASDAQ:WDAY"
+    "WDAY revenue",
+    "NASDAQ:WDAY",
+    "Workday earnings",
+    "Workday revenue"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "Standalone 'workday' is a common English word meaning a working day; case-insensitive match catches 'had a busy workday', 'workday hours', 'typical workday' etc.; generic HCM/ERP terms like 'human capital management'/'payroll software'/'enterprise software' appear in all HR-tech articles",
-      "required_keywords": ["Workday Inc", "Carl Eschenbach", "Aneel Bhusri", "Workday Finance", "Workday Adaptive Planning", "WDAY stock", "WDAY shares", "WDAY earnings", "NASDAQ:WDAY"],
+      "problem": "Standalone 'workday' is a common English word meaning a working day; case-insensitive match catches 'had a busy workday', 'workday hours', 'typical workday' etc.",
+      "required_keywords": [
+        "Workday",
+        "Workday Inc",
+        "Carl Eschenbach",
+        "Aneel Bhusri",
+        "Dave Duffield",
+        "Workday HCM",
+        "Workday Finance",
+        "Workday Financial Management",
+        "Workday Adaptive Planning",
+        "Workday Peakon",
+        "Workday Rising",
+        "WDAY stock",
+        "WDAY shares",
+        "WDAY earnings",
+        "WDAY revenue",
+        "NASDAQ:WDAY"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["Workday Inc", "Carl Eschenbach", "Aneel Bhusri", "Workday Finance", "Workday Adaptive Planning", "WDAY stock", "WDAY shares", "WDAY earnings", "NASDAQ:WDAY"]
+      "strict_validation_keywords": [
+        "Workday",
+        "Workday Inc",
+        "Carl Eschenbach",
+        "Aneel Bhusri",
+        "Dave Duffield",
+        "Workday HCM",
+        "Workday Finance",
+        "WDAY stock",
+        "WDAY shares",
+        "WDAY earnings",
+        "NASDAQ:WDAY"
+      ]
     }
   }
 }

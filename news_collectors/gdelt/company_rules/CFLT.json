@@ -8,18 +8,53 @@
     "Jay Kreps",
     "Confluent Cloud",
     "Confluent Platform",
+    "Confluent Flink",
+    "Confluent Kafka",
+    "Confluent Schema Registry",
+    "ksqlDB",
+    "Confluent TableFlow",
     "Apache Kafka",
     "CFLT stock",
     "CFLT shares",
     "CFLT earnings",
-    "NASDAQ:CFLT"
+    "CFLT revenue",
+    "NASDAQ:CFLT",
+    "Confluent earnings",
+    "Confluent revenue",
+    "Confluent CEO",
+    "Confluent IPO"
   ],
   "special_rules": {
     "ambiguous": {
       "problem": "Standalone 'confluent' is an English word (rivers joining); 'CFLT' matches ticker widgets; generic data-streaming terms like 'event streaming'/'Kafka'/'real-time data' appear widely (Apache Kafka is open-source)",
-      "required_keywords": ["Confluent", "Jay Kreps", "Confluent Cloud", "Confluent Platform", "CFLT stock", "CFLT shares", "CFLT earnings", "NASDAQ:CFLT"],
+      "required_keywords": [
+        "Confluent",
+        "Jay Kreps",
+        "Confluent Cloud",
+        "Confluent Platform",
+        "Confluent Flink",
+        "Confluent Kafka",
+        "ksqlDB",
+        "CFLT stock",
+        "CFLT shares",
+        "CFLT earnings",
+        "CFLT revenue",
+        "NASDAQ:CFLT",
+        "Confluent CEO",
+        "Confluent IPO"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["Confluent", "Jay Kreps", "Confluent Cloud", "Confluent Platform", "CFLT stock", "CFLT shares", "CFLT earnings", "NASDAQ:CFLT"]
+      "strict_validation_keywords": [
+        "Confluent",
+        "Jay Kreps",
+        "Confluent Cloud",
+        "Confluent Platform",
+        "Confluent Flink",
+        "CFLT stock",
+        "CFLT shares",
+        "CFLT earnings",
+        "NASDAQ:CFLT"
+      ]
     }
   }
 }
