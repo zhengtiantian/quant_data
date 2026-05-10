@@ -21,6 +21,7 @@ os.environ["USE_SLM_FILTER"] = "true"
 try:
     import historical_collector as _hc
     from historical_collector import process_file_task, fetch_article, RuleManager
+    from special_rules.ambiguous_names import print_filter_summary
 except ImportError as e:
     print(f"❌ Import failed: {e}")
     sys.exit(1)
@@ -133,7 +134,7 @@ def _build_keyword_map(rule_manager, symbol, avg_date):
     return kw_map, "|".join(kw_list), keywords
 
 
-def validate_symbol(symbol, rule_manager, by_year):
+def validate_symbol(symbol, rule_manager, by_year, files_per_year=FILES_PER_YEAR):
     import ahocorasick
     cfg = rule_manager.company_configs.get(symbol, {})
     company_name = cfg.get("name", symbol)
@@ -143,13 +144,13 @@ def validate_symbol(symbol, rule_manager, by_year):
     print(f"  {symbol}  ({company_name})")
     print(f"{'='*65}")
 
-    sample_files = _sample_files(by_year)
+    sample_files = _sample_files(by_year, per_year=files_per_year)
     _register_files(sample_files)   # inject batch_id so _file_cached works
     avg_dt = _avg_date(sample_files)
     kw_map, _, keywords = _build_keyword_map(rule_manager, symbol, avg_dt)
 
     print(f"  Keywords ({len(keywords)}): {', '.join(keywords[:8])}{'...' if len(keywords)>8 else ''}")
-    print(f"  Files: {len(sample_files)} ({FILES_PER_YEAR}/year)\n")
+    print(f"  Files: {len(sample_files)} ({files_per_year}/year)\n")
 
     if not kw_map:
         print("  ⚠️  No keywords — skipping")
@@ -172,6 +173,7 @@ def validate_symbol(symbol, rule_manager, by_year):
             print(f"  [{i+1:>3}/{len(sample_files)}] {fname}  → {len(matches)} hits")
             kw_hits.extend(matches)
 
+    print_filter_summary()
     print(f"\n  Phase 1: {len(kw_hits)} keyword+SLM hits")
 
     if not kw_hits:
@@ -226,22 +228,33 @@ def validate_symbol(symbol, rule_manager, by_year):
 def main():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("symbol", nargs="?", default=None, help="Single symbol to validate")
+    parser.add_argument("symbol", nargs="*", default=None, help="One or more symbols to validate")
     parser.add_argument("--new", action="store_true", help="Validate all 60 new symbols")
     parser.add_argument("--tech", action="store_true", help="Validate original TECH_26")
+    parser.add_argument("--files-per-year", type=int, default=FILES_PER_YEAR,
+                        help=f"CSV files sampled per calendar year (default {FILES_PER_YEAR})")
+    parser.add_argument("--start-year", type=int, default=None,
+                        help="Only sample files from this year onwards (e.g. 2018)")
     args = parser.parse_args()
+
+    files_per_year = args.files_per_year
 
     print("🔍 Discovering batch dirs by year...")
     by_year = _all_zips_by_year()
+    if args.start_year:
+        by_year = {y: v for y, v in by_year.items() if int(y) >= args.start_year}
+        print(f"⚙️  start-year filter: {args.start_year}+")
     years = sorted(by_year.keys())
     total_batches = sum(len(v) for v in by_year.values())
     print(f"📦 {total_batches} batch dirs  |  years {years[0]}–{years[-1]}")
+    if files_per_year != FILES_PER_YEAR:
+        print(f"⚙️  files-per-year overridden to {files_per_year}")
 
     rule_manager = RuleManager(RULES_DIR)
     all_results = {}
 
     if args.symbol:
-        symbols = [args.symbol.upper()]
+        symbols = [s.upper() for s in args.symbol]
     elif args.new:
         symbols = NEW_60
     elif args.tech:
@@ -251,7 +264,7 @@ def main():
     print(f"📋 Validating {len(symbols)} symbols: {symbols[:6]}{'...' if len(symbols)>6 else ''}\n")
 
     for symbol in symbols:
-        result = validate_symbol(symbol, rule_manager, by_year)
+        result = validate_symbol(symbol, rule_manager, by_year, files_per_year=files_per_year)
         all_results[symbol] = result
 
     # Summary table
