@@ -12,14 +12,56 @@
     "HON stock",
     "HON shares",
     "HON earnings",
-    "NASDAQ:HON"
+    "NASDAQ:HON",
+    "Honeywell earnings",
+    "Honeywell revenue",
+    "Honeywell stock",
+    "Honeywell profit",
+    "Honeywell CEO",
+    "Honeywell layoff",
+    "Honeywell quarter",
+    "Honeywell results",
+    "Honeywell acquisition",
+    "Honeywell dividend",
+    "Honeywell spinoff"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "Standalone 'HON' matches ticker widgets and informal abbreviations; generic terms like 'aerospace'/'building automation'/'industrial software'/'warehouse automation' appear in all industrial/tech articles",
-      "required_keywords": ["Honeywell", "Vimal Kapur", "Darius Adamczyk", "Quantinuum", "UOP", "HON stock", "HON shares", "HON earnings", "NASDAQ:HON"],
-      "min_matches": 1,
-      "strict_validation_keywords": ["Honeywell", "Vimal Kapur", "Darius Adamczyk", "Quantinuum", "UOP", "HON stock", "HON shares", "HON earnings", "NASDAQ:HON"]
+      "problem": "Honeywell appears in industrial/aerospace/tech vendor articles; min_matches=2 forces a business-specific 2nd term, blocking incidental-mention FPs",
+      "required_keywords": [
+        "Honeywell",
+        "Vimal Kapur",
+        "Darius Adamczyk",
+        "Quantinuum",
+        "UOP",
+        "HON stock",
+        "HON shares",
+        "HON earnings",
+        "NASDAQ:HON",
+        "Honeywell earnings",
+        "Honeywell revenue",
+        "Honeywell stock",
+        "Honeywell profit",
+        "Honeywell CEO",
+        "Honeywell layoff",
+        "Honeywell quarter",
+        "Honeywell results",
+        "Honeywell acquisition",
+        "Honeywell dividend",
+        "Honeywell spinoff"
+      ],
+      "min_matches": 2,
+      "strict_validation_keywords": [
+        "Honeywell",
+        "Vimal Kapur",
+        "Darius Adamczyk",
+        "Quantinuum",
+        "UOP",
+        "HON stock",
+        "HON shares",
+        "HON earnings",
+        "NASDAQ:HON"
+      ]
     }
   }
 }

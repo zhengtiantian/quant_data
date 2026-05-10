@@ -144,6 +144,67 @@ class AmbiguousNameRule(BaseRule):
         "INTC": [r"pat\s+gelsinger", r"\bxeon\b", r"\bcore\s+ultra\b", r"intel\s+foundry", r"gaudi\s+accelerator"],
         "MCHP": [r"ganesh\s+moorthy", r"microchip\s+technology", r"\bpic\s+microcontroller\b"],
         "ASML": [r"peter\s+wennink", r"\beuv\b", r"\bduv\b", r"asml\s+scanner", r"extreme\s+ultraviolet"],
+        # ── 60 new symbols ───────────────────────────────────────────────────────
+        "SHOP": [r"tobi\s+l[uü]tke", r"shopify\s+(payments|plus|capital|markets|earnings|revenue)", r"shop\s+pay"],
+        "NET":  [r"matthew\s+prince", r"cloudflare\s+(workers|cdn|zero\s+trust|magic\s+transit|r2\s+storage|earnings|revenue|one)", r"ddos\s+protection"],
+        "ZS":   [r"jay\s+chaudhry", r"zero\s+trust\s+exchange", r"zscaler\s+(internet\s+access|private\s+access|earnings|revenue)", r"\bzia\b.*zscaler", r"\bzpa\b.*zscaler"],
+        "HUBS": [r"yamini\s+rangan", r"hubspot\s+(crm|ai|earnings|revenue)", r"\bhubspot\b"],
+        "WDAY": [r"carl\s+eschenbach", r"aneel\s+bhusri", r"workday\s+(finance|adaptive|earnings|revenue|hcm)"],
+        "VEEV": [r"peter\s+gassner", r"veeva\s+(vault|crm|commercial\s+cloud|earnings|revenue)"],
+        "TEAM": [r"mike\s+cannon.brookes", r"scott\s+farquhar", r"jira\s+software", r"atlassian\s+(confluence|cloud|earnings|revenue)", r"\btrello\b.*atlassian"],
+        "TTD":  [r"jeff\s+green.*trade\s+desk", r"\buid2\b", r"\bopenpath\b", r"the\s+trade\s+desk\s+(earnings|revenue|platform)"],
+        "OKTA": [r"todd\s+mckinnon", r"okta\s+(identity|workforce|auth0|earnings|revenue)", r"okta\s+inc\b"],
+        "APP":  [r"adam\s+foroughi", r"\bappdiscovery\b", r"\bmax\s+mediation\b", r"applovin\s+(earnings|revenue|platform|stock)"],
+        "RBLX": [r"david\s+baszucki", r"\brobux\b", r"roblox\s+(studio|earnings|revenue|stock|dau|corporation|metaverse|avatar|connect)", r"nyse:rblx", r"rblx\s+(stock|earnings|shares)"],
+        "COIN": [r"brian\s+armstrong.*coinbase|coinbase.*brian\s+armstrong", r"coinbase\s+(earnings|revenue|exchange|base|pro|wallet|sec|crypto|ipo|prime|ventures|international|hack|breach|layoff|headcount|custody|layer|ceo|stock)", r"nasdaq:coin", r"base\s+(blockchain|chain|l2).*coinbase", r"coinbase.*base\s+(blockchain|chain)"],
+        "TWLO": [r"jeff\s+lawson", r"khozema\s+shipchandler", r"\bsendgrid\b", r"twilio\s+(segment|flex|verify|voice|messaging|email|video|studio|earnings|revenue|ceo|layoff|stock|inc)", r"nyse:twlo", r"twlo\s+(stock|earnings|shares|revenue)"],
+        "DUOL": [r"luis\s+von\s+ahn", r"duolingo\s+(max|plus|earnings|revenue|dau|english\s+test|math|abc|music|ceo|ipo|stock|inc)", r"super\s+duolingo", r"nasdaq:duol", r"duol\s+(stock|shares|earnings|revenue)"],
+        "CFLT": [r"jay\s+kreps", r"confluent\s+(cloud|platform|flink|kafka|earnings|revenue|ceo|ipo|stock|inc)", r"apache\s+kafka.*confluent", r"nasdaq:cflt", r"cflt\s+(stock|shares|earnings|revenue)", r"\bksqldb\b.*confluent"],
+        "GTLB": [r"sid\s+sijbrandij", r"gitlab\s+(duo|ci|inc|ultimate|devsecops|earnings|revenue|ceo|ipo|stock)", r"nasdaq:gtlb", r"gtlb\s+(stock|shares|earnings|revenue)"],
+        "MNDY": [r"roy\s+mann", r"eran\s+zinman", r"monday\s+(crm|dev|work\s+management|workos|service|sales\s+crm|earnings|revenue|ceo|ipo)", r"monday\.com\s+(earnings|revenue|ceo|ipo|stock|inc)", r"nasdaq:mndy", r"mndy\s+(stock|shares|earnings|revenue)"],
+        "S":    [r"tomer\s+weingarten", r"singularity\s+platform", r"purple\s+ai", r"sentinelone\s+(earnings|revenue|xdr|endpoint|vigilance|ai|marketplace|ceo|ipo|stock|inc)", r"nyse:s\b"],
+        "LLY":  [r"dave\s+ricks", r"\bmounjaro\b", r"\btirzepatide\b", r"\bzepbound\b", r"\btrulicity\b", r"\bkisunla\b", r"\bdonanemab\b", r"\bverzenio\b", r"\btaltz\b", r"eli\s+lilly\s+(earnings|revenue|drug|pipeline|ceo|acquisition|stock|inc)", r"nyse:lly", r"lly\s+(stock|earnings|shares|revenue)"],
+        "JNJ":  [r"joaquin\s+duato", r"johnson\s+&\s+johnson\s+(earnings|revenue|oncology|medtech|ceo|acquisition|stock|inc)", r"\bstelara\b", r"\bdarzalex\b", r"\bcarvykti\b", r"\btremfya\b", r"\btecvayli\b", r"\bkenvue\b", r"\bjanssen\b", r"nyse:jnj", r"jnj\s+(stock|earnings|shares|revenue)", r"talc\s+lawsuit.*j.j|j.j.*talc\s+lawsuit"],
+        "AMGN": [r"bob\s+bradway", r"\brepatha\b", r"\botezla\b", r"\blumakras\b", r"\bprolia\b", r"\bevenity\b", r"\bmaritide\b", r"\benbrel\b", r"\btepezza\b", r"\btezspire\b", r"\bhorizon\s+therapeutics\b", r"amgen\s+(earnings|revenue|biosimilar|pipeline|ceo|acquisition|stock|inc)", r"nasdaq:amgn", r"amgn\s+(stock|earnings|shares|revenue)"],
+        "GILD": [r"daniel\s+o.day", r"\blenacapavir\b", r"\bveklury\b", r"\bbiktarvy\b", r"\bremdesivir\b", r"\btrodelvy\b", r"\byescarta\b", r"\bsunlenca\b", r"\bdescovy\b", r"\btecartus\b", r"\bodefsey\b", r"\bgenvoya\b", r"\bharvoni\b", r"\badvocate\b.*gilead", r"gilead\s+(earnings|revenue|sciences|hiv|oncology|ceo|acquisition|stock|inc)", r"nasdaq:gild", r"gild\s+(stock|earnings|shares|revenue)"],
+        "REGN": [r"len\s+schleifer", r"\bdupixent\b", r"\bdupilumab\b", r"\beylea\b", r"\baflibercept\b", r"\bpraluent\b", r"\blibtayo\b", r"\bkevzara\b", r"\bitepekimab\b", r"regeneron\s+(earnings|revenue|pipeline|pharma|ceo|acquisition|stock|inc)", r"nasdaq:regn", r"regn\s+(stock|earnings|shares|revenue)"],
+        "VRTX": [r"reshma\s+kewalramani", r"\btrikafta\b", r"\bkaftrio\b", r"\bkalydeco\b", r"\bsuzetrigine\b", r"\bjournavx\b", r"\bcasgevy\b", r"\belexacaftor\b", r"\borkambi\b", r"\bsymdeko\b", r"vertex\s+(pharmaceuticals|earnings|revenue|cystic\s+fibrosis|ceo|stock|inc)", r"nasdaq:vrtx", r"vrtx\s+(stock|earnings|shares|revenue)"],
+        "ISRG": [r"gary\s+guthart", r"da\s+vinci\s+(system|robot|surgical|xi|x|5)", r"\bion\s+endoluminal\b", r"intuitive\s+surgical\s+(earnings|revenue|system|ceo|stock|inc|procedures)", r"nasdaq:isrg", r"isrg\s+(stock|earnings|shares|revenue)"],
+        "UNH":  [r"andrew\s+witty", r"brian\s+thompson.*unitedhealth|unitedhealth.*brian\s+thompson", r"\boptum\b", r"unitedhealthcare\b", r"unitedhealth\s+(group|earnings|revenue|ceo|stock|inc)", r"change\s+healthcare", r"nyse:unh", r"unh\s+(stock|earnings|shares|revenue)"],
+        "MRNA": [r"st[eé]phane\s+bancel", r"moderna.*mrna\s+vaccine|mrna\s+vaccine.*moderna", r"\bspikevax\b", r"\bmrna.1273\b", r"\bmresvia\b", r"\bmrna.4157\b", r"moderna\s+(vaccine|earnings|revenue|pipeline|covid|ceo|layoff|stock|inc)", r"nasdaq:mrna", r"mrna\s+(stock|earnings|shares|revenue)"],
+        "ABBV": [r"richard\s+gonzalez", r"rob\s+michael.*abbvie|abbvie.*rob\s+michael", r"\bhumira\b", r"\badalimumab\b", r"\bskyrizi\b", r"\brisankizumab\b", r"\brinvoq\b", r"\bupadacitinib\b", r"\ballergan\b", r"\bbotox\b.*abbvie|abbvie.*\bbotox\b", r"\bvraylar\b", r"\bqulipta\b", r"abbvie\s+(earnings|revenue|immunology|ceo|acquisition|stock|inc)", r"nyse:abbv", r"abbv\s+(stock|earnings|shares|revenue)"],
+        "PFE":  [r"albert\s+bourla", r"\bpaxlovid\b", r"\beliquis\b", r"\bapixaban\b", r"\bxeljanz\b", r"\bcomirnaty\b", r"\bibrance\b", r"\bpalbociclib\b", r"\bvyndaqel\b", r"\bprevnar\b", r"\bseagen\b", r"\babrysvo\b", r"pfizer\s+(earnings|revenue|vaccine|pipeline|ceo|layoff|acquisition|stock|inc)", r"nyse:pfe", r"pfe\s+(stock|earnings|shares|revenue)"],
+        "MDT":  [r"geoff\s+martha", r"\bhugo\s+robot\b", r"\bmicra\s+pacemaker\b", r"\bmicra\s+av\b", r"\bminimed\b", r"\bmazor\s+robotics\b", r"\bevolut\b", r"\bsofamor\b", r"medtronic\s+(earnings|revenue|spine|diabetes|cardiac|ceo|acquisition|stock|inc)", r"nyse:mdt", r"mdt\s+(stock|earnings|shares|revenue)"],
+        "SYK":  [r"kevin\s+lobo", r"\bmako\s+robot\b", r"\bmako\s+robotic\b", r"\blifepak\b", r"\bvocera\b", r"\bwright\s+medical\b", r"\btrident\b.*stryker", r"stryker\s+(corporation|corp|earnings|revenue|orthopedic|ceo|acquisition|stock|inc)", r"nyse:syk", r"syk\s+(stock|earnings|shares|revenue)"],
+        "DXCM": [r"kevin\s+sayer", r"\bg6\b.*dexcom", r"\bg7\b.*dexcom", r"\bstelo\b.*dexcom|dexcom.*\bstelo\b", r"dexcom\s+(earnings|revenue|cgm|continuous\s+glucose|ceo|stock|inc|sensor|g7|g6)", r"nasdaq:dxcm", r"dxcm\s+(stock|earnings|shares|revenue)"],
+        "ILMN": [r"jacob\s+thaysen", r"francis\s+desouza", r"\bgrail\b.*illumina|illumina.*\bgrail\b", r"\bnovaseq\b", r"\bnextseq\b", r"\bmiseq\b", r"\bgalleri\s+test\b", r"illumina\s+(earnings|revenue|sequencing|genomics|ceo|acquisition|stock|inc)", r"nasdaq:ilmn", r"ilmn\s+(stock|earnings|shares|revenue)"],
+        "V":    [r"ryan\s+mcinerney", r"al\s+kelly.*visa|visa.*al\s+kelly", r"visa\s+(inc\b|earnings|revenue|payment\s+network|direct|checkout|b2b|ceo|stock)", r"\bvisanet\b", r"\bnyse:v\b", r"\bv\s+(stock|earnings|shares|revenue)\b.*visa|visa.*\bv\s+(stock|earnings|shares|revenue)\b"],
+        "MA":   [r"michael\s+miebach", r"mastercard\s+(earnings|revenue|send|network|payment|incorporated|international|ceo|stock|inc)", r"\bvocalink\b", r"\bnudata\s+security\b", r"nyse:ma\b", r"\bma\s+(stock|earnings|shares|revenue)\b.*mastercard|mastercard.*\bma\s+(stock|earnings|shares|revenue)\b"],
+        "PYPL": [r"alex\s+chriss", r"dan\s+schulman", r"\bvenmo\b", r"paypal\s+(earnings|revenue|venmo|checkout|credit|commerce|honey|bnpl|ceo|layoff|stock|inc)", r"\bbraintree\s+payments\b", r"nasdaq:pypl", r"pypl\s+(stock|earnings|shares|revenue)"],
+        "GS":   [r"david\s+solomon", r"goldman\s+sachs\s+(earnings|revenue|trading|results|profit|ceo|layoff|stock|wealth|banking)", r"marcus\s+by\s+goldman", r"nyse:gs\b", r"\bgs\s+(stock|earnings|shares)\b.*goldman|goldman.*\bgs\s+(stock|earnings|shares)\b"],
+        "JPM":  [r"jamie\s+dimon", r"jpmorgan\s+(earnings|revenue|trading|results|profit|ceo|chase|investment\s+banking|stock)", r"j\.p\.\s*morgan\s+(chase|earnings|revenue)", r"nyse:jpm", r"jpm\s+(stock|earnings|shares|revenue)"],
+        "MS":   [r"james\s+gorman", r"ted\s+pick.*morgan\s+stanley|morgan\s+stanley.*ted\s+pick", r"morgan\s+stanley\s+(earnings|revenue|trading|results|profit|ceo|wealth|stock)", r"nyse:ms\b", r"\bms\s+(stock|earnings|shares)\b.*morgan\s+stanley|morgan\s+stanley.*\bms\s+(stock|earnings|shares)\b"],
+        "BLK":  [r"larry\s+fink", r"blackrock\s+(earnings|revenue|aum|ishares|etf)", r"\baladdin\b.*blackrock"],
+        "SCHW": [r"rick\s+wurster", r"walt\s+bettinger", r"charles\s+schwab\s+(earnings|revenue|bank|brokerage)", r"schwab\s+(earnings|revenue)"],
+        "AXP":  [r"stephen\s+squeri", r"american\s+express\s+(earnings|revenue|card|centurion)", r"\bamex\s+(card|platinum|gold)\b"],
+        "COF":  [r"richard\s+fairbank", r"capital\s+one\s+(earnings|revenue|credit|discover|bank)", r"capitalone\b"],
+        "DIS":  [r"bob\s+iger", r"disney\+", r"\bhulu\b.*disney", r"\bpixar\b", r"disney\s+(parks|earnings|revenue|streaming)", r"\bespn\+\b"],
+        "SNAP": [r"evan\s+spiegel", r"snapchat\s+(dau|ar|lens|spotlight|earnings|revenue)", r"snap\s+inc\s+(earnings|revenue)"],
+        "SPOT": [r"daniel\s+ek", r"spotify\s+(wrapped|premium|podcast|earnings|revenue|dau)", r"joe\s+rogan.*spotify"],
+        "RDDT": [r"steve\s+huffman", r"reddit\s+(earnings|revenue|dau|ipo|advertising|api)"],
+        "PINS": [r"bill\s+ready", r"pinterest\s+(earnings|revenue|mau|advertising|shoppable)", r"\bpinterest\s+tv\b"],
+        "NKE":  [r"elliott\s+hill", r"john\s+donahoe", r"\bair\s+jordan\b", r"\bjordan\s+brand\b", r"nike\s+(earnings|revenue|direct|digital)"],
+        "HD":   [r"ted\s+decker", r"home\s+depot\s+(earnings|revenue|pro|comparable)", r"\bhome\s+depot\s+stores?\b"],
+        "SBUX": [r"brian\s+niccol", r"howard\s+schultz", r"\bfrappuccino\b", r"starbucks\s+(rewards|earnings|revenue|comp\s+sales)"],
+        "MCD":  [r"chris\s+kempczyk", r"\bbig\s+mac\b", r"mcdonald.s\s+(earnings|revenue|same.store|systemwide)", r"\bmcrib\b"],
+        "TGT":  [r"brian\s+cornell", r"target\s+(earnings|revenue|circle|comparable|redcard)"],
+        "CAT":  [r"jim\s+umpleby", r"caterpillar\s+(earnings|revenue|machinery|construction|equipment)", r"\bcat\s+financial\b"],
+        "HON":  [r"vimal\s+kapur", r"darius\s+adamczyk", r"\bquantinuum\b", r"honeywell\s+(earnings|revenue|aerospace|performance|process)"],
+        "RTX":  [r"chris\s+calio", r"greg\s+hayes", r"\bpratt\s+&\s+whitney\b", r"\bcollins\s+aerospace\b", r"\bf135\s+engine\b", r"raytheon\s+(earnings|revenue|defense|missile)"],
+        "LMT":  [r"jim\s+taiclet", r"\bf-35\b", r"\bpac-3\b", r"\bsikorsky\b", r"\bhimars\b", r"lockheed\s+martin\s+(earnings|revenue|defense|contract)"],
+        "GE":   [r"larry\s+culp", r"\bleap\s+engine\b", r"\bge9x\b", r"\bcfm\s+international\b", r"ge\s+aerospace\s+(earnings|revenue|engine|contract)"],
+        "DE":   [r"john\s+may.*deere", r"\bsee\s+&\s+spray\b", r"\bhagie\b", r"john\s+deere\s+(earnings|revenue|equipment|tractor)"],
+        "BA":   [r"kelly\s+ortberg", r"dave\s+calhoun", r"\b737\s+max\b", r"\b787\s+dreamliner\b", r"\bstarliner\b", r"boeing\s+(earnings|revenue|aircraft|production|delivery)"],
     }
 
     _TOO_COMMON_TO_BYPASS = {"instagram", "facebook", "whatsapp", "youtube", "android", "chrome", "google", "amazon", "apple", "microsoft"}
@@ -258,6 +319,18 @@ class AmbiguousNameRule(BaseRule):
             r"\b@[a-z0-9_.]+\b", r"\byacht\b", r"\bsuperyacht\b",
             r"\bfor\s+whatsapp\b", r"\bextensions?\s+for\s+whatsapp\b"
         ],
+        "TEAM": [
+            r"\brich\s+list\b", r"\byoung\s+rich\b", r"\bwealth\s+list\b",
+            r"\boxfam\b", r"\bbillionaires?\s+increased\b",
+            r"\bcoal\s+(power|fired|station|mine)\b",
+            r"\bscott\s+morrison\b", r"\balbanese\b",
+            r"\brenewable\s+energy\b.*\b(australia|cannon.brookes)\b",
+            r"\bcannon.brookes\b.*\b(climate|coal|energy|solar|AGL)\b",
+            r"\bmansion\b", r"\breal\s+estate\b", r"\bproperty\b.*\b(sale|sold|buy|purchase)\b",
+            r"\bjunior\s+(business\s+analyst|developer|analyst)\b",
+            r"\bjob\s+(listing|posting|vacancy|opening)\b",
+            r"\bapply\s+(now|online|here)\b", r"\bapply\s+for\s+this\b",
+        ],
         "TSLA": [
             r"\bwar\s+on\s+autopilot\b", r"\bbattlefield\s+robot\b", r"\budar\b",
             r"\bmilitary\s+robot\b", r"\bweapon(?:ized)?\s+robot\b",
@@ -268,6 +341,64 @@ class AmbiguousNameRule(BaseRule):
             r"\bpolitic", r"\bpolitical\b", r"\bcampaign\b", r"\bcommentator\b",
             r"\bscaramucci\b", r"\badviser\b", r"\badvisor\b",
             r"\brip\s+off\b", r"\bdoge\b"
+        ],
+        "DIS": [
+            r"\bmovie\s+review\b", r"\bfilm\s+review\b",
+            r"\bofficial\s+trailer\b", r"\btrailer\s+released?\b",
+            r"\bnow\s+streaming\b", r"\bhow\s+to\s+watch\b", r"\bwhere\s+to\s+watch\b",
+            r"\bwatch\s+(?:online|free|on\s+disney)\b",
+            r"\bspoiler\b", r"\bspoilers?\s+ahead\b",
+            r"\bcast\s+of\b", r"\bcharacters?\s+in\b", r"\bplot\s+(?:of|explained)\b",
+            r"\bfan\s+(?:art|theory|theories|reaction)\b",
+            r"\bbest\s+disney\s+(?:movies?|shows?|songs?|characters?)\b",
+            r"\bdisney\s+(?:princess|villain|sidekick|character)\b",
+            r"\btheme\s+park\s+(?:tips?|guide|review|visit)\b",
+            r"\bdisneyland\s+(?:tips?|guide|review|visit|food)\b",
+            r"\bmagic\s+kingdom\b.*\b(?:tip|guide|visit|ride|food)\b",
+            r"\bhow\s+to\s+(?:plan|book|visit)\b.*\bdisney\b",
+        ],
+        "SYK": [
+            r"\bstryker\s+(vehicle|brigade|battalion|combat\s+vehicle|armored|iav|m1126)\b",
+            r"\barmored\s+personnel\b", r"\binfantry\s+carrier\b",
+            r"\bus\s+army\b.*\bstryker\b", r"\bstryker\b.*\bus\s+army\b",
+            r"\barmy\s+stryker\b", r"\bstryker\s+brigade\b",
+            r"\bmilitary\s+vehicle\b.*\bstryker\b", r"\bstryker\b.*\bmilitary\s+vehicle\b",
+            r"\bstryker\s+surname\b",
+        ],
+        # ── 大型金融机构分析师引用拦截 ────────────────────────────────────────
+        # Real titles: "Goldman Sachs Raises Apple Price Target to $220" — need .{0,80} between verb and target
+        "GS": [
+            r"goldman sachs\s+(?:upgrades?|downgrades?|initiates?|reiterates?|maintains?)\s+\w",
+            r"goldman sachs\s+(?:raised?|lowered?|cuts?|trimmed?|bumped?|boosts?|boosted?).{0,80}(?:price\s+)?target",
+            r"goldman sachs\s+(?:raised?|lowered?|cuts?|trimmed?)\s+\w.{0,50}\s+(?:to\s+)?(?:overweight|underweight|buy|sell|hold|neutral|outperform|underperform)",
+            r"goldman sachs\s+analyst",
+            r"according\s+to\s+goldman\s+sachs",
+            r"goldman sachs\s+(?:sees?|expects?|warns?)\s+\w+\s+(?:stock|shares?|to\s+reach|\$|\d)",
+        ],
+        "JPM": [
+            r"jpmorgan\s+(?:upgrades?|downgrades?|initiates?|reiterates?|maintains?)\s+\w",
+            r"jpmorgan\s+(?:raised?|lowered?|cuts?|trimmed?|bumped?|boosts?|boosted?).{0,80}(?:price\s+)?target",
+            r"jpmorgan\s+(?:raised?|lowered?|cuts?|trimmed?)\s+\w.{0,50}\s+(?:to\s+)?(?:overweight|underweight|buy|sell|hold|neutral|outperform|underperform)",
+            r"jpmorgan\s+analyst",
+            r"according\s+to\s+jpmorgan",
+            r"j\.p\.\s*morgan\s+(?:raised?|lowered?|initiated?|upgraded?|downgraded?|cuts?).{0,80}(?:price\s+)?target",
+            r"j\.p\.\s*morgan\s+(?:upgrades?|downgrades?)\s+\w",
+        ],
+        "MS": [
+            r"morgan stanley\s+(?:upgrades?|downgrades?|initiates?|reiterates?|maintains?)\s+\w",
+            r"morgan stanley\s+(?:raised?|lowered?|cuts?|trimmed?|bumped?|boosts?|boosted?).{0,80}(?:price\s+)?target",
+            r"morgan stanley\s+(?:raised?|lowered?|cuts?|trimmed?)\s+\w.{0,50}\s+(?:to\s+)?(?:overweight|underweight|buy|sell|hold|neutral|outperform|underperform)",
+            r"morgan stanley\s+analyst",
+            r"according\s+to\s+morgan\s+stanley",
+            r"morgan stanley\s+(?:sees?|expects?|warns?)\s+\w+\s+(?:stock|shares?|to\s+reach|\$|\d)",
+        ],
+        "BLK": [
+            r"blackrock\s+(?:upgrades?|downgrades?|initiates?)\s+\w",
+            r"blackrock\s+(?:raised?|lowered?|cuts?|trimmed?|bumped?).{0,80}(?:price\s+)?target",
+            r"blackrock\s+(?:raised?|lowered?|cuts?|trimmed?)\s+\w.{0,50}\s+(?:to\s+)?(?:overweight|underweight|buy|sell|hold|neutral|outperform|underperform)",
+            r"blackrock\s+analyst",
+            r"according\s+to\s+blackrock",
+            r"blackrock\s+(?:sees?|expects?|warns?)\s+\w+\s+(?:stock|shares?|to\s+reach|\$|\d)",
         ],
     }
 
@@ -316,6 +447,49 @@ class AmbiguousNameRule(BaseRule):
             r"\brobotics\b", r"\bai\b", r"\bplatform\b", r"\baccelerat", r"\bpowered\s+by\b",
             r"\bwith\s+nvidia\b", r"\bh100\b", r"\bb200\b", r"\bdgx\b"
         ],
+        # ── 大型金融机构：以公司为主角的文章保留 ──────────────────────────────
+        "GS": [
+            r"goldman sachs\s+(earnings|revenue|profit|loss|results|q[1-4]|quarterly|annual)",
+            r"goldman sachs\s+(ceo|layoffs?|job\s+cuts?|acquisition|merger|deal|fine|regulat|lawsuit|settlement|dividend|bonus)",
+            r"goldman sachs\s+(raises?|hikes?|cuts?)\s+(dividend|bonus|pay|capital|guidance)",
+            r"\bgs\s+(stock|earnings|shares|revenue)\b",
+            r"david solomon",
+            r"marcus\s+by\s+goldman",
+        ],
+        "JPM": [
+            r"jpmorgan\s+(earnings|revenue|profit|loss|results|q[1-4]|quarterly|annual)",
+            r"jpmorgan\s+(ceo|layoffs?|job\s+cuts?|acquisition|merger|deal|fine|regulat|lawsuit|settlement|dividend|bonus)",
+            r"jpmorgan\s+(raises?|hikes?|cuts?)\s+(dividend|bonus|pay|capital|guidance)",
+            r"\bjpm\s+(stock|earnings|shares|revenue)\b",
+            r"jamie dimon",
+            r"chase bank",
+        ],
+        "MS": [
+            r"morgan stanley\s+(earnings|revenue|profit|loss|results|q[1-4]|quarterly|annual)",
+            r"morgan stanley\s+(ceo|layoffs?|job\s+cuts?|acquisition|merger|deal|fine|regulat|lawsuit|settlement|dividend|bonus|wealth|aum)",
+            r"morgan stanley\s+(raises?|hikes?|cuts?)\s+(dividend|bonus|pay|capital|guidance)",
+            r"\bms\s+(stock|earnings|shares|revenue)\b",
+            r"ted pick",
+            r"james gorman",
+            r"\betrade\b",
+        ],
+        "BLK": [
+            r"blackrock\s+(earnings|revenue|profit|loss|results|q[1-4]|quarterly|annual|aum)",
+            r"blackrock\s+(ceo|layoffs?|acquisition|merger|deal|fine|regulat|lawsuit|settlement|dividend)",
+            r"larry fink",
+            r"\bishares\b",
+            r"\baladdin\b",
+        ],
+        "DIS": [
+            r"\bearnings\b", r"\brevenue\b", r"\bprofit\b", r"\bstock\b", r"\bshares?\b",
+            r"\bsubscriber", r"\bstreaming\s+(?:revenue|growth|loss|profit|service)\b",
+            r"\bbox\s+office\b", r"\bpark\s+(?:revenue|attendance|profit)\b",
+            r"\bbob\s+iger\b", r"\bbob\s+chapek\b",
+            r"\bdis\s+(?:stock|earnings|shares)\b", r"\bnyse:dis\b",
+            r"\blayoff\b", r"\bjob\s+cut\b", r"\bacquisition\b", r"\bmerger\b",
+            r"\bdividend\b", r"\bbuyback\b", r"\bguidance\b",
+            r"\bdisney\+\s+(?:subscriber|price|revenue|launch|password)\b",
+        ],
     }
 
     def __init__(self, symbol, config, company_name=None, full_config=None):
@@ -333,6 +507,7 @@ class AmbiguousNameRule(BaseRule):
         self.min_matches = config.get('min_matches', 1)
         self.exclude_patterns = config.get('exclude_patterns', [])
         self.case_sensitive = config.get('case_sensitive', False)
+        self.domain_kill = config.get('domain_kill', [])
         base_use_slm = config.get('use_slm', True)
         enabled_symbols_raw = os.getenv("SLM_ENABLED_SYMBOLS", "*")
         disabled_symbols_raw = os.getenv("SLM_DISABLED_SYMBOLS", "")
@@ -404,6 +579,14 @@ class AmbiguousNameRule(BaseRule):
         # 0. 防止空内容
         if not full_text.strip():
             return False
+
+        # 1. 域名黑名单 (Domain Kill) — URL-based, catches tracking-script FPs
+        if self.domain_kill:
+            article_url = article.get('url', '')
+            for domain in self.domain_kill:
+                if domain in article_url:
+                    track_filter_step("killed_by_static")
+                    return False
 
         # 2. 静态黑名单 (Static Kill)
         for _pat in self._compiled_static_kill:

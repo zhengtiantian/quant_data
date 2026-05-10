@@ -15,14 +15,50 @@
     "NKE stock",
     "NKE shares",
     "NKE earnings",
-    "NYSE:NKE"
+    "NYSE:NKE",
+    "Nike earnings",
+    "Nike revenue",
+    "Nike profit",
+    "Nike CEO",
+    "Nike stock",
+    "Nike layoff",
+    "Nike quarter",
+    "Nike results",
+    "Nike acquisition"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "Standalone 'Nike' appears in sports/fashion/culture articles unrelated to the stock; required_keywords must NOT include 'Nike' itself or the filter is bypassed",
-      "required_keywords": ["Elliott Hill", "John Donahoe", "Air Jordan", "Jordan Brand", "Nike Run Club", "Nike Air Max", "Swoosh", "NKE stock", "NKE shares", "NKE earnings", "NYSE:NKE"],
-      "min_matches": 1,
-      "strict_validation_keywords": ["Elliott Hill", "John Donahoe", "Air Jordan", "Jordan Brand", "NKE stock", "NKE shares", "NKE earnings", "NYSE:NKE"]
+      "problem": "Nike appears in countless sneaker/sports/lifestyle articles; Air Jordan/Swoosh etc. in required_keywords caused FPs; min_matches=2 with financial compounds blocks non-business FPs",
+      "required_keywords": [
+        "Nike",
+        "Elliott Hill",
+        "John Donahoe",
+        "Air Jordan",
+        "Jordan Brand",
+        "NKE stock",
+        "NKE shares",
+        "NKE earnings",
+        "NYSE:NKE",
+        "Nike earnings",
+        "Nike revenue",
+        "Nike profit",
+        "Nike CEO",
+        "Nike stock",
+        "Nike layoff",
+        "Nike quarter",
+        "Nike results",
+        "Nike acquisition"
+      ],
+      "min_matches": 2,
+      "strict_validation_keywords": [
+        "Nike",
+        "Elliott Hill",
+        "John Donahoe",
+        "NKE stock",
+        "NKE shares",
+        "NKE earnings",
+        "NYSE:NKE"
+      ]
     }
   }
 }

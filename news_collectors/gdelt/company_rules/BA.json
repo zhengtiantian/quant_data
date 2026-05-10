@@ -16,12 +16,26 @@
     "BA stock",
     "BA shares",
     "BA earnings",
-    "NYSE:BA"
+    "NYSE:BA",
+    "Boeing earnings",
+    "Boeing revenue",
+    "Boeing profit",
+    "Boeing CEO",
+    "Boeing stock",
+    "Boeing layoff",
+    "Boeing quarter",
+    "Boeing results",
+    "Boeing contract",
+    "Boeing acquisition",
+    "Boeing dividend",
+    "Boeing delivery",
+    "Boeing strike"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "Boeing appears in aviation/defense/politics articles not about the stock",
+      "problem": "Boeing appears in aviation/defense/politics articles not about the stock; min_matches=2 forces a business-specific 2nd term, blocking incidental-mention FPs",
       "required_keywords": [
+        "Boeing",
         "Kelly Ortberg",
         "Dave Calhoun",
         "737 MAX",
@@ -33,9 +47,22 @@
         "BA stock",
         "BA shares",
         "BA earnings",
-        "NYSE:BA"
+        "NYSE:BA",
+        "Boeing earnings",
+        "Boeing revenue",
+        "Boeing profit",
+        "Boeing CEO",
+        "Boeing stock",
+        "Boeing layoff",
+        "Boeing quarter",
+        "Boeing results",
+        "Boeing contract",
+        "Boeing acquisition",
+        "Boeing dividend",
+        "Boeing delivery",
+        "Boeing strike"
       ],
-      "min_matches": 1,
+      "min_matches": 2,
       "strict_validation_keywords": [
         "Boeing",
         "Kelly Ortberg",

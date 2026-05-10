@@ -11,14 +11,52 @@
     "HD stock",
     "HD shares",
     "HD earnings",
-    "NYSE:HD"
+    "NYSE:HD",
+    "Home Depot earnings",
+    "Home Depot revenue",
+    "Home Depot profit",
+    "Home Depot CEO",
+    "Home Depot stock",
+    "Home Depot layoff",
+    "Home Depot quarter",
+    "Home Depot results",
+    "Home Depot acquisition",
+    "Home Depot dividend"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "Standalone 'HD' means high-definition in almost all contexts; 'home improvement'/'housing market'/'contractor'/'comparable sales' appear in all home improvement competitor articles (Lowe's, ACE Hardware)",
-      "required_keywords": ["Home Depot", "Ted Decker", "Craig Menear", "SRS Distribution", "HD stock", "HD shares", "HD earnings", "NYSE:HD"],
-      "min_matches": 1,
-      "strict_validation_keywords": ["Home Depot", "Ted Decker", "Craig Menear", "SRS Distribution", "HD stock", "HD shares", "HD earnings", "NYSE:HD"]
+      "problem": "Home Depot appears in housing market, home improvement competitor articles (Lowe's etc.); min_matches=2 forces a business-specific 2nd term, blocking incidental-mention FPs",
+      "required_keywords": [
+        "Home Depot",
+        "Ted Decker",
+        "Craig Menear",
+        "SRS Distribution",
+        "HD stock",
+        "HD shares",
+        "HD earnings",
+        "NYSE:HD",
+        "Home Depot earnings",
+        "Home Depot revenue",
+        "Home Depot profit",
+        "Home Depot CEO",
+        "Home Depot stock",
+        "Home Depot layoff",
+        "Home Depot quarter",
+        "Home Depot results",
+        "Home Depot acquisition",
+        "Home Depot dividend"
+      ],
+      "min_matches": 2,
+      "strict_validation_keywords": [
+        "Home Depot",
+        "Ted Decker",
+        "Craig Menear",
+        "SRS Distribution",
+        "HD stock",
+        "HD shares",
+        "HD earnings",
+        "NYSE:HD"
+      ]
     }
   }
 }

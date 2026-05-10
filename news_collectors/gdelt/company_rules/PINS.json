@@ -12,14 +12,57 @@
     "PINS stock",
     "PINS shares",
     "PINS earnings",
-    "NYSE:PINS"
+    "NYSE:PINS",
+    "Pinterest earnings",
+    "Pinterest revenue",
+    "Pinterest stock",
+    "Pinterest profit",
+    "Pinterest CEO",
+    "Pinterest layoff",
+    "Pinterest quarter",
+    "Pinterest results",
+    "Pinterest advertising",
+    "Pinterest MAU",
+    "Pinterest users",
+    "Pinterest acquisition"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "Standalone 'PINS' matches pin-risk in options; 'Pinner' matches Pinner town in Harrow London; generic terms like 'ARPU'/'monthly active users'/'advertising' appear in all social media articles; 'Pinterest' appears in article footers as social share buttons causing Phase 3 FPs",
-      "required_keywords": ["Pinterest", "Bill Ready", "Ben Silbermann", "shoppable pins", "Pinterest Lens", "PINS stock", "PINS shares", "PINS earnings", "NYSE:PINS"],
-      "min_matches": 1,
-      "strict_validation_keywords": ["Pinterest", "Bill Ready", "Ben Silbermann", "shoppable pins", "Pinterest Lens", "PINS stock", "PINS shares", "PINS earnings", "NYSE:PINS"]
+      "problem": "Bare Pinterest appears in lifestyle/recipe/craft/design articles; min_matches=2 forces a business-specific 2nd term, blocking non-business FPs",
+      "required_keywords": [
+        "Pinterest",
+        "Bill Ready",
+        "Ben Silbermann",
+        "shoppable pins",
+        "Pinterest Lens",
+        "PINS stock",
+        "PINS shares",
+        "PINS earnings",
+        "NYSE:PINS",
+        "Pinterest earnings",
+        "Pinterest revenue",
+        "Pinterest stock",
+        "Pinterest profit",
+        "Pinterest CEO",
+        "Pinterest layoff",
+        "Pinterest quarter",
+        "Pinterest results",
+        "Pinterest advertising",
+        "Pinterest MAU",
+        "Pinterest users",
+        "Pinterest acquisition"
+      ],
+      "min_matches": 2,
+      "strict_validation_keywords": [
+        "Bill Ready",
+        "Ben Silbermann",
+        "shoppable pins",
+        "Pinterest Lens",
+        "PINS stock",
+        "PINS shares",
+        "PINS earnings",
+        "NYSE:PINS"
+      ]
     }
   }
 }

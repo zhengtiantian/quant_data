@@ -12,14 +12,49 @@
     "CAT stock",
     "CAT shares",
     "CAT earnings",
-    "NYSE:CAT"
+    "NYSE:CAT",
+    "Caterpillar earnings",
+    "Caterpillar revenue",
+    "Caterpillar stock",
+    "Caterpillar profit",
+    "Caterpillar CEO",
+    "Caterpillar layoff",
+    "Caterpillar quarter",
+    "Caterpillar results",
+    "Caterpillar acquisition",
+    "Caterpillar dividend"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "Standalone 'CAT' matches feline/animal content and 'Doja Cat' articles; 'CAT shares'/'CAT stock' as substrings match 'Doja Cat Shares...' article titles; generic terms like 'construction equipment'/'machinery' appear in all industrial articles",
-      "required_keywords": ["Caterpillar", "Jim Umpleby", "Resource Industries", "CAT stock", "CAT earnings", "NYSE:CAT"],
-      "min_matches": 1,
-      "strict_validation_keywords": ["Caterpillar", "Jim Umpleby", "Resource Industries", "CAT stock", "CAT earnings", "NYSE:CAT"]
+      "problem": "Caterpillar appears in general industrial/construction articles; min_matches=2 forces a business-specific 2nd term, blocking incidental-mention FPs",
+      "required_keywords": [
+        "Caterpillar",
+        "Jim Umpleby",
+        "Resource Industries",
+        "CAT stock",
+        "CAT shares",
+        "CAT earnings",
+        "NYSE:CAT",
+        "Caterpillar earnings",
+        "Caterpillar revenue",
+        "Caterpillar stock",
+        "Caterpillar profit",
+        "Caterpillar CEO",
+        "Caterpillar layoff",
+        "Caterpillar quarter",
+        "Caterpillar results",
+        "Caterpillar acquisition",
+        "Caterpillar dividend"
+      ],
+      "min_matches": 2,
+      "strict_validation_keywords": [
+        "Caterpillar",
+        "Jim Umpleby",
+        "Resource Industries",
+        "CAT stock",
+        "CAT earnings",
+        "NYSE:CAT"
+      ]
     }
   }
 }

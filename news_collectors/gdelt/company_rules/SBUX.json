@@ -12,12 +12,25 @@
     "SBUX stock",
     "SBUX shares",
     "SBUX earnings",
-    "NASDAQ:SBUX"
+    "NASDAQ:SBUX",
+    "Starbucks earnings",
+    "Starbucks revenue",
+    "Starbucks profit",
+    "Starbucks CEO",
+    "Starbucks stock",
+    "Starbucks layoff",
+    "Starbucks quarter",
+    "Starbucks results",
+    "Starbucks acquisition",
+    "Starbucks dividend",
+    "Starbucks union",
+    "Starbucks store"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "Starbucks appears in food/culture/politics articles; required must only have specific business terms",
+      "problem": "Starbucks appears in food/culture/politics articles; min_matches=2 forces a business-specific 2nd term, blocking non-business FPs",
       "required_keywords": [
+        "Starbucks",
         "Brian Niccol",
         "Howard Schultz",
         "Frappuccino",
@@ -25,9 +38,21 @@
         "SBUX stock",
         "SBUX shares",
         "SBUX earnings",
-        "NASDAQ:SBUX"
+        "NASDAQ:SBUX",
+        "Starbucks earnings",
+        "Starbucks revenue",
+        "Starbucks profit",
+        "Starbucks CEO",
+        "Starbucks stock",
+        "Starbucks layoff",
+        "Starbucks quarter",
+        "Starbucks results",
+        "Starbucks acquisition",
+        "Starbucks dividend",
+        "Starbucks union",
+        "Starbucks store"
       ],
-      "min_matches": 1,
+      "min_matches": 2,
       "strict_validation_keywords": [
         "Starbucks",
         "Brian Niccol",

@@ -14,14 +14,58 @@
     "LMT stock",
     "LMT shares",
     "LMT earnings",
-    "NYSE:LMT"
+    "NYSE:LMT",
+    "Lockheed Martin earnings",
+    "Lockheed Martin revenue",
+    "Lockheed Martin profit",
+    "Lockheed Martin CEO",
+    "Lockheed Martin stock",
+    "Lockheed Martin layoff",
+    "Lockheed Martin quarter",
+    "Lockheed Martin results",
+    "Lockheed Martin contract",
+    "Lockheed Martin acquisition",
+    "Lockheed Martin dividend"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "Standalone 'LMT' matches ticker widgets; generic terms like 'missile defense'/'space systems'/'defense backlog'/'classified programs' appear in all defense contractor articles",
-      "required_keywords": ["Lockheed Martin", "Jim Taiclet", "F-35", "PAC-3", "Sikorsky", "HIMARS", "LMT stock", "LMT shares", "LMT earnings", "NYSE:LMT"],
-      "min_matches": 1,
-      "strict_validation_keywords": ["Lockheed Martin", "Jim Taiclet", "F-35", "PAC-3", "Sikorsky", "HIMARS", "LMT stock", "LMT shares", "LMT earnings", "NYSE:LMT"]
+      "problem": "Lockheed Martin appears as one of many contractors in defense articles; min_matches=2 forces a business-specific 2nd term, blocking incidental-mention FPs",
+      "required_keywords": [
+        "Lockheed Martin",
+        "Jim Taiclet",
+        "F-35",
+        "PAC-3",
+        "Sikorsky",
+        "HIMARS",
+        "LMT stock",
+        "LMT shares",
+        "LMT earnings",
+        "NYSE:LMT",
+        "Lockheed Martin earnings",
+        "Lockheed Martin revenue",
+        "Lockheed Martin profit",
+        "Lockheed Martin CEO",
+        "Lockheed Martin stock",
+        "Lockheed Martin layoff",
+        "Lockheed Martin quarter",
+        "Lockheed Martin results",
+        "Lockheed Martin contract",
+        "Lockheed Martin acquisition",
+        "Lockheed Martin dividend"
+      ],
+      "min_matches": 2,
+      "strict_validation_keywords": [
+        "Lockheed Martin",
+        "Jim Taiclet",
+        "F-35",
+        "PAC-3",
+        "Sikorsky",
+        "HIMARS",
+        "LMT stock",
+        "LMT shares",
+        "LMT earnings",
+        "NYSE:LMT"
+      ]
     }
   }
 }

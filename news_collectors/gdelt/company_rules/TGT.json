@@ -12,14 +12,57 @@
     "TGT stock",
     "TGT shares",
     "TGT earnings",
-    "NYSE:TGT"
+    "NYSE:TGT",
+    "Target earnings",
+    "Target revenue",
+    "Target profit",
+    "Target CEO",
+    "Target stock",
+    "Target layoff",
+    "Target quarter",
+    "Target results",
+    "Target acquisition",
+    "Target dividend",
+    "Target same-store",
+    "Target comparable"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "Standalone 'Target' is an extremely common English word (military target, target audience, acquisition target, target price); 'TGT' matches ticker widgets; generic retail terms like 'comparable sales'/'inventory'/'gross margin' appear in all retail articles",
-      "required_keywords": ["Brian Cornell", "Target Circle", "Shipt", "TGT stock", "TGT shares", "TGT earnings", "NYSE:TGT"],
-      "min_matches": 1,
-      "strict_validation_keywords": ["Brian Cornell", "Target Circle", "Shipt", "TGT stock", "TGT shares", "TGT earnings", "NYSE:TGT"]
+      "problem": "Target is an extremely common English word; min_matches=2 forces a business-specific 2nd term, blocking non-retail FPs (military target, price target, target audience)",
+      "required_keywords": [
+        "Target",
+        "Brian Cornell",
+        "Target Circle",
+        "Target stores",
+        "Shipt",
+        "TGT stock",
+        "TGT shares",
+        "TGT earnings",
+        "NYSE:TGT",
+        "Target earnings",
+        "Target revenue",
+        "Target profit",
+        "Target CEO",
+        "Target stock",
+        "Target layoff",
+        "Target quarter",
+        "Target results",
+        "Target acquisition",
+        "Target dividend",
+        "Target same-store",
+        "Target comparable"
+      ],
+      "min_matches": 2,
+      "strict_validation_keywords": [
+        "Target",
+        "Brian Cornell",
+        "Target Circle",
+        "Shipt",
+        "TGT stock",
+        "TGT shares",
+        "TGT earnings",
+        "NYSE:TGT"
+      ]
     }
   }
 }

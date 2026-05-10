@@ -13,14 +13,58 @@
     "RDDT stock",
     "RDDT shares",
     "RDDT earnings",
-    "NASDAQ:RDDT"
+    "NASDAQ:RDDT",
+    "Reddit earnings",
+    "Reddit revenue",
+    "Reddit stock",
+    "Reddit profit",
+    "Reddit CEO",
+    "Reddit IPO",
+    "Reddit layoff",
+    "Reddit quarter",
+    "Reddit results",
+    "Reddit acquisition",
+    "Reddit subscriber",
+    "Reddit advertising"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "Standalone 'RDDT' matches ticker widgets; generic terms like 'upvote'/'r/'/'daily active users'/'community platform'/'IPO' appear in countless non-Reddit articles; 'data licensing' too generic",
-      "required_keywords": ["Reddit", "Steve Huffman", "subreddit", "Reddit Gold", "Reddit Premium", "Reddit API", "RDDT stock", "RDDT shares", "RDDT earnings", "NASDAQ:RDDT"],
-      "min_matches": 1,
-      "strict_validation_keywords": ["Reddit", "Steve Huffman", "subreddit", "Reddit Gold", "Reddit Premium", "Reddit API", "RDDT stock", "RDDT shares", "RDDT earnings", "NASDAQ:RDDT"]
+      "problem": "Bare Reddit appears in countless articles citing Reddit posts/communities; min_matches=2 forces a business-specific 2nd term, blocking non-business FPs",
+      "required_keywords": [
+        "Reddit",
+        "Steve Huffman",
+        "subreddit",
+        "Reddit Gold",
+        "Reddit Premium",
+        "Reddit API",
+        "RDDT stock",
+        "RDDT shares",
+        "RDDT earnings",
+        "NASDAQ:RDDT",
+        "Reddit earnings",
+        "Reddit revenue",
+        "Reddit stock",
+        "Reddit profit",
+        "Reddit CEO",
+        "Reddit IPO",
+        "Reddit layoff",
+        "Reddit quarter",
+        "Reddit results",
+        "Reddit advertising"
+      ],
+      "min_matches": 2,
+      "strict_validation_keywords": [
+        "Reddit",
+        "Steve Huffman",
+        "subreddit",
+        "Reddit Gold",
+        "Reddit Premium",
+        "Reddit API",
+        "RDDT stock",
+        "RDDT shares",
+        "RDDT earnings",
+        "NASDAQ:RDDT"
+      ]
     }
   }
 }

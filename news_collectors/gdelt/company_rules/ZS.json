@@ -9,19 +9,58 @@
     "Zero Trust Exchange",
     "Zscaler Internet Access",
     "Zscaler Private Access",
-    "secure web gateway",
     "ZIA",
     "ZPA",
     "ZTNA",
-    "cloud security",
-    "SASE"
+    "SASE",
+    "Zscaler earnings",
+    "Zscaler revenue",
+    "Zscaler stock",
+    "Zscaler profit",
+    "Zscaler CEO",
+    "Zscaler layoff",
+    "Zscaler quarter",
+    "Zscaler results",
+    "Zscaler acquisition",
+    "ZS stock",
+    "ZS shares",
+    "ZS earnings",
+    "NASDAQ:ZS"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "'ZS' is too short; 'cloud security'/'SASE' are generic",
-      "required_keywords": ["Zscaler", "ZS stock", "ZS shares", "ZIA", "ZPA", "Jay Chaudhry"],
-      "min_matches": 1,
-      "strict_validation_keywords": ["Zscaler", "ZS stock", "ZS shares", "ZS earnings", "ticker ZS"]
+      "problem": "Bare Zscaler appears in cybersecurity vendor-listing articles alongside many other vendors; min_matches=2 forces a 2nd Zscaler-specific term so vendor-list FPs (only Zscaler entity) are blocked",
+      "required_keywords": [
+        "Zscaler",
+        "Jay Chaudhry",
+        "Zero Trust Exchange",
+        "Zscaler Internet Access",
+        "Zscaler Private Access",
+        "ZS stock",
+        "ZS shares",
+        "ZS earnings",
+        "NASDAQ:ZS",
+        "Zscaler earnings",
+        "Zscaler revenue",
+        "Zscaler stock",
+        "Zscaler profit",
+        "Zscaler CEO",
+        "Zscaler layoff",
+        "Zscaler quarter",
+        "Zscaler results",
+        "Zscaler acquisition"
+      ],
+      "min_matches": 2,
+      "strict_validation_keywords": [
+        "Jay Chaudhry",
+        "Zero Trust Exchange",
+        "Zscaler Internet Access",
+        "Zscaler Private Access",
+        "ZS stock",
+        "ZS shares",
+        "ZS earnings",
+        "NASDAQ:ZS"
+      ]
     }
   }
 }

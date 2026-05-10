@@ -13,14 +13,52 @@
     "SPOT stock",
     "SPOT shares",
     "SPOT earnings",
-    "NYSE:SPOT"
+    "NYSE:SPOT",
+    "Spotify earnings",
+    "Spotify revenue",
+    "Spotify profit",
+    "Spotify subscriber",
+    "Spotify MAU",
+    "Spotify layoff",
+    "Spotify CEO",
+    "Spotify stock",
+    "Spotify acquisition",
+    "Spotify quarter",
+    "Spotify results"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "Standalone 'SPOT' is a common English word and SPOT satellite brand; 'podcast'/'music streaming'/'audiobook'/'monthly active users' appear in articles about Apple Music, Amazon Music, Pocket Casts, etc.",
-      "required_keywords": ["Spotify", "Daniel Ek", "Spotify Wrapped", "Spotify Premium", "Spotify podcast", "Joe Rogan Spotify", "SPOT stock", "SPOT shares", "SPOT earnings", "NYSE:SPOT"],
+      "problem": "Bare Spotify appears in music recommendation, podcast review and artist articles; removing it from required_keywords forces a business-specific term, blocking entertainment FPs at keyword stage",
+      "required_keywords": [
+        "Daniel Ek",
+        "Spotify Wrapped",
+        "Joe Rogan Spotify",
+        "SPOT stock",
+        "SPOT shares",
+        "SPOT earnings",
+        "NYSE:SPOT",
+        "Spotify earnings",
+        "Spotify revenue",
+        "Spotify profit",
+        "Spotify subscriber",
+        "Spotify MAU",
+        "Spotify layoff",
+        "Spotify CEO",
+        "Spotify stock",
+        "Spotify acquisition",
+        "Spotify quarter",
+        "Spotify results"
+      ],
       "min_matches": 1,
-      "strict_validation_keywords": ["Spotify", "Daniel Ek", "Spotify Wrapped", "Spotify Premium", "Spotify podcast", "Joe Rogan Spotify", "SPOT stock", "SPOT shares", "SPOT earnings", "NYSE:SPOT"]
+      "strict_validation_keywords": [
+        "Daniel Ek",
+        "Spotify Wrapped",
+        "Joe Rogan Spotify",
+        "SPOT stock",
+        "SPOT shares",
+        "SPOT earnings",
+        "NYSE:SPOT"
+      ]
     }
   }
 }

@@ -14,11 +14,24 @@
     "SNAP stock",
     "SNAP shares",
     "SNAP earnings",
-    "NYSE:SNAP"
+    "NYSE:SNAP",
+    "Snap Inc earnings",
+    "Snap Inc revenue",
+    "Snapchat DAU",
+    "Snapchat users",
+    "Snap Inc revenue",
+    "Snap Inc profit",
+    "Snap Inc CEO",
+    "Snap Inc layoff",
+    "Snap Inc quarter",
+    "Snap Inc results",
+    "Snapchat revenue",
+    "Snapchat earnings",
+    "Snapchat advertising"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "Snapchat/Snap Inc appears in social media trend articles not about the stock",
+      "problem": "Bare Snapchat appears in social media tutorial/celebrity/teen-safety articles; removing it from required_keywords forces a business-specific term, blocking non-business FPs at keyword stage",
       "required_keywords": [
         "Evan Spiegel",
         "Snap Map",
@@ -28,11 +41,23 @@
         "SNAP stock",
         "SNAP shares",
         "SNAP earnings",
-        "NYSE:SNAP"
+        "NYSE:SNAP",
+        "Snap Inc",
+        "Snap Inc earnings",
+        "Snap Inc revenue",
+        "Snap Inc profit",
+        "Snap Inc CEO",
+        "Snap Inc layoff",
+        "Snap Inc quarter",
+        "Snap Inc results",
+        "Snapchat DAU",
+        "Snapchat users",
+        "Snapchat revenue",
+        "Snapchat earnings",
+        "Snapchat advertising"
       ],
       "min_matches": 1,
       "strict_validation_keywords": [
-        "Snapchat",
         "Snap Inc",
         "Evan Spiegel",
         "Snap Map",

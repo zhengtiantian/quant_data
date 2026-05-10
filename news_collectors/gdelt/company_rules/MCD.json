@@ -15,14 +15,59 @@
     "MCD stock",
     "MCD shares",
     "MCD earnings",
-    "NYSE:MCD"
+    "NYSE:MCD",
+    "McDonald's earnings",
+    "McDonald's revenue",
+    "McDonald's profit",
+    "McDonald's CEO",
+    "McDonald's stock",
+    "McDonald's layoff",
+    "McDonald's quarter",
+    "McDonald's results",
+    "McDonald's acquisition",
+    "McDonald's dividend",
+    "McDonald's franchise",
+    "McDonald's same-store"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "McDonald's appears in food/culture/politics articles unrelated to the stock; required_keywords must NOT include McDonald's itself",
-      "required_keywords": ["Chris Kempczinski", "Big Mac", "McValue", "Golden Arches", "McCafe", "McNuggets", "MCD stock", "MCD shares", "MCD earnings", "NYSE:MCD"],
-      "min_matches": 1,
-      "strict_validation_keywords": ["Chris Kempczinski", "MCD stock", "MCD shares", "MCD earnings", "NYSE:MCD"]
+      "problem": "McDonald's appears in food/culture/politics articles; min_matches=2 forces a business-specific 2nd term, blocking incidental-mention FPs",
+      "required_keywords": [
+        "McDonalds",
+        "McDonald's",
+        "Chris Kempczinski",
+        "Big Mac",
+        "McValue",
+        "Golden Arches",
+        "McCafe",
+        "McNuggets",
+        "MCD stock",
+        "MCD shares",
+        "MCD earnings",
+        "NYSE:MCD",
+        "McDonald's earnings",
+        "McDonald's revenue",
+        "McDonald's profit",
+        "McDonald's CEO",
+        "McDonald's stock",
+        "McDonald's layoff",
+        "McDonald's quarter",
+        "McDonald's results",
+        "McDonald's acquisition",
+        "McDonald's dividend",
+        "McDonald's franchise",
+        "McDonald's same-store"
+      ],
+      "min_matches": 2,
+      "strict_validation_keywords": [
+        "McDonalds",
+        "McDonald's",
+        "Chris Kempczinski",
+        "MCD stock",
+        "MCD shares",
+        "MCD earnings",
+        "NYSE:MCD"
+      ]
     }
   }
 }

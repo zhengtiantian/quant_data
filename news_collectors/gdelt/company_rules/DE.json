@@ -12,14 +12,54 @@
     "DE stock",
     "DE shares",
     "DE earnings",
-    "NYSE:DE"
+    "NYSE:DE",
+    "John Deere earnings",
+    "John Deere revenue",
+    "John Deere profit",
+    "John Deere CEO",
+    "John Deere stock",
+    "John Deere layoff",
+    "John Deere quarter",
+    "John Deere results",
+    "John Deere acquisition",
+    "Deere & Co",
+    "Deere earnings",
+    "Deere revenue"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "Standalone 'DE' is German/Spanish preposition and state abbreviation; generic terms like 'agriculture'/'tractor'/'combine harvester'/'precision agriculture' appear in all farming equipment articles (CNH, AGCO, Kubota)",
-      "required_keywords": ["John Deere", "John May", "Hagie", "See & Spray", "DE earnings", "NYSE:DE"],
-      "min_matches": 1,
-      "strict_validation_keywords": ["John Deere", "John May", "Hagie", "See & Spray", "DE earnings", "NYSE:DE"]
+      "problem": "John Deere appears in agriculture/farming articles alongside competitors; min_matches=2 forces a business-specific 2nd term, blocking incidental-mention FPs",
+      "required_keywords": [
+        "Deere",
+        "John Deere",
+        "John May",
+        "Hagie",
+        "See & Spray",
+        "DE earnings",
+        "NYSE:DE",
+        "John Deere earnings",
+        "John Deere revenue",
+        "John Deere profit",
+        "John Deere CEO",
+        "John Deere stock",
+        "John Deere layoff",
+        "John Deere quarter",
+        "John Deere results",
+        "John Deere acquisition",
+        "Deere & Co",
+        "Deere earnings",
+        "Deere revenue"
+      ],
+      "min_matches": 2,
+      "strict_validation_keywords": [
+        "Deere",
+        "John Deere",
+        "John May",
+        "Hagie",
+        "See & Spray",
+        "DE earnings",
+        "NYSE:DE"
+      ]
     }
   }
 }

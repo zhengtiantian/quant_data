@@ -3,7 +3,8 @@
   "name": "GE Aerospace",
   "primary_keywords": [
     "GE Aerospace",
-    "GE Aviation"
+    "GE Aviation",
+    "General Electric"
   ],
   "expansion_keywords": [
     "Larry Culp",
@@ -13,14 +14,63 @@
     "GE stock",
     "GE shares",
     "GE earnings",
-    "NYSE:GE"
+    "NYSE:GE",
+    "GE Aerospace earnings",
+    "GE Aerospace revenue",
+    "GE Aviation earnings",
+    "General Electric earnings",
+    "General Electric revenue",
+    "General Electric profit",
+    "General Electric CEO",
+    "General Electric stock",
+    "General Electric layoff",
+    "General Electric quarter",
+    "General Electric results",
+    "General Electric acquisition",
+    "General Electric dividend"
   ],
   "special_rules": {
     "ambiguous": {
-      "problem": "Standalone 'GE' is extremely short and ambiguous (German abbreviations, General Electric pre-spinoff conglomerate); generic terms like 'jet engine'/'aerospace'/'turbofan'/'aftermarket' appear in all aviation articles (Rolls-Royce, Pratt & Whitney, CFM)",
-      "required_keywords": ["GE Aerospace", "GE Aviation", "Larry Culp", "LEAP engine", "GE9X", "CFM International", "GE stock", "GE shares", "GE earnings", "NYSE:GE"],
-      "min_matches": 1,
-      "strict_validation_keywords": ["GE Aerospace", "GE Aviation", "Larry Culp", "LEAP engine", "GE9X", "CFM International", "GE stock", "GE shares", "GE earnings", "NYSE:GE"]
+      "problem": "GE renamed from General Electric to GE Aerospace in 2023; historical articles use General Electric; min_matches=2 forces a business-specific 2nd term, blocking incidental aviation/aerospace FPs",
+      "required_keywords": [
+        "GE Aerospace",
+        "GE Aviation",
+        "General Electric",
+        "Larry Culp",
+        "LEAP engine",
+        "GE9X",
+        "CFM International",
+        "GE stock",
+        "GE shares",
+        "GE earnings",
+        "NYSE:GE",
+        "GE Aerospace earnings",
+        "GE Aerospace revenue",
+        "General Electric earnings",
+        "General Electric revenue",
+        "General Electric profit",
+        "General Electric CEO",
+        "General Electric stock",
+        "General Electric layoff",
+        "General Electric quarter",
+        "General Electric results",
+        "General Electric acquisition",
+        "General Electric dividend"
+      ],
+      "min_matches": 2,
+      "strict_validation_keywords": [
+        "GE Aerospace",
+        "GE Aviation",
+        "General Electric",
+        "Larry Culp",
+        "LEAP engine",
+        "GE9X",
+        "CFM International",
+        "GE stock",
+        "GE shares",
+        "GE earnings",
+        "NYSE:GE"
+      ]
     }
   }
 }
