@@ -171,6 +171,84 @@ MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "workflow")
 MYSQL_TASK_TABLE = os.getenv("MYSQL_TASK_TABLE", "gdelt_batch_tasks")
 BATCH_SIZE = 100  # 每次处理100个 GKG 文件，与 MySQL batch_id 一一对应
 
+# ── GKG MongoDB index ─────────────────────────────────────────────────────────
+# New files are downloaded to Data4T temp dir, parsed, imported to MongoDB,
+# then deleted. Historical matching reads from gkg_index instead of CSV files.
+GKG_MONGO_COL  = "gkg_index"
+GKG_PROG_COL   = "gkg_import_progress"
+GKG_TMP_DIR    = os.getenv("GKG_TMP_DIR", "/Volumes/Data4T/gdelt_tmp")
+USE_GKG_MONGO  = os.getenv("USE_GKG_MONGO", "true").lower() == "true"
+os.makedirs(GKG_TMP_DIR, exist_ok=True)
+
+_GKG_XML_RE = re.compile(r"(?is)<[^>]+>")
+_GKG_URL_RE = re.compile(r"https?://\S+|\b(?:www\.)?[a-z0-9.-]+\.[a-z]{2,}(?:/\S*)?\b", re.I)
+_GKG_WS_RE  = re.compile(r"\s+")
+_GKG_ENTITY_COLS = [7, 9, 11, 23, 24, 26, 28]
+
+def _gkg_strip(text: str) -> str:
+    text = re.sub(r"(?is)<PAGE_LINKS>.*?</PAGE_LINKS>", " ", text)
+    text = _GKG_XML_RE.sub(" ", text)
+    text = _GKG_URL_RE.sub(" ", text)
+    return _GKG_WS_RE.sub(" ", text).strip()
+
+def _gkg_ts(filename: str) -> str:
+    base = os.path.basename(filename)
+    return base[:14] if len(base) >= 14 and base[:14].isdigit() else base[:8]
+
+def _gkg_parse_rows(path: str) -> list[dict]:
+    """Parse one GKG CSV → list of {ts, url, raw} dicts."""
+    ts = _gkg_ts(path)
+    docs = []
+    try:
+        with open(path, encoding="ISO-8859-1", errors="replace", newline="") as fh:
+            import csv as _csv
+            reader = _csv.reader(fh, delimiter="\t", quoting=_csv.QUOTE_NONE)
+            for row in reader:
+                if len(row) <= 4:
+                    continue
+                col26 = row[26] if len(row) > 26 else ""
+                if "<PAGE_LINKS>" in col26:
+                    m = re.search(r"<PAGE_LINKS>(.*?)</PAGE_LINKS>", col26, re.S)
+                    url = (m.group(1).split(";")[0] if m else "").strip()
+                    raw = _gkg_strip(col26)
+                else:
+                    url = row[4].strip()
+                    parts = [row[c] for c in _GKG_ENTITY_COLS if c < len(row) and row[c]]
+                    raw = _gkg_strip(" ".join(parts))
+                if url.startswith("http"):
+                    docs.append({"ts": ts, "url": url, "raw": raw})
+    except Exception as e:
+        print(f"⚠️ GKG parse error {path}: {e}")
+    return docs
+
+def _gkg_import_csv(path: str, gkg_col) -> int:
+    """Import one CSV file into gkg_index. Returns number of records inserted."""
+    docs = _gkg_parse_rows(path)
+    if not docs:
+        return 0
+    ops = [
+        UpdateOne({"url": d["url"]}, {"$setOnInsert": d}, upsert=True)
+        for d in docs
+    ]
+    try:
+        res = gkg_col.bulk_write(ops, ordered=False)
+        return res.upserted_count
+    except errors.BulkWriteError:
+        return 0
+
+def _gkg_in_mongo(ts: str, gkg_col) -> bool:
+    """Return True if records with this timestamp already exist in gkg_index."""
+    return gkg_col.count_documents({"ts": ts}, limit=1) > 0
+
+def _gkg_query_rows(ts: str, gkg_col) -> list[dict]:
+    """Query gkg_index for a timestamp, return rows compatible with process_file_task."""
+    docs = list(gkg_col.find({"ts": ts}, {"url": 1, "raw": 1, "_id": 0}))
+    return [{"URL": d["url"], "Raw": d.get("raw", ""), "Title": "", "Date": ts[:8]} for d in docs]
+
+def _gkg_ensure_indexes(gkg_col) -> None:
+    gkg_col.create_index("url", unique=True, background=True)
+    gkg_col.create_index("ts", background=True)
+
 # filename → batch_id 映射，由 get_gkg_file_urls() 在启动时填充
 _filename_to_batch: dict = {}
 _cache_fallback_warned = {"empty_batch_map": False, "year_fallback": False}
@@ -780,6 +858,14 @@ def get_db():
     return client[DB_NAME]
 
 
+def get_gkg_col():
+    """Return gkg_index collection and ensure indexes are set up."""
+    db = get_db()
+    col = db[GKG_MONGO_COL]
+    _gkg_ensure_indexes(col)
+    return col
+
+
 def load_companies():
     db = get_db()
     col = db[SRC_COLLECTION]
@@ -897,14 +983,22 @@ def download_with_retry(url, retries=3, backoff=3):
     return None
 
 
-def batch_download_files(urls, batch_size=20, worker_name=None):
-    """并行批量下载 GDELT 文件，已缓存文件自动跳过"""
-    to_download = [
-        url for url in urls
-        if not _file_cached(url)
-    ]
+def batch_download_files(urls, batch_size=20, worker_name=None, gkg_col=None):
+    """并行批量下载 GDELT 文件，已缓存文件自动跳过。
+
+    若 USE_GKG_MONGO=true：新文件下载到 GKG_TMP_DIR (Data4T)，解压后导入 MongoDB 再删除 csv。
+    否则：沿用旧逻辑，保存到 Data24T/Data6T 批次目录。
+    """
+    def _already_have(url):
+        filename = os.path.basename(url)
+        if USE_GKG_MONGO and gkg_col is not None:
+            ts = _gkg_ts(filename)
+            return _gkg_in_mongo(ts, gkg_col)
+        return _file_cached(url)
+
+    to_download = [url for url in urls if not _already_have(url)]
     skipped = len(urls) - len(to_download)
-    print(f"📂 Cached files skipped: {skipped}")
+    print(f"📂 Already have (cached/mongo): {skipped}")
     print(f"⬇️ Need to download: {len(to_download)} files\n")
 
     for i in range(0, len(to_download), 60):
@@ -923,20 +1017,24 @@ def batch_download_files(urls, batch_size=20, worker_name=None):
                     content = future.result()
                     if content:
                         filename = os.path.basename(url)
-                        batch_dir = _batch_dir_for_file(filename)
-                        save_dir = batch_dir if batch_dir else os.path.join(FILES_DIR, filename[:4])
+                        if USE_GKG_MONGO and gkg_col is not None:
+                            # New path: save to Data4T tmp, import to MongoDB, delete csv
+                            save_dir = GKG_TMP_DIR
+                        else:
+                            batch_dir = _batch_dir_for_file(filename)
+                            save_dir = batch_dir if batch_dir else os.path.join(FILES_DIR, filename[:4])
                         os.makedirs(save_dir, exist_ok=True)
                         zip_path = os.path.join(save_dir, filename)
                         with open(zip_path, "wb") as f:
                             f.write(content)
-                        _extract_and_delete_zip(zip_path)
+                        _extract_and_delete_zip(zip_path, gkg_col=gkg_col if USE_GKG_MONGO else None)
                 except Exception as e:
                     print(f"❌ Unexpected error for {url}: {e}")
 
         print(f"✅ Batch {i//batch_size + 1} complete. Sleeping 0.5s before next batch.\n")
         time.sleep(0.5)
 
-    print("🎯 All downloads finished (cached files skipped automatically).")
+    print("🎯 All downloads finished.")
 
 
 def get_latest_cached_gkg_timestamp():
@@ -1147,8 +1245,10 @@ def _read_cached_file(filename):
     return None
 
 
-def _extract_and_delete_zip(zip_path):
-    """解压 zip 文件为同名 .csv，删除原 zip。"""
+def _extract_and_delete_zip(zip_path, gkg_col=None):
+    """解压 zip 文件为同名 .csv。
+    若提供 gkg_col，则解压后导入 MongoDB 再删除 csv；否则保留 csv（旧行为）。
+    """
     csv_path = zip_path[:-4]  # remove .zip
     try:
         with zipfile.ZipFile(zip_path) as z:
@@ -1156,6 +1256,17 @@ def _extract_and_delete_zip(zip_path):
             with z.open(inner) as src, open(csv_path, "wb") as dst:
                 dst.write(src.read())
         os.remove(zip_path)
+        if gkg_col is not None and USE_GKG_MONGO:
+            try:
+                n = _gkg_import_csv(csv_path, gkg_col)
+                print(f"📥 Imported {n} records from {os.path.basename(csv_path)} → MongoDB")
+            except Exception as e:
+                print(f"⚠️ MongoDB import failed for {csv_path}: {e}")
+            finally:
+                try:
+                    os.remove(csv_path)
+                except OSError:
+                    pass
     except Exception as e:
         print(f"⚠️ Extract failed for {zip_path}: {e}")
 
@@ -1166,9 +1277,33 @@ processed_urls = set()
 # ============================
 # 解析 GDELT 文件（核心优化版：文件主导循环）
 # ============================
-def process_single_file(url, companies, rule_manager, avg_date):
+def process_single_file(url, companies, rule_manager, avg_date, gkg_col=None):
     """处理单个 GKG 文件的协程/线程函数"""
     filename = os.path.basename(url)
+    ts = _gkg_ts(filename)
+
+    # Try MongoDB first, fall back to local CSV
+    if USE_GKG_MONGO and gkg_col is not None and _gkg_in_mongo(ts, gkg_col):
+        rows = _gkg_query_rows(ts, gkg_col)
+        if not rows:
+            return []
+        import pandas as _pd
+        df = _pd.DataFrame(rows)
+        df["Date"] = ts[:8]
+        df = df[df["URL"].str.startswith("http", na=False)]
+        matches = []
+        for _, row in df.iterrows():
+            for company in companies:
+                symbol = company["symbol"]
+                keywords = rule_manager.get_keywords(symbol, avg_date)
+                pattern = "|".join(r"\b" + re.escape(str(k)) + r"\b" for k in keywords if len(str(k)) > 1)
+                combined = f"{row.get('Title','')} {row.get('Raw','')}"
+                if re.search(pattern, combined, re.IGNORECASE):
+                    article_data = {"title": row.get("Title",""), "content": row.get("Raw",""), "date": row["Date"]}
+                    if rule_manager.should_include(symbol, article_data):
+                        matches.append({"row": {"URL": row["URL"], "Title": row.get("Title",""), "Date": row["Date"]}, "company": company})
+        return matches
+
     if not _file_cached(filename):
         return []
 
@@ -1222,21 +1357,35 @@ def process_single_file(url, companies, rule_manager, avg_date):
         pass
     return matches
 
-def process_file_task(url, rule_manager, ac, all_keywords_map, symbol_to_company, progress_lock, progress, worker_name=None):
+def process_file_task(url, rule_manager, ac, all_keywords_map, symbol_to_company, progress_lock, progress, worker_name=None, gkg_col=None):
     filename = os.path.basename(url)
-    if not _file_cached(filename):
+    ts = _gkg_ts(filename)
+
+    # Build DataFrame from MongoDB if available, otherwise fall back to local CSV
+    _mongo_rows = None
+    if USE_GKG_MONGO and gkg_col is not None and _gkg_in_mongo(ts, gkg_col):
+        _mongo_rows = _gkg_query_rows(ts, gkg_col)
+
+    if _mongo_rows is None and not _file_cached(filename):
         return {"matches": [], "rows": 0, "candidates": 0, "sample": "", "filename": filename}
 
     try:
         t_start = time.time()
-        df = _read_cached_file(filename)
+        if _mongo_rows is not None:
+            import pandas as _pd
+            df = _pd.DataFrame(_mongo_rows).rename(columns={"URL": "URL", "Raw": "Raw", "Title": "Title"})
+            df["Date"] = ts[:8]
+            has_xml = False
+        else:
+            df = _read_cached_file(filename)
+            has_xml = (26 in df.columns) and (df[26].notna().any()) and ("<PAGE_LINKS>" in str(df.iloc[0].get(26, "")))
         t_parse = time.time()
 
         if df is None or df.empty:
             return {"matches": [], "rows": 0, "candidates": 0, "sample": "", "filename": filename}
 
-        # 探测格式
-        has_xml = (26 in df.columns) and (df[26].notna().any()) and ("<PAGE_LINKS>" in str(df.iloc[0].get(26, "")))
+        # 探测格式（仅本地 CSV 路径需要）
+        has_xml = has_xml if _mongo_rows is None else False
         if has_xml:
             df["URL"] = df[26].astype(str).str.extract(r"(?s)<PAGE_LINKS>(.*?)</PAGE_LINKS>", expand=False).fillna("").str.split(";").str[0]
             df["Title"] = df[26].astype(str).str.extract(r"(?s)<PAGE_TITLE>(.*?)</PAGE_TITLE>", expand=False).fillna("")
@@ -1401,6 +1550,7 @@ def process_batch_files(batch_urls, companies, worker_name=None):
     SCAN_FILE_PROGRESS_INTERVAL = int(os.getenv("SCAN_FILE_PROGRESS_INTERVAL", "10"))
     _last_progress_time = [time.time()]
 
+    _gkg_col = get_gkg_col() if USE_GKG_MONGO else None
     with ThreadPoolExecutor(max_workers=SCAN_WORKERS, thread_name_prefix=prefix) as executor:
         futures = [executor.submit(
             process_file_task,
@@ -1411,7 +1561,8 @@ def process_batch_files(batch_urls, companies, worker_name=None):
             symbol_to_company,
             progress_lock,
             progress,
-            worker_name
+            worker_name,
+            _gkg_col,
         ) for url in batch_urls]
         
         _acc = {"total": 0.0, "parse": 0.0, "combine": 0.0, "regex": 0.0,
@@ -1513,8 +1664,9 @@ def process_one_batch(
 
     wlog(f"🚀 Processing File Batch {batch_idx}/{total_batches}...")
 
-    # 实时下载当前批次的文件
-    batch_download_files(batch_urls, batch_size=20, worker_name=worker)
+    # 实时下载当前批次的文件（USE_GKG_MONGO=true 时存到 Data4T 并导入 MongoDB）
+    gkg_col = get_gkg_col() if USE_GKG_MONGO else None
+    batch_download_files(batch_urls, batch_size=20, worker_name=worker, gkg_col=gkg_col)
 
     # A. 内存匹配
     matches = process_batch_files(batch_urls, valid_companies, worker_name=worker)
