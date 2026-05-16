@@ -868,3 +868,104 @@ Recommended build order, each item ~1-2 weeks:
 | LLM inference at scale      | 5.3.4, existing pipeline|
 | Observability / monitoring  | 5.4                     |
 | Docker / K8s deployment     | 5.4                     |
+
+---
+
+## Stage 6 — GDELT GKG 全量索引导入 MongoDB（待开发）
+
+### 6.1 背景与目标
+
+当前匹配新股票历史 GDELT 数据需要逐批扫描 ~35 万个 CSV 文件，耗时约 13 小时。
+目标：将 CSV 中 7 个关键列导入 MongoDB，建立 `$text` 全文索引，使新股票关键词匹配从 **13 小时 → 秒级**。
+
+### 6.2 GDELT CSV 列结构（保留 7 列）
+
+| 列号 | 字段名     | MongoDB 字段    | 用途                    |
+|------|-----------|-----------------|------------------------|
+| 1    | DATE      | `date`          | 发布日期（YYYYMMDDHHMMSS）|
+| 4    | URL       | `url`           | 文章链接                 |
+| 7    | V1Themes  | `themes`        | 主题关键词（匹配主力）     |
+| 11   | V1Persons | `persons`       | 人名                    |
+| 13   | V1Orgs    | `orgs`          | 机构/公司名（匹配辅助）   |
+| 15   | V1Tone    | `tone`          | GCAM 情绪分数（辅助特征）|
+| 23   | AllNames  | `all_names`     | 所有实体名               |
+
+原始 27 列 CSV 中，列 17（GCAM）占 72% 体积；保留 7 列后，数据量从 7TB 降至约 **160 GB**（Parquet 估算），MongoDB BSON + WiredTiger 压缩后约 **300–600 GB**（含 `$text` 索引）。
+
+### 6.3 开发任务
+
+#### 6.3.1 导入脚本（`tools/gdelt_import_to_mongo.py`）
+
+- 多进程并行读取 Data24T + Data6T 上的 `.csv` 文件（约 35 万个）
+- 每行提取 7 列，构造 MongoDB 文档
+- 按批次（batch_size=5000）写入集合 `quant_data.gkg_index`
+- 支持断点续跑：已导入的文件记录进度集合 `gkg_import_progress`
+- 去重：以 URL 为唯一键（`url` 建 unique index）
+
+```python
+# 文档结构示例
+{
+    "date": "20200314120000",
+    "url": "https://example.com/article",
+    "themes": "ECON_BANKRUPTCY;ENV_SOLAR;...",
+    "persons": "Tim Cook;Elon Musk;...",
+    "orgs": "Apple Inc;Tesla;...",
+    "tone": "2.5,-1.2,3.7,...",
+    "all_names": "Apple-COMPANY;Tesla-COMPANY;..."
+}
+```
+
+#### 6.3.2 索引建立
+
+```javascript
+// 复合文本索引（匹配主力）
+db.gkg_index.createIndex(
+    { themes: "text", persons: "text", orgs: "text", all_names: "text" },
+    { name: "gkg_text_idx", weights: { orgs: 10, themes: 5, all_names: 3, persons: 1 } }
+)
+
+// 辅助查询索引
+db.gkg_index.createIndex({ date: 1 })
+db.gkg_index.createIndex({ url: 1 }, { unique: true })
+```
+
+#### 6.3.3 新匹配流程改造
+
+替换当前 `historical_collector.py` 中的 CSV 批次扫描，改为：
+
+1. **Step 1**：`db.gkg_index.find({ $text: { $search: "keyword" } })` → 秒级返回候选 URL 列表
+2. **Step 2**：查 `news_articles` 集合，复用已抓取的正文
+3. **Step 3**：对缺失 URL 发起抓取（旧 URL 2016-2020 可能大量失效，需处理 404）
+4. **Step 4**：写入 `news_articles_company_matched_v2`
+
+#### 6.3.4 验证
+
+- 对已有 60 只股票中抽取 10 只，用新流程重新匹配
+- 对比 URL 命中率与当前 CSV 方案是否一致
+- 检查 `$text` 索引召回率（有无漏匹配）
+
+### 6.4 存储预估
+
+| 项目                        | 估算大小    |
+|-----------------------------|------------|
+| 原始 CSV（7TB）→ 提取 7 列  | ~160 GB    |
+| MongoDB BSON（未压缩）       | ~200 GB    |
+| WiredTiger 压缩后（~3.5x）  | ~60 GB     |
+| `$text` 索引                | ~200–400 GB|
+| **总计（含索引）**           | **~300–600 GB** |
+
+导入验证通过后，原始 CSV 可删除，节省 **6TB+** 硬盘空间。
+
+### 6.5 注意事项
+
+- MongoDB 服务器需预留至少 **600 GB** 可用空间（含索引构建临时空间）
+- `$text` 索引构建约需 **数小时**（570M 条记录），建议在导入完成后一次性创建
+- V1Tone（`tone` 字段）格式为逗号分隔的多个分数，使用时取第一个值（整体情绪分）
+- 旧 URL（2016–2020）大量已失效，URL 抓取阶段需做 404/timeout 容错并记录失效率
+- 导入脚本须支持多磁盘（Data24T + Data6T）并行读取，避免单盘 I/O 成为瓶颈
+
+### 6.6 前置条件
+
+- [ ] MongoDB 服务器确认有 600 GB+ 可用空间
+- [ ] Data24T 和 Data6T 已挂载并可读
+- [ ] 导入完成后对 10 只样本股票做回归测试，通过后再删除原始 CSV

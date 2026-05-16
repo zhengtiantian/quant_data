@@ -180,20 +180,20 @@ def call_llm(title: str, content: str, symbol: str = "", name: str = "",
         symbol=symbol or "this stock",
         name=name or symbol or "this company",
     )
+    # Suppress chain-of-thought for thinking models by pre-filling the think block
+    messages: list[dict] = [{"role": "user", "content": prompt}]
+    if "qwen" in model.lower():
+        messages.append({"role": "assistant", "content": "<think>\n\n</think>\n{"})
+    else:
+        messages.append({"role": "assistant", "content": "{"})
     payload: dict = {
-        "messages": [
-            {"role": "user", "content": prompt},
-            {"role": "assistant", "content": "{"},
-        ],
+        "messages": messages,
         "max_tokens": 120,
         "temperature": 0.05,
         "stream": False,
     }
     if model:
         payload["model"] = model
-    # Disable Qwen3 thinking mode via API parameter
-    if "qwen" in model.lower():
-        payload["thinking"] = {"type": "disabled"}
 
     try:
         resp = requests.post(
@@ -201,12 +201,16 @@ def call_llm(title: str, content: str, symbol: str = "", name: str = "",
             timeout=(5, LLM_TIMEOUT),  # (connect, read) — hard ceiling per request
         )
         resp.raise_for_status()
-        partial = resp.json()["choices"][0]["message"]["content"].strip()
+        resp_json = resp.json()
+        partial = resp_json["choices"][0]["message"]["content"].strip()
+        finish_reason = resp_json["choices"][0].get("finish_reason", "")
         raw = "{" + partial if not partial.startswith("{") else partial
 
         # Find the JSON block that contains "sentiment" — skips any <think> noise
         m = re.search(r'\{[^{}]*"sentiment"[^{}]*\}', raw, re.DOTALL)
         if not m:
+            log.warning("NO_JSON_MATCH | finish=%s | model=%s | raw=%r",
+                        finish_reason, model, raw[:200])
             return None
         parsed = json.loads(m.group())
 
@@ -220,7 +224,14 @@ def call_llm(title: str, content: str, symbol: str = "", name: str = "",
 
         return {"sentiment": sentiment, "event_type": event_type,
                 "signal_strength": signal_strength}
-    except Exception:
+    except requests.exceptions.Timeout:
+        log.warning("TIMEOUT | model=%s | title=%r", model, title[:60])
+        return None
+    except requests.exceptions.RequestException as e:
+        log.warning("REQUEST_ERR | model=%s | %s", model, e)
+        return None
+    except Exception as e:
+        log.warning("PARSE_ERR | model=%s | %s | raw=%r", model, e, locals().get("raw", "")[:200])
         return None
 
 
