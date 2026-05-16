@@ -174,6 +174,8 @@ BATCH_SIZE = 100  # 每次处理100个 GKG 文件，与 MySQL batch_id 一一对
 # filename → batch_id 映射，由 get_gkg_file_urls() 在启动时填充
 _filename_to_batch: dict = {}
 _cache_fallback_warned = {"empty_batch_map": False, "year_fallback": False}
+# Cached sorted URL list built from masterfilelist for fallback batch lookup
+_masterfilelist_urls_cache: list = []
 
 SHUTDOWN_EVENT = threading.Event()
 SHUTDOWN_REASON = {"reason": None}

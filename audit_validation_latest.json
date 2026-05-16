@@ -1,128 +1,635 @@
 {
-    "timestamp": "2026-05-08T16:04:33.856382",
+    "timestamp": "2026-05-11T11:59:50.383891",
     "results": {
-        "JNJ": {
-            "symbol": "JNJ",
-            "company_name": "Johnson & Johnson",
+        "MNDY": {
+            "symbol": "MNDY",
+            "company_name": "monday.com",
             "keywords": [
-                "JNJ shares",
-                "Stelara",
-                "NYSE:JNJ",
-                "Tecvayli",
-                "JNJ earnings",
-                "Janssen Pharmaceutical",
-                "JNJ stock",
-                "Darzalex",
-                "Tremfya",
-                "Joaquin Duato",
-                "Johnson & Johnson",
-                "Carvykti",
-                "Kenvue"
+                "monday WorkOS",
+                "MNDY stock",
+                "monday.com CEO",
+                "MNDY shares",
+                "monday Service",
+                "monday.com earnings",
+                "monday Sales CRM",
+                "Eran Zinman",
+                "NASDAQ:MNDY",
+                "monday.com revenue",
+                "monday.com IPO",
+                "monday Work Management",
+                "monday CRM",
+                "monday Dev",
+                "MNDY revenue",
+                "monday.com",
+                "Roy Mann",
+                "MNDY earnings"
             ],
-            "kw_hits": 34,
-            "fetch_attempted": 34,
+            "kw_hits": 2,
+            "fetch_attempted": 2,
             "confirmed": [
                 {
-                    "title": "J&J to end sales of baby powder with talc globally next year",
-                    "quality": "full",
-                    "content_len": 2013,
-                    "url": "https://apnews.com/article/health-canada-lawsuits-cancer-40bbfd5bb494a3d31a1374195b287f3b",
-                    "date": "20251220"
-                },
-                {
-                    "title": "Johnson & Johnson (NYSE:JNJ) Position Lifted by AlTi Global Inc.",
+                    "title": "Why Monday.com Stock Sank In 2025",
                     "quality": "title_only",
                     "content_len": 0,
-                    "url": "https://report.stocknews.com/sign-up/ticker/",
-                    "date": "20240925"
-                },
-                {
-                    "title": "Johnson & Johnson (NYSE:JNJ)  Shares Down 0.5%",
-                    "quality": "title_only",
-                    "content_len": 0,
-                    "url": "https://report.stocknews.com/sign-up/ticker/",
-                    "date": "20240923"
-                },
-                {
-                    "title": "Kenvue Stock Has Unusual Put Option Activity After Lower Q2 Sales and CEO Firing",
-                    "quality": "full",
-                    "content_len": 2501,
-                    "url": "https://finance.yahoo.com/news/kenvue-stock-unusual-put-option-173002440.html",
-                    "date": "20250718"
-                },
-                {
-                    "title": "Grove Bank & Trust Purchases 322 Shares of Johnson & Johnson (NYSE:JNJ)",
-                    "quality": "title_only",
-                    "content_len": 0,
-                    "url": "https://report.stocknews.com/sign-up/ticker/",
-                    "date": "20240828"
-                },
-                {
-                    "title": "Congress Park Capital LLC Sells 297 Shares of Johnson & Johnson (NYSE:JNJ)",
-                    "quality": "title_only",
-                    "content_len": 0,
-                    "url": "https://report.stocknews.com/sign-up/ticker/",
-                    "date": "20240628"
-                },
-                {
-                    "title": "Bavarian Nordic Reports Omicron Data from Phase 2 Trial of its COVID-19 Booster Vaccine Candidate",
-                    "quality": "full",
-                    "content_len": 5178,
-                    "url": "https://apnews.com/press-release/globe-newswire/covid-business-health-europe-denmark-bef51d642fac7e724580b693c1de2ec0",
-                    "date": "20220505"
-                },
-                {
-                    "title": "Johnson & Johnson COVID-19 Booster, Administered Six Months After Two-Dose Regimen of BNT162b2, Shows Substantial Increase in Antibody and T-cell Responses",
-                    "quality": "full",
-                    "content_len": 15714,
-                    "url": "https://www.prnewswire.com:443/news-releases/johnson--johnson-covid-19-booster-administered-six-months-after-two-dose-regimen-of-bnt162b2-shows-substantial-increase-in-antibody-and-t-cell-responses-301437591.html",
-                    "date": "20211205"
-                },
-                {
-                    "title": "Johnson & Johnson stock underperforms Monday when compared to competitors",
-                    "quality": "title_only",
-                    "content_len": 0,
-                    "url": "https://www.marketwatch.com/investing/index/DJIA",
-                    "date": "20211115"
-                },
-                {
-                    "title": "Event planned to distribute Johnson & Johnson COVID-19 vaccine doses at Hadley Park Community Center",
-                    "quality": "full",
-                    "content_len": 420,
-                    "url": "https://www.newschannel5.com/news/event-planned-to-distribute-johnson-johnson-covid-19-vaccine-doses-at-hadley-park-community-center",
-                    "date": "20210402"
-                },
-                {
-                    "title": "Johnson & Johnson votes $30 million compensation for CEO Gorsky",
-                    "quality": "full",
-                    "content_len": 2070,
-                    "url": "https://www.nigeriasun.com/news/269031001/johnson--johnson-votes-30-million-compensation-for-ceo-gorsky",
-                    "date": "20210427"
-                },
-                {
-                    "title": "Johnson & Johnson Announces Submission to World Health Organization for Emergency Use Listing of Investigational Single-Shot Janssen COVID-19 Vaccine Candidate",
-                    "quality": "title_only",
-                    "content_len": 0,
-                    "url": "http://www.janssen.com/&a=www.janssen.com",
-                    "date": "20210219"
-                },
-                {
-                    "title": "Character witness: Janssen tie vouches for Protagonist, pledges up to $990M in IBD",
-                    "quality": "full",
-                    "content_len": 477,
-                    "url": "http://www.bioworld.com/content/character-witness-janssen-tie-vouches-protagonist-pledges-990m-ibd",
-                    "date": "20170531"
-                },
-                {
-                    "title": "Johnson & Johnson to pay $100million to settle lawsuit claims that baby powder causes cancer",
-                    "quality": "full",
-                    "content_len": 2326,
-                    "url": "https://www.goodtoknow.co.uk/family/family-news/johnson-baby-powder-cancer-claims-lawsuit-561070",
-                    "date": "20201006"
+                    "url": "http://marketintelligence.spglobal.com/",
+                    "date": "20260117"
                 }
             ],
-            "failed": 20,
-            "precision_pct": 41.2,
+            "failed": 1,
+            "precision_pct": 50.0,
+            "status": "done"
+        },
+        "DUOL": {
+            "symbol": "DUOL",
+            "company_name": "Duolingo",
+            "keywords": [
+                "DUOL stock",
+                "Duolingo",
+                "Duolingo streak",
+                "DUOL revenue",
+                "Duolingo DAU",
+                "Luis von Ahn",
+                "NASDAQ:DUOL",
+                "DUOL shares",
+                "Super Duolingo",
+                "Duolingo Music",
+                "Duolingo English Test",
+                "Duolingo revenue",
+                "Duolingo CEO",
+                "Duolingo Math",
+                "Duolingo earnings",
+                "Duolingo Max",
+                "Duolingo ABC",
+                "DUOL earnings",
+                "Duolingo IPO"
+            ],
+            "kw_hits": 2,
+            "fetch_attempted": 2,
+            "confirmed": [],
+            "failed": 2,
+            "precision_pct": 0.0,
+            "status": "done"
+        },
+        "APP": {
+            "symbol": "APP",
+            "company_name": "AppLovin",
+            "keywords": [
+                "MoPub acquisition",
+                "AppLovin",
+                "AppLovin MAX",
+                "MAX mediation",
+                "AppLovin stock",
+                "AppLovin revenue",
+                "AppLovin Software",
+                "AppLovin Exchange",
+                "APP shares",
+                "APP stock",
+                "AppLovin earnings",
+                "AppDiscovery",
+                "APP earnings",
+                "Adam Foroughi",
+                "SparkLabs",
+                "NASDAQ:APP"
+            ],
+            "kw_hits": 2,
+            "fetch_attempted": 2,
+            "confirmed": [
+                {
+                    "title": "Levi & Korsinsky Notifies Shareholders of AppLovin Corporation (APP) ...",
+                    "quality": "title_only",
+                    "content_len": 0,
+                    "url": "http://Esq.33",
+                    "date": "20250317"
+                }
+            ],
+            "failed": 1,
+            "precision_pct": 50.0,
+            "status": "done"
+        },
+        "MRNA": {
+            "symbol": "MRNA",
+            "company_name": "Moderna",
+            "keywords": [
+                "MRNA stock",
+                "Spikevax",
+                "MRNA shares",
+                "Stephane Bancel",
+                "MRNA earnings",
+                "personalized cancer vaccine",
+                "Moderna layoff",
+                "Moderna",
+                "Moderna CEO",
+                "MRNA revenue",
+                "mRESVia",
+                "NASDAQ:MRNA",
+                "mRNA-1273",
+                "Moderna earnings",
+                "Moderna revenue",
+                "Moderna Inc",
+                "mRNA-4157"
+            ],
+            "kw_hits": 66,
+            "fetch_attempted": 66,
+            "confirmed": [
+                {
+                    "title": "‘We deliver’: How CSL shares jumped 367 per cent under this CEO’s reign",
+                    "quality": "full",
+                    "content_len": 7491,
+                    "url": "https://www.watoday.com.au/business/companies/we-deliver-how-csl-shares-jumped-367-per-cent-under-this-ceo-s-reign-20230209-p5cj4u.html",
+                    "date": "20230212"
+                },
+                {
+                    "title": "Moderna CEO brazenly defends 400% COVID shot price hike, downplays NIH’s role",
+                    "quality": "full",
+                    "content_len": 2348,
+                    "url": "https://arstechnica.com/science/2023/03/moderna-ceo-says-us-govt-got-covid-shots-at-discount-ahead-of-400-price-hike/",
+                    "date": "20230818"
+                },
+                {
+                    "title": "US Health Officials Recommend Booster Shot of Moderna COVID-19 Vaccine",
+                    "quality": "full",
+                    "content_len": 943,
+                    "url": "https://bigfrog104.com/us-health-officials-recommend-booster-shot-of-moderna-covid-19-vaccine/",
+                    "date": "20211015"
+                },
+                {
+                    "title": "US Health Officials Recommend Booster Shot of Moderna COVID-19 Vaccine",
+                    "quality": "full",
+                    "content_len": 943,
+                    "url": "https://keyj.com/us-health-officials-recommend-booster-shot-of-moderna-covid-19-vaccine/",
+                    "date": "20211015"
+                },
+                {
+                    "title": "US Health Officials Recommend Booster Shot of Moderna COVID-19 Vaccine",
+                    "quality": "full",
+                    "content_len": 943,
+                    "url": "https://wblm.com/us-health-officials-recommend-booster-shot-of-moderna-covid-19-vaccine/",
+                    "date": "20211015"
+                },
+                {
+                    "title": "US Health Officials Recommend Booster Shot of Moderna COVID-19 Vaccine",
+                    "quality": "full",
+                    "content_len": 943,
+                    "url": "https://mix1043fm.com/us-health-officials-recommend-booster-shot-of-moderna-covid-19-vaccine/",
+                    "date": "20211015"
+                },
+                {
+                    "title": "FDA panel endorses lower-dose Moderna COVID shot for booster",
+                    "quality": "full",
+                    "content_len": 4806,
+                    "url": "https://kstp.com/news/fda-panel-endorses-lower-dose-moderna-covid-shot-for-booster/6269836/?cat=12678",
+                    "date": "20211015"
+                },
+                {
+                    "title": "US Health Officials Recommend Booster Shot of Moderna COVID-19 Vaccine",
+                    "quality": "full",
+                    "content_len": 2578,
+                    "url": "https://mix949.com/us-health-officials-recommend-booster-shot-of-moderna-covid-19-vaccine/",
+                    "date": "20211015"
+                },
+                {
+                    "title": "US Health Officials Recommend Booster Shot of Moderna COVID-19 Vaccine",
+                    "quality": "full",
+                    "content_len": 2726,
+                    "url": "https://kingfm.com/us-health-officials-recommend-booster-shot-of-moderna-covid-19-vaccine/",
+                    "date": "20211015"
+                },
+                {
+                    "title": "US Health Officials Recommend Booster Shot of Moderna COVID-19 Vaccine",
+                    "quality": "full",
+                    "content_len": 2752,
+                    "url": "https://mymajic933.com/us-health-officials-recommend-booster-shot-of-moderna-covid-19-vaccine/",
+                    "date": "20211015"
+                },
+                {
+                    "title": "US Health Officials Recommend Booster Shot of Moderna COVID-19 Vaccine",
+                    "quality": "full",
+                    "content_len": 2782,
+                    "url": "https://wokq.com/us-health-officials-recommend-booster-shot-of-moderna-covid-19-vaccine/",
+                    "date": "20211015"
+                },
+                {
+                    "title": "FDA panel endorses lower-dose Moderna COVID shot for booster",
+                    "quality": "full",
+                    "content_len": 600,
+                    "url": "https://www.kshb.com/news/coronavirus/fda-panel-endorses-lower-dose-moderna-covid-shot-for-booster",
+                    "date": "20211015"
+                },
+                {
+                    "title": "US Health Officials Recommend Booster Shot of Moderna COVID-19 Vaccine",
+                    "quality": "full",
+                    "content_len": 943,
+                    "url": "https://949whom.com/us-health-officials-recommend-booster-shot-of-moderna-covid-19-vaccine/",
+                    "date": "20211015"
+                },
+                {
+                    "title": "US Health Officials Recommend Booster Shot of Moderna COVID-19 Vaccine",
+                    "quality": "full",
+                    "content_len": 943,
+                    "url": "https://961theeagle.com/us-health-officials-recommend-booster-shot-of-moderna-covid-19-vaccine/",
+                    "date": "20211015"
+                },
+                {
+                    "title": "US Health Officials Recommend Booster Shot of Moderna COVID-19 Vaccine",
+                    "quality": "full",
+                    "content_len": 943,
+                    "url": "https://kroc.com/us-health-officials-recommend-booster-shot-of-moderna-covid-19-vaccine/",
+                    "date": "20211015"
+                },
+                {
+                    "title": "FDA panel recommends Moderna booster for people 65 and older and adults at high risk of exposure or severe illness",
+                    "quality": "full",
+                    "content_len": 6834,
+                    "url": "https://www.nationthailand.com/international/40007522",
+                    "date": "20211015"
+                },
+                {
+                    "title": "US Health Officials Recommend Booster Shot of Moderna COVID-19 Vaccine",
+                    "quality": "full",
+                    "content_len": 943,
+                    "url": "https://wjon.com/us-health-officials-recommend-booster-shot-of-moderna-covid-19-vaccine/",
+                    "date": "20211015"
+                },
+                {
+                    "title": "US coronavirus: With more Covid-19 booster shots on the horizon, one expert says mixing and matching doses may be an effective approach",
+                    "quality": "full",
+                    "content_len": 7058,
+                    "url": "https://www.cnn.com/2021/10/09/health/us-coronavirus-saturday/",
+                    "date": "20211009"
+                },
+                {
+                    "title": "Moderna to sign agreement to build mRNA production plant in Canada",
+                    "quality": "full",
+                    "content_len": 5410,
+                    "url": "https://www.cbc.ca/news/politics/moderna-plant-champagne-1.6135759",
+                    "date": "20210810"
+                },
+                {
+                    "title": "U.S. administers nearly 333.6 million doses of COVID-19 vaccines- CDC",
+                    "quality": "full",
+                    "content_len": 711,
+                    "url": "https://newsinfo.inquirer.net/1458226/u-s-administers-nearly-333-6-million-doses-of-covid-19-vaccines-cdc",
+                    "date": "20210711"
+                },
+                {
+                    "title": "U.S. FDA adds warning about rare heart inflammation to Pfizer, Moderna COVID vaccines",
+                    "quality": "full",
+                    "content_len": 253,
+                    "url": "https://ottawacitizen.com/pmn/health-pmn/u-s-fda-adds-warning-about-rare-heart-inflammation-to-pfizer-moderna-covid-vaccines/wcm/cc5cfb57-21c4-4fe9-92ce-9b8afa47f133",
+                    "date": "20210626"
+                },
+                {
+                    "title": "Why Moderna Could Triple Its COVID Vaccine Sales Next Year",
+                    "quality": "full",
+                    "content_len": 4504,
+                    "url": "https://www.fool.com/investing/2021/05/05/why-moderna-could-triple-its-covid-vaccine-sales-n/",
+                    "date": "20210505"
+                },
+                {
+                    "title": "Fact-checking claims about Arizona's election audit, Moderna vaccine and more",
+                    "quality": "full",
+                    "content_len": 25637,
+                    "url": "https://buffalonews.com/news/national/fact-checking-claims-about-arizonas-election-audit-moderna-vaccine-and-more/article_f33814f0-5188-5ea6-af43-9fd6bdd004cf.html",
+                    "date": "20210522"
+                },
+                {
+                    "title": "California Plans to Lift Most Covid Restrictions June 15, Keep Mask Mandate",
+                    "quality": "full",
+                    "content_len": 3578,
+                    "url": "https://www.nbcnewyork.com/news/business/money-report/california-plans-to-lift-most-covid-restrictions-june-15-keep-mask-mandate/2983962/",
+                    "date": "20210406"
+                },
+                {
+                    "title": "California Plans to Lift Most Covid Restrictions June 15, Keep Mask Mandate",
+                    "quality": "full",
+                    "content_len": 3614,
+                    "url": "https://www.nbcphiladelphia.com/news/business/money-report/california-plans-to-lift-most-covid-restrictions-june-15-keep-mask-mandate/2768891/",
+                    "date": "20210406"
+                },
+                {
+                    "title": "Luxembourg Times - Luxembourg - More people to get vaccine as Moderna shots arrive",
+                    "quality": "title_only",
+                    "content_len": 0,
+                    "url": "https://luxtimes.lu/luxembourg/42656-only-fraction-of-people-to-get-vaccine-by-end-of-march",
+                    "date": "20210117"
+                },
+                {
+                    "title": "Published data from Moderna COVID-19 vaccine trial show 94.1 percent efficacy",
+                    "quality": "title_only",
+                    "content_len": 0,
+                    "url": "http://dx.doi.org/10.1056/NEJMoa2035389",
+                    "date": "20201231"
+                },
+                {
+                    "title": "Dr. Anthony Fauci Says He Had No Side Effects After Receiving First Dose of Moderna COVID-19 Vaccine",
+                    "quality": "title_only",
+                    "content_len": 0,
+                    "url": "http://people.com/tag/joe-biden/",
+                    "date": "20201227"
+                },
+                {
+                    "title": "Moderna CEO expects to know in November whether COVID-19 vaccine works",
+                    "quality": "full",
+                    "content_len": 2385,
+                    "url": "https://www.cbsnews.com/news/covid-vaccine-moderna-ceo-november-know/",
+                    "date": "20200918"
+                },
+                {
+                    "title": "New data shows people who got Moderna vaccine still had antibodies 3 months later",
+                    "quality": "full",
+                    "content_len": 3063,
+                    "url": "https://abcnews.go.com/Health/data-shows-people-moderna-vaccine-antibodies-months/story?id=74529058",
+                    "date": "20201205"
+                },
+                {
+                    "title": "New data shows people who got Moderna vaccine still had antibodies 3 months later",
+                    "quality": "full",
+                    "content_len": 3063,
+                    "url": "https://abcnews.go.com/Health/data-shows-people-moderna-vaccine-antibodies-months/story?id=74529058",
+                    "date": "20201205"
+                },
+                {
+                    "title": "US-based Moderna begins phase 2 human trials for coronavirus vaccine",
+                    "quality": "full",
+                    "content_len": 1889,
+                    "url": "https://www.indianweekender.co.nz/Pages/ArticleDetails/7/12553/New-Zealand/US-based-Moderna-begins-phase-2-human-trials-for-coronavirus-vaccine",
+                    "date": "20200604"
+                }
+            ],
+            "failed": 34,
+            "precision_pct": 48.5,
+            "status": "done"
+        },
+        "S": {
+            "symbol": "S",
+            "company_name": "SentinelOne",
+            "keywords": [
+                "SentinelOne Vigilance",
+                "SentinelOne CEO",
+                "Singularity platform",
+                "Tomer Weingarten",
+                "NYSE:S",
+                "SentinelOne",
+                "SentinelOne stock",
+                "SentinelOne earnings",
+                "SentinelOne endpoint",
+                "SentinelOne IPO",
+                "SentinelOne revenue",
+                "SentinelOne Marketplace",
+                "SentinelOne XDR",
+                "Purple AI",
+                "SentinelOne AI"
+            ],
+            "kw_hits": 4,
+            "fetch_attempted": 4,
+            "confirmed": [],
+            "failed": 4,
+            "precision_pct": 0.0,
+            "status": "done"
+        },
+        "RBLX": {
+            "symbol": "RBLX",
+            "company_name": "Roblox",
+            "keywords": [
+                "Robux",
+                "Roblox Avatar",
+                "Roblox DAU",
+                "RBLX stock",
+                "Roblox Education",
+                "RBLX earnings",
+                "Roblox Connect",
+                "Roblox",
+                "RBLX shares",
+                "David Baszucki",
+                "Roblox earnings",
+                "Roblox Studio",
+                "Roblox revenue",
+                "NYSE:RBLX",
+                "Roblox Corporation",
+                "Roblox metaverse"
+            ],
+            "kw_hits": 4,
+            "fetch_attempted": 4,
+            "confirmed": [
+                {
+                    "title": "RBLX INVESTOR ALERT: Bronstein, Gewirtz & Grossman LLC Announces that Roblox Corporation Investors with Substantial Losses Have Opportunity to Lead Class Action Lawsuit!",
+                    "quality": "title_only",
+                    "content_len": 0,
+                    "url": "https://bgandg.com/RBLX&a=bgandg.com/RBLX",
+                    "date": "20240618"
+                }
+            ],
+            "failed": 3,
+            "precision_pct": 25.0,
+            "status": "done"
+        },
+        "ZS": {
+            "symbol": "ZS",
+            "company_name": "Zscaler",
+            "keywords": [
+                "ZTNA",
+                "Jay Chaudhry",
+                "ZS shares",
+                "Zscaler Private Access",
+                "Zscaler Internet Access",
+                "Zero Trust Exchange",
+                "Zscaler stock",
+                "Zscaler layoff",
+                "ZS earnings",
+                "Zscaler revenue",
+                "Zscaler results",
+                "Zscaler earnings",
+                "NASDAQ:ZS",
+                "ZS stock",
+                "Zscaler profit",
+                "Zscaler CEO",
+                "Zscaler acquisition",
+                "ZIA",
+                "Zscaler",
+                "SASE",
+                "Zscaler quarter",
+                "ZPA"
+            ],
+            "kw_hits": 6,
+            "fetch_attempted": 6,
+            "confirmed": [
+                {
+                    "title": "Jefferies Financial Group Cuts Zscaler (NASDAQ:ZS) Price Target to $240.00",
+                    "quality": "title_only",
+                    "content_len": 0,
+                    "url": "https://theenterpriseleader.com/daily-email-updates-basic/",
+                    "date": "20250403"
+                },
+                {
+                    "title": "Zscaler – Consensus ‘buy’ rating and 11.6% Upside Potential",
+                    "quality": "full",
+                    "content_len": 1766,
+                    "url": "https://www.directorstalkinterviews.com/zscaler-consensus-buy-rating-and-11.6-upside-potential/4121126546",
+                    "date": "20230904"
+                },
+                {
+                    "title": "Gartner names Zscaler the only leader in Magic Quadrant for Secure Web Gateways",
+                    "quality": "full",
+                    "content_len": 3158,
+                    "url": "https://itbrief.com.au/story/gartner-names-zscaler-the-only-leader-in-magic-quadrant-for-secure-web-gateways",
+                    "date": "20201223"
+                },
+                {
+                    "title": "Bernstein Upgraded Zscaler, Inc. (ZS) to Outperform with a Price Target of $228",
+                    "quality": "full",
+                    "content_len": 2192,
+                    "url": "https://finance.yahoo.com/news/bernstein-upgraded-zscaler-inc-zs-154009015.html",
+                    "date": "20260221"
+                }
+            ],
+            "failed": 2,
+            "precision_pct": 66.7,
+            "status": "done"
+        },
+        "GTLB": {
+            "symbol": "GTLB",
+            "company_name": "GitLab",
+            "keywords": [
+                "GTLB earnings",
+                "GitLab Ultimate",
+                "GitLab revenue",
+                "GitLab CEO",
+                "GTLB revenue",
+                "GitLab Community",
+                "GitLab DevSecOps",
+                "GTLB stock",
+                "NASDAQ:GTLB",
+                "GitLab IPO",
+                "Sid Sijbrandij",
+                "GitLab",
+                "GitLab CI",
+                "GitLab Duo",
+                "GitLab earnings",
+                "GTLB shares",
+                "GitLab Premium",
+                "GitLab Inc"
+            ],
+            "kw_hits": 3,
+            "fetch_attempted": 3,
+            "confirmed": [
+                {
+                    "title": "2025 Application Lifecycle Management Market Analysis: Regional Outlook and Expansion Forecast",
+                    "quality": "full",
+                    "content_len": 6619,
+                    "url": "https://whatech.com/og/markets-research/it/994746-2025-application-lifecycle-management-market-analysis-regional-outlook-and-expansion-forecast.html",
+                    "date": "20251023"
+                },
+                {
+                    "title": "GTLB SHAREHOLDER ALERT: Bronstein, Gewirtz & Grossman LLC Announces that GitLab Inc. Investors with Substantial Losses Have Opportunity to Lead Class Action Lawsuit!",
+                    "quality": "title_only",
+                    "content_len": 0,
+                    "url": "https://bgandg.com/GTLB&esheet=54118047&newsitemid=20240917192040&lan=en-US&anchor=bgandg.com/GTLB&index=1&md5=ad9fda5a63ae0435f3b4f17f0baea57e",
+                    "date": "20240917"
+                }
+            ],
+            "failed": 1,
+            "precision_pct": 66.7,
+            "status": "done"
+        },
+        "TTD": {
+            "symbol": "TTD",
+            "company_name": "The Trade Desk",
+            "keywords": [
+                "TTD earnings",
+                "NASDAQ:TTD",
+                "Trade Desk DSP",
+                "programmatic TV",
+                "Kokai platform",
+                "Jeff Green Trade Desk",
+                "Trade Desk revenue",
+                "Trade Desk earnings",
+                "connected TV advertising",
+                "UID2",
+                "The Trade Desk",
+                "TTD stock",
+                "TTD shares",
+                "OpenPath",
+                "TTD revenue"
+            ],
+            "kw_hits": 2,
+            "fetch_attempted": 2,
+            "confirmed": [],
+            "failed": 2,
+            "precision_pct": 0.0,
+            "status": "done"
+        },
+        "NET": {
+            "symbol": "NET",
+            "company_name": "Cloudflare",
+            "keywords": [
+                "NET",
+                "NASDAQ:NET",
+                "Cloudflare CDN",
+                "Cloudflare Gateway",
+                "Cloudflare Workers",
+                "Cloudflare stock",
+                "Cloudflare Stream",
+                "Matthew Prince",
+                "R2 storage",
+                "Zero Trust",
+                "Cloudflare One",
+                "Magic Transit",
+                "Cloudflare revenue",
+                "Cloudflare Pages",
+                "Cloudflare Tunnel",
+                "DDoS protection",
+                "Magic Firewall",
+                "network security",
+                "SASE",
+                "Cloudflare Access",
+                "Cloudflare earnings",
+                "Cloudflare AI",
+                "Cloudflare"
+            ],
+            "kw_hits": 1,
+            "fetch_attempted": 1,
+            "confirmed": [],
+            "failed": 1,
+            "precision_pct": 0.0,
+            "status": "done"
+        },
+        "CFLT": {
+            "symbol": "CFLT",
+            "company_name": "Confluent",
+            "keywords": [
+                "Jay Kreps",
+                "Confluent Kafka",
+                "Confluent TableFlow",
+                "Confluent IPO",
+                "Confluent Schema Registry",
+                "CFLT revenue",
+                "Confluent Platform",
+                "NASDAQ:CFLT",
+                "Apache Kafka",
+                "CFLT stock",
+                "CFLT earnings",
+                "Confluent Cloud",
+                "Confluent",
+                "ksqlDB",
+                "Confluent revenue",
+                "Confluent earnings",
+                "Confluent Flink",
+                "Confluent CEO",
+                "CFLT shares"
+            ],
+            "kw_hits": 1,
+            "fetch_attempted": 1,
+            "confirmed": [
+                {
+                    "title": "Decoding Confluent Inc (CFLT): A Strategic SWOT Insight",
+                    "quality": "title_only",
+                    "content_len": 0,
+                    "url": "https://www.gurufocus.com/term/gf_score/CFLT/GF-Score/Confluent+Inc",
+                    "date": "20240222"
+                }
+            ],
+            "failed": 0,
+            "precision_pct": 100.0,
             "status": "done"
         }
     }

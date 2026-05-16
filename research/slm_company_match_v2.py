@@ -82,8 +82,9 @@ def _parse_endpoints() -> list[tuple[str, str]]:
 
 _ENDPOINT_ASSIGNMENTS = _parse_endpoints()
 
-# 40-stock universe: symbol → (company_name, scan_keywords)
+# 100-stock universe: symbol → (company_name, scan_keywords)
 COMPANY_UNIVERSE: dict[str, tuple[str, list[str]]] = {
+    # ── Original 40 tech stocks ──────────────────────────────────────────────
     "AAPL":  ("Apple Inc.",                 ["Apple", "iPhone", "iPad", "MacBook", "Tim Cook"]),
     "GOOGL": ("Alphabet Inc.",              ["Google", "Alphabet", "YouTube", "Android", "DeepMind"]),
     "MSFT":  ("Microsoft Corporation",      ["Microsoft", "Windows", "Azure", "Xbox", "Satya Nadella"]),
@@ -124,6 +125,71 @@ COMPANY_UNIVERSE: dict[str, tuple[str, list[str]]] = {
     "DELL":  ("Dell Technologies",          ["Dell Technologies", "Dell Computer"]),
     "SMCI":  ("Super Micro Computer",       ["Supermicro", "Super Micro Computer"]),
     "INTU":  ("Intuit Inc.",                ["Intuit", "TurboTax", "QuickBooks"]),
+    # ── NEW 60: SaaS / growth tech ───────────────────────────────────────────
+    "SHOP":  ("Shopify",                    ["Shopify", "Tobi Lütke", "Shop Pay", "Shopify Plus", "Shopify Payments"]),
+    "NET":   ("Cloudflare",                 ["Cloudflare", "Matthew Prince", "Cloudflare Workers", "DDoS protection"]),
+    "ZS":    ("Zscaler",                    ["Zscaler", "Jay Chaudhry", "Zero Trust Exchange", "Zscaler Internet Access"]),
+    "HUBS":  ("HubSpot",                    ["HubSpot", "Yamini Rangan", "HubSpot CRM"]),
+    "WDAY":  ("Workday",                    ["Workday", "Carl Eschenbach", "Aneel Bhusri", "Workday HCM"]),
+    "VEEV":  ("Veeva Systems",              ["Veeva", "Peter Gassner", "Veeva Systems", "Veeva Vault"]),
+    "TEAM":  ("Atlassian",                  ["Atlassian", "Mike Cannon-Brookes", "Jira Software", "Confluence", "Trello"]),
+    "TTD":   ("The Trade Desk",             ["The Trade Desk", "Jeff Green Trade Desk", "programmatic TV", "connected TV advertising"]),
+    "OKTA":  ("Okta",                       ["Okta", "Todd McKinnon", "Auth0", "Okta Identity Engine"]),
+    "APP":   ("AppLovin",                   ["AppLovin", "Adam Foroughi", "AppDiscovery", "AppLovin MAX"]),
+    "RBLX":  ("Roblox Corporation",         ["Roblox", "David Baszucki", "Robux", "Roblox Studio"]),
+    "COIN":  ("Coinbase",                   ["Coinbase", "Brian Armstrong", "Coinbase Pro", "Coinbase Wallet", "Base blockchain"]),
+    "TWLO":  ("Twilio",                     ["Twilio", "Jeff Lawson", "SendGrid", "Twilio Segment"]),
+    "DUOL":  ("Duolingo",                   ["Duolingo", "Luis von Ahn", "Duolingo Max", "Super Duolingo"]),
+    "CFLT":  ("Confluent",                  ["Confluent", "Jay Kreps", "Confluent Cloud", "Apache Kafka"]),
+    "GTLB":  ("GitLab",                     ["GitLab", "Sid Sijbrandij", "GitLab Duo", "GitLab CI"]),
+    "MNDY":  ("monday.com",                 ["monday.com", "Roy Mann", "Eran Zinman", "monday WorkOS"]),
+    "S":     ("SentinelOne",                ["SentinelOne", "Tomer Weingarten", "Singularity platform", "Purple AI"]),
+    # ── NEW 60: Biotech / Healthcare ─────────────────────────────────────────
+    "LLY":   ("Eli Lilly",                  ["Eli Lilly", "David Ricks", "Mounjaro", "tirzepatide", "Zepbound", "Kisunla"]),
+    "JNJ":   ("Johnson & Johnson",          ["Johnson & Johnson", "Joaquin Duato", "Janssen", "Darzalex", "Stelara", "Kenvue"]),
+    "AMGN":  ("Amgen",                      ["Amgen", "Robert Bradway", "Repatha", "MariTide", "Enbrel", "Otezla"]),
+    "GILD":  ("Gilead Sciences",            ["Gilead Sciences", "Gilead", "Daniel O'Day", "Biktarvy", "Veklury", "remdesivir"]),
+    "REGN":  ("Regeneron",                  ["Regeneron", "Leonard Schleifer", "Dupixent", "dupilumab", "EYLEA"]),
+    "VRTX":  ("Vertex Pharmaceuticals",     ["Vertex Pharmaceuticals", "Reshma Kewalramani", "Trikafta", "Casgevy"]),
+    "ISRG":  ("Intuitive Surgical",         ["Intuitive Surgical", "Gary Guthart", "da Vinci", "da Vinci surgical"]),
+    "UNH":   ("UnitedHealth Group",         ["UnitedHealth", "UnitedHealthcare", "Andrew Witty", "Optum", "Change Healthcare"]),
+    "MRNA":  ("Moderna",                    ["Moderna", "Stephane Bancel", "Spikevax", "mRNA-1273"]),
+    "ABBV":  ("AbbVie",                     ["AbbVie", "Richard Gonzalez", "Humira", "Skyrizi", "Rinvoq", "Botox"]),
+    "PFE":   ("Pfizer",                     ["Pfizer", "Albert Bourla", "Paxlovid", "Comirnaty", "Eliquis", "Ibrance"]),
+    "MDT":   ("Medtronic",                  ["Medtronic", "Geoff Martha", "MiniMed", "Hugo robotic", "Micra pacemaker"]),
+    "SYK":   ("Stryker",                    ["Stryker", "Kevin Lobo", "Mako robot", "LIFEPAK", "Stryker Corporation"]),
+    "DXCM":  ("Dexcom",                     ["Dexcom", "Kevin Sayer", "G7 sensor", "G6 sensor", "continuous glucose monitor"]),
+    "ILMN":  ("Illumina",                   ["Illumina", "Jacob Thaysen", "NovaSeq", "NextSeq", "Grail", "Galleri test"]),
+    # ── NEW 60: Financials ───────────────────────────────────────────────────
+    "V":     ("Visa Inc.",                  ["Visa", "Ryan McInerney", "Visa Direct", "VisaNet", "Visa payment"]),
+    "MA":    ("Mastercard",                 ["Mastercard", "Michael Miebach", "Mastercard Send", "Vocalink"]),
+    "PYPL":  ("PayPal",                     ["PayPal", "Alex Chriss", "Venmo", "Braintree", "PayPal Checkout"]),
+    "GS":    ("Goldman Sachs",              ["Goldman Sachs", "David Solomon", "Marcus by Goldman"]),
+    "JPM":   ("JPMorgan Chase",             ["JPMorgan", "JPMorgan Chase", "Jamie Dimon", "Chase Bank", "J.P. Morgan"]),
+    "MS":    ("Morgan Stanley",             ["Morgan Stanley", "Ted Pick", "James Gorman", "E*Trade"]),
+    "BLK":   ("BlackRock",                  ["BlackRock", "Larry Fink", "iShares", "Aladdin platform"]),
+    "SCHW":  ("Charles Schwab",             ["Charles Schwab", "Schwab", "TD Ameritrade", "Rick Wurster"]),
+    "AXP":   ("American Express",           ["American Express", "AmEx", "Stephen Squeri", "Amex Platinum"]),
+    "COF":   ("Capital One",                ["Capital One", "Richard Fairbank", "Discover Financial"]),
+    # ── NEW 60: Consumer / Media ─────────────────────────────────────────────
+    "DIS":   ("Walt Disney Company",        ["Disney", "Walt Disney", "Bob Iger", "Disney+", "Hulu", "Pixar", "ESPN"]),
+    "SNAP":  ("Snap Inc.",                  ["Snapchat", "Snap Inc", "Evan Spiegel", "Spectacles"]),
+    "SPOT":  ("Spotify",                    ["Spotify", "Daniel Ek", "Spotify Wrapped", "Spotify Premium"]),
+    "RDDT":  ("Reddit",                     ["Reddit", "Steve Huffman", "subreddit", "Reddit API"]),
+    "PINS":  ("Pinterest",                  ["Pinterest", "Bill Ready", "shoppable pins", "Pinterest Lens"]),
+    "NKE":   ("Nike",                       ["Nike", "Elliott Hill", "Air Jordan", "Jordan Brand", "Swoosh"]),
+    "HD":    ("Home Depot",                 ["Home Depot", "Ted Decker", "SRS Distribution"]),
+    "SBUX":  ("Starbucks",                  ["Starbucks", "Brian Niccol", "Howard Schultz", "Frappuccino", "Starbucks Rewards"]),
+    "MCD":   ("McDonald's",                 ["McDonald's", "McDonalds", "Chris Kempczinski", "Big Mac", "Golden Arches", "McNuggets"]),
+    "TGT":   ("Target Corporation",         ["Target Corporation", "Target stores", "Brian Cornell", "Target Circle", "Shipt"]),
+    # ── NEW 60: Industrials / Defense ────────────────────────────────────────
+    "CAT":   ("Caterpillar",                ["Caterpillar", "Jim Umpleby", "CAT equipment"]),
+    "HON":   ("Honeywell",                  ["Honeywell", "Vimal Kapur", "Quantinuum", "Honeywell spinoff"]),
+    "RTX":   ("RTX Corporation",            ["Raytheon", "RTX Corp", "Chris Calio", "Pratt & Whitney", "Collins Aerospace", "F135 engine"]),
+    "LMT":   ("Lockheed Martin",            ["Lockheed Martin", "Jim Taiclet", "F-35", "PAC-3", "Sikorsky", "HIMARS"]),
+    "GE":    ("GE Aerospace",               ["GE Aerospace", "GE Aviation", "General Electric", "Larry Culp", "LEAP engine", "GE9X"]),
+    "DE":    ("Deere & Company",            ["John Deere", "Deere", "John May", "Deere & Co"]),
+    "BA":    ("Boeing",                     ["Boeing", "Kelly Ortberg", "737 MAX", "787 Dreamliner", "777X", "Starliner"]),
 }
 
 _SCAN_PATTERNS: dict[str, re.Pattern] = {
