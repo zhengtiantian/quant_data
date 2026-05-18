@@ -202,6 +202,7 @@ def _gkg_parse_rows(path: str) -> list[dict]:
     try:
         with open(path, encoding="ISO-8859-1", errors="replace", newline="") as fh:
             import csv as _csv
+            _csv.field_size_limit(10 * 1024 * 1024)
             reader = _csv.reader(fh, delimiter="\t", quoting=_csv.QUOTE_NONE)
             for row in reader:
                 if len(row) <= 4:
@@ -1384,18 +1385,18 @@ def process_file_task(url, rule_manager, ac, all_keywords_map, symbol_to_company
         if df is None or df.empty:
             return {"matches": [], "rows": 0, "candidates": 0, "sample": "", "filename": filename}
 
-        # 探测格式（仅本地 CSV 路径需要）
-        has_xml = has_xml if _mongo_rows is None else False
-        if has_xml:
-            df["URL"] = df[26].astype(str).str.extract(r"(?s)<PAGE_LINKS>(.*?)</PAGE_LINKS>", expand=False).fillna("").str.split(";").str[0]
-            df["Title"] = df[26].astype(str).str.extract(r"(?s)<PAGE_TITLE>(.*?)</PAGE_TITLE>", expand=False).fillna("")
-            df["Raw"] = df[26].astype(str).map(strip_urls_and_xml)
-        else:
-            df["URL"] = df[4].astype(str) if 4 in df.columns else ""
-            df["Title"] = ""
-            entity_cols = [7, 9, 11, 23, 24, 26, 28]
-            found_cols = [c for c in entity_cols if c in df.columns]
-            df["Raw"] = df[found_cols].fillna("").agg(" ".join, axis=1).map(strip_urls_and_xml)
+        # 探测格式（仅本地 CSV 路径需要；MongoDB 路径 df 已含 URL/Raw/Title）
+        if _mongo_rows is None:
+            if has_xml:
+                df["URL"] = df[26].astype(str).str.extract(r"(?s)<PAGE_LINKS>(.*?)</PAGE_LINKS>", expand=False).fillna("").str.split(";").str[0]
+                df["Title"] = df[26].astype(str).str.extract(r"(?s)<PAGE_TITLE>(.*?)</PAGE_TITLE>", expand=False).fillna("")
+                df["Raw"] = df[26].astype(str).map(strip_urls_and_xml)
+            else:
+                df["URL"] = df[4].astype(str) if 4 in df.columns else ""
+                df["Title"] = ""
+                entity_cols = [7, 9, 11, 23, 24, 26, 28]
+                found_cols = [c for c in entity_cols if c in df.columns]
+                df["Raw"] = df[found_cols].fillna("").agg(" ".join, axis=1).map(strip_urls_and_xml)
 
         df = df[df["URL"].str.startswith("http", na=False)]
         social_domains = r"(?:instagram\.com|facebook\.com|twitter\.com|x\.com|tiktok\.com|linkedin\.com)/(?!.*\b(?:news|blog|article|press)\b)"

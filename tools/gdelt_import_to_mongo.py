@@ -33,8 +33,10 @@ import time
 from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
+csv.field_size_limit(10 * 1024 * 1024)  # 10 MB — GKG col 26 XML can be huge
+
 import pymongo
-from pymongo import MongoClient, UpdateOne
+from pymongo import MongoClient
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -146,9 +148,25 @@ def _process_file(path: str) -> tuple[str, list[dict], str]:
         return os.path.basename(path), [], str(exc)
 
 
+SKIP_TEXT_INDEX = os.getenv("SKIP_TEXT_INDEX", "false").lower() == "true"
+
+
+SKIP_URL_INDEX = os.getenv("SKIP_URL_INDEX", "false").lower() == "true"
+SKIP_TS_INDEX  = os.getenv("SKIP_TS_INDEX",  "false").lower() == "true"
+
+
 def _ensure_indexes(gkg_col) -> None:
-    gkg_col.create_index("url", unique=True, background=True)
-    gkg_col.create_index("ts", background=True)
+    if SKIP_URL_INDEX:
+        log.info("SKIP_URL_INDEX=true — skipping url unique index")
+    else:
+        gkg_col.create_index("url", unique=True, background=True)
+    if SKIP_TS_INDEX:
+        log.info("SKIP_TS_INDEX=true — skipping ts index")
+    else:
+        gkg_col.create_index("ts", background=True)
+    if SKIP_TEXT_INDEX:
+        log.info("SKIP_TEXT_INDEX=true — skipping $text index (build it after import)")
+        return
     try:
         gkg_col.create_index([("raw", pymongo.TEXT)], name="gkg_raw_text", background=True)
         log.info("$text index on raw created (may take time to build)")
@@ -175,64 +193,75 @@ def main() -> None:
 
     done_names = _already_imported(all_paths, prog_col)
     todo = [p for p in all_paths if os.path.basename(p) not in done_names]
+    import random; random.shuffle(todo)  # mix years to stabilize throughput
     log.info("Already imported: %d | Remaining: %d", len(done_names), len(todo))
 
     if not todo:
         log.info("Nothing to import. Done.")
         return
 
-    start     = time.time()
-    n_done    = 0
-    n_errors  = 0
-    n_records = 0
-    pending_ops: list[UpdateOne]      = []
+    start        = time.time()
+    n_done       = 0
+    n_errors     = 0
+    n_records    = 0
+    flush_count  = 0
+    flush_total_s = 0.0
+    pending_docs: list[dict]           = []
     pending_prog: list[pymongo.InsertOne] = []
 
     def _flush(force: bool = False) -> None:
-        nonlocal pending_ops, pending_prog
-        if pending_ops and (force or len(pending_ops) >= BATCH_SIZE):
+        nonlocal pending_docs, pending_prog, flush_count, flush_total_s
+        if pending_docs and (force or len(pending_docs) >= BATCH_SIZE):
+            t0 = time.time()
             try:
-                gkg_col.bulk_write(pending_ops, ordered=False)
+                gkg_col.insert_many(pending_docs, ordered=False)
             except pymongo.errors.BulkWriteError:
-                pass  # duplicate URLs are expected and ignored
-            pending_ops = []
-        if pending_prog and (force or len(pending_prog) >= 200):
+                pass
+            elapsed = time.time() - t0
+            flush_total_s += elapsed
+            flush_count   += 1
+            if elapsed > 2:
+                log.warning("SLOW insert_many: %.1fs for %d docs (avg %.2fs)",
+                            elapsed, len(pending_docs),
+                            flush_total_s / flush_count)
+            pending_docs = []
+        if pending_prog and (force or len(pending_prog) >= 20):
             try:
                 prog_col.bulk_write(pending_prog, ordered=False)
             except pymongo.errors.BulkWriteError:
                 pass
             pending_prog = []
 
-    with ProcessPoolExecutor(max_workers=WORKERS) as pool:
-        futures = {pool.submit(_process_file, p): p for p in todo}
-        for future in as_completed(futures):
-            name, docs, err = future.result()
-            if err:
-                log.warning("ERROR %s: %s", name, err)
-                n_errors += 1
-            else:
-                n_done    += 1
-                n_records += len(docs)
-                for d in docs:
-                    pending_ops.append(UpdateOne(
-                        {"url": d["url"]},
-                        {"$setOnInsert": d},
-                        upsert=True,
-                    ))
-                pending_prog.append(
-                    pymongo.InsertOne({"_id": name, "ts": time.time()})
-                )
-                _flush()
+    SUBMIT_CHUNK = 500  # cap in-flight futures to avoid holding 300K+ objects in memory
 
-            total = n_done + n_errors
-            if total % PROGRESS_N == 0 or total == len(todo):
-                elapsed = time.time() - start
-                rate    = n_done / elapsed if elapsed else 0
-                eta_h   = (len(todo) - total) / rate / 3600 if rate else 0
-                log.info(
-                    "[%d/%d] done=%d errors=%d records=%d | %.1f files/s | ETA %.1fh",
-                    total, len(todo), n_done, n_errors, n_records, rate, eta_h,
-                )
+    with ProcessPoolExecutor(max_workers=WORKERS) as pool:
+        for chunk_start in range(0, len(todo), SUBMIT_CHUNK):
+            chunk = todo[chunk_start:chunk_start + SUBMIT_CHUNK]
+            futures = {pool.submit(_process_file, p): p for p in chunk}
+            for future in as_completed(futures):
+                name, docs, err = future.result()
+                if err:
+                    log.warning("ERROR %s: %s", name, err)
+                    n_errors += 1
+                else:
+                    n_done    += 1
+                    n_records += len(docs)
+                    pending_docs.extend(docs)
+                    pending_prog.append(
+                        pymongo.InsertOne({"_id": name, "ts": time.time()})
+                    )
+                    _flush()
+
+                total = n_done + n_errors
+                if total % PROGRESS_N == 0 or total == len(todo):
+                    elapsed  = time.time() - start
+                    rate     = n_done / elapsed if elapsed else 0
+                    eta_h    = (len(todo) - total) / rate / 3600 if rate else 0
+                    avg_flush = flush_total_s / flush_count if flush_count else 0
+                    log.info(
+                        "[%d/%d] done=%d errors=%d records=%d | %.1f files/s | ETA %.1fh | avg_flush=%.2fs",
+                        total, len(todo), n_done, n_errors, n_records, rate, eta_h, avg_flush,
+                    )
 
     _flush(force=True)
     elapsed = time.time() - start
