@@ -30,3 +30,4 @@ tmp_*.json
 __pycache__/
 *.pyc
 tools/scratch/
+.DS_Store
