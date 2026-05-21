@@ -39,10 +39,12 @@ def add_sector_relative_features(df: pd.DataFrame) -> pd.DataFrame:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--collection", default="daily_symbol_features_company_matched_v1")
+    parser.add_argument("--collection", default="daily_symbol_features_company_matched_v2")
     parser.add_argument("--db", default="quant_data")
     parser.add_argument("--min-trade-date", default="2015-12-04")
-    parser.add_argument("--target", default="excess_ret_20d", choices=["excess_ret_20d", "excess_ret_60d"])
+    parser.add_argument("--target", default="all",
+                        choices=["excess_ret_10d", "excess_ret_15d", "excess_ret_20d",
+                                 "excess_ret_30d", "excess_ret_45d", "excess_ret_60d", "all"])
     parser.add_argument("--mlflow-uri", default=os.getenv("MLFLOW_TRACKING_URI", ""),
                         help="MLflow tracking URI (empty = disabled)")
     return parser.parse_args()
@@ -425,24 +427,23 @@ def main():
         "full_ratio_sector_rel",
         "quality_score_sector_rel",
         "news_burst_20d_sector_rel",
-        "earnings_recency_weight_sector_rel",
         # sector
         "sector",
     ]
     
-    print("\nRunning Walk-forward Evaluation for 20d Target...")
-    walk_forward_train_eval(df, features, target="excess_ret_20d",
-                            collection=args.collection, use_mlflow=use_mlflow)
+    horizons = [10, 15, 20, 30, 45, 60] if args.target == "all" else [int(args.target.split("_")[-1][:-1])]
 
-    print("\nRunning Walk-forward Evaluation for 60d Target...")
-    walk_forward_train_eval(df, features, target="excess_ret_60d",
-                            collection=args.collection, use_mlflow=use_mlflow)
+    for h in horizons:
+        target = f"excess_ret_{h}d"
+        print(f"\nRunning Walk-forward Evaluation for {h}d Target...")
+        walk_forward_train_eval(df, features, target=target,
+                                collection=args.collection, use_mlflow=use_mlflow)
 
-    print("\nRunning Ranking Model Evaluation...")
-    walk_forward_rank_eval(df, features, target="excess_ret_20d",
-                           collection=args.collection, use_mlflow=use_mlflow)
-    walk_forward_rank_eval(df, features, target="excess_ret_60d",
-                           collection=args.collection, use_mlflow=use_mlflow)
+    for h in horizons:
+        target = f"excess_ret_{h}d"
+        print(f"\nRunning Ranking Model Evaluation for {h}d Target...")
+        walk_forward_rank_eval(df, features, target=target,
+                               collection=args.collection, use_mlflow=use_mlflow)
 
 
 if __name__ == "__main__":

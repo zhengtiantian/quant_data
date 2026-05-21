@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build gkg_index indexes one by one, with live progress polling."""
+"""Build gkg_index indexes with live terminal progress."""
 
 import os
 import time
@@ -12,77 +12,111 @@ DB_NAME   = "quant_data"
 COL_NAME  = "gkg_index"
 
 INDEXES = [
-    ("ts",  {"ts": 1},          {"name": "gkg_ts",          "background": True}),
-    ("url", {"url": 1},         {"name": "gkg_url_unique",  "background": True, "unique": True}),
-    ("raw", [("raw", "text")],  {"name": "gkg_raw_text",    "background": True}),
+    ("ts",  {"ts": 1},         {"name": "gkg_ts",         "background": True}),
+    ("url", {"url": 1},        {"name": "gkg_url_unique", "background": True, "unique": True}),
+    ("raw", [("raw", "text")], {"name": "gkg_raw_text",   "background": True}),
 ]
 
 
-def poll_progress(client, stop_event, label):
-    db = client["quant_data"]
-    t0 = time.time()
-    while not stop_event.is_set():
-        try:
-            ops = db.command("currentOp")
-            found = False
-            for op in ops.get("inprog", []):
-                msg = op.get("msg", "")
-                desc = str(op)
-                if "index" in msg.lower() or "Index" in desc:
-                    pct = ""
-                    prog = op.get("progress", {})
-                    if prog and prog.get("total", 0) > 0:
-                        pct = f"  {prog['done']/prog['total']*100:.1f}%  ({prog['done']:,}/{prog['total']:,})"
-                    elapsed = int(time.time() - t0)
-                    print(f"  [{label}] {msg or 'building...'}{pct}  elapsed={elapsed}s", flush=True)
-                    found = True
-                    break
-            if not found:
-                elapsed = int(time.time() - t0)
-                print(f"  [{label}] building...  elapsed={elapsed}s", flush=True)
-        except Exception:
-            pass
-        time.sleep(5)
+def get_progress(client):
+    try:
+        results = list(client["admin"].aggregate([
+            {"$currentOp": {"allUsers": True, "idleConnections": False}},
+            {"$match": {"msg": {"$regex": "Index Build"}}}
+        ]))
+        for op in results:
+            prog  = op.get("progress", {})
+            done  = prog.get("done", 0)
+            total = prog.get("total", 1)
+            if total == 0:
+                continue
+            pct     = done / total * 100
+            elapsed = op.get("secs_running", {}).get("low", 0)
+            msg     = op.get("msg", "")
+            return pct, done, total, elapsed, msg
+    except Exception:
+        pass
+    return None
 
 
 def build_index(col, client, label, keys, opts):
-    print(f"\n{'='*60}")
-    print(f"Building index: {label}  keys={keys}")
-    print(f"{'='*60}")
-    stop = threading.Event()
-    t = threading.Thread(target=poll_progress, args=(client, stop, label), daemon=True)
+    print(f"\n{'='*60}", flush=True)
+    print(f"Building: {label}  {keys}", flush=True)
+    print(f"{'='*60}", flush=True)
+
+    result = {"done": False, "error": None}
+
+    def _run():
+        try:
+            col.create_index(keys, **opts)
+        except Exception as e:
+            if isinstance(e, pymongo.errors.OperationFailure) and "already exists" in str(e):
+                pass  # benign
+            else:
+                result["error"] = e
+        finally:
+            result["done"] = True
+
+    t = threading.Thread(target=_run, daemon=True)
     t.start()
     t0 = time.time()
-    try:
-        col.create_index(keys, **opts)
-        elapsed = time.time() - t0
-        print(f"\n  Done in {elapsed/60:.1f} min")
-    except pymongo.errors.OperationFailure as e:
-        if "already exists" in str(e):
-            print(f"\n  Already exists — skipped")
+
+    while not result["done"]:
+        info = get_progress(client)
+        elapsed = int(time.time() - t0)
+        if info:
+            pct, done, total, _, key = info
+            bar_len = 40
+            filled = int(bar_len * pct / 100)
+            bar = "█" * filled + "░" * (bar_len - filled)
+            done_m  = done  // 1_000_000
+            total_m = total // 1_000_000
+            eta = int((100 - pct) / (pct / elapsed)) if pct > 0 and elapsed > 0 else 0
+            eta_str = f"{eta//3600}h{(eta%3600)//60}m" if eta > 3600 else f"{eta//60}m{eta%60}s"
+            print(f"\r[{bar}] {pct:5.1f}%  {done_m}/{total_m}M  elapsed={elapsed//60}m{elapsed%60}s  ETA={eta_str}   ",
+                  end="", flush=True)
         else:
-            raise
-    finally:
-        stop.set()
+            print(f"\r  [{label}] waiting for MongoDB...  elapsed={elapsed}s   ",
+                  end="", flush=True)
+        time.sleep(3)
+
+    t.join()
+    elapsed = int(time.time() - t0)
+    if result["error"]:
+        print(f"\n  ERROR: {result['error']}", flush=True)
+        return False
+
+    # Verify the index actually exists after creation
+    existing_after = {v.get("name", k) for k, v in col.index_information().items()}
+    if opts["name"] in existing_after:
+        print(f"\n  Done in {elapsed//60}m{elapsed%60}s  ✓ verified in index_information", flush=True)
+        return True
+    else:
+        print(f"\n  WARN: create_index returned but '{opts['name']}' not found in index_information — likely rolled back!", flush=True)
+        return False
 
 
 def main():
+    print("Connecting to MongoDB...", flush=True)
     client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
     client.admin.command("ping")
     col = client[DB_NAME][COL_NAME]
 
     existing = {v.get("name", k) for k, v in col.index_information().items()}
-    print(f"Existing indexes: {existing}")
+    print(f"Existing indexes: {existing}", flush=True)
 
     for label, keys, opts in INDEXES:
         if opts["name"] in existing:
-            print(f"\nSkip {label} — already exists")
+            print(f"Skip {label} — already exists", flush=True)
             continue
-        build_index(col, client, label, keys, opts)
+        ok = build_index(col, client, label, keys, opts)
+        if not ok:
+            print(f"  FAILED to build {label}, stopping.", flush=True)
+            break
 
-    print("\nAll indexes built.")
-    for name, info in col.index_information().items():
-        print(f"  {name}: {info['key']}")
+    print("\nAll indexes:", flush=True)
+    for idx in col.getIndexes():
+        print(f"  {idx['name']}: {idx['key']}", flush=True)
 
 
 if __name__ == "__main__":
