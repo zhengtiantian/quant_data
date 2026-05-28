@@ -73,6 +73,10 @@ class BacktestResult:
     annualized_excess_return: float | None
     hit_rate: float | None
     avg_names_selected: float
+    sharpe: float | None = None
+    information_ratio: float | None = None
+    max_drawdown: float | None = None
+    volatility: float | None = None
 
 
 def parse_args() -> argparse.Namespace:
@@ -294,6 +298,36 @@ def _annualize(mean_period_return: float, horizon: int) -> float | None:
     return float(base ** (252.0 / horizon) - 1.0)
 
 
+def _sharpe(returns: pd.Series, horizon: int) -> float | None:
+    """Annualized Sharpe ratio (risk-free = 0)."""
+    if len(returns) < 2:
+        return None
+    std = returns.std()
+    if std == 0 or pd.isna(std):
+        return None
+    return float(returns.mean() / std * math.sqrt(252.0 / horizon))
+
+
+def _information_ratio(excess: pd.Series, horizon: int) -> float | None:
+    """Annualized Information Ratio = annualized mean excess / tracking error."""
+    if len(excess) < 2:
+        return None
+    std = excess.std()
+    if std == 0 or pd.isna(std):
+        return None
+    return float(excess.mean() / std * math.sqrt(252.0 / horizon))
+
+
+def _max_drawdown(returns: pd.Series) -> float | None:
+    """Maximum drawdown from period return series."""
+    if len(returns) < 2:
+        return None
+    cumulative = (1 + returns).cumprod()
+    rolling_max = cumulative.cummax()
+    drawdowns = (cumulative - rolling_max) / rolling_max
+    return float(drawdowns.min())
+
+
 def _clean_subset(frame: pd.DataFrame, factor: str, horizon: int) -> pd.DataFrame:
     target_col = f"future_ret_{horizon}d"
     subset = frame[["trade_date", "symbol", factor, target_col]].copy()
@@ -380,6 +414,10 @@ def run_factor_backtest(
         annualized_excess_return=_annualize(mean_excess, horizon),
         hit_rate=hit_rate,
         avg_names_selected=float(pd.Series(selection_sizes).mean()),
+        sharpe=_sharpe(series, horizon),
+        information_ratio=_information_ratio(excess, horizon),
+        max_drawdown=_max_drawdown(series),
+        volatility=float(series.std() * math.sqrt(252.0 / horizon)) if len(series) >= 2 else None,
     )
 
 
@@ -400,18 +438,22 @@ def print_summary(
     print("")
     header = (
         f"{'factor':<18} {'horizon':>7} {'strategy':<10} {'N':>4} {'obs':>7} "
-        f"{'mean_ret':>11} {'mean_excess':>12} {'ann_ret':>11} {'ann_excess':>12} {'hit_rate':>10}"
+        f"{'mean_excess':>12} {'ann_excess':>12} {'hit_rate':>10} "
+        f"{'sharpe':>8} {'IR':>8} {'max_dd':>9} {'vol':>8}"
     )
     print(header)
     print("-" * len(header))
     for item in results:
-        ann_ret = f"{item.annualized_return:.2%}" if item.annualized_return is not None else "n/a"
-        ann_ex = f"{item.annualized_excess_return:.2%}" if item.annualized_excess_return is not None else "n/a"
+        ann_ex  = f"{item.annualized_excess_return:.2%}" if item.annualized_excess_return is not None else "n/a"
         hit_rate = f"{item.hit_rate:.2%}" if item.hit_rate is not None else "n/a"
+        sharpe   = f"{item.sharpe:.2f}"  if item.sharpe  is not None else "n/a"
+        ir       = f"{item.information_ratio:.2f}" if item.information_ratio is not None else "n/a"
+        mdd      = f"{item.max_drawdown:.2%}" if item.max_drawdown is not None else "n/a"
+        vol      = f"{item.volatility:.2%}" if item.volatility is not None else "n/a"
         print(
             f"{item.factor:<18} {item.horizon:>7} {item.strategy:<10} {item.bucket_size:>4} {item.observations:>7} "
-            f"{item.mean_return:>10.2%} {item.mean_excess_return:>11.2%} "
-            f"{ann_ret:>11} {ann_ex:>12} {hit_rate:>10}"
+            f"{item.mean_excess_return:>11.2%} {ann_ex:>12} {hit_rate:>10} "
+            f"{sharpe:>8} {ir:>8} {mdd:>9} {vol:>8}"
         )
 
 
@@ -433,7 +475,7 @@ def print_yearly_summary(
     print("=== Yearly Stability Breakdown ===")
     header = (
         f"{'year':>6} {'factor':<18} {'horizon':>7} {'strategy':<10} {'N':>4} {'obs':>7} "
-        f"{'mean_excess':>12} {'ann_excess':>12} {'hit_rate':>10}"
+        f"{'ann_excess':>12} {'hit_rate':>10} {'sharpe':>8} {'IR':>8} {'max_dd':>9}"
     )
     print(header)
     print("-" * len(header))
@@ -458,15 +500,14 @@ def print_yearly_summary(
                         )
                         if result.observations == 0:
                             continue
-                        ann_ex = (
-                            f"{result.annualized_excess_return:.2%}"
-                            if result.annualized_excess_return is not None
-                            else "n/a"
-                        )
+                        ann_ex   = f"{result.annualized_excess_return:.2%}" if result.annualized_excess_return is not None else "n/a"
                         hit_rate = f"{result.hit_rate:.2%}" if result.hit_rate is not None else "n/a"
+                        sharpe   = f"{result.sharpe:.2f}" if result.sharpe is not None else "n/a"
+                        ir       = f"{result.information_ratio:.2f}" if result.information_ratio is not None else "n/a"
+                        mdd      = f"{result.max_drawdown:.2%}" if result.max_drawdown is not None else "n/a"
                         print(
-                            f"{int(year):>6} {factor:<18} {horizon:>7} {strategy:<10} {bucket_size:>4} {result.observations:>7} "
-                            f"{result.mean_excess_return:>11.2%} {ann_ex:>12} {hit_rate:>10}"
+                            f"{int(year):>6} {result.factor:<18} {horizon:>7} {strategy:<10} {bucket_size:>4} {result.observations:>7} "
+                            f"{ann_ex:>12} {hit_rate:>10} {sharpe:>8} {ir:>8} {mdd:>9}"
                         )
 
 
