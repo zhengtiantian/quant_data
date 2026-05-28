@@ -991,10 +991,92 @@ Stage 7 服务跑通（1周）
 - 状态：[ ] 待开发（1天）
 
 ### F.4 多 Agent 研究助手（LangGraph）
-- 对应 5.3.2，扩展现有 langchain-agent 容器
-- Agent 图：data agent → analysis agent → strategy agent → risk agent
-- demo：输入"分析 NVDA 最近的新闻，给出持仓建议"→ 多步推理输出
+扩展现有 `quant_langchain` 容器，从 LLMChain 升级为 LangGraph 有状态 Agent 图。
+
+**Agent 架构（4 节点图）：**
+```
+用户输入: "分析 NVDA 最近新闻，给出交易建议"
+    ↓
+data_agent      → 调 quant_api 拉新闻 + 价格 + 情感因子
+    ↓
+analysis_agent  → 读 IC 排名 + 情绪分布，LLM 解读近期事件
+    ↓
+strategy_agent  → 生成 entry/exit 规则（结合 LLM 评分 + 量化信号）
+    ↓
+risk_agent      → 仓位控制、止损条件、最终输出持仓建议 JSON
+```
+
+**当前状态（现有基础）：**
+- `quant_langchain/main.py`：已有 `/api/workflow/generate-spec`、`/api/workflow/generate-tasks` 占位接口，但只做 prompt → JSON，无执行能力
+- `quant_api/StrategyService.java`：已调用 langchain-agent，可直接作为 tools server
+- 缺：LangGraph agent loop、工具注册、状态持久化
+
+**开发步骤：**
+1. 安装 langgraph，重构 `quant_langchain/main.py`（2天）
+2. 注册工具：`search_news(symbol, days)` → 调 quant_api；`get_features(symbol)` → MongoDB；`run_backtest(rules)` → Python
+3. 实现 4 节点图 + 状态传递（2天）
+4. 加入 ReAct 循环：analysis_agent 可以决定是否需要更多数据（1天）
+5. 接入 Qdrant RAG（F.2 完成后）：data_agent 可语义搜索相关新闻（1天）
+
+**demo 演示流程（面试用）：**
+- 输入："AAPL 最近 30 天有没有负面消息，现在该持仓吗？"
+- data_agent 拉新闻 + 情感分布
+- analysis_agent 发现 `avg_sentiment_5d = -0.3`，识别监管风险事件
+- strategy_agent 给出"观望，等情绪回升再建仓"
+- risk_agent 补充：如持仓，止损 -3%，最大仓位 5%
+
+**面试价值：** 覆盖 ReAct 推理 + tool use + 状态图，是 MLE / AI Engineer 岗核心考点
 - 状态：[ ] 待开发（2周）
+
+### F.6 rule_validator 升级为真 Agent（ReAct 循环）
+**现状：** `quant_data/tools/rule_validator_agent.py` 已有"LLM判断→工具调用→再判断"雏形，但是硬编码顺序，无推理循环。
+
+**升级方向：**
+- 验证失败 → agent 自主决定：抓更多文章 / 修改 prompt / 标记 ambiguous
+- 处理 `ambiguous_names.py` 歧义词时，agent 主动搜索公司背景判断
+- 从"流水线"改为"带 memory 的 ReAct agent"
+
+**开发步骤：**
+1. 用 LangGraph 改写 `rule_validator_agent.py`，加工具：`fetch_article(url)`、`search_web(company)`、`label_ambiguous(name, reason)`
+2. Agent 自己决定是否需要更多证据，最多 N 步
+3. 输出 trace：每条规则验证了哪些步骤、最终判断依据
+
+- 状态：[ ] 待开发（3天）
+
+### F.7 Airflow 自适应调度 Agent
+**现状：** `airflow/dags/` 4 个 DAG 全是静态时间触发，无自适应能力。
+
+**升级方向：**
+- 新增 `quality_monitor_dag`：每天 pipeline 跑完后，agent 分析：
+  - 新闻量是否异常低？（数据源挂了？）
+  - LLM 标签分歧率是否升高？（模型性能退化？）
+  - 信号 IC 是否连续 5 天下降？（需要重训？）
+- Agent 输出决策：触发补跑 / 换用更强模型 / 发告警 / 自动提交 retraining job
+
+**开发步骤：**
+1. 建 `quality_monitor_dag.py`，BranchPythonOperator 根据指标决策（1天）
+2. 加 LLM 决策节点：把异常指标摘要发给 LLM，输出建议动作（1天）
+3. 接入 Kafka：agent 决策 → 发 topic → downstream 消费（1天）
+
+- 状态：[ ] 待开发（3天）
+
+### F.8 LLM 标注主动学习 Agent（分歧样本处理）
+**现状：** Gemma + Qwen 两模型分歧率 22.7%，靠 Snorkel Dawid-Skene 盲目投票合并。
+
+**升级方向：**
+- 对 label_model_probs < 0.7 的高不确定样本，agent 主动介入：
+  - 把原文 + 两个模型输出一起发给更强 LLM（Qwen3-27B / GPT-4o）
+  - Agent 给出最终标签 + 解释原因（"model A 误判，因为文章主体是财报，非公司事件"）
+  - 作为 hard negative examples 加入 FinBERT 训练集
+- 预期：分歧样本准确率从 ~60% 提升至 ~85%
+
+**开发步骤：**
+1. 筛选 `llm_disagreement=1 AND llm_label_model_probs < 0.7` 样本（~190K条）
+2. 写 `active_learning_agent.py`：批量发给强模型，解析输出，写回 MongoDB
+3. 更新 `llm_sentiment_final` 字段，重跑 feature build
+4. 对比前后 IC 变化
+
+- 状态：[ ] 待开发（4天）
 
 ### F.5 FinBERT 微调（3.5.5）
 - 用 Gemma+Qwen 一致标签（~650K 样本）训练
@@ -1016,20 +1098,23 @@ Stage 7 服务跑通（1周）
 | ⭐⭐⭐ | Stage 7 MLflow 实际跑 | DE/MLE | 中 | 1天 |
 | ⭐⭐ | C.1 每日信号自动化 | 中 | 极高 | 3天 |
 | ⭐⭐ | C.3 信号 UI 页面 | 中 | 极高 | 3天 |
-| ⭐⭐ | F.2 RAG 新闻搜索 | AI必需 | 高 | 3天 |
+| ⭐⭐ | F.2 RAG 新闻搜索（Qdrant） | AI必需 | 高 | 3天 |
 | ⭐⭐ | F.3 SHAP 可解释性 | MLE强 | 中 | 1天 |
+| ⭐⭐ | F.4 LangGraph 多 Agent 研究助手 | AI Engineer必杀 | 高 | 2周 |
+| ⭐⭐ | F.8 主动学习 Agent（分歧样本） | MLE+AI | 高 | 4天 |
 | ⭐⭐ | E.2 CI/CD GitHub Actions | DE强 | 中 | 2天 |
 | ⭐⭐ | C.7 数据质量检查 | DE强 | 高 | 2天 |
 | ⭐⭐ | B 量化加分：Long-short 组合 | 量化强 | 中 | 3天 |
 | ⭐⭐ | B 量化加分：Beta 中性化 | 量化强 | 中 | 2天 |
 | ⭐⭐ | F.5 FinBERT 微调 | MLE强 | 高 | 1-2周 |
+| ⭐ | F.6 rule_validator ReAct Agent | AI加分 | 中 | 3天 |
+| ⭐ | F.7 Airflow 自适应调度 Agent | DE+AI | 中 | 3天 |
 | ⭐ | D.1 宏观 Regime 特征 | 量化加分 | 中 | 2天 |
 | ⭐ | E.4 K8s 配置 | DE加分 | 低 | 3天 |
 | ⭐ | E.5 数据血缘图 | DE加分 | 低 | 2天 |
 | ⭐ | E.6 WebSocket 实时推送 | 后端加分 | 高 | 3天 |
 | ⭐ | D.2 Reddit 散户情绪 | 量化加分 | 中 | 3天 |
 | ⭐ | F.1 Prompt 评测框架 | MLE加分 | 中 | 2天 |
-| ⭐ | F.4 多 Agent 助手 | AI加分 | 中 | 2周 |
 | ⭐ | E.8 Demo 视频 | 全部加分 | 高 | 0.5天 |
 
 ---
