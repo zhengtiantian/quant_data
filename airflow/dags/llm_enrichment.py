@@ -18,7 +18,7 @@ from airflow import DAG
 from airflow.providers.docker.operators.docker import DockerOperator
 from docker.types import Mount
 
-QUANT_IMAGE = os.getenv("QUANT_IMAGE", "xiz001/quant_data:5af1779")
+QUANT_IMAGE = os.getenv("QUANT_IMAGE", "xiz001/quant_data:9df26b0")
 NETWORK = "quant_docker_project-net"
 QUANT_DATA_PATH = "/Users/xiz/Quant_trade/quant_data"
 SLM_API_URL = os.getenv("SLM_API_URL", "http://192.168.31.226:1234/v1")
