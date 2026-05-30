@@ -1,0 +1,6 @@
+# ty type checker config — point at the project's Python 3.11 venv
+# so imports (numpy, pandas, mlflow, etc.) resolve instead of falling
+# back to system Python 3.9.
+[environment]
+python = ".venv311"
+python-version = "3.11"
