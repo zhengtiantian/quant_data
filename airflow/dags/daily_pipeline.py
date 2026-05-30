@@ -61,6 +61,7 @@ def make_task(task_id: str, script: str, extra_env: dict | None = None, **kwargs
         network_mode=NETWORK,
         docker_url="unix://var/run/docker.sock",
         auto_remove="success",
+        mount_tmp_dir=False,
         **kwargs,
     )
 

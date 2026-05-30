@@ -63,4 +63,5 @@ with DAG(
         network_mode=NETWORK,
         docker_url="unix://var/run/docker.sock",
         auto_remove="success",
+        mount_tmp_dir=False,
     )

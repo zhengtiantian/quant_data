@@ -114,7 +114,7 @@ def main() -> None:
                 probs[i, col] = votes / 2.0  # 2 annotators
 
     log.info("Dawid-Skene fitted in %.1fs", time.time() - t1)
-    if hasattr(ds, 'errors_'):
+    if 'ds' in dir() and hasattr(ds, 'errors_'):
         log.info("Worker error matrix:\n%s", ds.errors_.round(3))
 
     # ── 4. Infer probabilistic labels ─────────────────────────────────────────
