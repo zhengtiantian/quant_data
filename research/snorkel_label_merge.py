@@ -81,24 +81,37 @@ def main() -> None:
 
     # ── 3. Fit Dawid-Skene (crowd-kit) — works with 2 annotators ─────────────
     import pandas as pd
-    from crowdkit.aggregation import DawidSkene
 
     log.info("Fitting Dawid-Skene Label Model …")
     t1 = time.time()
 
-    # crowd-kit expects a DataFrame with columns: task, worker, label
-    n = len(ids)
-    tasks   = list(range(n)) * 2
-    workers = ["model_a"] * n + ["model_b"] * n
-    labels  = list(L[:, 0]) + list(L[:, 1])
-    df = pd.DataFrame({"task": tasks, "worker": workers, "label": labels})
+    try:
+        from crowdkit.aggregation import DawidSkene
 
-    ds = DawidSkene(n_iter=100)
-    ds.fit(df)
+        # crowd-kit expects a DataFrame with columns: task, worker, label
+        n = len(ids)
+        tasks   = list(range(n)) * 2
+        workers = ["model_a"] * n + ["model_b"] * n
+        labels  = list(L[:, 0]) + list(L[:, 1])
+        df = pd.DataFrame({"task": tasks, "worker": workers, "label": labels})
 
-    # probas_: index=task, columns=[0,1,2] → P(neg), P(neu), P(pos)
-    probs_df = ds.probas_
-    probs = probs_df[[NEG, NEU, POS]].values.astype(np.float32)  # (n, 3)
+        ds = DawidSkene(n_iter=100)
+        ds.fit(df)
+
+        # probas_: index=task, columns=[0,1,2] → P(neg), P(neu), P(pos)
+        probs_df = ds.probas_
+        probs = probs_df[[NEG, NEU, POS]].values.astype(np.float32)  # (n, 3)
+
+    except ImportError:
+        # Fallback: simple majority vote when crowd-kit is not installed
+        log.warning("crowd-kit not installed — falling back to simple average aggregation")
+        n = len(ids)
+        probs = np.zeros((n, 3), dtype=np.float32)
+        for i in range(n):
+            for cls in [NEG, NEU, POS]:
+                col = [NEG, NEU, POS].index(cls)
+                votes = np.sum(L[i] == cls)
+                probs[i, col] = votes / 2.0  # 2 annotators
 
     log.info("Dawid-Skene fitted in %.1fs", time.time() - t1)
     if hasattr(ds, 'errors_'):
