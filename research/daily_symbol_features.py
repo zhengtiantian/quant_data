@@ -245,7 +245,11 @@ def aggregate_news_features(news_df: pd.DataFrame) -> pd.DataFrame:
         frame["news_burst_20d"] = frame["article_count"] / prior_mean
         return frame
 
-    grouped = grouped.groupby("symbol", group_keys=False).apply(_add_rollups)
+    # Iterate groups instead of .apply(): pandas 3.0 drops the grouping column
+    # ('symbol') inside .apply(), which broke downstream groupby("symbol").
+    # Iterating keeps 'symbol' in each group regardless of pandas version.
+    parts = [_add_rollups(grp) for _, grp in grouped.groupby("symbol", group_keys=False)]
+    grouped = pd.concat(parts, ignore_index=True) if parts else grouped
     return grouped.reset_index(drop=True)
 
 
@@ -868,7 +872,9 @@ def aggregate_llm_sentiment_features(llm_df: pd.DataFrame) -> pd.DataFrame:
         g["negative_event_count_5d"]= g["negative_n"].rolling(5, min_periods=1).sum()
         return g
 
-    result = daily.groupby("symbol", group_keys=False).apply(_rollups)
+    # Iterate groups (not .apply()) so 'symbol' survives under pandas 3.0.
+    parts = [_rollups(grp) for _, grp in daily.groupby("symbol", group_keys=False)]
+    result = pd.concat(parts, ignore_index=True) if parts else daily
     return result.reset_index(drop=True)
 
 
