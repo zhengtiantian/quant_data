@@ -362,7 +362,9 @@ def main():
     df = add_sector_relative_features(df)
     print(f"Added sector-relative features: {[c+'_sector_rel' for c in SECTOR_REL_COLS if c in df.columns]}")
 
-    use_mlflow = bool(args.mlflow_uri)
+    use_mlflow = bool(args.mlflow_uri) and MLFLOW_AVAILABLE
+    if args.mlflow_uri and not MLFLOW_AVAILABLE:
+        print("MLFLOW_TRACKING_URI set but mlflow not installed — skipping experiment tracking")
     if use_mlflow:
         mlflow.set_tracking_uri(args.mlflow_uri)
         mlflow.set_experiment("quant_baseline_models")
