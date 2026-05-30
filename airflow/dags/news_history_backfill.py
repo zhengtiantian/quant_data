@@ -84,7 +84,7 @@ with DAG(
     catchup=False,
     tags=["quant", "backfill", "news"],
     params={
-        "start_date": "2023-01-01",
+        "start_date": "2016-01-01",
     },
 ) as dag:
 
@@ -92,7 +92,7 @@ with DAG(
         task_id="gdelt_collect",
         script="news_collectors/gdelt/historical_collector.py",
         extra_env={
-            "START_DATE": "{{ dag_run.conf.get('start_date', '2023-01-01') }}",
+            "START_DATE": "{{ dag_run.conf.get('start_date', '2016-01-01') }}",
             "RESET_ALL_RUNNING_ON_START": "false",
             "USE_GKG_MONGO": "true",
         },
