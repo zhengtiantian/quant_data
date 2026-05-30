@@ -17,6 +17,7 @@ scikit-learn>=1.5.2
 lightgbm>=4.3.0
 crowd-kit>=1.2.1
 scipy>=1.13.0
+mlflow>=2.13.0
 
 # === Utilities ===
 python-dotenv>=1.0.1

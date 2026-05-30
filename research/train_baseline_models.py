@@ -7,7 +7,13 @@ import argparse
 import math
 import os
 
-import mlflow
+try:
+    import mlflow
+    MLFLOW_AVAILABLE = True
+except ImportError:
+    MLFLOW_AVAILABLE = False
+    mlflow = None  # type: ignore
+
 import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
