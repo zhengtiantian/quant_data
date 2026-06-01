@@ -87,7 +87,11 @@ def walk_forward_rank_eval(
     collection: str = "unknown", use_mlflow: bool = False,
 ) -> None:
     """Walk-forward evaluation using LightGBM lambdarank objective."""
-    import lightgbm as lgb
+    try:
+        import lightgbm as lgb
+    except ImportError:
+        print(f"  [skip] lightgbm not installed — skipping LightGBM Ranker for {target}")
+        return
 
     df = df.dropna(subset=[target]).copy()
     if df.empty:
