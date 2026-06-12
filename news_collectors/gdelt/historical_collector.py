@@ -247,8 +247,16 @@ def _gkg_query_rows(ts: str, gkg_col) -> list[dict]:
     return [{"URL": d["url"], "Raw": d.get("raw", ""), "Title": "", "Date": ts[:8]} for d in docs]
 
 def _gkg_ensure_indexes(gkg_col) -> None:
-    gkg_col.create_index("url", unique=True, background=True)
-    gkg_col.create_index("ts", background=True)
+    # 索引按字段检测：已存在(任意名字)就跳过，避免在 6.75亿行集合上
+    # 因索引名不一致(gkg_ts vs ts_1)触发冲突/重建而卡死。
+    existing_keys = {
+        tuple(spec["key"][0]) for spec in gkg_col.index_information().values()
+        if spec.get("key")
+    }
+    if ("url", 1) not in existing_keys:
+        gkg_col.create_index("url", background=True)  # 非unique：url有大量重复
+    if ("ts", 1) not in existing_keys:
+        gkg_col.create_index("ts", background=True)
 
 # filename → batch_id 映射，由 get_gkg_file_urls() 在启动时填充
 _filename_to_batch: dict = {}
@@ -1933,7 +1941,7 @@ def process_one_batch(
 # ============================
 # 多进程 batch worker（模块级，可 pickle）
 # ============================
-def _run_batch_worker(worker_id, shutdown_event, urls, valid_companies, total_batches, stuck_urls_initial):
+def _run_batch_worker(worker_id, shutdown_event, urls, valid_companies, total_batches, stuck_urls_initial, shared_inserted=None):
     global SHUTDOWN_EVENT
     SHUTDOWN_EVENT = shutdown_event  # 让本进程内所有函数共享同一个 Event
 
@@ -2005,6 +2013,9 @@ def _run_batch_worker(worker_id, shutdown_event, urls, valid_companies, total_ba
             heartbeat_thread.join(timeout=1)
             WORKER_BATCH_CONTEXT.pop(worker_name, None)
 
+    if shared_inserted is not None:
+        with shared_inserted.get_lock():
+            shared_inserted.value += total_inserted
     print(f"✅ worker{worker_id} finished. total_inserted={total_inserted}")
 
 
@@ -2081,12 +2092,13 @@ if __name__ == "__main__":
         # 用 multiprocessing.Event 替换模块级 threading.Event，让子进程共享
         mp_shutdown = multiprocessing.Event()
         SHUTDOWN_EVENT = mp_shutdown  # 主进程的 _mark_shutdown 也用这个
+        mp_inserted = multiprocessing.Value("i", 0)  # 跨进程汇总各 worker 写入数
 
         workers = []
         for wid in range(1, BATCH_WORKERS + 1):
             p = multiprocessing.Process(
                 target=_run_batch_worker,
-                args=(wid, mp_shutdown, urls, valid_companies, total_batches, stuck_urls),
+                args=(wid, mp_shutdown, urls, valid_companies, total_batches, stuck_urls, mp_inserted),
                 name=f"{HOST_ID}-worker{wid}",
                 daemon=False,
             )
