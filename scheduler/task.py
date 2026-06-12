@@ -244,6 +244,19 @@ def configure_schedule() -> None:
             "daily_symbol_features",
             "research/daily_symbol_features.py",
             env_int("DAILY_FEATURE_JOB_TIMEOUT", 7200),
+            {
+                "FEATURE_OUTPUT_COLLECTION": os.getenv("FEATURE_OUTPUT_COLLECTION", "daily_symbol_features"),
+                "FEATURE_LLM_COLLECTION": os.getenv("FEATURE_LLM_COLLECTION", "news_articles_company_matched_v2"),
+            },
+        )
+
+    if env_bool("ENABLE_DAILY_SIGNAL_JOB", "true"):
+        schedule.every().day.at(os.getenv("DAILY_SIGNAL_JOB_TIME", "08:30")).do(
+            run_script_once,
+            "score_daily_signals",
+            "research/score_daily_signals.py",
+            env_int("DAILY_SIGNAL_JOB_TIMEOUT", 600),
+            {"SIGNAL_TOP_N": os.getenv("SIGNAL_TOP_N", "10")},
         )
 
     if env_bool("ENABLE_GDELT_BACKFILL_JOB", "false"):

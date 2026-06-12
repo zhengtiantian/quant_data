@@ -5,6 +5,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from pymongo import MongoClient, errors
 import pandas as pd
+import time
 
 # =========================================================
 # 1. Load env
@@ -62,7 +63,7 @@ def fetch_daily_history(symbol, period="10y", interval="1d"):
             interval=interval,
             auto_adjust=False,
             progress=False,
-            threads=True
+            threads=False
         )
     except Exception as e:
         print(f"❌ {symbol} download failed: {e}")
@@ -141,16 +142,22 @@ def collect_history_all():
 
     total = 0
 
-    print("\n=== Task: 10 years of daily data (1d) ===")
+    # Default to an incremental window ("1mo") so the daily job只补最近几天;
+    # 设 PRICE_HISTORY_PERIOD=10y 可做一次性全量回填。
+    period = os.getenv("PRICE_HISTORY_PERIOD", "1mo")
+    sleep_s = float(os.getenv("PRICE_HISTORY_SLEEP", "0.8"))
+
+    print(f"\n=== Task: daily 1d history (period={period}) ===")
 
     for sym in symbols:
-        print(f"\nFetching 1D {sym} ...")
-        data = fetch_daily_history(sym)
+        print(f"\nFetching 1D {sym} (period={period}) ...")
+        data = fetch_daily_history(sym, period=period)
 
         count = save_history(data)
         total += count
 
         print(f"Inserted {count} records for {sym}")
+        time.sleep(sleep_s)
 
     print(f"\n=== DONE: Inserted {total} records ===")
 
