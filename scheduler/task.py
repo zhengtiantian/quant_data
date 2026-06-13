@@ -259,6 +259,14 @@ def configure_schedule() -> None:
             {"SIGNAL_TOP_N": os.getenv("SIGNAL_TOP_N", "10")},
         )
 
+    if env_bool("ENABLE_DAILY_POSITION_JOB", "true"):
+        schedule.every().day.at(os.getenv("DAILY_POSITION_JOB_TIME", "08:40")).do(
+            run_script_once,
+            "track_positions",
+            "research/track_positions.py",
+            env_int("DAILY_POSITION_JOB_TIMEOUT", 600),
+        )
+
     if env_bool("ENABLE_GDELT_BACKFILL_JOB", "false"):
         schedule.every(env_int("GDELT_BACKFILL_CHECK_MINUTES", 30)).minutes.do(
             ensure_long_running,
