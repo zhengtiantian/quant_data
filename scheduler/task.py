@@ -267,6 +267,14 @@ def configure_schedule() -> None:
             env_int("DAILY_POSITION_JOB_TIMEOUT", 600),
         )
 
+    if env_bool("ENABLE_DAILY_BACKTEST_JOB", "true"):
+        schedule.every().day.at(os.getenv("DAILY_BACKTEST_JOB_TIME", "08:45")).do(
+            run_script_once,
+            "backtest_portfolio",
+            "research/backtest_portfolio.py",
+            env_int("DAILY_BACKTEST_JOB_TIMEOUT", 1800),
+        )
+
     if env_bool("ENABLE_GDELT_BACKFILL_JOB", "false"):
         schedule.every(env_int("GDELT_BACKFILL_CHECK_MINUTES", 30)).minutes.do(
             ensure_long_running,
