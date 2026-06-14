@@ -1001,6 +1001,9 @@ def save_features(feature_df: pd.DataFrame) -> int:
         for mc in MACRO_FEATURE_COLS:
             v = row.get(mc)
             record[mc] = float(v) if pd.notna(v) else None
+        for pc in PREMARKET_FEATURE_COLS:
+            v = row.get(pc)
+            record[pc] = float(v) if pd.notna(v) else None
         ops.append(
             UpdateOne(
                 {"symbol": record["symbol"], "date": record["date"]},
@@ -1083,6 +1086,54 @@ def attach_macro_regime_features(feature_df: pd.DataFrame) -> pd.DataFrame:
     return merged.drop(columns=["_macro_key"])
 
 
+PREMARKET_COLLECTION = os.getenv("PREMARKET_COLLECTION", "premarket_signals")
+PREMARKET_FEATURE_COLS = [
+    "pm_gap", "pm_volume_ratio", "ah_gap", "ah_volume_ratio",
+]
+
+
+def load_premarket_frame() -> pd.DataFrame:
+    """Load premarket_signals (last ~30 days, per symbol per date)."""
+    client = create_client()
+    col = client[DB_NAME][PREMARKET_COLLECTION]
+    rows = list(col.find(
+        {},
+        {"_id": 0, "symbol": 1, "trade_date": 1,
+         "pm_gap": 1, "pm_volume_ratio": 1, "ah_gap": 1, "ah_volume_ratio": 1},
+    ))
+    if not rows:
+        return pd.DataFrame()
+    df = pd.DataFrame(rows)
+    df["trade_date"] = df["trade_date"].astype(str).str[:10]
+    for c in PREMARKET_FEATURE_COLS:
+        df[c] = pd.to_numeric(df.get(c), errors="coerce")
+    return df
+
+
+def attach_premarket_features(feature_df: pd.DataFrame) -> pd.DataFrame:
+    """Left-join per-symbol premarket/after-hours gap features onto feature_df.
+
+    Uses a composite string key (symbol|date) to avoid Timestamp dtype issues,
+    same pattern as attach_macro_regime_features.
+    """
+    pm_df = load_premarket_frame()
+    if pm_df.empty or "trade_date" not in feature_df.columns:
+        return feature_df
+    feature_df = feature_df.copy()
+    feature_df["_pm_key"] = (
+        feature_df["symbol"].astype(str) + "|"
+        + feature_df["trade_date"].astype(str).str[:10]
+    )
+    pm_df["_pm_key"] = (
+        pm_df["symbol"].astype(str) + "|"
+        + pm_df["trade_date"].astype(str).str[:10]
+    )
+    merged = feature_df.merge(
+        pm_df[["_pm_key"] + PREMARKET_FEATURE_COLS], on="_pm_key", how="left"
+    )
+    return merged.drop(columns=["_pm_key"])
+
+
 def build_daily_symbol_features() -> int:
     print("=== Building daily symbol features ===")
     news_df = load_news_frame()
@@ -1112,6 +1163,9 @@ def build_daily_symbol_features() -> int:
 
     feature_df = attach_macro_regime_features(feature_df)
     print(f"Attached macro regime features")
+
+    feature_df = attach_premarket_features(feature_df)
+    print(f"Attached premarket/after-hours gap features")
 
     saved = save_features(feature_df)
     print(f"Saved {saved:,} feature rows to {FEATURE_COLLECTION}")

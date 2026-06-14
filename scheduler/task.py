@@ -238,6 +238,15 @@ def configure_schedule() -> None:
             },
         )
 
+    if env_bool("ENABLE_PREMARKET_JOB", "true"):
+        schedule.every().day.at(os.getenv("PREMARKET_JOB_TIME", "07:45")).do(
+            run_script_once,
+            "premarket_signals",
+            "premarket_collector/collector.py",
+            env_int("PREMARKET_JOB_TIMEOUT", 900),
+            {"PREMARKET_PERIOD": os.getenv("PREMARKET_PERIOD", "5d")},
+        )
+
     if env_bool("ENABLE_MACRO_JOB", "true"):
         schedule.every().day.at(os.getenv("MACRO_JOB_TIME", "07:50")).do(
             run_script_once,
