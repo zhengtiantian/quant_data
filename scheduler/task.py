@@ -267,6 +267,14 @@ def configure_schedule() -> None:
             env_int("DAILY_POSITION_JOB_TIMEOUT", 600),
         )
 
+    if env_bool("ENABLE_DATA_QUALITY_JOB", "true"):
+        schedule.every().day.at(os.getenv("DATA_QUALITY_JOB_TIME", "09:00")).do(
+            run_script_once,
+            "data_quality_check",
+            "research/data_quality_check.py",
+            env_int("DATA_QUALITY_JOB_TIMEOUT", 300),
+        )
+
     if env_bool("ENABLE_DAILY_BACKTEST_JOB", "true"):
         schedule.every().day.at(os.getenv("DAILY_BACKTEST_JOB_TIME", "08:45")).do(
             run_script_once,
