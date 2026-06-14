@@ -247,6 +247,14 @@ def configure_schedule() -> None:
             {"PREMARKET_PERIOD": os.getenv("PREMARKET_PERIOD", "5d")},
         )
 
+    if env_bool("ENABLE_ANALYST_JOB", "true"):
+        schedule.every().day.at(os.getenv("ANALYST_JOB_TIME", "07:48")).do(
+            run_script_once,
+            "analyst_consensus",
+            "analyst_collector/collector.py",
+            env_int("ANALYST_JOB_TIMEOUT", 600),
+        )
+
     if env_bool("ENABLE_MACRO_JOB", "true"):
         schedule.every().day.at(os.getenv("MACRO_JOB_TIME", "07:50")).do(
             run_script_once,

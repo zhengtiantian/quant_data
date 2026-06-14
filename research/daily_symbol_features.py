@@ -1004,6 +1004,9 @@ def save_features(feature_df: pd.DataFrame) -> int:
         for pc in PREMARKET_FEATURE_COLS:
             v = row.get(pc)
             record[pc] = float(v) if pd.notna(v) else None
+        for ac in ANALYST_FEATURE_COLS:
+            v = row.get(ac)
+            record[ac] = float(v) if pd.notna(v) else None
         ops.append(
             UpdateOne(
                 {"symbol": record["symbol"], "date": record["date"]},
@@ -1134,6 +1137,57 @@ def attach_premarket_features(feature_df: pd.DataFrame) -> pd.DataFrame:
     return merged.drop(columns=["_pm_key"])
 
 
+ANALYST_COLLECTION = os.getenv("ANALYST_COLLECTION", "analyst_consensus")
+ANALYST_FEATURE_COLS = [
+    "analyst_buy_ratio", "analyst_sell_ratio",
+    "analyst_consensus_score", "analyst_buy_ratio_chg_1m",
+]
+
+
+def load_analyst_frame() -> pd.DataFrame:
+    """Load analyst_consensus (monthly per symbol) from MongoDB."""
+    client = create_client()
+    col = client[DB_NAME][ANALYST_COLLECTION]
+    rows = list(col.find(
+        {},
+        {"_id": 0, "symbol": 1, "period": 1,
+         "analyst_buy_ratio": 1, "analyst_sell_ratio": 1,
+         "analyst_consensus_score": 1, "analyst_buy_ratio_chg_1m": 1},
+    ))
+    if not rows:
+        return pd.DataFrame()
+    df = pd.DataFrame(rows)
+    df["period"] = df["period"].astype(str).str[:7]  # "YYYY-MM"
+    for c in ANALYST_FEATURE_COLS:
+        df[c] = pd.to_numeric(df.get(c), errors="coerce")
+    return df
+
+
+def attach_analyst_features(feature_df: pd.DataFrame) -> pd.DataFrame:
+    """Left-join monthly analyst consensus onto feature_df.
+
+    Matches each trade_date to its calendar month (YYYY-MM) → avoids lookahead.
+    Uses composite key (symbol|YYYY-MM) to preserve trade_date dtype.
+    """
+    analyst_df = load_analyst_frame()
+    if analyst_df.empty or "trade_date" not in feature_df.columns:
+        return feature_df
+    feature_df = feature_df.copy()
+    # Build join key: symbol + YYYY-MM of trade_date
+    feature_df["_ana_key"] = (
+        feature_df["symbol"].astype(str) + "|"
+        + feature_df["trade_date"].astype(str).str[:7]
+    )
+    analyst_df["_ana_key"] = (
+        analyst_df["symbol"].astype(str) + "|"
+        + analyst_df["period"].astype(str).str[:7]
+    )
+    merged = feature_df.merge(
+        analyst_df[["_ana_key"] + ANALYST_FEATURE_COLS], on="_ana_key", how="left"
+    )
+    return merged.drop(columns=["_ana_key"])
+
+
 def build_daily_symbol_features() -> int:
     print("=== Building daily symbol features ===")
     news_df = load_news_frame()
@@ -1166,6 +1220,9 @@ def build_daily_symbol_features() -> int:
 
     feature_df = attach_premarket_features(feature_df)
     print(f"Attached premarket/after-hours gap features")
+
+    feature_df = attach_analyst_features(feature_df)
+    print(f"Attached analyst consensus features")
 
     saved = save_features(feature_df)
     print(f"Saved {saved:,} feature rows to {FEATURE_COLLECTION}")
