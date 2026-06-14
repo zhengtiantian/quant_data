@@ -1007,6 +1007,9 @@ def save_features(feature_df: pd.DataFrame) -> int:
         for ac in ANALYST_FEATURE_COLS:
             v = row.get(ac)
             record[ac] = float(v) if pd.notna(v) else None
+        for ic in INST13F_FEATURE_COLS:
+            v = row.get(ic)
+            record[ic] = float(v) if pd.notna(v) else None
         ops.append(
             UpdateOne(
                 {"symbol": record["symbol"], "date": record["date"]},
@@ -1188,6 +1191,37 @@ def attach_analyst_features(feature_df: pd.DataFrame) -> pd.DataFrame:
     return merged.drop(columns=["_ana_key"])
 
 
+INST13F_COLLECTION = os.getenv("INST13F_COLLECTION", "inst_13f_holdings")
+INST13F_FEATURE_COLS = ["inst_holding_pct", "inst_holding_pct_chg"]
+
+
+def load_inst13f_frame() -> pd.DataFrame:
+    """Load institutional 13F holding features (one row per symbol, latest quarter)."""
+    client = create_client()
+    col = client[DB_NAME][INST13F_COLLECTION]
+    rows = list(col.find(
+        {},
+        {"_id": 0, "symbol": 1, "inst_holding_pct": 1, "inst_holding_pct_chg": 1},
+    ))
+    if not rows:
+        return pd.DataFrame()
+    df = pd.DataFrame(rows)
+    for c in INST13F_FEATURE_COLS:
+        df[c] = pd.to_numeric(df.get(c), errors="coerce")
+    return df
+
+
+def attach_inst13f_features(feature_df: pd.DataFrame) -> pd.DataFrame:
+    """Left-join static institutional holding features onto feature_df by symbol.
+
+    These values are quarterly; broadcast to all trade_dates for each symbol.
+    """
+    inst_df = load_inst13f_frame()
+    if inst_df.empty or "symbol" not in feature_df.columns:
+        return feature_df
+    return feature_df.merge(inst_df[["symbol"] + INST13F_FEATURE_COLS], on="symbol", how="left")
+
+
 def build_daily_symbol_features() -> int:
     print("=== Building daily symbol features ===")
     news_df = load_news_frame()
@@ -1223,6 +1257,9 @@ def build_daily_symbol_features() -> int:
 
     feature_df = attach_analyst_features(feature_df)
     print(f"Attached analyst consensus features")
+
+    feature_df = attach_inst13f_features(feature_df)
+    print(f"Attached institutional 13F holding features")
 
     saved = save_features(feature_df)
     print(f"Saved {saved:,} feature rows to {FEATURE_COLLECTION}")

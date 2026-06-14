@@ -247,6 +247,14 @@ def configure_schedule() -> None:
             {"PREMARKET_PERIOD": os.getenv("PREMARKET_PERIOD", "5d")},
         )
 
+    if env_bool("ENABLE_INST13F_JOB", "true"):
+        schedule.every().sunday.at(os.getenv("INST13F_JOB_TIME", "06:00")).do(
+            run_script_once,
+            "inst_13f_holdings",
+            "inst_13f_collector/collector.py",
+            env_int("INST13F_JOB_TIMEOUT", 1800),
+        )
+
     if env_bool("ENABLE_ANALYST_JOB", "true"):
         schedule.every().day.at(os.getenv("ANALYST_JOB_TIME", "07:48")).do(
             run_script_once,
