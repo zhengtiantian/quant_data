@@ -238,6 +238,15 @@ def configure_schedule() -> None:
             },
         )
 
+    if env_bool("ENABLE_MACRO_JOB", "true"):
+        schedule.every().day.at(os.getenv("MACRO_JOB_TIME", "07:50")).do(
+            run_script_once,
+            "macro_indicators",
+            "macro_collector/collector.py",
+            env_int("MACRO_JOB_TIMEOUT", 600),
+            {"MACRO_PERIOD": os.getenv("MACRO_PERIOD", "1mo")},
+        )
+
     if env_bool("ENABLE_DAILY_FEATURE_JOB", "true"):
         schedule.every().day.at(os.getenv("DAILY_FEATURE_JOB_TIME", "08:00")).do(
             run_script_once,

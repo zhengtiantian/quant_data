@@ -998,6 +998,9 @@ def save_features(feature_df: pd.DataFrame) -> int:
             for h in FORWARD_HORIZONS:
                 key = f"{prefix}_ret_{h}d"
                 record[key] = float(row[key]) if pd.notna(row.get(key)) else None
+        for mc in MACRO_FEATURE_COLS:
+            v = row.get(mc)
+            record[mc] = float(v) if pd.notna(v) else None
         ops.append(
             UpdateOne(
                 {"symbol": record["symbol"], "date": record["date"]},
@@ -1011,6 +1014,73 @@ def save_features(feature_df: pd.DataFrame) -> int:
 
     result = col.bulk_write(ops, ordered=False)
     return result.upserted_count + result.modified_count
+
+
+MACRO_COLLECTION = os.getenv("MACRO_COLLECTION", "macro_indicators")
+MACRO_FEATURE_COLS = [
+    "macro_vix", "macro_vix_change_5d", "macro_vix_pctile_252d", "macro_is_high_vol",
+    "macro_tnx", "macro_tnx_change_20d", "macro_dxy_change_20d",
+    "macro_spy_above_200ma", "macro_spy_ret_20d", "macro_risk_on",
+]
+
+
+def load_macro_frame() -> pd.DataFrame:
+    """Load the macro_indicators time series (vix/tnx/dxy/spy_close by date)."""
+    client = create_client()
+    col = client[DB_NAME][MACRO_COLLECTION]
+    rows = list(col.find({}, {"_id": 0, "date": 1, "vix": 1, "tnx": 1, "dxy": 1, "spy_close": 1}))
+    if not rows:
+        return pd.DataFrame()
+    df = pd.DataFrame(rows)
+    df["date"] = df["date"].astype(str).str[:10]
+    return df.sort_values("date").reset_index(drop=True)
+
+
+def compute_regime_features(macro_df: pd.DataFrame) -> pd.DataFrame:
+    """Market-level regime features (one row per trading date)."""
+    if macro_df.empty:
+        return pd.DataFrame(columns=["trade_date"])
+    m = macro_df.sort_values("date").copy()
+    for c in ["vix", "tnx", "dxy", "spy_close"]:
+        m[c] = pd.to_numeric(m.get(c), errors="coerce")
+
+    m["macro_vix"] = m["vix"]
+    m["macro_vix_change_5d"] = m["vix"] - m["vix"].shift(5)
+    m["macro_vix_pctile_252d"] = m["vix"].rolling(252, min_periods=30).apply(
+        lambda s: float((s <= s[-1]).mean()), raw=True)
+    m["macro_is_high_vol"] = (m["macro_vix_pctile_252d"] > 0.8).astype("Int64")
+
+    m["macro_tnx"] = m["tnx"]
+    m["macro_tnx_change_20d"] = m["tnx"] - m["tnx"].shift(20)
+    m["macro_dxy_change_20d"] = (m["dxy"] / m["dxy"].shift(20)) - 1.0
+
+    ma200 = m["spy_close"].rolling(200, min_periods=50).mean()
+    m["macro_spy_above_200ma"] = (m["spy_close"] > ma200).astype("Int64")
+    m["macro_spy_ret_20d"] = (m["spy_close"] / m["spy_close"].shift(20)) - 1.0
+    # risk-on = uptrend AND not in a volatility spike
+    m["macro_risk_on"] = ((m["macro_spy_above_200ma"] == 1) & (m["macro_is_high_vol"] != 1)).astype("Int64")
+
+    cols = ["date", "macro_vix", "macro_vix_change_5d", "macro_vix_pctile_252d",
+            "macro_is_high_vol", "macro_tnx", "macro_tnx_change_20d", "macro_dxy_change_20d",
+            "macro_spy_above_200ma", "macro_spy_ret_20d", "macro_risk_on"]
+    return m[cols].rename(columns={"date": "trade_date"})
+
+
+def attach_macro_regime_features(feature_df: pd.DataFrame) -> pd.DataFrame:
+    """Broadcast market-level regime features onto every symbol-date row.
+
+    Merges on a temporary string key so the original trade_date dtype
+    (a Timestamp, relied on by save_features) is preserved.
+    """
+    regime = compute_regime_features(load_macro_frame())
+    if regime.empty or "trade_date" not in feature_df.columns:
+        return feature_df
+    feature_df = feature_df.copy()
+    feature_df["_macro_key"] = feature_df["trade_date"].astype(str).str[:10]
+    regime = regime.rename(columns={"trade_date": "_macro_key"})
+    regime["_macro_key"] = regime["_macro_key"].astype(str).str[:10]
+    merged = feature_df.merge(regime, on="_macro_key", how="left")
+    return merged.drop(columns=["_macro_key"])
 
 
 def build_daily_symbol_features() -> int:
@@ -1039,6 +1109,9 @@ def build_daily_symbol_features() -> int:
     llm_features = aggregate_llm_sentiment_features(llm_df)
     feature_df = attach_llm_sentiment_features(feature_df, llm_features)
     print(f"Attached LLM sentiment features")
+
+    feature_df = attach_macro_regime_features(feature_df)
+    print(f"Attached macro regime features")
 
     saved = save_features(feature_df)
     print(f"Saved {saved:,} feature rows to {FEATURE_COLLECTION}")
