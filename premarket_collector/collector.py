@@ -10,10 +10,11 @@ Extracts:
 
 Upserts per (symbol, trade_date) to `premarket_signals` collection.
 
-Limitation: yfinance only provides 1m data for the last ~30 days.
-Historical rows in daily_symbol_features will have NULL for these fields.
+Yahoo Finance 1m limit: max 8 days per request, up to 30 days look-back.
+We chunk into 7-day windows to stay within the limit.
 
-Run daily at 07:45 (after price quotes at 07:30, before feature build at 08:00).
+Daily job (PREMARKET_BACKFILL_DAYS=7): 1 request per symbol at 07:45.
+Initial backfill (PREMARKET_BACKFILL_DAYS=30): ~5 requests per symbol.
 """
 
 from __future__ import annotations
@@ -21,7 +22,7 @@ from __future__ import annotations
 import os
 import time
 import zoneinfo
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 
 import yfinance as yf
 from pymongo import MongoClient, UpdateOne
@@ -30,16 +31,18 @@ MONGO_URI = os.getenv("MONGO_URI") or os.getenv("LOCAL_MONGO_URI", "mongodb://ro
 DB_NAME = "quant_data"
 COLLECTION = "premarket_signals"
 UNIVERSE_COLLECTION = "stock_universe"
-PERIOD = os.getenv("PREMARKET_PERIOD", "5d")
-SLEEP_BETWEEN = float(os.getenv("PREMARKET_SLEEP", "0.6"))
+
+# How many calendar days to look back (chunked into 7-day windows)
+BACKFILL_DAYS = int(os.getenv("PREMARKET_BACKFILL_DAYS", "7"))
+CHUNK_DAYS = 7          # Yahoo 1m limit is 8 days; use 7 to be safe
+SLEEP_BETWEEN = float(os.getenv("PREMARKET_SLEEP", "0.8"))
 
 ET = zoneinfo.ZoneInfo("America/New_York")
 
-# Extended hours boundaries (ET hour, inclusive/exclusive)
-_PM_START_H = 4   # 04:00 ET — pre-market open
-_PM_END_H = 9     # 09:30 ET — use hour<9 or (hour==9 and minute<30)
-_AH_START_H = 16  # 16:00 ET — after-hours open
-_AH_END_H = 20    # 20:00 ET — after-hours close
+# Extended hours boundaries (ET hour)
+_PM_START_H = 4    # 04:00 ET — pre-market open
+_AH_START_H = 16   # 16:00 ET — after-hours open
+_AH_END_H = 20     # 20:00 ET — after-hours close
 
 
 def load_universe() -> list[str]:
@@ -48,28 +51,33 @@ def load_universe() -> list[str]:
     return sorted(d["symbol"] for d in docs)
 
 
-def fetch_extended(symbol: str) -> dict[str, dict]:
-    """Return {date_str: {pm_*, ah_*, reg_*}} for last PERIOD days."""
-    try:
-        tk = yf.Ticker(symbol)
-        df = tk.history(period=PERIOD, interval="1m", prepost=True, auto_adjust=False)
-    except Exception as e:
-        print(f"  {symbol}: download error — {e}")
-        return {}
+def _date_windows(total_days: int) -> list[tuple[date, date]]:
+    """Split [today-total_days, today] into CHUNK_DAYS-day windows (newest first)."""
+    end = datetime.now(ET).date()
+    start = end - timedelta(days=total_days)
+    windows: list[tuple[date, date]] = []
+    cur_end = end
+    while cur_end > start:
+        cur_start = max(cur_end - timedelta(days=CHUNK_DAYS - 1), start)
+        windows.append((cur_start, cur_end + timedelta(days=1)))  # yf end is exclusive
+        cur_end = cur_start - timedelta(days=1)
+    return windows
 
+
+def _parse_df(df) -> dict[str, dict]:
+    """Extract {date_str: {pm_*, ah_*, reg_*}} from a 1m OHLCV DataFrame."""
     if df is None or df.empty:
         return {}
 
-    # Normalise timezone to ET
     if df.index.tz is None:
         df.index = df.index.tz_localize("UTC")
     df.index = df.index.tz_convert(ET)
 
     per_date: dict[str, dict] = {}
 
-    # ── Regular session (09:30–16:00 ET) ──────────────────────────
+    # Regular session: 09:30–16:00 ET
     reg = df[
-        ((df.index.hour == 9) & (df.index.minute >= 30) | (df.index.hour > 9))
+        (((df.index.hour == 9) & (df.index.minute >= 30)) | (df.index.hour > 9))
         & (df.index.hour < 16)
     ]
     for dt, grp in reg.groupby(reg.index.date):
@@ -81,36 +89,57 @@ def fetch_extended(symbol: str) -> dict[str, dict]:
         per_date[d]["reg_close"] = float(grp["Close"].iloc[-1])
         per_date[d]["reg_volume"] = float(grp["Volume"].sum())
 
-    # ── Pre-market (04:00–09:29 ET) ───────────────────────────────
+    # Pre-market: 04:00–09:29 ET
     pm = df[
         (df.index.hour >= _PM_START_H)
-        & ((df.index.hour < _PM_END_H) | ((df.index.hour == 9) & (df.index.minute < 30)))
+        & ((df.index.hour < 9) | ((df.index.hour == 9) & (df.index.minute < 30)))
     ]
     for dt, grp in pm.groupby(pm.index.date):
         if grp.empty:
             continue
         d = dt.isoformat()
         per_date.setdefault(d, {})
-        per_date[d]["pm_first"] = float(grp["Close"].iloc[0])
         per_date[d]["pm_last"] = float(grp["Close"].iloc[-1])
         per_date[d]["pm_volume"] = float(grp["Volume"].sum())
 
-    # ── After-hours (16:00–20:00 ET) ──────────────────────────────
+    # After-hours: 16:00–20:00 ET
     ah = df[(df.index.hour >= _AH_START_H) & (df.index.hour < _AH_END_H)]
     for dt, grp in ah.groupby(ah.index.date):
         if grp.empty:
             continue
         d = dt.isoformat()
         per_date.setdefault(d, {})
-        per_date[d]["ah_first"] = float(grp["Close"].iloc[0])
         per_date[d]["ah_last"] = float(grp["Close"].iloc[-1])
         per_date[d]["ah_volume"] = float(grp["Volume"].sum())
 
     return per_date
 
 
+def fetch_symbol(symbol: str, windows: list[tuple[date, date]]) -> dict[str, dict]:
+    """Fetch all windows for one symbol, merge into a single per_date dict."""
+    merged: dict[str, dict] = {}
+    tk = yf.Ticker(symbol)
+    for win_start, win_end in windows:
+        try:
+            df = tk.history(
+                start=win_start.isoformat(),
+                end=win_end.isoformat(),
+                interval="1m",
+                prepost=True,
+                auto_adjust=False,
+            )
+        except Exception as e:
+            print(f"    {symbol} [{win_start}→{win_end}] error: {e}")
+            continue
+        chunk = _parse_df(df)
+        for d, vals in chunk.items():
+            merged.setdefault(d, {}).update(vals)
+        time.sleep(0.3)  # small pause between chunks for same symbol
+    return merged
+
+
 def compute_signals(symbol: str, per_date: dict[str, dict]) -> list[dict]:
-    """Derive gap / volume-ratio metrics from raw per-date buckets."""
+    """Derive gap / volume-ratio metrics. Needs chronological per_date."""
     dates = sorted(per_date.keys())
     now = datetime.now(UTC)
     records: list[dict] = []
@@ -118,27 +147,26 @@ def compute_signals(symbol: str, per_date: dict[str, dict]) -> list[dict]:
     for i, d in enumerate(dates):
         row = per_date[d]
         reg_close = row.get("reg_close")
-        reg_volume = row.get("reg_volume") or None
-
         if reg_close is None:
-            continue  # no regular session data → skip
+            continue
 
+        reg_volume = row.get("reg_volume") or None
         prev_close = per_date[dates[i - 1]].get("reg_close") if i > 0 else None
 
-        # Pre-market gap: pm_last vs previous day's regular close
+        # Pre-market gap: pm_last vs previous day's close
         pm_gap: float | None = None
         pm_volume_ratio: float | None = None
         if prev_close and prev_close > 0 and row.get("pm_last"):
             pm_gap = (row["pm_last"] - prev_close) / prev_close
-        if row.get("pm_volume") is not None and reg_volume and reg_volume > 0:
+        if row.get("pm_volume") and reg_volume and reg_volume > 0:
             pm_volume_ratio = row["pm_volume"] / reg_volume
 
-        # After-hours gap: ah_last vs same-day regular close
+        # After-hours gap: ah_last vs same-day close
         ah_gap: float | None = None
         ah_volume_ratio: float | None = None
         if reg_close > 0 and row.get("ah_last"):
             ah_gap = (row["ah_last"] - reg_close) / reg_close
-        if row.get("ah_volume") is not None and reg_volume and reg_volume > 0:
+        if row.get("ah_volume") and reg_volume and reg_volume > 0:
             ah_volume_ratio = row["ah_volume"] / reg_volume
 
         records.append({
@@ -156,12 +184,9 @@ def compute_signals(symbol: str, per_date: dict[str, dict]) -> list[dict]:
     return records
 
 
-def upsert_records(records: list[dict]) -> None:
+def upsert_batch(records: list[dict], col) -> tuple[int, int]:
     if not records:
-        return
-    client = MongoClient(MONGO_URI)
-    col = client[DB_NAME][COLLECTION]
-    col.create_index([("symbol", 1), ("trade_date", 1)], unique=True, background=True)
+        return 0, 0
     ops = [
         UpdateOne(
             {"symbol": r["symbol"], "trade_date": r["trade_date"]},
@@ -171,34 +196,30 @@ def upsert_records(records: list[dict]) -> None:
         for r in records
     ]
     res = col.bulk_write(ops)
-    print(f"  upserted={res.upserted_count} modified={res.modified_count}")
+    return res.upserted_count, res.modified_count
 
 
 def main() -> None:
-    print(f"=== Pre/after-market collector (period={PERIOD}) ===")
+    windows = _date_windows(BACKFILL_DAYS)
+    mode = "backfill" if BACKFILL_DAYS > 7 else "daily"
+    print(f"=== Pre/after-market collector ({mode}, {BACKFILL_DAYS}d, {len(windows)} chunks) ===")
+
     symbols = load_universe()
     print(f"Universe: {len(symbols)} symbols")
 
+    client = MongoClient(MONGO_URI)
+    col = client[DB_NAME][COLLECTION]
+    col.create_index([("symbol", 1), ("trade_date", 1)], unique=True, background=True)
+
     total_up = total_mod = 0
     for sym in symbols:
-        per_date = fetch_extended(sym)
+        per_date = fetch_symbol(sym, windows)
         records = compute_signals(sym, per_date)
+        up, mod = upsert_batch(records, col)
+        total_up += up
+        total_mod += mod
         if records:
-            client = MongoClient(MONGO_URI)
-            col = client[DB_NAME][COLLECTION]
-            col.create_index([("symbol", 1), ("trade_date", 1)], unique=True, background=True)
-            ops = [
-                UpdateOne(
-                    {"symbol": r["symbol"], "trade_date": r["trade_date"]},
-                    {"$set": r},
-                    upsert=True,
-                )
-                for r in records
-            ]
-            res = col.bulk_write(ops)
-            total_up += res.upserted_count
-            total_mod += res.modified_count
-            print(f"  {sym:6} {len(records)} dates  up={res.upserted_count} mod={res.modified_count}")
+            print(f"  {sym:6} {len(records)} dates  up={up} mod={mod}")
         else:
             print(f"  {sym:6} no data")
         time.sleep(SLEEP_BETWEEN)
