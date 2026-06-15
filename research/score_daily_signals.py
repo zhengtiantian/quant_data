@@ -31,16 +31,36 @@ SIGNAL_COLLECTION = "daily_signals"
 TOP_N = int(os.getenv("SIGNAL_TOP_N", "10"))
 LOOKBACK_DAYS = int(os.getenv("SIGNAL_LOOKBACK_DAYS", "1"))
 
+# Cross-sectional alpha weights (each feature is rank-normalised to [-0.5, +0.5])
+# Weights are calibrated to approximate IC contribution at the 20-60d horizon.
 _WEIGHTS = {
+    # --- news quality ---
     "quality_score":        1.0,
     "news_burst_20d":       0.8,
     "full_ratio":           0.5,
+    # --- LLM sentiment ---
     "avg_sentiment_5d":     1.5,
     "sentiment_shift_5d":   0.8,
     "earnings_beat_signal": 1.2,
     "high_signal_count_3d": 0.6,
-    "past_ret_20d":        -0.3,  # mild reversal
+    # --- price momentum ---
+    "past_ret_20d":        -0.3,   # mild mean-reversion
+    # --- D.8 pre/after-market (short-term momentum) ---
+    "ah_gap":               1.2,   # CS IC5d = +0.23
+    # --- D.4 analyst consensus ---
+    "analyst_buy_ratio_chg_1m": 0.9,  # CS IC20d = +0.15
+    "analyst_buy_ratio":        0.7,  # CS IC20d = +0.11
+    # --- D.7 institutional 13F ---
+    "inst_holding_pct_chg": 0.6,   # CS IC60d = +0.20, scaled for daily
+    # --- D.2 retail sentiment ---
+    "retail_sent_score":    0.3,   # IC5d = +0.09, sparse but directional
 }
+
+# Macro regime: multiplier applied to the final composite score.
+# macro_risk_on=1 / low VIX → bullish regime → amplify signals.
+# macro_risk_on=0 / extreme VIX → reduce signal conviction.
+_MACRO_REGIME_BOOST = 0.2      # bonus multiplier when risk_on=1
+_MACRO_HIGH_VOL_PENALTY = 0.15  # reduction multiplier when vix_pctile > 0.8
 
 
 def load_latest_features(col) -> pd.DataFrame:
@@ -59,11 +79,26 @@ def compute_score(df: pd.DataFrame) -> pd.DataFrame:
         if feat not in df.columns:
             continue
         col = pd.to_numeric(df[feat], errors="coerce").fillna(0.0)
-        # cross-sectional rank normalised to [-0.5, 0.5]
+        # cross-sectional rank normalised to [-0.5, +0.5]
         ranked = col.rank(pct=True) - 0.5
         score += w * ranked
+
+    # Macro regime multiplier (applies same factor to all symbols on the date,
+    # so it doesn't change cross-sectional ranking but scales signal conviction).
+    regime_mult = 1.0
+    if "macro_risk_on" in df.columns:
+        risk_on = pd.to_numeric(df["macro_risk_on"], errors="coerce").iloc[0]
+        if pd.notna(risk_on) and risk_on == 1:
+            regime_mult += _MACRO_REGIME_BOOST
+    if "macro_vix_pctile_252d" in df.columns:
+        vix_pct = pd.to_numeric(df["macro_vix_pctile_252d"], errors="coerce").iloc[0]
+        if pd.notna(vix_pct) and vix_pct > 0.8:
+            regime_mult -= _MACRO_HIGH_VOL_PENALTY
+    score *= max(regime_mult, 0.5)  # floor at 0.5× to avoid sign flip
+
     df["composite_score"] = score
     df["signal_rank"] = score.rank(ascending=False).astype(int)
+    df["regime_mult"] = regime_mult
     return df
 
 
@@ -80,13 +115,22 @@ def build_signal_docs(df: pd.DataFrame, top_n: int) -> list[dict]:
             "signal_rank": rank,
             "signal_type": signal_type,
             "top_n": top_n,
-            # key features for context
+            "regime_mult": _safe_float(row.get("regime_mult")),
+            # existing context fields
             "avg_sentiment_5d": _safe_float(row.get("avg_sentiment_5d")),
             "sentiment_shift_5d": _safe_float(row.get("sentiment_shift_5d")),
             "earnings_beat_signal": _safe_int(row.get("earnings_beat_signal")),
             "earnings_miss_signal": _safe_int(row.get("earnings_miss_signal")),
             "news_burst_20d": _safe_float(row.get("news_burst_20d")),
             "quality_score": _safe_float(row.get("quality_score")),
+            # D-series context fields
+            "ah_gap": _safe_float(row.get("ah_gap")),
+            "analyst_buy_ratio": _safe_float(row.get("analyst_buy_ratio")),
+            "analyst_buy_ratio_chg_1m": _safe_float(row.get("analyst_buy_ratio_chg_1m")),
+            "inst_holding_pct_chg": _safe_float(row.get("inst_holding_pct_chg")),
+            "retail_sent_score": _safe_float(row.get("retail_sent_score")),
+            "macro_risk_on": _safe_int(row.get("macro_risk_on")),
+            "macro_vix": _safe_float(row.get("macro_vix")),
             "published_at": datetime.now(timezone.utc),
         }
         docs.append(doc)
@@ -147,10 +191,17 @@ def main() -> None:
     upsert_signals(signal_col, docs)
 
     top = [d for d in docs if d["signal_type"] == "LONG"]
-    print(f"\nTop {TOP_N} signals for {trade_date_str}:")
+    regime = docs[0].get("regime_mult", 1.0) if docs else 1.0
+    print(f"\nTop {TOP_N} signals for {trade_date_str}  [regime_mult={regime:.2f}]:")
+    print(f"  {'#':>2} {'sym':<6}  {'score':>7}  {'sent5d':>6}  {'ah_gap':>6}  "
+          f"{'ana_chg':>7}  {'inst_chg':>8}  {'beat':>4}")
     for d in top:
-        print(f"  #{d['signal_rank']:>2} {d['symbol']:<6}  score={d['composite_score']:+.4f}"
-              f"  sent={d['avg_sentiment_5d']}  beat={d['earnings_beat_signal']}")
+        print(f"  #{d['signal_rank']:>2} {d['symbol']:<6}  {d['composite_score']:>+7.4f}"
+              f"  {str(d.get('avg_sentiment_5d') or ''):>6}"
+              f"  {str(d.get('ah_gap') or ''):>6}"
+              f"  {str(d.get('analyst_buy_ratio_chg_1m') or ''):>7}"
+              f"  {str(d.get('inst_holding_pct_chg') or ''):>8}"
+              f"  {d.get('earnings_beat_signal', 0):>4}")
 
 
 if __name__ == "__main__":
