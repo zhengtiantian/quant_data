@@ -1010,6 +1010,9 @@ def save_features(feature_df: pd.DataFrame) -> int:
         for ic in INST13F_FEATURE_COLS:
             v = row.get(ic)
             record[ic] = float(v) if pd.notna(v) else None
+        for rc in RETAIL_FEATURE_COLS:
+            v = row.get(rc)
+            record[rc] = float(v) if pd.notna(v) else None
         ops.append(
             UpdateOne(
                 {"symbol": record["symbol"], "date": record["date"]},
@@ -1222,6 +1225,72 @@ def attach_inst13f_features(feature_df: pd.DataFrame) -> pd.DataFrame:
     return feature_df.merge(inst_df[["symbol"] + INST13F_FEATURE_COLS], on="symbol", how="left")
 
 
+RETAIL_COLLECTION = os.getenv("RETAIL_COLLECTION", "retail_sentiment")
+RETAIL_FEATURE_COLS = [
+    "retail_msg_count",
+    "retail_bull_ratio",
+    "retail_sent_score",
+    "retail_sentiment_divergence",
+]
+
+
+def load_retail_frame() -> pd.DataFrame:
+    """Load retail sentiment features (one row per symbol+date) from StockTwits."""
+    client = create_client()
+    col = client[DB_NAME][RETAIL_COLLECTION]
+    rows = list(col.find(
+        {},
+        {"_id": 0, "symbol": 1, "date": 1,
+         "retail_msg_count": 1, "retail_bull_ratio": 1, "retail_sent_score": 1},
+    ))
+    if not rows:
+        return pd.DataFrame()
+    df = pd.DataFrame(rows)
+    for c in ["retail_msg_count", "retail_bull_ratio", "retail_sent_score"]:
+        df[c] = pd.to_numeric(df.get(c), errors="coerce")
+    return df
+
+
+def attach_retail_features(feature_df: pd.DataFrame) -> pd.DataFrame:
+    """Left-join retail sentiment features onto feature_df by symbol+date.
+
+    Also derives retail_sentiment_divergence = retail_sent_score - avg_sentiment_3d
+    (retail crowd vs LLM-scored institutional news, range roughly -2 to +2).
+    """
+    retail_df = load_retail_frame()
+    if retail_df.empty or "symbol" not in feature_df.columns:
+        for c in RETAIL_FEATURE_COLS:
+            if c not in feature_df.columns:
+                feature_df[c] = None
+        return feature_df
+
+    feature_df = feature_df.copy()
+    feature_df["_ret_key"] = (
+        feature_df["symbol"].astype(str)
+        + "|"
+        + feature_df["trade_date"].astype(str).str[:10]
+    )
+    retail_df["_ret_key"] = (
+        retail_df["symbol"].astype(str)
+        + "|"
+        + retail_df["date"].astype(str).str[:10]
+    )
+    merged = feature_df.merge(
+        retail_df[["_ret_key", "retail_msg_count", "retail_bull_ratio", "retail_sent_score"]],
+        on="_ret_key",
+        how="left",
+    ).drop(columns=["_ret_key"])
+
+    if "avg_sentiment_3d" in merged.columns:
+        merged["retail_sentiment_divergence"] = (
+            merged["retail_sent_score"] - merged["avg_sentiment_3d"]
+        )
+    else:
+        merged["retail_sentiment_divergence"] = None
+
+    return merged
+
+
 def build_daily_symbol_features() -> int:
     print("=== Building daily symbol features ===")
     news_df = load_news_frame()
@@ -1260,6 +1329,9 @@ def build_daily_symbol_features() -> int:
 
     feature_df = attach_inst13f_features(feature_df)
     print(f"Attached institutional 13F holding features")
+
+    feature_df = attach_retail_features(feature_df)
+    print(f"Attached retail sentiment features (StockTwits)")
 
     saved = save_features(feature_df)
     print(f"Saved {saved:,} feature rows to {FEATURE_COLLECTION}")

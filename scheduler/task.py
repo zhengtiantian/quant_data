@@ -263,6 +263,14 @@ def configure_schedule() -> None:
             env_int("ANALYST_JOB_TIMEOUT", 600),
         )
 
+    if env_bool("ENABLE_RETAIL_JOB", "true"):
+        schedule.every().day.at(os.getenv("RETAIL_JOB_TIME", "20:30")).do(
+            run_script_once,
+            "retail_sentiment",
+            "retail_collector/collector.py",
+            env_int("RETAIL_JOB_TIMEOUT", 600),
+        )
+
     if env_bool("ENABLE_MACRO_JOB", "true"):
         schedule.every().day.at(os.getenv("MACRO_JOB_TIME", "07:50")).do(
             run_script_once,
