@@ -233,6 +233,34 @@ def load_feature_frame(
         "earnings_miss_signal": 1,
         "disagreement_avg_5d": 1,
         "negative_event_count_5d": 1,
+        # D.8 — pre/after-market gaps
+        "pm_gap": 1,
+        "ah_gap": 1,
+        "ah_volume_ratio": 1,
+        # D.4 — analyst consensus
+        "analyst_buy_ratio": 1,
+        "analyst_sell_ratio": 1,
+        "analyst_consensus_score": 1,
+        "analyst_buy_ratio_chg_1m": 1,
+        # D.7 — institutional 13F holdings
+        "inst_holding_pct": 1,
+        "inst_holding_pct_chg": 1,
+        # D.1 — macro regime
+        "macro_vix": 1,
+        "macro_vix_pctile_252d": 1,
+        "macro_vix_change_5d": 1,
+        "macro_tnx": 1,
+        "macro_tnx_change_20d": 1,
+        "macro_spy_ret_20d": 1,
+        "macro_spy_above_200ma": 1,
+        "macro_risk_on": 1,
+        "macro_is_high_vol": 1,
+        "macro_dxy_change_20d": 1,
+        # D.2 — retail sentiment
+        "retail_bull_ratio": 1,
+        "retail_sent_score": 1,
+        # price data
+        "close": 1,
     }
     rows = list(coll.find(query, projection))
     if not rows:

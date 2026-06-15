@@ -27,7 +27,11 @@ from dotenv import load_dotenv
 
 from backtest_news_factor import load_feature_frame
 
-SECTOR_REL_COLS = ["full_ratio", "quality_score", "news_burst_20d", "earnings_recency_weight"]
+SECTOR_REL_COLS = [
+    "full_ratio", "quality_score", "news_burst_20d", "earnings_recency_weight",
+    # D-series cross-sectional features worth sector-normalising
+    "analyst_buy_ratio", "analyst_buy_ratio_chg_1m", "inst_holding_pct_chg",
+]
 
 
 def add_sector_relative_features(df: pd.DataFrame) -> pd.DataFrame:
@@ -45,7 +49,7 @@ def add_sector_relative_features(df: pd.DataFrame) -> pd.DataFrame:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--collection", default="daily_symbol_features_company_matched_v2")
+    parser.add_argument("--collection", default="daily_symbol_features")
     parser.add_argument("--db", default="quant_data")
     parser.add_argument("--min-trade-date", default="2015-12-04")
     parser.add_argument("--target", default="all",
@@ -96,6 +100,12 @@ def walk_forward_rank_eval(
     df = df.dropna(subset=[target]).copy()
     if df.empty:
         return
+
+    available = [f for f in features if f in df.columns]
+    dropped = [f for f in features if f not in df.columns]
+    if dropped:
+        print(f"  [info] {len(dropped)} features not in collection, skipped: {dropped[:6]}{'...' if len(dropped)>6 else ''}")
+    features = available
 
     df["year"] = df["trade_date"].dt.year
     years = sorted(df["year"].unique())
@@ -205,9 +215,16 @@ def walk_forward_train_eval(
         print("Data is empty after dropping missing values.")
         return
 
+    # Drop features not present in the loaded dataframe (e.g. D-series on old collections)
+    available = [f for f in features if f in df.columns]
+    dropped = [f for f in features if f not in df.columns]
+    if dropped:
+        print(f"  [info] {len(dropped)} features not in collection, skipped: {dropped[:6]}{'...' if len(dropped)>6 else ''}")
+    features = available
+
     df["year"] = df["trade_date"].dt.year
     years = sorted(df["year"].unique())
-    
+
     categorical_features = ["sector"]
     numeric_features = [f for f in features if f != "sector"]
 
@@ -439,6 +456,34 @@ def main():
         "full_ratio_sector_rel",
         "quality_score_sector_rel",
         "news_burst_20d_sector_rel",
+        # D.8 — pre/after-market gaps
+        "pm_gap",
+        "ah_gap",
+        "ah_volume_ratio",
+        # D.4 — analyst consensus
+        "analyst_buy_ratio",
+        "analyst_consensus_score",
+        "analyst_buy_ratio_chg_1m",
+        "analyst_buy_ratio_sector_rel",
+        "analyst_buy_ratio_chg_1m_sector_rel",
+        # D.7 — institutional 13F
+        "inst_holding_pct",
+        "inst_holding_pct_chg",
+        "inst_holding_pct_chg_sector_rel",
+        # D.1 — macro regime
+        "macro_vix",
+        "macro_vix_pctile_252d",
+        "macro_vix_change_5d",
+        "macro_tnx",
+        "macro_tnx_change_20d",
+        "macro_spy_ret_20d",
+        "macro_spy_above_200ma",
+        "macro_risk_on",
+        "macro_is_high_vol",
+        "macro_dxy_change_20d",
+        # D.2 — retail sentiment (sparse but directional)
+        "retail_bull_ratio",
+        "retail_sent_score",
         # sector
         "sector",
     ]
