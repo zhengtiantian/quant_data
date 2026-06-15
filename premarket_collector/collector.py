@@ -158,16 +158,20 @@ def compute_signals(symbol: str, per_date: dict[str, dict]) -> list[dict]:
         pm_volume_ratio: float | None = None
         if prev_close and prev_close > 0 and row.get("pm_last"):
             pm_gap = (row["pm_last"] - prev_close) / prev_close
-        if row.get("pm_volume") and reg_volume and reg_volume > 0:
-            pm_volume_ratio = row["pm_volume"] / reg_volume
+        # yfinance returns 0 volume for pre-market bars on most symbols;
+        # only compute ratio when pm_volume > 0 to avoid a meaningless 0 feature.
+        pm_vol = row.get("pm_volume")
+        if pm_vol is not None and pm_vol > 0 and reg_volume and reg_volume > 0:
+            pm_volume_ratio = pm_vol / reg_volume
 
         # After-hours gap: ah_last vs same-day close
         ah_gap: float | None = None
         ah_volume_ratio: float | None = None
         if reg_close > 0 and row.get("ah_last"):
             ah_gap = (row["ah_last"] - reg_close) / reg_close
-        if row.get("ah_volume") and reg_volume and reg_volume > 0:
-            ah_volume_ratio = row["ah_volume"] / reg_volume
+        ah_vol = row.get("ah_volume")
+        if ah_vol is not None and ah_vol > 0 and reg_volume and reg_volume > 0:
+            ah_volume_ratio = ah_vol / reg_volume
 
         records.append({
             "symbol": symbol,

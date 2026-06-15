@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import math
 import os
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from pathlib import Path
 from urllib.parse import urlparse, urlunparse
 
@@ -1097,7 +1097,7 @@ def attach_macro_regime_features(feature_df: pd.DataFrame) -> pd.DataFrame:
 
 PREMARKET_COLLECTION = os.getenv("PREMARKET_COLLECTION", "premarket_signals")
 PREMARKET_FEATURE_COLS = [
-    "pm_gap", "pm_volume_ratio", "ah_gap", "ah_volume_ratio",
+    "pm_gap", "ah_gap", "ah_volume_ratio",
 ]
 
 
@@ -1108,7 +1108,7 @@ def load_premarket_frame() -> pd.DataFrame:
     rows = list(col.find(
         {},
         {"_id": 0, "symbol": 1, "trade_date": 1,
-         "pm_gap": 1, "pm_volume_ratio": 1, "ah_gap": 1, "ah_volume_ratio": 1},
+         "pm_gap": 1, "ah_gap": 1, "ah_volume_ratio": 1},
     ))
     if not rows:
         return pd.DataFrame()
