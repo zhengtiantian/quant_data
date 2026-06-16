@@ -34,6 +34,8 @@ ENTRY_TOP_N = int(os.getenv("POSITION_ENTRY_TOP_N", "5"))      # open the day's 
 MAX_HOLD_DAYS = int(os.getenv("POSITION_MAX_HOLD_DAYS", "60"))  # trading days
 EXIT_SCORE = float(os.getenv("POSITION_EXIT_SCORE", "0.0"))     # exit if latest score < this
 SENT_REVERSAL = float(os.getenv("POSITION_SENT_REVERSAL", "-0.1"))  # exit if sentiment_shift_5d < this
+ANALYST_DOWNGRADE = float(os.getenv("POSITION_ANALYST_DOWNGRADE", "-0.1"))  # exit if analyst_buy_ratio_chg_1m < this
+INST_OUTFLOW = float(os.getenv("POSITION_INST_OUTFLOW", "-0.01"))  # exit if inst_holding_pct_chg < this
 
 
 def _date_str(v) -> str:
@@ -131,6 +133,12 @@ def build_positions(signals_by_date, signals_by_sym_date, prices):
                 elif (sig.get("sentiment_shift_5d") is not None
                       and sig["sentiment_shift_5d"] < SENT_REVERSAL):
                     trigger = "sentiment_reversal"
+                elif (sig.get("analyst_buy_ratio_chg_1m") is not None
+                      and sig["analyst_buy_ratio_chg_1m"] < ANALYST_DOWNGRADE):
+                    trigger = "analyst_downgrade"
+                elif (sig.get("inst_holding_pct_chg") is not None
+                      and sig["inst_holding_pct_chg"] < INST_OUTFLOW):
+                    trigger = "inst_outflow"
 
             if trigger:
                 pos.update(status="closed", exit_date=date, exit_price=round(price, 4),
@@ -181,6 +189,8 @@ def _alert_msg(trigger, symbol, held, ret):
         "score_below_exit": "signal score dropped below exit threshold",
         "earnings_miss": "negative earnings surprise",
         "sentiment_reversal": "5d sentiment reversed negative",
+        "analyst_downgrade": "analyst buy ratio dropped sharply (1m)",
+        "inst_outflow": "institutional holdings declined QoQ",
     }.get(trigger, trigger)
     return f"EXIT {symbol}: {reason} (return {ret:+.1%})"
 
