@@ -9,11 +9,16 @@ An end-to-end quantitative research platform that processes financial news throu
 | News articles processed | 840K+ (from 8TB+ raw GDELT data) |
 | Stock universe | 100 US equities |
 | LLM agreement rate | 77.3% (Gemma + Qwen) |
-| Walk-forward Long-short annualized return | **+21.7%** |
-| Long-short Sharpe ratio | **0.85** |
-| Hit rate | 63.6% |
-| Best single-factor IC (60d) | 0.064 (`surprise_pct_last`) |
+| Portfolio backtest Sharpe (20d, net of cost) | **0.77** (gross 0.92) vs SPY 0.54 |
+| Portfolio backtest Sharpe (60d, net of cost) | **0.73** (gross 0.77) vs SPY 0.47 |
+| Best single-factor cross-sectional IC | **+0.227** (`ah_gap`, 5d, after-hours price gap) |
+| Strongest 60d-horizon factor | **+0.198** (`inst_holding_pct_chg`, institutional 13F QoQ change) |
+| 2026 holdout model IC (LightGBM, all features) | **0.73** vs ~0.05 historical baseline |
 | Platform services | 22 Docker microservices |
+
+*Net Sharpe includes a transaction cost model: 5bps commission + 10-30bps
+liquidity-tiered slippage round-trip, and excludes symbols with <$5M 20d avg
+dollar volume. See `research/backtest_portfolio.py`.*
 
 ---
 
@@ -52,7 +57,14 @@ An end-to-end quantitative research platform that processes financial news throu
 │  + Price features: past_ret_20d/60d, volatility_20d/60d             │
 │  + Sector-relative ranks                                             │
 │                                                                       │
-│  → daily_symbol_features (134K rows, 100 symbols × 7 horizons)      │
+│  Alt-data factors (D-series, added 2026-06):                        │
+│  macro_*        VIX/10Y/DXY/SPY regime           (D.1, urllib+yf)   │
+│  retail_*       StockTwits crowd sentiment        (D.2, urllib)     │
+│  analyst_*      Finnhub consensus + 1m momentum   (D.4, urllib)     │
+│  inst_holding_* SEC EDGAR 13F QoQ change          (D.7, edgartools) │
+│  ah_gap/pm_gap  yfinance 1m extended-hours gap    (D.8, yfinance)   │
+│                                                                       │
+│  → daily_symbol_features (189K+ rows, 100 symbols × 7 horizons)     │
 └──────────────────────────┬──────────────────────────────────────────┘
                            │
                            ▼
@@ -88,16 +100,18 @@ An end-to-end quantitative research platform that processes financial news throu
 ┌─────────────────────────────────────────────────────────────────────┐
 │                       ORCHESTRATION LAYER                            │
 │                                                                       │
-│  Airflow DAGs (daily schedule)                                       │
-│  ┌─────────────────────────────────────────┐                        │
-│  │ 05:00  gdelt_backfill ─┐                │                        │
-│  │        finnhub_news   ─┼─▶ price_update ─▶ feature_build        │
-│  │        newsapi_news   ─┤                │                        │
-│  │        yahoo_news     ─┘                │                        │
-│  │ 09:00  llm_enrich_pass_a ─┐            │                        │
-│  │        llm_enrich_pass_b ─┼─▶ snorkel ─▶ feature_rebuild        │
-│  │ weekly model_training     │            │                        │
-│  └─────────────────────────────────────────┘                        │
+│  Production schedule (launchd, scheduler/task.py) — currently live: │
+│  ┌─────────────────────────────────────────────────────────┐        │
+│  │ 05:15  gdelt_backfill        07:45  premarket_signals    │        │
+│  │ 06:00  inst_13f (Sun)        07:48  analyst_consensus    │        │
+│  │ 07:30  daily_price           07:50  macro_indicators     │        │
+│  │ 08:00  daily_symbol_features 08:30  score_daily_signals  │        │
+│  │ 08:40  track_positions       09:00  data_quality_check   │        │
+│  │ 20:30  retail_sentiment                                  │        │
+│  └─────────────────────────────────────────────────────────┘        │
+│                                                                       │
+│  Airflow DAGs are defined (`airflow/dags/`) but not yet verified    │
+│  to run this schedule end-to-end — Stage 7 migration item.          │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -146,17 +160,26 @@ quant_data/
 │   ├── newsapi/              # NewsAPI collector
 │   └── yahoo/                # Yahoo Finance news
 │
+├── macro_collector/           # D.1 — VIX/rates/dollar/SPY regime (yfinance)
+├── retail_collector/          # D.2 — StockTwits retail sentiment (urllib)
+├── analyst_collector/         # D.4 — Finnhub analyst consensus (urllib)
+├── inst_13f_collector/        # D.7 — SEC EDGAR 13F holdings (edgartools)
+├── premarket_collector/       # D.8 — pre/after-market 1m gaps (yfinance)
+│
 ├── research/                 # Core research pipeline
-│   ├── daily_symbol_features.py     # Feature engineering (40+ features)
+│   ├── daily_symbol_features.py     # Feature engineering (60+ features incl. D-series)
 │   ├── llm_enrich_articles.py       # Dual LLM labeling (Gemma + Qwen)
 │   ├── snorkel_label_merge.py       # Label aggregation
 │   ├── train_baseline_models.py     # Walk-forward model training
 │   ├── backtest_news_factor.py      # Single-factor backtest + risk metrics
 │   ├── backtest_event_driven.py     # Event-driven backtest
+│   ├── backtest_portfolio.py        # Top-N portfolio backtest + cost model (H.1)
 │   ├── factor_analysis.py           # IC decay, SHAP, Long-short portfolio
-│   └── score_daily_signals.py       # Daily signal scoring
+│   ├── score_daily_signals.py       # Daily signal scoring + macro regime multiplier
+│   ├── track_positions.py           # Paper-trading position tracker + exit alerts
+│   └── data_quality_check.py        # Pipeline health checks (C.7)
 │
-├── airflow/dags/             # Airflow orchestration
+├── airflow/dags/             # Airflow orchestration (defined, not yet verified e2e)
 │   ├── daily_pipeline.py            # Daily ETL (05:00)
 │   ├── llm_enrichment.py            # LLM labeling pipeline (09:00)
 │   ├── model_training.py            # Weekly model retraining
@@ -164,7 +187,7 @@ quant_data/
 │
 ├── stock_collector/          # Stock price & universe management
 ├── tools/                    # GDELT import, index building utilities
-├── scheduler/                # Legacy scheduler (replaced by Airflow)
+├── scheduler/                # task.py — actual production scheduler (launchd)
 └── main.py                   # FastAPI service entry point
 ```
 
@@ -200,6 +223,23 @@ quant_data/
 | 2023 | 0.089 | +7.84% |
 | 2024 | 0.055 | +4.90% |
 | **ALL** | **0.059** | **+5.89%** |
+
+### Alt-Data Factor IC (D-series, cross-sectional Spearman, 2026 data)
+
+| Factor | Source | CS-IC (5d) | CS-IC (20d) | CS-IC (60d) |
+|--------|--------|-----------|-------------|-------------|
+| `ah_gap` | yfinance 1m after-hours | **+0.227** | — | — |
+| `analyst_buy_ratio_chg_1m` | Finnhub | +0.155 | +0.151 | — |
+| `inst_holding_pct_chg` | SEC EDGAR 13F | +0.045 | +0.092 | **+0.198** |
+| `macro_spy_ret_20d` | yfinance | +0.100 | +0.285 | — |
+| `avg_sentiment_5d` (existing baseline) | LLM | +0.064 | +0.176 | +0.145 |
+
+LightGBM trained on 2016-2025, evaluated on 2026 holdout (all features incl.
+D-series): **IC = 0.73** vs ~0.05 on a comparable model without D-series
+features — driven mainly by `inst_holding_pct_chg` and `macro_tnx`. Sample
+size for the holdout is still small (525 rows); D-series features only have
+~6 months of history so far and need more data before the lift is fully
+trusted in production.
 
 ---
 
@@ -239,11 +279,14 @@ python research/train_baseline_models.py --target all
 # Run factor analysis
 python research/factor_analysis.py --parts ic shap ls
 
-# Run backtest
+# Run single-factor backtest
 python research/backtest_news_factor.py \
   --collection daily_symbol_features_company_matched_v2 \
   --factors avg_sentiment_5d quality_score \
   --horizons 20 60 --strategies top long_short
+
+# Run portfolio backtest (Top-N, net of transaction cost)
+python research/backtest_portfolio.py   # BACKTEST_HOLD_DAYS=20|60 env var
 ```
 
 ---
@@ -272,11 +315,15 @@ Agent retrieves relevant articles from Qdrant, analyzes with LLM, returns struct
 
 ## Roadmap
 
-- [ ] **H.1** Transaction cost model (commission + slippage)
-- [ ] **H.2** Market regime detection (VIX-based, dynamic factor weights)
-- [ ] **H.3** Paper trading engine with OOS validation
+- [x] **D.1/D.2/D.4/D.7/D.8** Alt-data research layer (macro, retail, analyst, 13F, premarket)
+- [x] **H.1** Transaction cost model (commission + liquidity-tiered slippage)
+- [x] **C.1** Daily signal automation (via launchd, not yet migrated to Airflow)
+- [x] **C.4/C.5** Paper-trading position tracker + exit alerts (incl. analyst-downgrade, inst-outflow triggers)
+- [x] **C.7/C.9** Data quality checks + factor analysis report (IC decay, SHAP)
+- [ ] **H.2** Dynamic factor re-weighting by regime (basic risk-on/off multiplier already live in scoring)
+- [ ] **H.3** Paper trading stop-loss + rolling OOS-IC monitor
+- [ ] **Stage 7** Airflow/Kafka/MLflow verified end-to-end (currently: defined but not proven live)
 - [ ] **F.4** LangGraph multi-agent research assistant
 - [ ] **F.5** FinBERT fine-tuning (200x inference speedup)
-- [ ] **C.1** Daily signal automation via Airflow
 
-See [PROJECT_PLAN.md](PROJECT_PLAN.md) for full roadmap.
+See [PROJECT_PLAN.md](PROJECT_PLAN.md) for full roadmap and per-item status.
