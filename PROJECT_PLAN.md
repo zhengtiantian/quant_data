@@ -630,15 +630,19 @@ The project should be considered healthy if:
 
 ## Current Practical Recommendation
 
-Do next (in priority order):
+Do next (in priority order, updated 2026-06-20):
 
-1. **Stage 7 校验** — Airflow DAG 验证跑通、Kafka producer/consumer 实际运行、
-   执行日志接口上线（阻塞面试讲故事的最大 gap）
-2. **补风险指标** — 回测脚本加 Sharpe / 最大回撤 / 换手率（2天，面试必问）
-3. **每日信号自动化** — score_daily_signals.py 接 Airflow，信号写库后 UI 展示
-4. **仓位跟踪 + 退出提醒** — 项目真正可用的最后一环
-5. **Stage 3.5.5 FinBERT 微调** — 用 Gemma+Qwen 一致标签训练，替代 LLM 推理管道
-6. **Stage 5 engineering** — RAG / Flink / dbt 等，面试加分项
+1. **H.1 回测加交易成本+流动性过滤**（2天）— 当前 Sharpe 0.70-0.84 未扣成本，
+   量化面试必问，性价比最高
+2. **Stage 7 校验** — Airflow DAG 跑通、Kafka producer/consumer 实际运行、
+   执行日志接口上线（仍是面试讲故事的最大 gap，C 系列已用 launchd 代替跑通了
+   日常调度，但不是 Airflow）
+3. **E.7 README + 架构图**（1天）— 全部面试都需要，目前缺失，最快出成果
+4. **H.2.2 动态因子权重**（regime-aware）— 已有 regime_mult 基础乘数，
+   需扩展为震荡市自动切换因子权重集
+5. **H.3.2/H.3.3 Paper trading 完善** — 已有持仓追踪和退出触发，缺 OOS IC
+   监控和 -5% 止损规则
+6. **Stage 3.5.5 FinBERT 微调** — 用 Gemma+Qwen 一致标签训练，替代 LLM 推理管道
 
 Completed:
 
@@ -650,10 +654,16 @@ Completed:
 - Stage 3.5.2 event-level daily features (134K rows, 100% LLM 覆盖) ✅
 - Stage 3.5.3 event-driven backtest (min20d, +1.40% vs 固定20d +1.22%) ✅
 - Stage 3.5.4 multi-horizon labels (10/15/30/45/60d) ✅
+- **D.1/D.2/D.4/D.7/D.8 研究层扩展全部完成**（2026-06-16），D.3/D.5/D.6 跳过 ✅
+- **C.1-C.7, C.9 全部完成基础版**（每日信号自动化 + UI + 仓位跟踪 + 退出提醒 +
+  风险指标 + 数据质量检查 + 因子分析报告，2026-06-16~20）✅
+- **H.2.1 regime multiplier 基础版**（score_daily_signals.py 已接入 macro_risk_on/
+  macro_vix_pctile_252d 调整信号强度）✅
+- 运维：清除重复 launchd scheduler job，避免采集任务每日重复执行两次 ✅
 
 Do not do next:
 
-- live trading automation（实盘）
+- live trading automation（实盘，距离真正可用还差 H.1-H.5 全部完成 + 3-6个月 paper trading）
 - Stage 5 engineering before Stage 7 校验完成
 
 ## Notes
@@ -758,77 +768,66 @@ Long-short 年化超额 X%。"*
 
 ### 最小可用闭环（优先做）
 
-#### C.1 每日信号生成自动化
-- `score_daily_signals.py` 接入 Airflow，每日盘后自动跑
+#### C.1 每日信号生成自动化 ✅ 完成（接入 launchd scheduler，非 Airflow）
+- `score_daily_signals.py` 接入 `scheduler/task.py`，每日 08:30 自动跑
+  （`daily_symbol_features` 08:00 → `score_daily_signals` 08:30 → `track_positions` 08:40）
 - 对 100 个股票打分，写入 `daily_signals` 集合
-- 字段：`symbol`, `date`, `composite_score`, `avg_sentiment_5d`,
-  `signal_strength`, `recommended_action`（buy/hold/watch/avoid）
-- 状态：[ ] 待开发
+- 字段：`symbol`, `trade_date`, `composite_score`, `signal_rank`, `signal_type`(LONG/NEUTRAL),
+  `regime_mult`，以及 D 系列上下文字段（`ah_gap`, `analyst_buy_ratio_chg_1m`,
+  `inst_holding_pct_chg`, `retail_sent_score`, `macro_risk_on`, `macro_vix` 等）
+- 注：仍用 launchd，非 Airflow（Stage 7 / 5.2.1 迁移 Airflow 仍待开发）
 
-#### C.2 风险指标完善
-- 在 `backtest_event_driven.py` 和 `train_baseline_models.py` 中加入：
-  - Sharpe ratio（年化，无风险利率 4%）
-  - 最大回撤（Max Drawdown）
-  - Sortino ratio
-  - 换手率 / 单次交易成本假设（万5）
-  - 年化收益 vs SPY Buy-and-Hold 对比
-- 状态：[ ] 待开发（2天）
+#### C.2 风险指标完善 ✅ 完成（`research/backtest_portfolio.py`）
+- 已有：Sharpe ratio（年化，无风险利率 4%）、最大回撤、胜率、年化收益 vs SPY
+- 2026-06-16 验证结果（全历史 2015-2026，复用 `score_daily_signals.compute_score`）：
+  - 20d 持仓：Sharpe 0.84，年化 25.8%，vs SPY Sharpe 0.54/12.1%
+  - 60d 持仓：Sharpe 0.70，年化 24.3%，vs SPY Sharpe 0.46/11.6%
+- 待补：Sortino ratio、换手率 / 交易成本假设（见 H.1，仍未扣成本，数字偏乐观）
 
-#### C.3 信号 UI 页面
-- `quant_ui` 新增"今日信号"页面：
-  - 显示 Top 10 买入信号（composite_score 排名）
-  - 显示当前 watch list（持仓候选）
-  - 显示 avoid list（负向情感 + 低分）
-  - 每个股票显示：分数、情感趋势、最近事件类型、持仓建议
-- 状态：[ ] 待开发
+#### C.3 信号 UI 页面 ✅ 完成（`SignalsPanel.tsx`）
+- 显示当日全部信号，按 `signal_rank` 排序，LONG/NEUTRAL 标签着色
+- 顶部 Risk-on/Risk-off 徽章显示 `regime_mult`（宏观乘数）
+- 列：Score / Quality / News burst / Earnings / AH Gap / Analyst Δ1m / Inst Δ
+- 2026-06-16 新增 D 系列 3 列 + regime badge（`quant_api` DailySignalEvent 同步扩展字段）
+- 待补：watch list / avoid list 的独立分组展示（目前是单一排序表格）
 
 ### 进阶可用（第二优先）
 
-#### C.4 仓位跟踪
-- 新增 `positions` 集合，记录模拟持仓：
-  - `symbol`, `entry_date`, `entry_price`, `entry_score`
-  - `days_held`, `current_return`, `exit_trigger`（当前触发哪个退出条件）
-- `quant_ui` 展示当前持仓状态 + 浮盈浮亏
-- 状态：[ ] 待开发
+#### C.4 仓位跟踪 ✅ 完成（`research/track_positions.py`）
+- `positions` 集合记录模拟持仓：`symbol`, `entry_date`, `entry_price`, `entry_score`,
+  `entry_rank`, `days_held`, `current_return`/`exit_return`, `exit_trigger`
+- 幂等：每次运行从 `daily_signals` + `stock_prices_history` 全量重建状态
+- `PositionsPanel.tsx` 展示当前持仓状态 + 浮盈浮亏（已存在于 quant_ui）
+- 2026-06-20 验证：19 个持仓（16 开/3 平），PANW +62.6%／LRCX +50.5% 领涨
 
-#### C.5 退出提醒
-- 每日扫描持仓，当触发以下条件时推送提醒：
-  - `sentiment_reversal`（情感逆转）
-  - `score_below_exit`（分数跌破阈值）
-  - `earnings_miss_signal`（财报负向信号）
-  - 持仓超过 max_hold 天
-- 提醒方式：写入 `alerts` 集合 + UI 红点 / 邮件
-- 状态：[ ] 待开发
+#### C.5 退出提醒 ✅ 完成 + 2026-06-16 扩展
+- 已有触发：`max_hold`（60天）、`score_below_exit`、`sentiment_reversal`、`earnings_miss`
+- **新增两个 D 系列触发**：`analyst_downgrade`（`analyst_buy_ratio_chg_1m` < -10%）、
+  `inst_outflow`（`inst_holding_pct_chg` < -1% QoQ）
+- 提醒写入 `alerts` 集合；UI 红点/邮件推送仍待开发（目前仅脚本打印 + 集合查询）
 
-#### C.6 Paper trading 记录
-- 按每日信号模拟执行，记录"假设今天买入，N天后实际收益"
-- 积累 3-6 个月真实 out-of-sample 表现
-- 状态：[ ] 待开发
+#### C.6 Paper trading 记录 ✅ 基础版完成（即 C.4 `track_positions.py`）
+- 已按每日 `daily_signals` Top-N 模拟开仓，逐日用真实价格更新浮盈浮亏
+- 累计运行天数尚短，3-6 个月 out-of-sample 表现仍在积累中（持续任务，非一次性开发）
 
-#### C.7 ETL 数据质量检查
-- 在关键 pipeline 节点加入自动校验：
-  - 新闻采集：每日文章数是否在合理范围（异常少 = 采集故障）
-  - feature build：NULL 率超过阈值告警
-  - 模型训练：IC 低于历史均值 2 个标准差时告警
-- 实现方式：pipeline 完成后调用 `quant_api` 写入检查结果
-- 状态：[ ] 待开发
+#### C.7 ETL 数据质量检查 ✅ 基础版完成（`research/data_quality_check.py`）
+- 已有检查：新闻量、价格新鲜度、特征新鲜度、关键字段 NULL 率阈值
+  (`quality_score`/`full_ratio`/`close`/`past_ret_20d`)、信号新鲜度
+- 已接入 scheduler 每日 09:00 自动跑（`ENABLE_DATA_QUALITY_JOB`）
+- 待补：模型训练 IC 异常检测（2个标准差告警）、写入 `quant_api` 而非仅脚本输出
 
-#### C.8 ETL 单元测试
-- 对核心 pipeline 函数加单元测试：
-  - `aggregate_news_features`：输入固定数据，验证输出字段和值
-  - `attach_earnings_event_features`：验证 days_to/since 计算正确
-  - `aggregate_llm_sentiment_features`：验证 rolling 特征边界条件
-- 使用 pytest，覆盖率 > 70%
-- 状态：[ ] 待开发（3天）
+#### C.8 ETL 单元测试 ✅ 部分完成（`tests/test_feature_build.py`）
+- 已覆盖：`aggregate_news_features`（计数/比率/滚动窗口）、
+  `aggregate_llm_sentiment_features`（加权情感/earnings beat 信号/空输入边界）、
+  `quality_score` 排名、日期解析/分桶工具函数
+- 待补：`attach_earnings_event_features`（days_to/since 计算）专项测试、
+  D 系列 `attach_*_features` 函数测试、覆盖率统计（目标 >70%）
 
-#### C.9 因子分析报告（量化面试专用）
-- 新增 `research/factor_analysis.py`，生成：
-  - 各 horizon 的 IC / IR / IC 衰减曲线
-  - SHAP feature importance（哪个因子贡献最大）
-  - 因子相关性矩阵（避免冗余）
-  - Long-short 组合年化收益 + Sharpe + 最大回撤
-  - 逐年 Sharpe + 回撤图
-- 状态：[ ] 待开发（3-4天）
+#### C.9 因子分析报告 ✅ 完成（`research/factor_analysis.py`）
+- 已实现：IC 衰减表（多 horizon）、按年 IC 分解、SHAP feature importance
+  （含 LLM vs 传统因子贡献占比拆分）
+- 待补：因子相关性矩阵（VIF 冗余检测）、Long-short 组合 + 逐年 Sharpe/回撤图
+  （目前 Sharpe/回撤已在 `backtest_portfolio.py` 里，但是 Top-N long-only，非 long-short）
 
 ### 完整可用路线（时间估算）
 
@@ -849,72 +848,77 @@ Stage 7 服务跑通（1周）
 
 ## D. 研究层扩展（提升模型质量）
 
-### D.1 宏观 Regime 特征
-- 加入 VIX 水平、联储利率区间作为 regime 特征
-- 目标：解释 2022/2024 弱年，训练 regime-aware 模型（高 VIX 时降权新闻因子）
-- 字段：`vix_level`, `vix_percentile_1y`, `fed_rate_trend`
-- 状态：[ ] 待开发（2天）
+### D.1 宏观 Regime 特征 ✅ 完成 2026-06-16
+- VIX 水平/百分位、10Y 利率、美元指数、SPY 20日趋势
+- 字段：`macro_vix`, `macro_vix_pctile_252d`, `macro_vix_change_5d`, `macro_tnx`,
+  `macro_tnx_change_20d`, `macro_spy_ret_20d`, `macro_spy_above_200ma`,
+  `macro_risk_on`, `macro_is_high_vol`, `macro_dxy_change_20d`
+- 2026 holdout 中 `macro_tnx` 是 LightGBM 特征重要性排名第 2 的特征
+- `macro_risk_on`/`macro_vix_pctile_252d` 已接入 `score_daily_signals.py` 作为
+  regime multiplier（risk-on ×1.20，高 VIX ×0.85）—— H.2.1 的基础版已实现
+- Deliverable: `macro_collector/collector.py`
 
-### D.2 Alternative Data — 散户情绪
-- 接入 Reddit WallStreetBets / StockTwits 数据
-- 与机构新闻情感对比：散户情绪领先还是滞后机构新闻？
-- 新因子：`retail_sentiment_divergence`（散户 vs 机构情感差异）
-- 状态：[ ] 待开发
+### D.2 Alternative Data — 散户情绪 ✅ 完成 2026-06-16
+- 接入 StockTwits 公开 API（无需 Reddit 开发者审核，绕开了注册被拒的问题）
+- 新因子：`retail_msg_count`, `retail_bull_ratio`, `retail_sent_score`,
+  `retail_sentiment_divergence`（= retail_sent_score − avg_sentiment_3d）
+- 覆盖仅 2025-12 起，fill 率低(~3-4%)，需持续积累；
+  2026-06-20 复核：IC 由 +0.09 反转为 -0.10（N 仍偏小，未下结论，**未调整权重**）
+- Deliverable: `retail_collector/collector.py`
 
-### D.3 财报原文挖掘（10-K/10-Q）
-- 从 SEC EDGAR 抓取财报文字，打标管理层措辞变化
-- 关键信号：guidance 用词从"strong"变"uncertain"→ 负向信号
-- 状态：[ ] 待开发
+### D.3 财报原文挖掘（10-K/10-Q）— 跳过
+- 原因：需要 LLM 解析大量长文本，工程量大，优先级低于其他 D 项
+- 状态：[ ] 暂不开发
 
-### D.4 分析师评级变化因子
-- 接入分析师评级升级/降级事件（Refinitiv / Yahoo Finance）
-- 新因子：`analyst_upgrade_5d`, `analyst_downgrade_5d`, `consensus_change`
-- 评级变化 + 新闻情感组合信号，预期比单独更强
-- 状态：[ ] 待开发
+### D.4 分析师评级变化因子 ✅ 完成 2026-06-16
+- Finnhub `/api/v1/stock/recommendation`，通过 `urllib`（VPN 下 `requests`/`curl_cffi` 失败，
+  仅 `urllib.request.urlopen` 可用）
+- 新因子：`analyst_buy_ratio`, `analyst_sell_ratio`, `analyst_consensus_score`,
+  `analyst_buy_ratio_chg_1m`
+- CS-IC（截面）：`analyst_buy_ratio_chg_1m` 5d=+0.155 / 20d=+0.151，全部 D 系列中最干净的信号之一
+- Deliverable: `analyst_collector/collector.py`
 
-### D.5 期权市场信号（聪明钱流向）
-背景：0DTE 期权爆炸增长（2024年占 SPX 期权成交量 45%+），期权市场对情绪的
-反映速度比新闻快，与 LLM 情感形成互补。
+### D.5 期权市场信号 — 跳过
+- 原因：CBOE PCR 免费历史数据仅到 2019 年，无法覆盖近期回测窗口
+- 状态：[ ] 暂不开发
 
-- **Put/Call Ratio**（CBOE 免费）
-  - `pcr_daily`, `pcr_5d_avg`：极端 PCR → 情绪反转信号
-  - 数据源（CSV 直接下载）：`https://cdn.cboe.com/resources/options/volume_and_call_put_ratios/indexpcarchive.csv`
-  - 用法：`pd.read_csv(url)` 即可，无需注册
-  - 工作量：1天
-- **隐含波动率 / IV Skew**（yfinance options chain）
-  - `iv_atm`：平值隐含波动率（市场预期波动）
-  - `iv_skew`：put IV - call IV（市场对下行风险的定价）
-  - 工作量：2天
-- **期权异常成交量**（Unusual Whales API / barchart）
-  - `unusual_options_flag`：当日期权成交量 > 历史均值 3x
-  - 大额异常成交 = 机构提前布局信号
-  - 工作量：2天
-- 状态：[ ] 待开发
+### D.6 Short Interest（做空压力）— 跳过
+- 原因：VPN 下 FINRA 网站返回 bot 防护页面，无法抓取
+- 状态：[ ] 暂不开发
 
-### D.6 Short Interest（做空压力）
-- FINRA 每两周发布做空数据（免费）
-- 新因子：`short_interest_ratio`（做空股数 / 日均成交量）
-- 做空比例高 + 正面新闻 → 潜在轧空信号
-- 数据源：`https://www.finra.org/investors/learn-to-invest/advanced-investing/short-selling/short-interest`
-- 工作量：1天
-- 状态：[ ] 待开发
+### D.7 机构持仓变化（13F） ✅ 完成 2026-06-16
+- `edgartools`，跟踪 Vanguard/StateStreet/Fidelity 最近 2 个季度持仓
+- 新因子：`inst_holding_pct`（跨机构汇总持仓比例）、`inst_holding_pct_chg`（QoQ，
+  按机构各自最近两期分别计算后取平均，规避了不同机构披露周期错位的问题）
+- CS-IC：`inst_holding_pct_chg` 60d=**+0.198**，全部 D 系列单因子中最强
+- 2026 holdout 中是 LightGBM regression IC 贡献最大的单特征（IC=+0.337）
+- 已接入 `track_positions.py` 的 `inst_outflow` 退出触发
+- Deliverable: `inst_13f_collector/collector.py`
 
-### D.7 机构持仓变化（13F）
-- SEC EDGAR 每季度强制披露（免费，延迟 45 天）
-- 新因子：`inst_holding_change_qoq`（机构持仓季度环比变化）
-- 大机构（Blackrock/Vanguard/对冲基金）增减仓方向作为低频强信号
-- 数据源：SEC EDGAR `https://www.sec.gov/cgi-bin/browse-edgar`，或 `pip install edgartools`（免费，推荐）
-- 工作量：3天
-- 状态：[ ] 待开发
+### D.8 盘前盘后价格信号 ✅ 完成 2026-06-16
+- yfinance 1m 数据（`prepost=True`），7天窗口分块抓取规避"8天上限"报错
+- 新因子：`pm_gap`, `ah_gap`, `ah_volume_ratio`（`pm_volume_ratio` 已移除——yfinance
+  盘前 volume 字段恒为 0，无法计算有效比值）
+- CS-IC：`ah_gap` 5d=**+0.227**，全部 D 系列单因子中最强短线信号
+- yfinance 1m 历史上限 30 天，scheduler 每日累积，截至 2026-06-20 已有 23 个交易日
+- Deliverable: `premarket_collector/collector.py`
 
-### D.8 盘前盘后价格信号
-- 背景：T+1 结算（2024年5月落地），延长交易时段（NYSE 22小时试点）
-- earnings 发布 90% 在盘后/盘前，真实第一反应在收盘价之前
-- 新因子：`premarket_gap`（盘前开盘 vs 昨日收盘涨跌幅）
-- 与新闻情感结合：盘前大涨 + 正面情感 → 强化信号
-- 数据源：yfinance（1m 级别支持盘前盘后）
-- 工作量：1天
-- 状态：[ ] 待开发
+### D 系列接入闭环（2026-06-16 ~ 2026-06-20）
+全部完成项已贯穿整条 pipeline：
+`daily_symbol_features.py`（特征）→ `train_baseline_models.py` / `backtest_news_factor.py`
+（训练，60d 目标显著优于 20d，2026 holdout IC=0.73 vs 历史基线 0.04-0.05）→
+`score_daily_signals.py`（打分权重 + macro regime 乘数）→ `track_positions.py`
+（`analyst_downgrade`/`inst_outflow` 新退出触发）→ `quant_api`/`quant_ui`
+（DailySignalEvent 新增 8 个 D 系列字段，SignalsPanel 展示 regime badge + 3 新列）。
+
+`backtest_portfolio.py` 全历史回测（2015-2026，复用 `score_daily_signals.compute_score`）：
+60d Sharpe=0.70，20d Sharpe=0.84，均跑赢 SPY（Sharpe 0.46-0.54）——但此结果主要由
+既有 LLM/earnings 因子驱动，D 系列因数据窗口短，对历史回测贡献尚未充分体现，
+真实增量需等待数据积累后再做 attribution。
+
+**运维修复**：2026-06-20 发现 `com.quant.scheduler`（旧）与 `com.quant.pipeline-scheduler`
+（新）两个 launchd job 同时运行，导致所有采集任务每天重复执行两次。已卸载旧 job
+（plist 移至 `~/Quant_trade_backups/`）。
 
 ---
 
@@ -1088,38 +1092,41 @@ risk_agent      → 仓位控制、止损条件、最终输出持仓建议 JSON
 
 ## 综合优先级表（所有待开发项）
 
-| 优先级 | 项目 | 面试价值 | 实用价值 | 工作量 |
-|---|---|---|---|---|
-| ⭐⭐⭐ | **H.1 回测加交易成本+流动性过滤** | 量化必需 | 🔴 真实收益 | 2天 |
-| ⭐⭐⭐ | **H.2 市场 Regime 检测（VIX过滤）** | 量化必需 | 🔴 IC稳定性 | 4天 |
-| ⭐⭐⭐ | **H.3 Paper Trading 引擎+止损** | 量化必需 | 🔴 OOS验证 | 4天 |
-| ⭐⭐⭐ | Stage 7 Airflow + Kafka 跑通 | DE 关键 | 高 | 1周 |
-| ⭐⭐⭐ | C.2 风险指标（Sharpe/回撤） ✅ 已完成 | 量化必需 | 高 | - |
-| ⭐⭐⭐ | C.9 因子分析报告（IC/IR/SHAP）✅ 已完成 | 量化必需 | 中 | - |
-| ⭐⭐⭐ | C.8 ETL 单元测试 | DE 必需 | 中 | 3天 |
-| ⭐⭐⭐ | E.7 README + 架构图 | 全部面试 | 中 | 1天 |
-| ⭐⭐⭐ | Stage 7 MLflow 实际跑 | DE/MLE | 中 | 1天 |
-| ⭐⭐ | H.4 信号质量监控（rolling IC）| 量化强 | 🟡 信号健康 | 2天 |
-| ⭐⭐ | C.1 每日信号自动化 | 中 | 极高 | 3天 |
-| ⭐⭐ | C.3 信号 UI 页面 | 中 | 极高 | 3天 |
-| ⭐⭐ | F.2 RAG 新闻搜索（Qdrant） | AI必需 | 高 | 3天 |
-| ⭐⭐ | F.3 SHAP 可解释性 | MLE强 | 中 | 1天 |
-| ⭐⭐ | F.4 LangGraph 多 Agent 研究助手 | AI Engineer必杀 | 高 | 2周 |
-| ⭐⭐ | F.8 主动学习 Agent（分歧样本） | MLE+AI | 高 | 4天 |
-| ⭐⭐ | E.2 CI/CD GitHub Actions | DE强 | 中 | 2天 |
-| ⭐⭐ | C.7 数据质量检查 | DE强 | 高 | 2天 |
-| ⭐⭐ | B 量化加分：Long-short 组合 | 量化强 | 中 | 3天 |
-| ⭐⭐ | B 量化加分：Beta 中性化 | 量化强 | 中 | 2天 |
-| ⭐⭐ | F.5 FinBERT 微调 | MLE强 | 高 | 1-2周 |
-| ⭐ | F.6 rule_validator ReAct Agent | AI加分 | 中 | 3天 |
-| ⭐ | F.7 Airflow 自适应调度 Agent | DE+AI | 中 | 3天 |
-| ⭐⭐⭐ | D.1 宏观 Regime 特征（已并入 H.2）| 量化必需 | 🔴 真实可用 | 4天 |
-| ⭐ | E.4 K8s 配置 | DE加分 | 低 | 3天 |
-| ⭐ | E.5 数据血缘图 | DE加分 | 低 | 2天 |
-| ⭐ | E.6 WebSocket 实时推送 | 后端加分 | 高 | 3天 |
-| ⭐ | D.2 Reddit 散户情绪 | 量化加分 | 中 | 3天 |
-| ⭐ | F.1 Prompt 评测框架 | MLE加分 | 中 | 2天 |
-| ⭐ | E.8 Demo 视频 | 全部加分 | 高 | 0.5天 |
+| 优先级 | 项目 | 面试价值 | 实用价值 | 工作量 | 状态 |
+|---|---|---|---|---|---|
+| ⭐⭐⭐ | **H.1 回测加交易成本+流动性过滤** | 量化必需 | 🔴 真实收益 | 2天 | [ ] 待开发 |
+| ⭐⭐⭐ | H.2 市场 Regime 检测（VIX过滤） | 量化必需 | 🔴 IC稳定性 | 4天 | 🟡 基础版完成（regime_mult），动态权重切换待开发 |
+| ⭐⭐⭐ | H.3 Paper Trading 引擎+止损 | 量化必需 | 🔴 OOS验证 | 4天 | 🟡 引擎+部分退出触发已完成，-5%止损/OOS IC监控待开发 |
+| ⭐⭐⭐ | Stage 7 Airflow + Kafka 跑通 | DE 关键 | 高 | 1周 | [ ] 待开发（日常调度用 launchd 跑通，非 Airflow） |
+| ⭐⭐⭐ | C.2 风险指标（Sharpe/回撤） | 量化必需 | 高 | - | ✅ 已完成 |
+| ⭐⭐⭐ | C.9 因子分析报告（IC/IR/SHAP） | 量化必需 | 中 | - | ✅ 已完成 |
+| ⭐⭐⭐ | C.8 ETL 单元测试 | DE 必需 | 中 | 3天 | 🟡 部分完成，待补 earnings/D系列测试+覆盖率 |
+| ⭐⭐⭐ | E.7 README + 架构图 | 全部面试 | 中 | 1天 | [ ] 待开发 |
+| ⭐⭐⭐ | Stage 7 MLflow 实际跑 | DE/MLE | 中 | 1天 | [ ] 待开发 |
+| ⭐⭐ | H.4 信号质量监控（rolling IC）| 量化强 | 🟡 信号健康 | 2天 | [ ] 待开发 |
+| ⭐⭐ | C.1 每日信号自动化 | 中 | 极高 | 3天 | ✅ 已完成（launchd，非 Airflow） |
+| ⭐⭐ | C.3 信号 UI 页面 | 中 | 极高 | 3天 | ✅ 已完成 |
+| ⭐⭐ | F.2 RAG 新闻搜索（Qdrant） | AI必需 | 高 | 3天 | [ ] 待开发 |
+| ⭐⭐ | F.3 SHAP 可解释性 | MLE强 | 中 | 1天 | ✅ 已完成（factor_analysis.py） |
+| ⭐⭐ | F.4 LangGraph 多 Agent 研究助手 | AI Engineer必杀 | 高 | 2周 | [ ] 待开发 |
+| ⭐⭐ | F.8 主动学习 Agent（分歧样本） | MLE+AI | 高 | 4天 | [ ] 待开发 |
+| ⭐⭐ | E.2 CI/CD GitHub Actions | DE强 | 中 | 2天 | [ ] 待开发 |
+| ⭐⭐ | C.7 数据质量检查 | DE强 | 高 | 2天 | ✅ 已完成（data_quality_check.py） |
+| ⭐⭐ | B 量化加分：Long-short 组合 | 量化强 | 中 | 3天 | [ ] 待开发 |
+| ⭐⭐ | B 量化加分：Beta 中性化 | 量化强 | 中 | 2天 | [ ] 待开发 |
+| ⭐⭐ | F.5 FinBERT 微调 | MLE强 | 高 | 1-2周 | [ ] 待开发 |
+| ⭐ | F.6 rule_validator ReAct Agent | AI加分 | 中 | 3天 | [ ] 待开发 |
+| ⭐ | F.7 Airflow 自适应调度 Agent | DE+AI | 中 | 3天 | [ ] 待开发 |
+| ⭐⭐⭐ | D.1 宏观 Regime 特征（已并入 H.2）| 量化必需 | 🔴 真实可用 | 4天 | ✅ 已完成 |
+| ⭐ | E.4 K8s 配置 | DE加分 | 低 | 3天 | [ ] 待开发 |
+| ⭐ | E.5 数据血缘图 | DE加分 | 低 | 2天 | [ ] 待开发 |
+| ⭐ | E.6 WebSocket 实时推送 | 后端加分 | 高 | 3天 | [ ] 待开发 |
+| ⭐ | D.2 散户情绪 | 量化加分 | 中 | 3天 | ✅ 已完成（StockTwits，非 Reddit） |
+| ⭐ | F.1 Prompt 评测框架 | MLE加分 | 中 | 2天 | [ ] 待开发 |
+| ⭐ | E.8 Demo 视频 | 全部加分 | 高 | 0.5天 | [ ] 待开发 |
+| — | D.4 分析师评级变化 | 量化加分 | 中 | 3天 | ✅ 已完成 |
+| — | D.7 机构 13F 持仓变化 | 量化加分 | 高 | 3天 | ✅ 已完成（最强单因子，60d IC=+0.20） |
+| — | D.8 盘前盘后价格信号 | 量化加分 | 高 | 1天 | ✅ 已完成（最强短线因子，5d IC=+0.23） |
 
 ---
 
