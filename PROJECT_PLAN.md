@@ -820,14 +820,15 @@ Long-short 年化超额 X%。"*
 - 已覆盖：`aggregate_news_features`（计数/比率/滚动窗口）、
   `aggregate_llm_sentiment_features`（加权情感/earnings beat 信号/空输入边界）、
   `quality_score` 排名、日期解析/分桶工具函数
-- 待补：`attach_earnings_event_features`（days_to/since 计算）专项测试、
+- 待补：`attach_price_labels`（forward-return 计算）专项测试、
+  `compute_score` 评分管道测试、宏观因子派生（macro_vix_pctile / macro_risk_on）测试、
   D 系列 `attach_*_features` 函数测试、覆盖率统计（目标 >70%）
 
 #### C.9 因子分析报告 ✅ 完成（`research/factor_analysis.py`）
 - 已实现：IC 衰减表（多 horizon）、按年 IC 分解、SHAP feature importance
   （含 LLM vs 传统因子贡献占比拆分）
-- 待补：因子相关性矩阵（VIF 冗余检测）、Long-short 组合 + 逐年 Sharpe/回撤图
-  （目前 Sharpe/回撤已在 `backtest_portfolio.py` 里，但是 Top-N long-only，非 long-short）
+- 已更新：Long-short 组合 + 逐年 Sharpe/回撤图已在 `factor_analysis.py` walk-forward 段实现 ✅
+- 待补（可选增强）：因子相关性矩阵（VIF 冗余检测）
 
 ### 完整可用路线（时间估算）
 
@@ -1711,5 +1712,141 @@ H.5 实盘准备清单全部 ✓
     ↓ 6个月稳定超额
 真正可用的量化交易系统 ✓
 ```
+
+---
+
+## G. Strategy Generation 完整实现计划（quant_langchain）
+
+> 当前状态：`quant_langchain/main.py` 已有 `/api/workflow/generate-spec` 和 `/api/workflow/generate-tasks` 接口框架，但三个核心功能均为伪实现，需要补全。
+
+---
+
+### G.1 RAG — 向量检索替换关键词匹配（3天）
+
+**现状问题：**
+- `retrieve_context()` 用关键词 token 重叠打分，不是语义检索
+- knowledge 目录只有 1 个文件（26行），RAG几乎没有实际作用
+- 命中率低：用户输入 "RSI mean reversion" 无法匹配 "相对强弱指数均值回归"
+
+**目标：** 用 Qdrant（已在 docker-compose 中运行）替换关键词匹配，实现真正的向量语义检索
+
+**开发步骤：**
+
+1. **补充知识库文档**（1天）
+   - `knowledge/strategies/` — 策略模板：RSI、MACD、动量、均值回归示例
+   - `knowledge/factors/` — 因子说明：各因子IC、使用场景、参数范围
+   - `knowledge/risk/` — 风控规则：止损、仓位、最大回撤默认值
+   - `knowledge/modules/` — MODULE_CATALOG 各模块的详细参数说明
+
+2. **接入 Qdrant 向量检索**（2天）
+   - 安装：`langchain-qdrant`, `sentence-transformers`
+   - 用 `all-MiniLM-L6-v2` 对 knowledge 文档做 embedding，写入 Qdrant
+   - 替换 `retrieve_context()`：改为 `qdrant_client.search(query_vector, top_k=4)`
+   - 启动时异步建索引，增量更新
+
+**完成标志：** 输入 "RSI buy when oversold" 能检索到 RSI 策略模板文档
+
+---
+
+### G.2 MCP — 工具真正可执行（4天）
+
+**现状问题：**
+- `MODULE_CATALOG` 里的模块路径（如 `quant_langchain.features.momentum`）不存在
+- LLM 在 prompt 里只是"看到"工具列表，无法真正调用
+- 没有 tool call loop：LLM 生成的 spec 里的模块名是幻觉，不会实际执行
+
+**目标：** 将 MODULE_CATALOG 里每个工具封装成可调用函数，实现 LLM → tool call → 结果回传 的闭环
+
+**开发步骤：**
+
+1. **实现工具函数**（2天）
+
+```python
+# quant_langchain/tools/market_data.py
+def fetch_market_data(symbols: list, timeframe: str, lookback_days: int) -> dict:
+    """调用 quant_api /api/signals 拉取历史信号和价格数据"""
+    resp = requests.get(f"{QUANT_API}/api/signals", params={"symbols": symbols})
+    return resp.json()
+
+# quant_langchain/tools/feature_builder.py
+def build_features(indicators: list, window: int) -> dict:
+    """调用 quant_api /api/features 获取特征数据"""
+    ...
+
+# quant_langchain/tools/backtest.py
+def backtest_strategy(spec: dict, initial_cash: int, fee_bps: int) -> dict:
+    """基于 spec 生成回测摘要（调用 quant_data research 模块）"""
+    ...
+```
+
+2. **工具注册到 LangChain**（1天）
+   - 用 `@tool` 装饰器注册每个函数
+   - 在 `generate-spec` 接口里改为 `AgentExecutor`，让 LLM 真正调用工具
+   - 收集每次 tool call 的结果，组装进最终 spec
+
+3. **MCP 协议封装（可选升级）**（1天）
+   - 为每个工具加 JSON schema 描述
+   - 输出格式符合 MCP tool result 规范
+   - 为未来接入 Claude MCP 做准备
+
+**完成标志：** 生成 spec 时日志能看到 `[Tool Call] fetch_market_data(AAPL, daily, 60)` → 真实数据返回
+
+---
+
+### G.3 API Key 路由 — 按任务复杂度主动分层（1天）
+
+**现状问题：**
+- 用的是 `OpenAI`（text completion），应改为 `ChatOpenAI`（chat model）
+- 路由逻辑只有"Ollama 挂了才 fallback"，没有按任务类型主动选模型
+- `LLMChain` 是 deprecated API，应改为 LCEL（LangChain Expression Language）
+
+**目标：** 本地小模型处理简单任务，云端大模型处理复杂推理
+
+**路由规则：**
+
+| 任务 | 模型 | 理由 |
+|------|------|------|
+| generate-spec（简单策略） | Qwen3-8B 本地 | 有 MODULE_CATALOG 约束，输出结构固定 |
+| generate-spec（复杂多因子） | Claude Sonnet / GPT-4o | 需要推理因子组合，小模型幻觉率高 |
+| generate-tasks（代码生成） | Claude Sonnet / GPT-4o | 代码质量要求高 |
+| chat（策略问答） | Qwen3-8B 本地 | 对话轮次多，成本敏感 |
+
+**开发步骤：**
+
+```python
+# 改为 ChatOpenAI + LCEL
+from langchain_openai import ChatOpenAI
+from langchain_anthropic import ChatAnthropic
+from langchain_core.prompts import ChatPromptTemplate
+
+def get_llm(task_type: str = "simple"):
+    # 复杂任务主动用云端模型
+    if task_type == "code_generation" and ANTHROPIC_API_KEY:
+        return ChatAnthropic(model="claude-sonnet-4-6", api_key=ANTHROPIC_API_KEY)
+    if task_type == "complex_spec" and OPENAI_API_KEY:
+        return ChatOpenAI(model="gpt-4o-mini", api_key=OPENAI_API_KEY)
+    # 默认本地
+    try:
+        # health check Ollama...
+        return ChatOllama(model=LOCAL_MODEL_NAME)
+    except:
+        return ChatOpenAI(model="gpt-4o-mini", api_key=OPENAI_API_KEY)
+```
+
+**完成标志：** generate-tasks 接口日志显示 `[Router] task=code_generation → claude-sonnet-4-6`
+
+---
+
+### G.4 优先级和时间估算
+
+| 优先级 | 功能 | 工作量 | 价值 |
+|--------|------|--------|------|
+| 🔴 最高 | G.2 MCP 工具真正可执行 | 4天 | 策略生成从"幻觉输出"变成"真实可执行" |
+| 🟠 高 | G.3 API Key 路由改造 | 1天 | 代码质量提升，deprecated API 清除 |
+| 🟡 中 | G.1 RAG 向量检索 | 3天 | 检索精度提升，面试展示亮点 |
+
+**总工期：约 8 天**
+
+建议顺序：G.3（1天，改底层）→ G.2（4天，工具层）→ G.1（3天，知识层）
 
 **预计从现在到"真正可用"的时间：约 6-9 个月**（其中 3-6 个月是等 paper trading 数据积累）
