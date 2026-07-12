@@ -1,6 +1,6 @@
 """
-预解压 GDELT zip 文件 → .gkg.csv，解压完删除原 zip。
-支持多线程并行，可中断重启（已解压的自动跳过）。
+Pre-extract GDELT zip files → .gkg.csv; delete the original zip after extraction.
+Supports multi-threaded parallel extraction with interruptible resume (already-extracted files are skipped automatically).
 """
 import os
 import zipfile
@@ -31,7 +31,7 @@ def extract_one(zip_path):
 
 
 def main():
-    # 扫描根目录和所有年份子目录
+    # Scan root dir and all year subdirectories
     zips = sorted(
         glob(os.path.join(FILES_DIR, "*.gkg.csv.zip")) +
         glob(os.path.join(FILES_DIR, "*", "*.gkg.csv.zip"))

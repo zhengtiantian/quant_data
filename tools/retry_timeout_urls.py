@@ -1,8 +1,8 @@
 """
-重试因网络超时未能抓取的文章 URL。
-从 MongoDB url_retry_queue 集合读取待重试记录，抓取成功后写入目标集合。
+Retry article URLs that failed to fetch due to network timeouts.
+Reads pending retry records from MongoDB url_retry_queue collection; on successful fetch, writes to the target collection.
 
-用法：
+Usage:
   python tools/retry_timeout_urls.py
   python tools/retry_timeout_urls.py --dst_collection news_articles_backfill_26 --batch 50
 """
@@ -81,14 +81,14 @@ def main():
             dst_col_name = args.dst_collection or doc.get("dst_collection", "news_articles")
 
             if result:
-                # 写入目标集合
+                # Write to target collection
                 dst_col = db[dst_col_name]
                 dst_col.update_one(
                     {"url": result["url"]},
                     {"$setOnInsert": result},
                     upsert=True,
                 )
-                # 标记完成
+                # Mark as done
                 queue_col.update_one(
                     {"_id": doc_id},
                     {"$set": {"status": "done", "last_retry_at": now}},

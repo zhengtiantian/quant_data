@@ -10,7 +10,7 @@ class Deduper:
         inserted = 0
         for a in articles:
             try:
-                self.col.insert_one(a)   # 重复则自动跳过
+                self.col.insert_one(a)   # Duplicates are automatically skipped
                 inserted += 1
             except:
                 pass

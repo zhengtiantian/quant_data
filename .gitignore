@@ -31,3 +31,18 @@ __pycache__/
 *.pyc
 tools/scratch/
 .DS_Store
+
+# Runtime logs
+logs/
+launchd_scheduler.*.log
+pipeline_scheduler*.log
+
+# One-off scratch files
+scratch/
+
+# Output artifacts
+audit_validation_latest.json
+
+# GCP / cloud credentials (never commit service account keys)
+news_collectors/gdelt/gdelt.json
+*_service_account.json

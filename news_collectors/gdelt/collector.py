@@ -7,7 +7,7 @@ from pymongo import MongoClient
 
 
 # =========================================================
-# 1. 加载环境变量（正确加载 quant_data/.env）
+# 1. Load environment variables (correctly load quant_data/.env)
 # =========================================================
 
 CURRENT_FILE = Path(__file__).resolve()
@@ -22,7 +22,7 @@ else:
 
 
 # =========================================================
-# 2. 加载当前模块 .env（可选覆盖）
+# 2. Load current module .env (optional override)
 # =========================================================
 
 MODULE_ENV = CURRENT_FILE.parent / ".env"
@@ -34,7 +34,7 @@ else:
 
 
 # =========================================================
-# 3. 读取环境变量
+# 3. Read environment variables
 # =========================================================
 
 BASE_URL = os.getenv("GDELT_BASE_URL", "https://api.gdeltproject.org/api/v2/doc/doc")
@@ -49,13 +49,13 @@ if not MONGO_URI:
 
 
 # =========================================================
-# 4. 获取新闻函数
+# 4. News fetch function
 # =========================================================
 
 def fetch_news(query=None):
     q = query or QUERY
 
-    # 自动为 OR 查询加括号
+    # Auto-wrap OR query in parentheses
     if " OR " in q and not (q.startswith("(") and q.endswith(")")):
         q = f"({q})"
     q = f"{q} AND sourcecountry:US AND -sourcecountry:VN"
@@ -77,21 +77,21 @@ def fetch_news(query=None):
     )
 
     print("Status:", resp.status_code)
-    print("Raw response (前 500 字符):\n", resp.text[:500])
+    print("Raw response (first 500 chars):\n", resp.text[:500])
 
-    # 防止 JSON 崩溃
+    # Prevent JSON crash
     try:
         data = resp.json()
     except Exception as e:
-        print("\n❌ JSON 解析失败:", e)
-        print("返回内容（再次打印）:\n", resp.text[:500])
+        print("\n❌ JSON parse failed:", e)
+        print("Response content (reprinted):\n", resp.text[:500])
         return []
 
     return data.get("articles", [])
 
 
 # =========================================================
-# 5. 保存到 MongoDB（可选）
+# 5. Save to MongoDB (optional)
 # =========================================================
 
 def save_to_mongo(articles):
@@ -128,13 +128,13 @@ def save_to_mongo(articles):
 
 
 # =========================================================
-# 6. 主程序
+# 6. Main program
 # =========================================================
 
 if __name__ == "__main__":
     articles = fetch_news()
 
-    print("\n总文章数:", len(articles))
+    print("\nTotal articles:", len(articles))
 
     if articles:
         print("\nSample articles:")

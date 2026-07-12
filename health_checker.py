@@ -16,10 +16,10 @@ def run_health_check():
     print("===============================\n")
 
 def start_health_monitor():
-    """启动后台健康检查线程"""
+    """Start background health check thread"""
     def loop():
         while True:
             run_health_check()
             print("Sleeping for 5 minutes before next check...\n")
-            time.sleep(300)  # 每5分钟执行一次
+            time.sleep(300)  # Runs every 5 minutes
     threading.Thread(target=loop, daemon=True).start()

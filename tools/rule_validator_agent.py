@@ -31,7 +31,7 @@ BASE_DIR2      = "/Volumes/Data6T/gdelt_cache/files"   # odd batches
 RULES_DIR      = os.path.join(project_root, "news_collectors/gdelt/company_rules")
 FILES_PER_YEAR = 30    # files sampled per calendar year (10yr × 30 = ~300 total)
 FETCH_WORKERS  = 6
-MAX_FETCH      = 10   # 每个 symbol 最多抓取正文数
+MAX_FETCH      = 10   # Max article body fetches per symbol
 
 TECH_26 = [
     "TSM", "ASML", "CRM", "PLTR", "NOW", "ADBE", "NFLX", "UBER",

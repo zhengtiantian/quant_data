@@ -35,7 +35,7 @@ if not MONGO_URI:
 
 def load_stock_universe():
     """
-    从 MongoDB 读取股票列表（你之前已经存入 stock_universe）
+    Load stock list from MongoDB (previously stored in stock_universe collection).
     """
     client = MongoClient(MONGO_URI)
     col = client["quant_data"]["stock_universe"]
@@ -50,7 +50,7 @@ def load_stock_universe():
 
 def fetch_quote(symbol):
     """
-    Finnhub Quote API — 免费可用
+    Finnhub Quote API — free plan available
     Returns:
         c: Current price
         h: High price of the day

@@ -216,7 +216,7 @@ def run_event_driven_backtest(
             earnings_miss  = bool(row_now["earnings_miss_signal"])    if row_now is not None and pd.notna(row_now.get("earnings_miss_signal")) else False
             earnings_beat  = bool(row_now["earnings_beat_signal"])    if row_now is not None and pd.notna(row_now.get("earnings_beat_signal")) else False
 
-            # earnings_beat 锁仓：持有期内有正向收益信号，屏蔽情感退出，强持到 min_hold
+            # earnings_beat lock: positive earnings signal within holding period; suppress sentiment-based exit and hold until min_hold
             beat_lock = earnings_beat and pos.days_held < min_hold
 
             exit_reason = None
@@ -224,13 +224,13 @@ def run_event_driven_backtest(
                 exit_reason = f"max_hold_{max_hold}d"
             elif pd.notna(score_now) and score_now < exit_threshold:
                 exit_reason = "score_below_exit"
-            # LLM: regulatory risk + negative sentiment → immediate exit (beat_lock 不保护)
+            # LLM: regulatory risk + negative sentiment → immediate exit (beat_lock does not protect)
             elif not earnings_beat and has_reg_risk and sent_5d is not None and sent_5d < sentiment_exit_threshold:
                 exit_reason = "regulatory_risk_negative_sent"
-            # LLM: earnings miss → immediate exit (beat_lock 不保护)
+            # LLM: earnings miss → immediate exit (beat_lock does not protect)
             elif not earnings_beat and earnings_miss and sent_5d is not None and sent_5d < sentiment_exit_threshold:
                 exit_reason = "earnings_miss_negative_sent"
-            # LLM: 情感动量逆转 — beat_lock 期间屏蔽
+            # LLM: sentiment momentum reversal — suppressed during beat_lock period
             elif not beat_lock and pos.days_held >= min_hold and sent_shift is not None and sent_shift < sentiment_shift_exit:
                 exit_reason = "sentiment_reversal"
             elif not beat_lock and pos.days_held >= min_hold and pd.notna(score_now) and score_now <= hold_threshold:
@@ -264,12 +264,12 @@ def run_event_driven_backtest(
                 score = row["composite_score"]
                 if pd.isna(score) or score < entry_threshold:
                     continue
-                # sentiment_entry_min 门控：要求 avg_sentiment_5d 高于最低阈值
+                # sentiment_entry_min gate: requires avg_sentiment_5d above minimum threshold
                 if sentiment_entry_min > 0:
                     sent = row.get("avg_sentiment_5d")
                     if pd.isna(sent) or float(sent) < sentiment_entry_min:
                         continue
-                # 屏蔽 earnings_miss：近期有负向收益信号时不开新仓
+                # Block earnings_miss: do not open new positions when there is a recent negative earnings signal
                 if block_miss_entry and row.get("earnings_miss_signal", 0):
                     continue
                 open_positions.append(Position(

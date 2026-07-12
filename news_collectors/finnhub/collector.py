@@ -26,7 +26,7 @@ MONGO_URI = os.getenv("MONGO_URI")
 if not FINNHUB_API_KEY:
     raise RuntimeError("FINNHUB_API_KEY missing")
 
-# ====== A/B 分类关键词 ======
+# ====== A/B classification keywords ======
 
 STRONG = [
     "earnings","revenue","guidance","profit","loss",
@@ -61,7 +61,7 @@ def fetch_finnhub():
 
     return r.json()[:LIMIT]
 
-# ====== Save (统一 schema!) ======
+# ====== Save (unified schema!) ======
 
 def save_to_mongo(articles):
     client = MongoClient(MONGO_URI)

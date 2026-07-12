@@ -26,12 +26,12 @@ import socket
 import platform
 
 # ============================
-# 启用 SLM 过滤器
+# Enable SLM filter
 # ============================
 import argparse
 
 # ============================
-# 参数解析：支持动态指定股票和目标表
+# Argument parsing: supports dynamic symbol and target table specification
 # ============================
 parser = argparse.ArgumentParser(description="GDELT Historical News Collector")
 parser.add_argument("--symbols", type=str, help="Comma-separated symbols to track (e.g. TSM,ASML)")
@@ -39,10 +39,10 @@ parser.add_argument("--dst_collection", type=str, help="Target MongoDB collectio
 args, unknown = parser.parse_known_args()
 
 # ============================
-# 启用 SLM 过滤器
+# Enable SLM filter
 # ============================
-os.environ["USE_SLM_FILTER"] = "true"  # 启用 SLM 智能过滤
-# 默认关闭规则细粒度日志，避免刷屏淹没进度
+os.environ["USE_SLM_FILTER"] = "true"  # Enable SLM smart filtering
+# Disable verbose rule logging by default to avoid flooding progress output
 RULE_EVENT_LOGS = os.getenv("RULE_EVENT_LOGS", "true").lower() == "true"
 if RULE_EVENT_LOGS:
     os.environ["RULE_VERBOSE"] = "true"
@@ -53,7 +53,7 @@ else:
 
 from special_rules import RuleManager
 
-# 统一日志前缀：所有 print 自动附带线程名
+# Unified log prefix: all print calls automatically include thread name
 _ORIGINAL_PRINT = builtins.print
 WORKER_BATCH_CONTEXT = {}
 
@@ -75,7 +75,7 @@ def _thread_print(*args, **kwargs):
 builtins.print = _thread_print
 
 # ============================
-# 全局配置
+# Global configuration
 # ============================
 _rule_manager = None
 _rule_manager_lock = threading.Lock()
@@ -94,35 +94,35 @@ MONGO_URI = os.getenv("MONGO_URI", "mongodb://root:root@127.0.0.1:37018/")
 DB_NAME = "quant_data"
 SRC_COLLECTION = "stock_universe"
 
-# 动态决定目标集合：优先用 CLI 参数 -> 其次用环境变量 -> 最后默认 news_articles
+# Dynamically determine target collection: CLI arg > env var > default news_articles
 DST_COLLECTION = args.dst_collection or os.getenv("DST_COLLECTION", "news_articles")
 
-# 筛选股票列表
+# Filter stock list
 TARGET_SYMBOLS_LIMIT = None
 if args.symbols:
     TARGET_SYMBOLS_LIMIT = [s.strip().upper() for s in args.symbols.split(",")]
 elif os.getenv("TARGET_SYMBOLS"):
     TARGET_SYMBOLS_LIMIT = [s.strip().upper() for s in os.getenv("TARGET_SYMBOLS").split(",")]
 
-YEARS_BACK = 11  # 扩大范围以确保覆盖到 2016-01-01
-START_DATE_STR = os.getenv("START_DATE", "2016-01-01")  # 锁定缓存起始日
-MAX_FILES = None  # 全量
-TEST_MODE = False  # 正式模式
+YEARS_BACK = 11  # Extended range to ensure coverage from 2016-01-01
+START_DATE_STR = os.getenv("START_DATE", "2016-01-01")  # Pin cache start date
+MAX_FILES = None  # Full set
+TEST_MODE = False  # Production mode
 CACHE_DIR  = os.getenv("GDELT_CACHE_DIR",  "/Volumes/Data24T/docker-volumes/gdelt_cache")
 CACHE_DIR2 = os.getenv("GDELT_CACHE_DIR2", "/Volumes/Data6T/gdelt_cache")
-FILES_DIR  = os.path.join(CACHE_DIR,  "files")   # 偶数批次
-FILES_DIR2 = os.path.join(CACHE_DIR2, "files")   # 奇数批次
+FILES_DIR  = os.path.join(CACHE_DIR,  "files")   # Even batches
+FILES_DIR2 = os.path.join(CACHE_DIR2, "files")   # Odd batches
 os.makedirs(CACHE_DIR, exist_ok=True)
 os.makedirs(FILES_DIR, exist_ok=True)
 try:
     os.makedirs(FILES_DIR2, exist_ok=True)
 except OSError:
-    pass  # Data6T 未挂载或无权限时不影响启动
+    pass  # Does not affect startup if Data6T is not mounted or lacks permissions
 
 BASE_URL = "http://data.gdeltproject.org/gdeltv2"
 MASTER_FILE = os.path.join(CACHE_DIR, "masterfilelist.txt")
 
-# 获取系统短标识
+# Get system short identifier
 def get_system_label():
     sys_name = platform.system().lower()
     if 'darwin' in sys_name: return 'mac'
@@ -132,7 +132,7 @@ def get_system_label():
 _HOSTNAME = socket.gethostname().split('.')[0]
 HOST_ID = f"{get_system_label()}-{_HOSTNAME}"
 
-# User-Agent 配置
+# User-Agent configuration
 user_agent = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) "
     "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15"
@@ -152,7 +152,7 @@ SCAN_PROGRESS_EVERY_FILES = int(os.getenv("SCAN_PROGRESS_EVERY_FILES", "100"))
 SCAN_RULE_PROGRESS_EVERY_RECORDS = int(os.getenv("SCAN_RULE_PROGRESS_EVERY_RECORDS", "0"))
 STUCK_URLS_FILE = os.path.join(CACHE_DIR, "stuck_urls.txt")
 
-# 调试开关：只控制日志，不影响业务逻辑
+# Debug switch: controls logging only, does not affect business logic
 DEBUG_TASK_TRACE = os.getenv("DEBUG_TASK_TRACE", "false").lower() == "true"
 USE_MYSQL_BATCH_QUEUE = os.getenv("USE_MYSQL_BATCH_QUEUE", "false").lower() == "true"
 BATCH_WORKERS = int(os.getenv("BATCH_WORKERS", "2"))
@@ -169,7 +169,7 @@ MYSQL_USER = os.getenv("MYSQL_USER", "root")
 MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "root")
 MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "workflow")
 MYSQL_TASK_TABLE = os.getenv("MYSQL_TASK_TABLE", "gdelt_batch_tasks")
-BATCH_SIZE = 100  # 每次处理100个 GKG 文件，与 MySQL batch_id 一一对应
+BATCH_SIZE = 100  # Process 100 GKG files per batch, one-to-one correspondence with MySQL batch_id
 
 # ── GKG MongoDB index ─────────────────────────────────────────────────────────
 # New files are downloaded to Data4T temp dir, parsed, imported to MongoDB,
@@ -247,18 +247,18 @@ def _gkg_query_rows(ts: str, gkg_col) -> list[dict]:
     return [{"URL": d["url"], "Raw": d.get("raw", ""), "Title": "", "Date": ts[:8]} for d in docs]
 
 def _gkg_ensure_indexes(gkg_col) -> None:
-    # 索引按字段检测：已存在(任意名字)就跳过，避免在 6.75亿行集合上
-    # 因索引名不一致(gkg_ts vs ts_1)触发冲突/重建而卡死。
+    # Index detection by field: skip if any index already exists to avoid deadlock on a 675M-row collection
+    # caused by index name mismatch (gkg_ts vs ts_1) triggering conflict/rebuild.
     existing_keys = {
         tuple(spec["key"][0]) for spec in gkg_col.index_information().values()
         if spec.get("key")
     }
     if ("url", 1) not in existing_keys:
-        gkg_col.create_index("url", background=True)  # 非unique：url有大量重复
+        gkg_col.create_index("url", background=True)  # Non-unique: url has many duplicates
     if ("ts", 1) not in existing_keys:
         gkg_col.create_index("ts", background=True)
 
-# filename → batch_id 映射，由 get_gkg_file_urls() 在启动时填充
+# filename → batch_id mapping, populated by get_gkg_file_urls() at startup
 _filename_to_batch: dict = {}
 _cache_fallback_warned = {"empty_batch_map": False, "year_fallback": False}
 # Cached sorted URL list built from masterfilelist for fallback batch lookup
@@ -284,7 +284,7 @@ signal.signal(signal.SIGTERM, _signal_handler)
 
 
 def load_stuck_urls():
-    """加载历史超时 URL 黑名单，避免重复卡死。"""
+    """Load historical timeout URL blacklist to avoid repeated hangs."""
     if not os.path.exists(STUCK_URLS_FILE):
         return set()
     try:
@@ -295,7 +295,7 @@ def load_stuck_urls():
 
 
 def append_stuck_urls(urls):
-    """追加记录本批卡住 URL。"""
+    """Append stuck URLs from the current batch to the blacklist."""
     if not urls:
         return
     try:
@@ -307,7 +307,7 @@ def append_stuck_urls(urls):
 
 
 def enqueue_retry_urls(timed_out_matches, dst_collection):
-    """把 timeout 的抓取任务写入 MongoDB retry 队列，供后续定时任务重试。"""
+    """Write timed-out fetch tasks to the MongoDB retry queue for later retry."""
     if not timed_out_matches:
         return
     try:
@@ -597,7 +597,7 @@ def _extract_article_payload(row, company, debug_trace=False):
         if result:
             return result
 
-        # 规则或垃圾页过滤掉的内容直接丢弃，不再 fallback
+        # Content filtered by rules or junk page detection is discarded; no fallback
         return None
     except Exception as err:
         try:
@@ -664,7 +664,7 @@ def ensure_task_table():
 
 
 def requeue_host_running_batches():
-    """启动时把本机之前未完成的 running 批次重置为 pending，避免崩溃/强制关闭后任务卡死。"""
+    """On startup, reset running batches from this host back to pending to avoid task deadlock after crash or forced shutdown."""
     conn = get_mysql_conn()
     try:
         cur = conn.cursor()
@@ -699,14 +699,14 @@ def build_batch_signatures(urls, batch_size):
 
 
 def seed_tasks(total_batches, resume_batch, batch_signatures):
-    """播种任务，确保整整 10 年的任务都在列表中"""
+    """Seed tasks to ensure all batches spanning 10 years are present in the table."""
     conn = get_mysql_conn()
     try:
         cur = conn.cursor()
-        # 批量检查和插入。如果有 35 万个文件，总批次应该是 3500 左右。
+        # Bulk check and insert. With ~350K files, total batches should be around 3500.
         print(f"🌱 Seeding {total_batches} batches into {MYSQL_TASK_TABLE}...")
-        
-        # 分块插入提高性能
+
+        # Chunked insert for better performance
         chunk_size = 500
         for i in range(0, total_batches, chunk_size):
             chunk = [(b_id, 'pending') for b_id in range(i + 1, min(i + chunk_size + 1, total_batches + 1))]
@@ -715,7 +715,7 @@ def seed_tasks(total_batches, resume_batch, batch_signatures):
                 chunk
             )
         
-        # 填充签名（如有缺失）
+        # Populate signatures (if missing)
         for batch_id, batch_sig in batch_signatures:
             cur.execute(
                 f"UPDATE {MYSQL_TASK_TABLE} SET batch_sig=%s WHERE batch_id=%s AND batch_sig IS NULL",
@@ -728,7 +728,7 @@ def seed_tasks(total_batches, resume_batch, batch_signatures):
 
 
 def claim_next_batch(owner):
-    """认领下一个任务。针对分布式进行了死锁保护和 HOST_ID 绑定。"""
+    """Claim the next pending task. Includes deadlock protection and HOST_ID binding for distributed use."""
     max_attempts = 10
     for attempt in range(1, max_attempts + 1):
         conn = get_mysql_conn()
@@ -736,7 +736,7 @@ def claim_next_batch(owner):
             cur = conn.cursor(dictionary=True)
             cur.execute("START TRANSACTION")
             
-            # 查找待处理任务：支持认领 pending、failed 或者掉线的 running
+            # Find next available task: supports claiming pending, failed, or stale running batches
             cur.execute(
                 f"""
                 SELECT batch_id
@@ -755,7 +755,7 @@ def claim_next_batch(owner):
                 return None
                 
             batch_id = int(row["batch_id"])
-            # 关键：更新 owner 和 owner_host 为当前 worker 身份
+            # Critical: update owner and owner_host to identify current worker
             cur.execute(
                 f"""
                 UPDATE {MYSQL_TASK_TABLE}
@@ -818,7 +818,7 @@ def mark_batch_failed(batch_id, err_msg):
 
 
 def requeue_batch(batch_id, reason):
-    """把当前批次放回 pending，避免异常退出时任务丢失。"""
+    """Put the current batch back to pending to prevent task loss on abnormal exit."""
     conn = get_mysql_conn()
     try:
         cur = conn.cursor()
@@ -860,7 +860,7 @@ def heartbeat_batch(batch_id, owner):
 
 
 # ============================
-# MongoDB 操作
+# MongoDB operations
 # ============================
 def get_db():
     client = MongoClient(MONGO_URI)
@@ -890,7 +890,7 @@ def load_companies():
 
 
 def ensure_index():
-    """为 URL 建立唯一索引"""
+    """Create a unique index on URL."""
     db = get_db()
     col = db[DST_COLLECTION]
     try:
@@ -901,7 +901,7 @@ def ensure_index():
 
 
 # ============================
-# masterfilelist 缓存
+# masterfilelist cache
 # ============================
 def load_masterfilelist():
     print("⬇️ Refreshing masterfilelist.txt from GDELT...")
@@ -925,37 +925,37 @@ def load_masterfilelist():
 
 
 # ============================
-# 时间戳解析工具
+# Timestamp parsing utilities
 # ============================
 def parse_gdelt_timestamp(filename_or_timestamp):
     """
-    解析 GDELT 时间戳
-    输入: 文件名 (如 '20210125184500.gkg.csv.zip') 或时间戳字符串 (如 '20210125184500')
-    输出: {
-        'timestamp_str': '20210125184500',  # 原始字符串
-        'date_str': '20210125',              # 日期字符串 (YYYYMMDD)
-        'datetime': datetime(2021, 1, 25, 18, 45, 0),  # Python datetime 对象
-        'iso': '2021-01-25T18:45:00Z'        # ISO 8601 格式
+    Parse a GDELT timestamp.
+    Input: filename (e.g. '20210125184500.gkg.csv.zip') or timestamp string (e.g. '20210125184500')
+    Output: {
+        'timestamp_str': '20210125184500',  # raw string
+        'date_str': '20210125',              # date string (YYYYMMDD)
+        'datetime': datetime(2021, 1, 25, 18, 45, 0),  # Python datetime object
+        'iso': '2021-01-25T18:45:00Z'        # ISO 8601 format
     }
     """
-    # 从文件名中提取时间戳
+    # Extract timestamp from filename
     if '.' in filename_or_timestamp:
         timestamp_str = os.path.basename(filename_or_timestamp).split('.')[0]
     else:
         timestamp_str = filename_or_timestamp
-    
-    # 处理不同长度的时间戳
+
+    # Handle different timestamp lengths
     if len(timestamp_str) >= 14:
-        # 完整时间戳: YYYYMMDDHHMMSS
+        # Full timestamp: YYYYMMDDHHMMSS
         dt = datetime.strptime(timestamp_str[:14], "%Y%m%d%H%M%S")
         date_str = timestamp_str[:8]
     elif len(timestamp_str) >= 8:
-        # 仅日期: YYYYMMDD
+        # Date only: YYYYMMDD
         dt = datetime.strptime(timestamp_str[:8], "%Y%m%d")
         date_str = timestamp_str[:8]
-        timestamp_str = date_str + "000000"  # 补充为完整格式
+        timestamp_str = date_str + "000000"  # Pad to full format
     else:
-        # 无效格式，返回 None
+        # Invalid format, return None
         return None
     
     return {
@@ -966,10 +966,10 @@ def parse_gdelt_timestamp(filename_or_timestamp):
     }
 
 # ============================
-# 并行批量下载（自动跳过已缓存）
+# Parallel batch download (auto-skips already cached files)
 # ============================
 def download_with_retry(url, retries=3, backoff=3):
-    """下载单个文件（带重试机制）"""
+    """Download a single file with retry logic."""
     for attempt in range(retries):
         try:
             r = requests.get(url, timeout=90)
@@ -993,10 +993,10 @@ def download_with_retry(url, retries=3, backoff=3):
 
 
 def batch_download_files(urls, batch_size=20, worker_name=None, gkg_col=None):
-    """并行批量下载 GDELT 文件，已缓存文件自动跳过。
+    """Download GDELT files in parallel; already-cached files are skipped automatically.
 
-    若 USE_GKG_MONGO=true：新文件下载到 GKG_TMP_DIR (Data4T)，解压后导入 MongoDB 再删除 csv。
-    否则：沿用旧逻辑，保存到 Data24T/Data6T 批次目录。
+    If USE_GKG_MONGO=true: new files are downloaded to GKG_TMP_DIR (Data4T), extracted, imported to MongoDB, then the csv is deleted.
+    Otherwise: use the old logic and save to Data24T/Data6T batch directories.
     """
     def _already_have(url):
         filename = os.path.basename(url)
@@ -1047,13 +1047,13 @@ def batch_download_files(urls, batch_size=20, worker_name=None, gkg_col=None):
 
 
 def get_latest_cached_gkg_timestamp():
-    """返回本地缓存中最新 GKG 文件的时间戳，从 masterfilelist 倒序查找避免遍历30万文件目录。"""
+    """Return the timestamp of the most recently cached GKG file by scanning masterfilelist in reverse to avoid traversing 300K file directories."""
     if not os.path.exists(MASTER_FILE):
         return None
     try:
         with open(MASTER_FILE, "r") as f:
             lines = f.readlines()
-        # masterfilelist 按时间正序，从末尾往前找第一个已缓存文件
+        # masterfilelist is in chronological order; scan from the end for the most recently cached file
         for line in reversed(lines):
             if ".gkg.csv.zip" not in line:
                 continue
@@ -1070,7 +1070,7 @@ def get_latest_cached_gkg_timestamp():
 
 
 def predownload_recent_missing_files(urls):
-    """启动时从本地最新缓存补齐到今天，避免新时间段的 GKG 文件缺口。"""
+    """On startup, download from the latest local cache up to today to fill any gaps in recent GKG files."""
     if not STARTUP_PREDOWNLOAD_ENABLED or not urls:
         return
 
@@ -1104,13 +1104,13 @@ def predownload_recent_missing_files(urls):
 
 
 # ============================
-# 获取时间范围内文件 UR
+# Fetch file URLs within time range
 # ============================
 def get_gkg_file_urls(years_back, max_files=None):
     lines = load_masterfilelist()
     urls = []
     
-    # 强制从 2016年1月1日 开始收集
+    # Force collection starting from 2016-01-01
     start_dt = datetime(2016, 1, 1)
     end_dt = datetime.utcnow()
     
@@ -1128,7 +1128,7 @@ def get_gkg_file_urls(years_back, max_files=None):
         except:
             continue
     
-    # ⚠️ 关键修正：必须正序排列，否则会从 2026年倒着跑，导致找不到缓存文件
+    # ⚠️ Critical fix: must sort in ascending order, otherwise processing runs from 2026 backwards, causing cache misses
     urls.sort()
 
     if max_files:
@@ -1154,7 +1154,7 @@ def _rebuild_filename_to_batch(urls):
 
 
 # ============================
-# 清洗公司名
+# Clean company name
 # ============================
 def clean_company_name(name):
     if not name:
@@ -1166,7 +1166,7 @@ def clean_company_name(name):
 
 
 def strip_urls_and_xml(text):
-    """移除 XML 标签、PAGE_LINKS 和裸 URL，避免平台域名误触发关键词匹配。"""
+    """Remove XML tags, PAGE_LINKS, and bare URLs to prevent platform domain names from triggering keyword matches."""
     if not isinstance(text, str) or not text:
         return ""
     text = re.sub(r"(?is)<PAGE_LINKS>.*?</PAGE_LINKS>", " ", text)
@@ -1178,7 +1178,7 @@ def strip_urls_and_xml(text):
 
 
 def read_gkg_tsv(file_obj):
-    """使用 pandas Python engine 读取 GKG，绕开多线程下不稳定的 C parser。"""
+    """Read GKG using pandas Python engine to avoid the unstable C parser under multithreading."""
     return pd.read_csv(
         file_obj,
         sep="\t",
@@ -1193,17 +1193,17 @@ def read_gkg_tsv(file_obj):
 
 
 def _csv_name(filename):
-    """把 .gkg.csv.zip 文件名转为解压后的 .gkg.csv 文件名。"""
+    """Convert a .gkg.csv.zip filename to the extracted .gkg.csv filename."""
     return filename[:-4] if filename.endswith(".zip") else filename
 
 
 def _batch_root(batch_id):
-    """根据批次奇偶返回对应盘的 files 根目录。"""
+    """Return the files root directory for the given batch based on even/odd batch ID."""
     return FILES_DIR2 if batch_id % 2 == 1 else FILES_DIR
 
 
 def _batch_dir_for_file(filename):
-    """返回文件对应的批次目录路径，奇数批次在 Data6T，偶数在 Data24T。"""
+    """Return the batch directory path for the file; odd batches go to Data6T, even batches to Data24T."""
     name = os.path.basename(filename)
     batch_id = _filename_to_batch.get(name) or _filename_to_batch.get(_csv_name(name))
     if batch_id:
@@ -1212,7 +1212,7 @@ def _batch_dir_for_file(filename):
 
 
 def _file_cached(url_or_filename):
-    """检查文件是否已缓存，优先检查批次子目录，兼容年份目录和旧平铺结构。"""
+    """Check if the file is already cached; prioritize batch subdirectory, with fallback to year dir and flat structure."""
     name = os.path.basename(url_or_filename)
     csv_name_ = _csv_name(name)
 
@@ -1235,7 +1235,7 @@ def _file_cached(url_or_filename):
 
 
 def _read_cached_file(filename):
-    """读取已缓存的 GKG 文件，优先读批次子目录，兼容年份目录和旧平铺结构。"""
+    """Read an already-cached GKG file; prioritize batch subdirectory, with fallback to year dir and flat structure."""
     name = os.path.basename(filename)
     csv_name_ = _csv_name(name)
 
@@ -1255,8 +1255,8 @@ def _read_cached_file(filename):
 
 
 def _extract_and_delete_zip(zip_path, gkg_col=None):
-    """解压 zip 文件为同名 .csv。
-    若提供 gkg_col，则解压后导入 MongoDB 再删除 csv；否则保留 csv（旧行为）。
+    """Extract a zip file to the same-named .csv.
+    If gkg_col is provided, import to MongoDB after extraction then delete the csv; otherwise keep the csv (legacy behavior).
     """
     csv_path = zip_path[:-4]  # remove .zip
     try:
@@ -1280,14 +1280,14 @@ def _extract_and_delete_zip(zip_path, gkg_col=None):
         print(f"⚠️ Extract failed for {zip_path}: {e}")
 
 
-# 全局去重，防止同一个 URL 在一次运行中被多次分析
+# Global deduplication to prevent the same URL from being processed multiple times in one run
 processed_urls = set()
 
 # ============================
-# 解析 GDELT 文件（核心优化版：文件主导循环）
+# Parse GDELT files (core optimized version: file-driven loop)
 # ============================
 def process_single_file(url, companies, rule_manager, avg_date, gkg_col=None):
-    """处理单个 GKG 文件的协程/线程函数"""
+    """Thread function for processing a single GKG file."""
     filename = os.path.basename(url)
     ts = _gkg_ts(filename)
 
@@ -1322,7 +1322,7 @@ def process_single_file(url, companies, rule_manager, avg_date, gkg_col=None):
         if df is None or df.empty:
             return []
 
-        # 判断并提取格式
+        # Detect and extract format
         has_xml_column = (26 in df.columns) and (df[26].notna().any())
         if has_xml_column:
             df["URL"] = df[26].astype(str).str.extract(r"(?s)<PAGE_LINKS>(.*?)</PAGE_LINKS>", expand=False).fillna("").str.split(";").str[0]
@@ -1341,21 +1341,21 @@ def process_single_file(url, companies, rule_manager, avg_date, gkg_col=None):
         if df.empty:
             return []
 
-        # 预构建关键词库
+        # Pre-build keyword list
         for company in companies:
             symbol = company['symbol']
             keywords = rule_manager.get_keywords(symbol, avg_date)
-            # 简单匹配：只要正文含有关键词
+            # Simple match: content just needs to contain any keyword
             pattern = "|".join(r"\b" + re.escape(str(k)) + r"\b" for k in keywords if len(str(k)) > 1)
-            
-            # 使用更快的搜索方式
+
+            # Use a faster search approach
             mask = df["Title"].str.contains(pattern, case=False, na=False, regex=True) | \
                    df["Raw"].str.contains(pattern, case=False, na=False, regex=True)
-            
+
             matched_df = df[mask]
             for _, row in matched_df.iterrows():
                 final_url = str(row["URL"])
-                # 再次校验
+                # Re-verify
                 article_data = {"title": row["Title"], "content": row["Raw"], "date": row["Date"]}
                 if rule_manager.should_include(symbol, article_data):
                     matches.append({
@@ -1393,7 +1393,7 @@ def process_file_task(url, rule_manager, ac, all_keywords_map, symbol_to_company
         if df is None or df.empty:
             return {"matches": [], "rows": 0, "candidates": 0, "sample": "", "filename": filename}
 
-        # 探测格式（仅本地 CSV 路径需要；MongoDB 路径 df 已含 URL/Raw/Title）
+        # Detect format (only needed for local CSV path; MongoDB path already has URL/Raw/Title in df)
         if _mongo_rows is None:
             if has_xml:
                 df["URL"] = df[26].astype(str).str.extract(r"(?s)<PAGE_LINKS>(.*?)</PAGE_LINKS>", expand=False).fillna("").str.split(";").str[0]
@@ -1503,12 +1503,12 @@ def process_file_task(url, rule_manager, ac, all_keywords_map, symbol_to_company
         return {"matches": [], "rows": 0, "candidates": 0, "sample": "", "error": str(e), "filename": filename}
 
 def process_batch_files(batch_urls, companies, worker_name=None):
-    """并行处理一批 GKG 文件并高效匹配所有公司"""
+    """Process a batch of GKG files in parallel, efficiently matching all companies."""
     import numpy as np
     _batch_start = time.time()
     rule_manager = get_rule_manager()
-    
-    # 1. 计算平均日期
+
+    # 1. Compute average date
     batch_dates = []
     for url in batch_urls:
         try: batch_dates.append(datetime.strptime(os.path.basename(url)[:8], "%Y%m%d"))
@@ -1518,7 +1518,7 @@ def process_batch_files(batch_urls, companies, worker_name=None):
         avg_date = min(batch_dates) + (max(batch_dates) - min(batch_dates)) / 2
     avg_date = avg_date.replace(tzinfo=None)
 
-    # 2. 预构建全局关键词 → Aho-Corasick 自动机
+    # 2. Pre-build global keyword map → Aho-Corasick automaton
     import ahocorasick
     all_keywords_map = {}
     ac = ahocorasick.Automaton()
@@ -1609,7 +1609,7 @@ def process_batch_files(batch_urls, companies, worker_name=None):
                     for k in _acc:
                         _acc[k] = 0
 
-    # 去重
+    # Deduplicate
     seen = set()
     final_output = []
     for m in all_combined_matches:
@@ -1626,7 +1626,7 @@ def process_batch_files(batch_urls, companies, worker_name=None):
             f"🧪 Rule check done: {progress['rules_processed']}/{progress['rules_total_discovered']} records"
         )
 
-    # 输出每步过滤汇总
+    # Print per-step filter summary
     from special_rules.ambiguous_names import print_filter_summary
     print_filter_summary(w)
 
@@ -1635,7 +1635,7 @@ def process_batch_files(batch_urls, companies, worker_name=None):
 
 
 # ============================
-# 抓取新闻正文
+# Fetch article content
 # ============================
 def fetch_article(row, company):
     return _extract_article_payload(row, company, debug_trace=DEBUG_TASK_TRACE)
@@ -1673,16 +1673,16 @@ def process_one_batch(
 
     wlog(f"🚀 Processing File Batch {batch_idx}/{total_batches}...")
 
-    # 实时下载当前批次的文件（USE_GKG_MONGO=true 时存到 Data4T 并导入 MongoDB）
+    # Download current batch files in real time (when USE_GKG_MONGO=true, save to Data4T and import to MongoDB)
     gkg_col = get_gkg_col() if USE_GKG_MONGO else None
     batch_download_files(batch_urls, batch_size=20, worker_name=worker, gkg_col=gkg_col)
 
-    # A. 内存匹配
+    # A. In-memory matching
     matches = process_batch_files(batch_urls, valid_companies, worker_name=worker)
     if not matches:
         return 0
 
-    # C. 数据库级去重：在抓取前先检查库里是否已存在
+    # C. DB-level deduplication: check if URLs already exist before fetching
     all_batch_urls = list(set(m["row"]["URL"] for m in matches))
     existing_urls_cursor = dst_col.find({"url": {"$in": all_batch_urls}}, {"url": 1})
     existing_urls = set(doc["url"] for doc in existing_urls_cursor)
@@ -1708,7 +1708,7 @@ def process_one_batch(
         wlog("⚠️ Skip fetch stage because shutdown is in progress")
         return 0
 
-    # 正文抓取放到子进程池，避免 lxml/newspaper3k native crash 直接打死主进程。
+    # Run content fetching in subprocess pool to prevent lxml/newspaper3k native crashes from killing the main process.
     final_results = []
     executor = build_parse_executor()
     timed_out = False
@@ -1816,7 +1816,7 @@ def process_one_batch(
                 completed = len(matches)
                 break
 
-            # 单 URL 超时：只跳过卡住任务，不终止整批
+            # Single URL timeout: skip only the stuck task, do not terminate the whole batch
             now = time.time()
             stale = [
                 f for f in list(pending)
@@ -1880,7 +1880,7 @@ def process_one_batch(
     results = final_results
     wlog(f"✅ {len(results)}/{len(matches)} articles successfully crawled in global pool")
 
-    # D. 入库
+    # D. Insert to database
     inserted_count = 0
     if results:
         quality_rank = {"full": 3, "title_only": 2, "url_only": 1}
@@ -1939,17 +1939,17 @@ def process_one_batch(
 
 
 # ============================
-# 多进程 batch worker（模块级，可 pickle）
+# Multi-process batch worker (module-level, picklable)
 # ============================
 def _run_batch_worker(worker_id, shutdown_event, urls, valid_companies, total_batches, stuck_urls_initial, shared_inserted=None):
     global SHUTDOWN_EVENT
-    SHUTDOWN_EVENT = shutdown_event  # 让本进程内所有函数共享同一个 Event
+    SHUTDOWN_EVENT = shutdown_event  # Share the same Event across all functions in this process
 
-    # 子进程无缓冲输出
+    # Unbuffered output in subprocess
     import sys
     sys.stdout.reconfigure(line_buffering=True)
 
-    # spawn 子进程不会继承主进程中的模块级映射，这里必须重建
+    # Spawned subprocesses do not inherit module-level mappings from the parent; must rebuild here
     _rebuild_filename_to_batch(urls)
 
     db = get_db()
@@ -1959,7 +1959,7 @@ def _run_batch_worker(worker_id, shutdown_event, urls, valid_companies, total_ba
 
     worker_name = f"{HOST_ID}-worker{worker_id}"
     owner = worker_name
-    # 设置主线程名，使 scan 日志显示正确 worker 标识
+    # Set main thread name so scan logs display the correct worker identifier
     threading.current_thread().name = worker_name
     total_inserted = 0
     print(f"🚀 Started on {platform.system()} as {owner}", flush=True)
@@ -2020,14 +2020,14 @@ def _run_batch_worker(worker_id, shutdown_event, urls, valid_companies, total_ba
 
 
 # ============================
-# 主逻辑
+# Main logic
 # ============================
 if __name__ == "__main__":
-    # 自动调整时间范围：测试模式使用最早的2天数据，正式模式收集10年
+    # Auto-adjust time range: test mode uses the earliest 2 days of data, production mode collects 10 years
     if TEST_MODE:
-        # 测试模式：获取约 1 天的数据
-        actual_years_back = None # 触发最早文件逻辑
-        actual_max_files = 100    # 约 1.05 天的数据 (96 files/day)
+        # Test mode: fetch approximately 1 day of data
+        actual_years_back = None # Triggers earliest-file logic
+        actual_max_files = 100    # Approximately 1.05 days of data (96 files/day)
         mode_str = "TEST (approx 1 day, 2 batches)"
     else:
         actual_years_back = YEARS_BACK
@@ -2045,10 +2045,10 @@ if __name__ == "__main__":
     urls = get_gkg_file_urls(actual_years_back, actual_max_files)
     predownload_recent_missing_files(urls)
     
-    # 2. 准备公司数据
+    # 2. Prepare company data
     companies = load_companies()
-    
-    # 预处理公司名，避免重复计算
+
+    # Pre-process company names to avoid redundant computation
     valid_companies = []
     for c in companies:
         c['cleaned_name'] = clean_company_name(c.get('name', ''))
@@ -2057,7 +2057,7 @@ if __name__ == "__main__":
     
     print(f"🏢 Prepared {len(valid_companies)} companies for matching (all stocks).")
     
-    # 3. 按批次处理文件 (File-First Loop)
+    # 3. Process files in batches (File-First Loop)
     total_inserted = 0
     stuck_urls = load_stuck_urls()
     print(f"⛔ Loaded {len(stuck_urls)} historical stuck URLs")
@@ -2065,12 +2065,12 @@ if __name__ == "__main__":
     if TEST_MODE:
         print(f"🧪 TEST MODE: Starting from batch 1")
 
-    # 分批遍历 URL
+    # Iterate URLs in batches
     total_batches = (len(urls) + BATCH_SIZE - 1) // BATCH_SIZE
     total_files = len(urls)
     print(f"📌 Global scan target: files={total_files}, batches={total_batches}, batch_size={BATCH_SIZE}")
 
-    # else 分支（非 MySQL 队列模式）仍用单进程，保留这些变量
+    # else branch (non-MySQL queue mode): still uses single process; keep these variables
     db = get_db()
     dst_col = db[DST_COLLECTION]
     stuck_urls_lock = threading.Lock()
@@ -2089,10 +2089,10 @@ if __name__ == "__main__":
         batch_signatures = build_batch_signatures(urls, BATCH_SIZE)
         seed_tasks(total_batches, queue_resume_batch, batch_signatures)
 
-        # 用 multiprocessing.Event 替换模块级 threading.Event，让子进程共享
+        # Replace module-level threading.Event with multiprocessing.Event so child processes can share it
         mp_shutdown = multiprocessing.Event()
-        SHUTDOWN_EVENT = mp_shutdown  # 主进程的 _mark_shutdown 也用这个
-        mp_inserted = multiprocessing.Value("i", 0)  # 跨进程汇总各 worker 写入数
+        SHUTDOWN_EVENT = mp_shutdown  # _mark_shutdown in the main process also uses this
+        mp_inserted = multiprocessing.Value("i", 0)  # Aggregate per-worker insert counts across processes
 
         workers = []
         for wid in range(1, BATCH_WORKERS + 1):

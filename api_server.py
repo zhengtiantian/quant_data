@@ -6,20 +6,20 @@ import signal
 
 app = FastAPI(title="Quant Data Script API")
 
-# 项目根目录
+# Project root directory
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# 存储运行中的子进程 {脚本路径: process对象}
+# Store running subprocesses {script path: process object}
 RUNNING_PROCESSES = {}
 
 @app.get("/health")
 def health_check():
-    """健康检查"""
+    """Health check"""
     return {"status": "ok"}
 
 @app.get("/scripts")
 def list_scripts():
-    """递归列出所有 .py 文件"""
+    """Recursively list all .py files"""
     script_files = []
     for root, dirs, files in os.walk(BASE_DIR):
         if ".venv" in root or "__pycache__" in root or ".git" in root:
@@ -32,7 +32,7 @@ def list_scripts():
 
 @app.get("/run/{path:path}")
 def run_script(path: str):
-    """执行脚本并实时返回日志流"""
+    """Execute script and stream log output in real time"""
     script_path = os.path.join(BASE_DIR, path)
     if not os.path.exists(script_path):
         return JSONResponse({"error": f"Script not found: {path}"}, status_code=404)
@@ -62,7 +62,7 @@ def run_script(path: str):
 
 @app.post("/stop/{path:path}")
 def stop_script(path: str):
-    """停止正在运行的脚本"""
+    """Stop a running script"""
     process = RUNNING_PROCESSES.get(path)
     if not process:
         return JSONResponse({"error": f"Script {path} is not running."}, status_code=400)

@@ -53,20 +53,20 @@ def main() -> None:
     full_count = col.count_documents({"data_quality": "full"})
     title_only_count = col.count_documents({"data_quality": "title_only"})
 
-    print_header("新闻有效性审计报告")
-    print(f"总文章数: {total:,}")
+    print_header("News Validity Audit Report")
+    print(f"Total articles: {total:,}")
     print(f"full: {full_count:,}")
     print(f"title_only: {title_only_count:,}")
 
-    print_subheader("1. 结构与内容质量风险")
+    print_subheader("1. Structure and Content Quality Risks")
     short_full = col.count_documents({"data_quality": "full", "content_length": {"$lt": 200}})
     long_full = col.count_documents({"data_quality": "full", "content_length": {"$gt": 100000}})
     huge_full = col.count_documents({"data_quality": "full", "content_length": {"$gt": 1000000}})
-    print(f"full 但 content_length < 200: {short_full:,}")
-    print(f"full 但 content_length > 100000: {long_full:,}")
-    print(f"full 但 content_length > 1000000: {huge_full:,}")
+    print(f"full but content_length < 200: {short_full:,}")
+    print(f"full but content_length > 100000: {long_full:,}")
+    print(f"full but content_length > 1000000: {huge_full:,}")
 
-    print_subheader("2. title_only 原因分布")
+    print_subheader("2. title_only Reason Distribution")
     reason_stats = list(
         col.aggregate(
             [
@@ -81,7 +81,7 @@ def main() -> None:
         reason = (row["_id"] or "N/A").replace("\n", " ")
         print(f"{row['count']:>8,} | {reason[:100]}")
 
-    print_subheader("3. 重复风险")
+    print_subheader("3. Duplication Risks")
     url_dupe = list(
         col.aggregate(
             [
@@ -104,10 +104,10 @@ def main() -> None:
     )
     url_dupe = url_dupe[0] if url_dupe else {"dup_groups": 0, "dup_docs": 0}
     sym_title_dupe = sym_title_dupe[0] if sym_title_dupe else {"dup_groups": 0, "dup_docs": 0}
-    print(f"URL 完全重复组: {url_dupe['dup_groups']:,}, 涉及文档: {url_dupe['dup_docs']:,}")
-    print(f"symbol+title 重复组: {sym_title_dupe['dup_groups']:,}, 涉及文档: {sym_title_dupe['dup_docs']:,}")
+    print(f"URL exact duplicate groups: {url_dupe['dup_groups']:,}, documents involved: {url_dupe['dup_docs']:,}")
+    print(f"symbol+title duplicate groups: {sym_title_dupe['dup_groups']:,}, documents involved: {sym_title_dupe['dup_docs']:,}")
 
-    print_subheader("4. 域名质量概览（Top 15）")
+    print_subheader("4. Domain Quality Overview (Top 15)")
     domain_rows = list(
         col.aggregate(
             [
@@ -147,7 +147,7 @@ def main() -> None:
         title_pct = stats["title_only"] / total_rows * 100 if total_rows else 0
         print(f"{domain[:40]:<40} {total_rows:>8,} {full_pct:>7.1f}% {title_pct:>7.1f}%")
 
-    print_subheader("5. 歧义股票专项抽样")
+    print_subheader("5. Ambiguous Stock Targeted Sampling")
     for symbol in AMBIGUOUS_SYMBOLS:
         print(f"\n[{symbol}]")
         samples = list(
@@ -159,7 +159,7 @@ def main() -> None:
             .limit(AUDIT_SAMPLE_PER_SYMBOL)
         )
         if not samples:
-            print("  无样本")
+            print("  No samples")
             continue
         for idx, doc in enumerate(samples, 1):
             print(
@@ -168,7 +168,7 @@ def main() -> None:
             )
             print(f"     {doc.get('url', 'N/A')[:120]}")
 
-    print_subheader("6. 极端长正文样本")
+    print_subheader("6. Extremely Long Content Samples")
     extreme_samples = list(
         col.find(
             {"content_length": {"$gt": 1000000}},
@@ -182,10 +182,10 @@ def main() -> None:
         )
         print(f"     {doc.get('url', 'N/A')[:120]}")
 
-    print_subheader("7. 初步判断")
-    print("结构完整性是好的，但研究有效性不是全量成立。")
-    print("建议默认只把 full 且内容长度在合理范围内的新闻作为强信号。")
-    print("title_only 作为弱信号单独使用，歧义股票需要继续专项抽样。")
+    print_subheader("7. Preliminary Assessment")
+    print("Structural integrity is good, but research validity does not hold across the full dataset.")
+    print("Recommended default: treat only 'full' articles within a reasonable content length as strong signals.")
+    print("Use 'title_only' as a weak signal separately; ambiguous stocks require continued targeted sampling.")
 
 
 if __name__ == "__main__":

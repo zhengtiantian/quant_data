@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-本地 SLM 反向代理：限制并发转发到 LM Studio，避免多 worker 进程同时打爆远端。
-用法：python slm_proxy.py [--port 11435] [--upstream http://192.168.31.226:1234] [--concurrency 2]
+Local SLM reverse proxy: limits concurrent forwarding to LM Studio to avoid multiple workers overwhelming the upstream.
+Usage: python slm_proxy.py [--port 11435] [--upstream http://192.168.31.226:1234] [--concurrency 2]
 """
 import argparse
 import threading

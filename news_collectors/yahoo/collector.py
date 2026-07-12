@@ -24,7 +24,7 @@ TARGET_URL = "https://finance.yahoo.com/topic/stock-market-news/"
 
 
 # =========================================================
-# 2. 美股关键词 + A/B 级分类器
+# 2. US stock keywords + A/B level classifier
 # =========================================================
 
 US_STOCK_KEYWORDS = [
@@ -62,7 +62,7 @@ def classify_impact(text: str):
 
 
 # =========================================================
-# 3. Yahoo 爬虫（HTML fallback 版）
+# 3. Yahoo scraper (HTML fallback version)
 # =========================================================
 
 def fetch_yahoo_news():
@@ -106,7 +106,7 @@ def fetch_yahoo_news():
         })
 
     # =========================================================
-    # 过滤美股新闻 + A/B 分类
+    # Filter US stock news + A/B classification
     # =========================================================
     filtered = []
     for art in raw_articles:
@@ -139,7 +139,7 @@ def save_to_mongo(articles):
             "source": "yahoo",
             "title": a["title"],
             "url": a["url"],
-            "impact": a["impact"],        # ★ 加入 A/B 分类
+            "impact": a["impact"],        # ★ Added A/B classification
             "publishedAt": a["publishedAt"],
             "collectedAt": datetime.now(UTC).isoformat(),
             "language": "en",
