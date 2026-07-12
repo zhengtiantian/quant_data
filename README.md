@@ -14,11 +14,9 @@ An end-to-end quantitative research platform that processes financial news throu
 | Best single-factor cross-sectional IC | **+0.227** (`ah_gap`, 5d, after-hours price gap) |
 | Strongest 60d-horizon factor | **+0.198** (`inst_holding_pct_chg`, institutional 13F QoQ change) |
 | 2026 holdout model IC (LightGBM, all features) | **0.73** vs ~0.05 historical baseline |
-| Platform services | 22 Docker microservices |
+| Platform services | 9 Docker microservices |
 
-*Net Sharpe includes a transaction cost model: 5bps commission + 10-30bps
-liquidity-tiered slippage round-trip, and excludes symbols with <$5M 20d avg
-dollar volume. See `research/backtest_portfolio.py`.*
+*Net Sharpe includes a transaction cost model: 5bps commission + 10–30bps liquidity-tiered slippage round-trip, and excludes symbols with <$5M 20d avg dollar volume. See `research/backtest_portfolio.py`.*
 
 ---
 
@@ -93,7 +91,7 @@ dollar volume. See `research/backtest_portfolio.py`.*
 │  React UI Dashboard                                                  │
 │  (signal scores │ portfolio tracking │ trade alerts)                │
 │                                                                       │
-│  LangChain Agent + Qdrant RAG ──▶ "Analyze AAPL news" → advice      │
+│  quant_ai (RAG + Local LLM) ──▶ natural language stock Q&A          │
 └─────────────────────────────────────────────────────────────────────┘
                            │
                            ▼
@@ -110,7 +108,7 @@ dollar volume. See `research/backtest_portfolio.py`.*
 │  │ 20:30  retail_sentiment                                  │        │
 │  └─────────────────────────────────────────────────────────┘        │
 │                                                                       │
-│  Airflow DAGs are defined (`airflow/dags/`) but not yet verified    │
+│  Airflow DAGs are defined (airflow/dags/) but not yet verified      │
 │  to run this schedule end-to-end — Stage 7 migration item.          │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -122,31 +120,29 @@ dollar volume. See `research/backtest_portfolio.py`.*
 ### Data & ML (Python)
 | Component | Technology |
 |-----------|-----------|
-| News collection | GDELT, Finnhub, NewsAPI, Yahoo Finance |
+| News collection | GDELT, Finnhub, NewsAPI, Yahoo Finance, FMP |
 | LLM labeling | Gemma 3B + Qwen 4B (via Ollama) |
 | Label aggregation | Snorkel (Dawid-Skene) |
 | ML models | LightGBM, Ridge Regression, Ensemble |
-| Feature store | MongoDB (134K rows, 100 symbols) |
+| Feature store | MongoDB (189K rows, 100 symbols) |
 | Experiment tracking | MLflow |
-| Vector search | Qdrant |
-| AI agent | LangChain + RAG |
 
 ### Infrastructure
 | Component | Technology |
 |-----------|-----------|
-| Orchestration | Apache Airflow 2.10 |
+| Orchestration | Apache Airflow 2.10 (defined) / launchd (live) |
 | Message queue | Apache Kafka 3.7 |
 | Database | MongoDB 6.0, MySQL 8.0 |
 | Auth | Keycloak |
-| Containerization | Docker (22 services) |
+| Containerization | Docker |
 
 ### Backend / Frontend
 | Component | Technology |
 |-----------|-----------|
-| REST API | Spring Boot 3, Java 17 |
+| REST API | Spring Boot 3, Java 21 |
 | Auth | Keycloak JWT + RBAC |
-| Frontend | React + Redux Toolkit |
-| AI agent service | Python FastAPI + LangChain |
+| Frontend | React + TypeScript + Vite |
+| AI assistant | Python FastAPI + RAG + LM Studio |
 
 ---
 
@@ -169,26 +165,19 @@ quant_data/
 ├── research/                 # Core research pipeline
 │   ├── daily_symbol_features.py     # Feature engineering (60+ features incl. D-series)
 │   ├── llm_enrich_articles.py       # Dual LLM labeling (Gemma + Qwen)
-│   ├── snorkel_label_merge.py       # Label aggregation
 │   ├── train_baseline_models.py     # Walk-forward model training
 │   ├── backtest_news_factor.py      # Single-factor backtest + risk metrics
 │   ├── backtest_event_driven.py     # Event-driven backtest
-│   ├── backtest_portfolio.py        # Top-N portfolio backtest + cost model (H.1)
+│   ├── backtest_portfolio.py        # Top-N portfolio backtest + cost model
 │   ├── factor_analysis.py           # IC decay, SHAP, Long-short portfolio
 │   ├── score_daily_signals.py       # Daily signal scoring + macro regime multiplier
 │   ├── track_positions.py           # Paper-trading position tracker + exit alerts
-│   └── data_quality_check.py        # Pipeline health checks (C.7)
+│   └── data_quality_check.py        # Pipeline health checks
 │
 ├── airflow/dags/             # Airflow orchestration (defined, not yet verified e2e)
-│   ├── daily_pipeline.py            # Daily ETL (05:00)
-│   ├── llm_enrichment.py            # LLM labeling pipeline (09:00)
-│   ├── model_training.py            # Weekly model retraining
-│   └── price_history_backfill.py    # Historical price backfill
-│
 ├── stock_collector/          # Stock price & universe management
 ├── tools/                    # GDELT import, index building utilities
-├── scheduler/                # task.py — actual production scheduler (launchd)
-└── main.py                   # FastAPI service entry point
+└── scheduler/                # task.py — production scheduler (launchd)
 ```
 
 ---
@@ -199,7 +188,7 @@ quant_data/
 
 | Factor | 20d IC | 60d IC | Peak |
 |--------|--------|--------|------|
-| `surprise_pct_last` | -0.039 | -0.064 | Strongest (mean-reversion) |
+| `surprise_pct_last` | -0.039 | -0.064 | Strongest mean-reversion |
 | `avg_sentiment_5d` | +0.026 | +0.023 | 45d horizon |
 | `article_count` | +0.015 | +0.034 | 45d horizon |
 | `volatility_20d` | +0.009 | +0.036 | 60d horizon |
@@ -232,14 +221,9 @@ quant_data/
 | `analyst_buy_ratio_chg_1m` | Finnhub | +0.155 | +0.151 | — |
 | `inst_holding_pct_chg` | SEC EDGAR 13F | +0.045 | +0.092 | **+0.198** |
 | `macro_spy_ret_20d` | yfinance | +0.100 | +0.285 | — |
-| `avg_sentiment_5d` (existing baseline) | LLM | +0.064 | +0.176 | +0.145 |
+| `avg_sentiment_5d` (baseline) | LLM | +0.064 | +0.176 | +0.145 |
 
-LightGBM trained on 2016-2025, evaluated on 2026 holdout (all features incl.
-D-series): **IC = 0.73** vs ~0.05 on a comparable model without D-series
-features — driven mainly by `inst_holding_pct_chg` and `macro_tnx`. Sample
-size for the holdout is still small (525 rows); D-series features only have
-~6 months of history so far and need more data before the lift is fully
-trusted in production.
+LightGBM trained on 2016–2025, evaluated on 2026 holdout (all features incl. D-series): **IC = 0.73** vs ~0.05 on a comparable model without D-series features — driven mainly by `inst_holding_pct_chg` and `macro_tnx`. Sample size for the holdout is still small (~525 rows); D-series features only have ~6 months of history and need more data before the lift is fully trusted in production.
 
 ---
 
@@ -248,7 +232,7 @@ trusted in production.
 ### Prerequisites
 - Docker Desktop
 - Python 3.11+
-- Ollama (for local LLM inference)
+- Ollama (for local LLM inference: `gemma3:4b`, `qwen3:4b-q4_K_M`)
 
 ### Start Platform
 
@@ -291,39 +275,16 @@ python research/backtest_portfolio.py   # BACKTEST_HOLD_DAYS=20|60 env var
 
 ---
 
-## Platform Overview
-
-### Signal Generation Flow
-```
-Daily news (GDELT + APIs)
-    → LLM sentiment labeling (Gemma + Qwen)
-    → Feature engineering (40+ factors)
-    → LightGBM ensemble scoring
-    → Composite signal per symbol
-    → Kafka topic: quant.daily_signals
-    → UI dashboard + alerts
-```
-
-### LangChain RAG Agent
-Ask natural language questions about stocks:
-> "Has AAPL had any negative regulatory news in the last 30 days?"
-> "What's the sentiment trend for NVDA this month?"
-
-Agent retrieves relevant articles from Qdrant, analyzes with LLM, returns structured answer.
-
----
-
 ## Roadmap
 
 - [x] **D.1/D.2/D.4/D.7/D.8** Alt-data research layer (macro, retail, analyst, 13F, premarket)
 - [x] **H.1** Transaction cost model (commission + liquidity-tiered slippage)
-- [x] **C.1** Daily signal automation (via launchd, not yet migrated to Airflow)
-- [x] **C.4/C.5** Paper-trading position tracker + exit alerts (incl. analyst-downgrade, inst-outflow triggers)
+- [x] **C.1** Daily signal automation (launchd production scheduler)
+- [x] **C.4/C.5** Paper-trading position tracker + exit alerts
 - [x] **C.7/C.9** Data quality checks + factor analysis report (IC decay, SHAP)
-- [ ] **H.2** Dynamic factor re-weighting by regime (basic risk-on/off multiplier already live in scoring)
+- [ ] **H.2** Dynamic factor re-weighting by regime
 - [ ] **H.3** Paper trading stop-loss + rolling OOS-IC monitor
-- [ ] **Stage 7** Airflow/Kafka/MLflow verified end-to-end (currently: defined but not proven live)
-- [ ] **F.4** LangGraph multi-agent research assistant
-- [ ] **F.5** FinBERT fine-tuning (200x inference speedup)
+- [ ] **Stage 7** Airflow/Kafka/MLflow verified end-to-end
+- [ ] **F.5** FinBERT fine-tuning (200× inference speedup)
 
-See [PROJECT_PLAN.md](PROJECT_PLAN.md) for full roadmap and per-item status.
+See [PROJECT_PLAN.md](PROJECT_PLAN.md) for the full roadmap and per-item status.

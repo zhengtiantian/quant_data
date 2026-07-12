@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# 在容器内用 nohup+mongosh 建索引，Mac 侧轮询进度
-# 用法: caffeinate -i -s bash tools/build_gkg_indexes_mongosh.sh
+# Build indexes inside the container via mongosh; poll progress from the Mac side.
+# Usage: caffeinate -i -s bash tools/build_gkg_indexes_mongosh.sh
 #
-# Ctrl+C 只停止进度显示，不影响容器内正在构建的索引
-# 重新运行脚本可以恢复进度显示
+# Ctrl+C only stops the progress display — it does not interrupt the index build inside the container.
+# Re-run the script to resume progress monitoring.
 
 set -euo pipefail
 
@@ -13,7 +13,7 @@ VENV=".venv311/bin/python"
 LOG_URL="/tmp/build_url.log"
 LOG_TEXT="/tmp/build_text.log"
 
-# 等待某个索引出现在 index_information 中
+# Wait for an index to appear in index_information
 wait_for_index() {
     local idx_name="$1"
     while true; do
@@ -31,14 +31,14 @@ PYEOF
     done
 }
 
-# 显示进度，直到 currentOp 中没有 Index Build 任务
+# Stream progress until currentOp has no active Index Build operation
 show_progress_until_done() {
     local label="$1"
     local log_path="$2"
     local build_pid="${3:-}"
     local idle_count=0
 
-    echo "[$(date +%H:%M:%S)] 开始监控: $label"
+    echo "[$(date +%H:%M:%S)] Monitoring started: $label"
     while true; do
         result=$($VENV - <<PYEOF
 from pymongo import MongoClient
@@ -60,16 +60,16 @@ try:
         sr    = op.get("secs_running", 0)
         secs  = int(sr.get("low", 0) if isinstance(sr, dict) else sr)
 
-        # 判断阶段
+        # Determine build phase
         if "inserting keys from external sorter" in msg:
-            # 第三阶段：写入 B-tree
+            # Phase 3: writing B-tree
             eta  = int((100 - pct) / (pct / secs)) if pct > 0 and secs > 0 else 0
             bar  = "█" * int(40 * pct / 100) + "░" * (40 - int(40 * pct / 100))
             eta_s = f"{eta//3600}h{(eta%3600)//60}m{eta%60}s" if eta > 60 else f"{eta}s"
-            print(f"PROGRESS [{ts}] [写入B-tree] [{bar}] {pct:5.1f}%  {done//1_000_000}/{total//1_000_000}M  elapsed={secs//60}m{secs%60}s  ETA={eta_s}")
+            print(f"PROGRESS [{ts}] [write-btree] [{bar}] {pct:5.1f}%  {done//1_000_000}/{total//1_000_000}M  elapsed={secs//60}m{secs%60}s  ETA={eta_s}")
         else:
-            # 第一阶段扫描 或 第二阶段merge（进度不动）
-            # 从 docker logs 读最近的 Merging spills 信息
+            # Phase 1: scanning or phase 2: merging spills (progress counter is static)
+            # Read recent Merging spills lines from docker logs
             try:
                 log_out = subprocess.check_output(
                     ["docker", "logs", "mongo6", "--since", "30s"],
@@ -81,22 +81,22 @@ try:
                     m = re.search(r'"currentNumSpills":(\d+).*?"targetNumSpills":(\d+)', last)
                     fin = "Finished merging" in last
                     if fin:
-                        print(f"PROGRESS [{ts}] [倒排merge] Finished merging spills ✓ 准备写入B-tree...")
+                        print(f"PROGRESS [{ts}] [merge] Finished merging spills ✓ writing B-tree...")
                     elif m:
                         cur, tgt = int(m.group(1)), int(m.group(2))
                         pct_m = (1 - cur/tgt) * 100 if tgt else 0
                         bar = "█" * int(40 * pct_m / 100) + "░" * (40 - int(40 * pct_m / 100))
-                        print(f"PROGRESS [{ts}] [倒排merge] [{bar}] spills {cur}→{tgt}  elapsed={secs//60}m{secs%60}s")
+                        print(f"PROGRESS [{ts}] [merge] [{bar}] spills {cur}→{tgt}  elapsed={secs//60}m{secs%60}s")
                     else:
-                        print(f"PROGRESS [{ts}] [倒排merge] 正在合并 spill 文件...  elapsed={secs//60}m{secs%60}s")
+                        print(f"PROGRESS [{ts}] [merge] merging spill files...  elapsed={secs//60}m{secs%60}s")
                 else:
-                    # 扫描阶段
+                    # Scanning phase
                     eta  = int((100 - pct) / (pct / secs)) if pct > 0 and secs > 0 else 0
                     bar  = "█" * int(40 * pct / 100) + "░" * (40 - int(40 * pct / 100))
                     eta_s = f"{eta//3600}h{(eta%3600)//60}m{eta%60}s" if eta > 60 else f"{eta}s"
-                    print(f"PROGRESS [{ts}] [扫描集合] [{bar}] {pct:5.1f}%  {done//1_000_000}/{total//1_000_000}M  elapsed={secs//60}m{secs%60}s  ETA={eta_s}")
+                    print(f"PROGRESS [{ts}] [scan] [{bar}] {pct:5.1f}%  {done//1_000_000}/{total//1_000_000}M  elapsed={secs//60}m{secs%60}s  ETA={eta_s}")
             except Exception as le:
-                print(f"PROGRESS [{ts}] [扫描/merge] {pct:.1f}%  {done//1_000_000}M  elapsed={secs//60}m{secs%60}s")
+                print(f"PROGRESS [{ts}] [scan/merge] {pct:.1f}%  {done//1_000_000}M  elapsed={secs//60}m{secs%60}s")
     else:
         print("IDLE")
 except Exception as e:
@@ -107,38 +107,38 @@ PYEOF
             echo "$result" | grep "^PROGRESS" | sed 's/^PROGRESS //'
             idle_count=0
         elif echo "$result" | grep -q "^IDLE"; then
-            # 如果 build 进程已退出，说明真正完成了
+            # If the build process has exited, the index is truly done
             if [ -n "$build_pid" ] && ! kill -0 "$build_pid" 2>/dev/null; then
-                echo "[$(date +%H:%M:%S)] 构建进程已结束，退出监控"
+                echo "[$(date +%H:%M:%S)] Build process exited, stopping monitor"
                 break
             fi
             idle_count=$((idle_count + 1))
-            echo "[$(date +%H:%M:%S)] currentOp 无 Index Build（等待启动或已完成）[$idle_count/3]"
+            echo "[$(date +%H:%M:%S)] No Index Build in currentOp (waiting to start or already done) [$idle_count/3]"
             if [ $idle_count -ge 3 ]; then
-                echo "[$(date +%H:%M:%S)] 判断构建已完成，退出监控"
+                echo "[$(date +%H:%M:%S)] Build appears complete, stopping monitor"
                 break
             fi
         else
-            echo "[$(date +%H:%M:%S)] 查询失败: $result"
+            echo "[$(date +%H:%M:%S)] Query error: $result"
         fi
         sleep 15
     done
 
-    # 打印容器内日志
+    # Print container log
     echo ""
-    echo "--- 容器内日志 ($log_path) ---"
-    docker exec mongo6 cat "$log_path" 2>/dev/null || echo "(日志文件不存在)"
+    echo "--- container log ($log_path) ---"
+    docker exec mongo6 cat "$log_path" 2>/dev/null || echo "(log file not found)"
 }
 
-# ─── 主流程 ───────────────────────────────────────────────────
+# ─── Main flow ────────────────────────────────────────────────
 
-# 调大 sorter 内存，减少 spill 文件数量（默认 200MB 会产生 8000+ spill，merge 需 50+ 小时）
-echo "设置 maxIndexBuildMemoryUsageMegabytes=3000 ..."
+# Increase sorter memory to reduce spill count (default 200 MB produces 8000+ spills; merge takes 50+ hours)
+echo "Setting maxIndexBuildMemoryUsageMegabytes=2000 ..."
 docker exec mongo6 mongosh "$MONGO_INNER" --quiet \
-    --eval 'const r = db.adminCommand({setParameter:1, maxIndexBuildMemoryUsageMegabytes:2000}); print("sorter 内存: " + (r.ok ? "已设为 2000MB" : "设置失败: " + JSON.stringify(r)))'
+    --eval 'const r = db.adminCommand({setParameter:1, maxIndexBuildMemoryUsageMegabytes:2000}); print("sorter memory: " + (r.ok ? "set to 2000 MB" : "failed: " + JSON.stringify(r)))'
 
 echo "============================================================"
-echo " 当前索引:"
+echo " Current indexes:"
 $VENV - <<'PYEOF'
 from pymongo import MongoClient
 c = MongoClient("mongodb://root:root@127.0.0.1:37018/", serverSelectionTimeoutMS=3000)
@@ -147,7 +147,7 @@ for name, info in c["quant_data"]["gkg_index"].index_information().items():
 PYEOF
 echo "============================================================"
 
-# ─── URL 索引（不带 unique，数据中有 2.67亿条重复 url="http://"）─────
+# ─── URL index (no unique — 267 M duplicate url="http://" entries in the data) ─
 URL_EXISTS=$($VENV - <<'PYEOF'
 from pymongo import MongoClient
 c = MongoClient("mongodb://root:root@127.0.0.1:37018/", serverSelectionTimeoutMS=2000)
@@ -156,11 +156,11 @@ PYEOF
 )
 
 if [ "$URL_EXISTS" = "yes" ]; then
-    echo "gkg_url 已存在，跳过"
+    echo "gkg_url already exists, skipping"
 else
     echo ""
     echo "============================================================"
-    echo " 启动构建: gkg_url（nohup 后台，断开终端不影响）"
+    echo " Starting build: gkg_url (nohup background, safe to disconnect terminal)"
     echo "============================================================"
     docker exec mongo6 mongosh \
         "mongodb://root:root@127.0.0.1:27017/?authSource=admin" --quiet \
@@ -173,37 +173,37 @@ else
     wait $BUILD_PID
 fi
 
-# ─── Text 全文索引 ─────────────────────────────────────────────
-# 用文本搜索验证索引是否真正可用（构建期间索引也会出现在 index_information 里）
+# ─── Full-text index ──────────────────────────────────────────
+# Validate via a text search to confirm the index is truly usable (it appears in index_information even while building)
 TEXT_EXISTS=$($VENV - <<'PYEOF'
 from pymongo import MongoClient
 c = MongoClient("mongodb://root:root@127.0.0.1:37018/", serverSelectionTimeoutMS=2000)
-# 先检查是否有正在进行的 text index 构建
+# Check if a text index build is already in progress
 ops = list(c["admin"].aggregate([
     {"$currentOp": {"allUsers": True, "idleConnections": False}},
     {"$match": {"msg": {"$regex": "Index Build"}}}
 ]))
 if ops:
-    print("building")  # 正在构建，不算完成
+    print("building")  # still building, not done
 else:
     try:
         c["quant_data"]["gkg_index"].find_one({"$text": {"$search": "test"}}, {"_id": 1})
-        print("yes")   # 文本搜索成功，索引真正可用
+        print("yes")   # text search succeeded, index is live
     except Exception:
-        print("no")    # 索引不可用
+        print("no")    # index not usable
 PYEOF
 )
 
 if [ "$TEXT_EXISTS" = "yes" ]; then
-    echo "gkg_raw_text 已完成且可用，跳过"
+    echo "gkg_raw_text complete and usable, skipping"
 elif [ "$TEXT_EXISTS" = "building" ]; then
-    echo "gkg_raw_text 正在构建中，接入监控..."
+    echo "gkg_raw_text is building, attaching monitor..."
     BUILD_PID=""
     show_progress_until_done "gkg_raw_text" "$LOG_TEXT" ""
 else
     echo ""
     echo "============================================================"
-    echo " 启动构建: gkg_raw_text（nohup 后台，断开终端不影响）"
+    echo " Starting build: gkg_raw_text (nohup background, safe to disconnect terminal)"
     echo "============================================================"
     docker exec mongo6 mongosh \
         "mongodb://root:root@127.0.0.1:27017/?authSource=admin" --quiet \
@@ -218,7 +218,7 @@ fi
 
 echo ""
 echo "============================================================"
-echo " 全部完成！最终索引:"
+echo " All done! Final indexes:"
 $VENV - <<'PYEOF'
 from pymongo import MongoClient
 c = MongoClient("mongodb://root:root@127.0.0.1:37018/", serverSelectionTimeoutMS=3000)

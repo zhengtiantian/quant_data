@@ -65,7 +65,7 @@
             ]
         },
         "ambiguous": {
-            "problem": "Google URL可能导致误报",
+            "problem": "Google URL may cause false positives",
             "required_keywords": [
                 "Google",
                 "Alphabet",

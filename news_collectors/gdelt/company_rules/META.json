@@ -45,7 +45,7 @@
             ]
         },
         "ambiguous": {
-            "problem": "确保是Facebook/Instagram相关，排除医疗meta-analysis",
+            "problem": "must be Facebook/Instagram-related; exclude medical meta-analysis",
             "required_keywords": [
                 "Facebook",
                 "Instagram",

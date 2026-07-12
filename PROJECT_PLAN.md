@@ -455,14 +455,14 @@ holding periods.
 
 This stage must be completed before Stage 5 engineering work begins.
 
-### 3.5.1 Article-level event tagging (LLM batch annotation) ✅ 完成 2026-05-22
+### 3.5.1 Article-level event tagging (LLM batch annotation) ✅ Done 2026-05-22
 
 All 840,212 articles in `news_articles_company_matched_v2` tagged with:
 
 - Pass A (Gemma): `llm_sentiment_a`, `llm_event_type_a`, `llm_signal_strength_a` — 100%
 - Pass B (Qwen): `llm_sentiment_b`, `llm_event_type_b`, `llm_signal_strength_b` — 100%
 - Snorkel merge: `llm_sentiment_final`, `llm_disagreement`, `llm_label_model_probs` — 100%
-- 两模型一致率 77.3%；情绪均值 +0.296（整体偏正面）
+- Inter-model agreement rate 77.3%; mean sentiment +0.296 (overall positive bias)
 
 Deliverable: `research/llm_enrich_articles.py`, `research/snorkel_label_merge.py`
 
@@ -471,7 +471,7 @@ Resume framing:
 Qwen), aggregated via Snorkel Label Model achieving 77.3% inter-model
 agreement on sentiment, event type, and signal strength labels."*
 
-### 3.5.2 Event-level daily features ✅ 完成 2026-05-22
+### 3.5.2 Event-level daily features ✅ Done 2026-05-22
 
 Rebuilt `daily_symbol_features_company_matched_v2` (134,642 rows, 100 symbols)
 with full LLM sentiment feature coverage (100%):
@@ -488,36 +488,36 @@ with full LLM sentiment feature coverage (100%):
 
 Multi-horizon model results with LLM features (walk-forward, 100 symbols):
 
-| Horizon | Ridge IC | Ensemble IC | Ensemble Top5 超额 |
+| Horizon | Ridge IC | Ensemble IC | Ensemble Top5 Excess Return |
 |---|---|---|---|
 | 20d | 0.036 | 0.031 | +1.83% |
 | 45d | 0.044 | 0.043 | +4.38% |
 | 60d | 0.056 | 0.059 | +6.59% |
 
-IC 随持仓期单调递增，60d 信号最强。
+IC increases monotonically with holding period; the 60d signal is strongest.
 
 Deliverable: `research/daily_symbol_features.py`, `research/train_baseline_models.py`
 
-### 3.5.3 Dynamic holding period backtest ✅ 完成 2026-05-22
+### 3.5.3 Dynamic holding period backtest ✅ Done 2026-05-22
 
 Event-driven framework results (100 symbols, 2018–2026):
 
 Best config: `min_hold=20d`, `max_hold=60d`, `sentiment_shift_exit=-0.35`
 
-| 指标 | 事件驱动 | 固定20d基线 | 固定60d基线 |
+| Metric | Event-Driven | Fixed 20d Baseline | Fixed 60d Baseline |
 |---|---|---|---|
-| 平均持仓 | 13.7d | 20d | 60d |
-| 超额收益 | +1.40% | +1.22% | +3.80% |
-| 胜率 | 52.7% | 58.0% | 63.1% |
-| 交易次数 | 390 | 2,060 | 2,020 |
+| Avg Hold | 13.7d | 20d | 60d |
+| Excess Return | +1.40% | +1.22% | +3.80% |
+| Win Rate | 52.7% | 58.0% | 63.1% |
+| Trades | 390 | 2,060 | 2,020 |
 
-事件驱动在 13.7 天内超过固定 20d 基线（+1.40% vs +1.22%），换手率更低。
-退出原因：score_below_exit 69%，sentiment_reversal 17%（已合理）。
-2022/2024 仍为弱年（宏观制度变化）。
+Event-driven outperforms the fixed 20d baseline within 13.7 days (+1.40% vs +1.22%) with lower turnover.
+Exit reasons: score_below_exit 69%, sentiment_reversal 17% (reasonable).
+2022/2024 remain weak years (macroeconomic regime shifts).
 
 Deliverable: `research/backtest_event_driven.py`
 
-### 3.5.4 Multi-horizon label expansion ✅ 完成 2026-05-22
+### 3.5.4 Multi-horizon label expansion ✅ Done 2026-05-22
 
 Added to `daily_symbol_features_company_matched_v2`:
 - `future_ret_10d/15d/30d/45d` — 87-88% coverage
@@ -584,7 +584,7 @@ strength accuracy."*
 2. 3.5.1 Article tagging ✅
 3. 3.5.2 Event features ✅
 4. 3.5.3 Dynamic backtest ✅
-5. 3.5.5 Fine-tune small model — 待开发
+5. 3.5.5 Fine-tune small model — Pending development
 
 ---
 
@@ -632,17 +632,12 @@ The project should be considered healthy if:
 
 Do next (in priority order, updated 2026-06-20):
 
-1. **H.1 回测加交易成本+流动性过滤**（2天）— 当前 Sharpe 0.70-0.84 未扣成本，
-   量化面试必问，性价比最高
-2. **Stage 7 校验** — Airflow DAG 跑通、Kafka producer/consumer 实际运行、
-   执行日志接口上线（仍是面试讲故事的最大 gap，C 系列已用 launchd 代替跑通了
-   日常调度，但不是 Airflow）
-3. **E.7 README + 架构图**（1天）— 全部面试都需要，目前缺失，最快出成果
-4. **H.2.2 动态因子权重**（regime-aware）— 已有 regime_mult 基础乘数，
-   需扩展为震荡市自动切换因子权重集
-5. **H.3.2/H.3.3 Paper trading 完善** — 已有持仓追踪和退出触发，缺 OOS IC
-   监控和 -5% 止损规则
-6. **Stage 3.5.5 FinBERT 微调** — 用 Gemma+Qwen 一致标签训练，替代 LLM 推理管道
+1. **H.1 Backtest with transaction costs + liquidity filter** (2 days) — current Sharpe 0.70-0.84 is pre-cost; quantitative interviews always ask this, highest ROI
+2. **Stage 7 validation** — Airflow DAG end-to-end run, Kafka producer/consumer actual operation, execution log API live (still the biggest gap for interview storytelling; C-series has used launchd as a replacement for daily scheduling, but not Airflow)
+3. **E.7 README + architecture diagram** (1 day) — required for all interviews, currently missing, fastest result
+4. **H.2.2 Dynamic factor weights** (regime-aware) — regime_mult base multiplier already exists; needs extension to auto-switch factor weight sets in volatile market
+5. **H.3.2/H.3.3 Paper trading improvements** — position tracking and exit triggers already exist; missing OOS IC monitoring and -5% stop-loss rule
+6. **Stage 3.5.5 FinBERT fine-tuning** — train on Gemma+Qwen consensus labels to replace LLM inference pipeline
 
 Completed:
 
@@ -651,20 +646,18 @@ Completed:
 - earnings Layer 1 / 2 / 3 ✅
 - Ridge + LightGBM + Ensemble baseline (60d IC = 0.10, Top5 = +6.7%) ✅
 - Stage 3.5.1 LLM article tagging (840K articles, Gemma + Qwen + Snorkel merge) ✅
-- Stage 3.5.2 event-level daily features (134K rows, 100% LLM 覆盖) ✅
-- Stage 3.5.3 event-driven backtest (min20d, +1.40% vs 固定20d +1.22%) ✅
+- Stage 3.5.2 event-level daily features (134K rows, 100% LLM coverage) ✅
+- Stage 3.5.3 event-driven backtest (min20d, +1.40% vs fixed 20d +1.22%) ✅
 - Stage 3.5.4 multi-horizon labels (10/15/30/45/60d) ✅
-- **D.1/D.2/D.4/D.7/D.8 研究层扩展全部完成**（2026-06-16），D.3/D.5/D.6 跳过 ✅
-- **C.1-C.7, C.9 全部完成基础版**（每日信号自动化 + UI + 仓位跟踪 + 退出提醒 +
-  风险指标 + 数据质量检查 + 因子分析报告，2026-06-16~20）✅
-- **H.2.1 regime multiplier 基础版**（score_daily_signals.py 已接入 macro_risk_on/
-  macro_vix_pctile_252d 调整信号强度）✅
-- 运维：清除重复 launchd scheduler job，避免采集任务每日重复执行两次 ✅
+- **D.1/D.2/D.4/D.7/D.8 research layer extensions all completed** (2026-06-16), D.3/D.5/D.6 skipped ✅
+- **C.1-C.7, C.9 all completed (baseline versions)** (daily signal automation + UI + position tracking + exit alerts + risk metrics + data quality checks + factor analysis report, 2026-06-16~20) ✅
+- **H.2.1 regime multiplier baseline** (score_daily_signals.py integrated macro_risk_on / macro_vix_pctile_252d to adjust signal strength) ✅
+- Ops: removed duplicate launchd scheduler job to prevent all collection tasks from running twice daily ✅
 
 Do not do next:
 
-- live trading automation（实盘，距离真正可用还差 H.1-H.5 全部完成 + 3-6个月 paper trading）
-- Stage 5 engineering before Stage 7 校验完成
+- live trading automation (live trading is still H.1-H.5 fully complete + 3-6 months of paper trading away from being truly usable)
+- Stage 5 engineering before Stage 7 validation is complete
 
 ## Notes
 
@@ -673,461 +666,445 @@ The clean matched-news dataset is research-usable at the current scale.
 The two-layer earnings feature set has produced a meaningful model
 improvement (Ridge `60d` IC: `0.073` → `0.121`).
 
-Signal IC 在 100-symbol universe 下 60d = 0.059，比 14-symbol 时的 0.121
-更可信（更大 universe 稀释了过拟合）。2022/2024 弱年由宏观制度变化驱动，
-信号本身可信。
+Signal IC at 60d = 0.059 on the 100-symbol universe is more credible than the 0.121 at 14 symbols (a larger universe dilutes overfitting). The weak 2022/2024 years are driven by macroeconomic regime shifts; the signal itself is credible.
 
 ---
 
-# 面试路线图
+# Interview Roadmap
 
-## A. Data Engineer 面试路线图
+## A. Data Engineer Interview Roadmap
 
-### 当前已有（可以直接讲的）
-- MongoDB 840K+ 文章 + 675M GKG 倒排索引（大规模文档存储 + 全文检索）
-- Python ETL pipeline：新闻采集 → 公司匹配 → feature build（多数据源、增量/全量）
-- LLM 批量推理管道（840K 条，两 Pass + Snorkel Label Model）
-- Docker Compose 多服务编排（MongoDB / MySQL / Kafka / Airflow / MLflow / Qdrant）
-- Airflow DAG 定义（DAG 结构、任务依赖、SLA）
+### Currently Available (can discuss directly)
+- MongoDB 840K+ articles + 675M GKG inverted index (large-scale document storage + full-text search)
+- Python ETL pipeline: news collection → company matching → feature build (multiple data sources, incremental/full load)
+- LLM batch inference pipeline (840K articles, two passes + Snorkel Label Model)
+- Docker Compose multi-service orchestration (MongoDB / MySQL / Kafka / Airflow / MLflow / Qdrant)
+- Airflow DAG definitions (DAG structure, task dependencies, SLA)
 
-### 关键 gap — 必须补（面试会被追问）
+### Critical Gaps — Must Fill (will be asked in interviews)
 
-| 缺什么 | 为什么重要 | 对应 Stage | 工作量 |
+| What is missing | Why it matters | Stage | Effort |
 |---|---|---|---|
-| Kafka 没有实际 producer/consumer | DE 必问，"部署了但没用"说服力不足 | Stage 7 / 5.1.1 | 3天 |
-| Airflow DAG 没有真正跑通 | "写了 DAG" ≠ "跑通了" | Stage 7 | 1周 |
-| MLflow 没有实际记录 run | 工具会用但没产出，面试问 run 结果答不上 | Stage 7 / 5.2.3 | 1天 |
-| 没有 ETL 单元测试 | DE 面试必问 pipeline 可靠性保障 | 新增 | 3天 |
-| 没有数据质量检查 | 生产级 pipeline 标配，无 → 被质疑可靠性 | 新增 | 2天 |
-| 没有幂等性设计文档 | DE 必考：重跑 pipeline 数据会不会重复？ | 新增（补文档） | 1天 |
+| Kafka has no actual producer/consumer | DE must-ask; "deployed but unused" is unconvincing | Stage 7 / 5.1.1 | 3 days |
+| Airflow DAG has not actually run end-to-end | "wrote a DAG" ≠ "it ran" | Stage 7 | 1 week |
+| MLflow has no actual recorded runs | Can use the tool but has no output; can't answer interview questions about run results | Stage 7 / 5.2.3 | 1 day |
+| No ETL unit tests | DE interviews always ask how pipeline reliability is guaranteed | New | 3 days |
+| No data quality checks | Standard for production-grade pipelines; absence raises reliability doubts | New | 2 days |
+| No idempotency design doc | DE must-know: will re-running the pipeline produce duplicates? | New (add doc) | 1 day |
 
-### 加分项 — 做了更强，不做也能面
+### Bonus Items — Stronger with, not required to interview
 
-| 项目 | 价值 | 对应 Stage | 工作量 |
+| Item | Value | Stage | Effort |
 |---|---|---|---|
-| Flink 流处理管道 | 大厂 DE 高频技能，最具区分度 | 5.2.2 | 2周 |
-| dbt 数据血缘 | 数据建模规范，FinTech DE 常考 | 5.2.4 | 1周 |
-| Prometheus + Grafana 监控 | 可观测性，SRE 面也能用 | 5.4 | 3天 |
-| Schema Registry（Kafka） | Avro schema 演进，大规模数据治理 | 5.1.1 | 2天 |
-| CI/CD for data pipeline | GitHub Actions 跑测试 + lint | 新增 | 2天 |
-| 数据血缘图 | 哪张表依赖哪个 source，可用 OpenLineage | 新增 | 3天 |
+| Flink streaming pipeline | High-demand DE skill at large companies, most differentiating | 5.2.2 | 2 weeks |
+| dbt data lineage | Data modeling best practice, common in FinTech DE | 5.2.4 | 1 week |
+| Prometheus + Grafana monitoring | Observability, also useful for SRE interviews | 5.4 | 3 days |
+| Schema Registry (Kafka) | Avro schema evolution, large-scale data governance | 5.1.1 | 2 days |
+| CI/CD for data pipeline | GitHub Actions running tests + lint | New | 2 days |
+| Data lineage diagram | Which tables depend on which source; can use OpenLineage | New | 3 days |
 
-### DE 面试能讲的完整故事（补完 gap 后）
-*"构建了覆盖 100 支股票的金融新闻处理系统：GDELT 原始数据（675M 条）建立
-全文索引；Python ETL 清洗匹配 840K 篇文章，含幂等性设计和数据质量检查；
-Airflow 调度 5 条 DAG 每日增量更新；Kafka 发布每日交易信号（producer/consumer
-完整链路）；MLflow 追踪 100+ 次模型实验；整套系统 Docker Compose 一键部署。"*
+### Complete DE interview story (after filling gaps)
+*"Built a financial news processing system covering 100 stocks: established full-text index on GDELT raw data (675M records); Python ETL cleaned and matched 840K articles with idempotency design and data quality checks; Airflow scheduled 5 DAGs for daily incremental updates; Kafka publishes daily trading signals (complete producer/consumer pipeline); MLflow tracked 100+ model experiments; entire system deployable with a single Docker Compose command."*
 
 ---
 
-## B. FinTech / 量化金融面试路线图
+## B. FinTech / Quantitative Finance Interview Roadmap
 
-### 当前已有（可以直接讲的）
-- Walk-forward 验证（非回测过拟合），IC=0.059（60d），100 symbol universe
-- 多因子模型：新闻质量 + 动量 + 财报事件 + LLM 情感
-- 事件驱动回测框架（min_hold=20d，+1.40% 超额，优于固定持仓基线）
-- LLM 双模型集成打标（Gemma + Qwen + Snorkel，77.3% 一致率）
-- 840K 篇文章，情感 / 事件类型 / 信号强度三维标签
+### Currently Available (can discuss directly)
+- Walk-forward validation (not backtest overfitting), IC=0.059 (60d), 100 symbol universe
+- Multi-factor model: news quality + momentum + earnings events + LLM sentiment
+- Event-driven backtest framework (min_hold=20d, +1.40% excess return, outperforming fixed holding baseline)
+- LLM dual-model ensemble labeling (Gemma + Qwen + Snorkel, 77.3% agreement rate)
+- 840K articles with three-dimensional labels: sentiment / event type / signal strength
 
-### 关键 gap — 必须补（量化面试必问）
+### Critical Gaps — Must Fill (quantitative interview essentials)
 
-| 缺什么 | 为什么重要 | 工作量 |
+| What is missing | Why it matters | Effort |
 |---|---|---|
-| Sharpe ratio / 最大回撤 / Sortino | 量化岗必问，没有数字 = 策略不完整 | 2天 |
-| 换手率 + 交易成本模型（万5假设） | 策略扣成本后是否仍盈利 | 1天 |
-| 年化收益 vs SPY Buy-and-Hold 对比 | 策略有没有超过被动持有 | 1天 |
-| 因子 IC 衰减曲线（Autocorrelation） | 信号多少天后失效，决定换仓频率 | 1天 |
-| Information Ratio（IC / std(IC)） | 信号稳定性，IC=0.059 够用但要展示 IR | 0.5天 |
-| Long-short 组合（不只是 Top-N） | 量化基金标配，只做 long = 不完整 | 3天 |
-| 因子相关性矩阵（VIF/冗余检测） | 避免多重共线性，模型可解释性 | 1天 |
-| 逐年 Sharpe + 回撤图 | 2022/2024 弱年的风险量化说明 | 1天 |
+| Sharpe ratio / max drawdown / Sortino | Must-ask for quant roles; no numbers = incomplete strategy | 2 days |
+| Turnover + transaction cost model (0.05% assumption) | Is the strategy still profitable after costs? | 1 day |
+| Annualized return vs SPY buy-and-hold comparison | Does the strategy beat passive holding? | 1 day |
+| Factor IC decay curve (autocorrelation) | How many days until the signal expires, determines rebalance frequency | 1 day |
+| Information Ratio (IC / std(IC)) | Signal stability; IC=0.059 is usable but IR must be shown | 0.5 days |
+| Long-short portfolio (not just Top-N) | Standard for quant funds; long-only = incomplete | 3 days |
+| Factor correlation matrix (VIF / redundancy check) | Avoid multicollinearity, model interpretability | 1 day |
+| Year-by-year Sharpe + drawdown chart | Quantify risk in weak years (2022/2024) | 1 day |
 
-### 加分项 — 做了更强
+### Bonus Items — Stronger with
 
-| 项目 | 价值 | 对应 Stage | 工作量 |
+| Item | Value | Stage | Effort |
 |---|---|---|---|
-| FinBERT 微调（200x 推理加速） | AI+金融交叉，独特亮点 | 3.5.5 | 1周 |
-| 因子归因分析（SHAP feature importance） | 可解释性，面试现场能展示 | 新增 | 1天 |
-| Beta 中性化 / 市场中性组合 | 机构级量化标配 | 新增 | 2天 |
-| 波动率加权仓位（非等权） | 比等权更精细的组合构建 | 新增 | 1天 |
-| 流动性过滤（市值下限） | 避免小票滑点，真实可执行性 | 新增 | 0.5天 |
-| RAG 新闻语义搜索 | "语义搜索+金融"亮点 | 5.3.1 | 1周 |
-| 多 agent 研究助手 | AI工程深度展示 | 5.3.2 | 2周 |
-| Paper trading 实盘验证记录 | Out-of-sample 真实表现，面试最有说服力 | C.6 | 持续 |
+| FinBERT fine-tuning (200x inference speedup) | AI+Finance crossover, unique highlight | 3.5.5 | 1 week |
+| Factor attribution analysis (SHAP feature importance) | Interpretability, can demo live in interview | New | 1 day |
+| Beta neutralization / market-neutral portfolio | Institutional quant standard | New | 2 days |
+| Volatility-weighted position sizing (non-equal weight) | More sophisticated portfolio construction than equal weight | New | 1 day |
+| Liquidity filter (market cap threshold) | Avoid small-cap slippage, real-world executability | New | 0.5 days |
+| RAG news semantic search | "Semantic search + finance" highlight | 5.3.1 | 1 week |
+| Multi-agent research assistant | AI engineering depth showcase | 5.3.2 | 2 weeks |
+| Paper trading live verification record | Out-of-sample real-world performance, most convincing in interviews | C.6 | Ongoing |
 
-### 量化面试能讲的完整故事（补完 gap 后）
-*"在 100 支科技股 universe 上构建新闻驱动多因子模型：840K 篇文章经
-Gemma+Qwen 双模型 LLM 集成打标（77.3% 一致率）；Walk-forward 验证
-60d Rank IC=0.059，Information Ratio=X.X；事件驱动持仓框架平均 13.7 天
-实现 +1.40% 超额（扣交易成本后 +X.X%），年化 Sharpe=X.X，最大回撤 X%，
-Long-short 年化超额 X%。"*
+### Complete quantitative interview story (after filling gaps)
+*"Built a news-driven multi-factor model on a 100-stock tech universe: 840K articles labeled by Gemma+Qwen dual-model LLM ensemble (77.3% agreement); walk-forward validation 60d Rank IC=0.059, Information Ratio=X.X; event-driven holding framework achieved +1.40% excess return in an average of 13.7 days (after transaction costs +X.X%), annualized Sharpe=X.X, max drawdown X%, long-short annualized excess X%."*
 
 ---
 
-## C. 项目实用化路线图（新闻事件 → 买卖 Hold 决策）
+## C. Project Productionization Roadmap (News Events → Buy/Sell/Hold Decisions)
 
-### 最小可用闭环（优先做）
+### Minimum Viable Loop (do first)
 
-#### C.1 每日信号生成自动化 ✅ 完成（接入 launchd scheduler，非 Airflow）
-- `score_daily_signals.py` 接入 `scheduler/task.py`，每日 08:30 自动跑
-  （`daily_symbol_features` 08:00 → `score_daily_signals` 08:30 → `track_positions` 08:40）
-- 对 100 个股票打分，写入 `daily_signals` 集合
-- 字段：`symbol`, `trade_date`, `composite_score`, `signal_rank`, `signal_type`(LONG/NEUTRAL),
-  `regime_mult`，以及 D 系列上下文字段（`ah_gap`, `analyst_buy_ratio_chg_1m`,
-  `inst_holding_pct_chg`, `retail_sent_score`, `macro_risk_on`, `macro_vix` 等）
-- 注：仍用 launchd，非 Airflow（Stage 7 / 5.2.1 迁移 Airflow 仍待开发）
+#### C.1 Daily signal generation automation ✅ Done (integrated with launchd scheduler, not Airflow)
+- `score_daily_signals.py` integrated into `scheduler/task.py`, runs automatically at 08:30 daily
+  (`daily_symbol_features` 08:00 → `score_daily_signals` 08:30 → `track_positions` 08:40)
+- Scores 100 stocks, writes results to `daily_signals` collection
+- Fields: `symbol`, `trade_date`, `composite_score`, `signal_rank`, `signal_type` (LONG/NEUTRAL),
+  `regime_mult`, and D-series context fields (`ah_gap`, `analyst_buy_ratio_chg_1m`,
+  `inst_holding_pct_chg`, `retail_sent_score`, `macro_risk_on`, `macro_vix`, etc.)
+- Note: still using launchd, not Airflow (Stage 7 / 5.2.1 Airflow migration still pending)
 
-#### C.2 风险指标完善 ✅ 完成（`research/backtest_portfolio.py`）
-- 已有：Sharpe ratio（年化，无风险利率 4%）、最大回撤、胜率、年化收益 vs SPY
-- 2026-06-16 验证结果（全历史 2015-2026，复用 `score_daily_signals.compute_score`）：
-  - 20d 持仓：Sharpe 0.84，年化 25.8%，vs SPY Sharpe 0.54/12.1%
-  - 60d 持仓：Sharpe 0.70，年化 24.3%，vs SPY Sharpe 0.46/11.6%
-- 待补：Sortino ratio、换手率 / 交易成本假设（见 H.1，仍未扣成本，数字偏乐观）
+#### C.2 Risk metrics ✅ Done (`research/backtest_portfolio.py`)
+- Available: Sharpe ratio (annualized, 4% risk-free rate), max drawdown, win rate, annualized return vs SPY
+- 2026-06-16 validation results (full history 2015-2026, reusing `score_daily_signals.compute_score`):
+  - 20d holding: Sharpe 0.84, annualized 25.8%, vs SPY Sharpe 0.54/12.1%
+  - 60d holding: Sharpe 0.70, annualized 24.3%, vs SPY Sharpe 0.46/11.6%
+- Still needed: Sortino ratio, turnover / transaction cost assumptions (see H.1; costs not yet deducted, numbers are optimistic)
 
-#### C.3 信号 UI 页面 ✅ 完成（`SignalsPanel.tsx`）
-- 显示当日全部信号，按 `signal_rank` 排序，LONG/NEUTRAL 标签着色
-- 顶部 Risk-on/Risk-off 徽章显示 `regime_mult`（宏观乘数）
-- 列：Score / Quality / News burst / Earnings / AH Gap / Analyst Δ1m / Inst Δ
-- 2026-06-16 新增 D 系列 3 列 + regime badge（`quant_api` DailySignalEvent 同步扩展字段）
-- 待补：watch list / avoid list 的独立分组展示（目前是单一排序表格）
+#### C.3 Signal UI page ✅ Done (`SignalsPanel.tsx`)
+- Displays all signals for the day, sorted by `signal_rank`, LONG/NEUTRAL labels color-coded
+- Risk-on/Risk-off badge at top showing `regime_mult` (macro multiplier)
+- Columns: Score / Quality / News burst / Earnings / AH Gap / Analyst Δ1m / Inst Δ
+- 2026-06-16: added 3 D-series columns + regime badge (`quant_api` DailySignalEvent fields expanded in sync)
+- Still needed: separate grouped display for watch list / avoid list (currently a single sorted table)
 
-### 进阶可用（第二优先）
+### Advanced (second priority)
 
-#### C.4 仓位跟踪 ✅ 完成（`research/track_positions.py`）
-- `positions` 集合记录模拟持仓：`symbol`, `entry_date`, `entry_price`, `entry_score`,
+#### C.4 Position tracking ✅ Done (`research/track_positions.py`)
+- `positions` collection records simulated holdings: `symbol`, `entry_date`, `entry_price`, `entry_score`,
   `entry_rank`, `days_held`, `current_return`/`exit_return`, `exit_trigger`
-- 幂等：每次运行从 `daily_signals` + `stock_prices_history` 全量重建状态
-- `PositionsPanel.tsx` 展示当前持仓状态 + 浮盈浮亏（已存在于 quant_ui）
-- 2026-06-20 验证：19 个持仓（16 开/3 平），PANW +62.6%／LRCX +50.5% 领涨
+- Idempotent: each run fully rebuilds state from `daily_signals` + `stock_prices_history`
+- `PositionsPanel.tsx` displays current position status + unrealized P&L (already in quant_ui)
+- 2026-06-20 validation: 19 positions (16 open/3 closed), PANW +62.6% / LRCX +50.5% leading
 
-#### C.5 退出提醒 ✅ 完成 + 2026-06-16 扩展
-- 已有触发：`max_hold`（60天）、`score_below_exit`、`sentiment_reversal`、`earnings_miss`
-- **新增两个 D 系列触发**：`analyst_downgrade`（`analyst_buy_ratio_chg_1m` < -10%）、
-  `inst_outflow`（`inst_holding_pct_chg` < -1% QoQ）
-- 提醒写入 `alerts` 集合；UI 红点/邮件推送仍待开发（目前仅脚本打印 + 集合查询）
+#### C.5 Exit alerts ✅ Done + extended 2026-06-16
+- Existing triggers: `max_hold` (60 days), `score_below_exit`, `sentiment_reversal`, `earnings_miss`
+- **Two new D-series triggers added**: `analyst_downgrade` (`analyst_buy_ratio_chg_1m` < -10%), `inst_outflow` (`inst_holding_pct_chg` < -1% QoQ)
+- Alerts written to `alerts` collection; UI red dot / email push still pending (currently script print + collection query only)
 
-#### C.6 Paper trading 记录 ✅ 基础版完成（即 C.4 `track_positions.py`）
-- 已按每日 `daily_signals` Top-N 模拟开仓，逐日用真实价格更新浮盈浮亏
-- 累计运行天数尚短，3-6 个月 out-of-sample 表现仍在积累中（持续任务，非一次性开发）
+#### C.6 Paper trading record ✅ Baseline done (i.e. C.4 `track_positions.py`)
+- Daily `daily_signals` Top-N used to simulate entries; unrealized P&L updated daily with real prices
+- Total running days are still short; 3-6 month out-of-sample performance is accumulating (ongoing task, not one-time development)
 
-#### C.7 ETL 数据质量检查 ✅ 基础版完成（`research/data_quality_check.py`）
-- 已有检查：新闻量、价格新鲜度、特征新鲜度、关键字段 NULL 率阈值
-  (`quality_score`/`full_ratio`/`close`/`past_ret_20d`)、信号新鲜度
-- 已接入 scheduler 每日 09:00 自动跑（`ENABLE_DATA_QUALITY_JOB`）
-- 待补：模型训练 IC 异常检测（2个标准差告警）、写入 `quant_api` 而非仅脚本输出
+#### C.7 ETL data quality checks ✅ Baseline done (`research/data_quality_check.py`)
+- Existing checks: news volume, price freshness, feature freshness, key field NULL rate thresholds
+  (`quality_score`/`full_ratio`/`close`/`past_ret_20d`), signal freshness
+- Integrated with scheduler to auto-run at 09:00 daily (`ENABLE_DATA_QUALITY_JOB`)
+- Still needed: model training IC anomaly detection (2-sigma alert), write results to `quant_api` instead of script output only
 
-#### C.8 ETL 单元测试 ✅ 部分完成（`tests/test_feature_build.py`）
-- 已覆盖：`aggregate_news_features`（计数/比率/滚动窗口）、
-  `aggregate_llm_sentiment_features`（加权情感/earnings beat 信号/空输入边界）、
-  `quality_score` 排名、日期解析/分桶工具函数
-- 待补：`attach_price_labels`（forward-return 计算）专项测试、
-  `compute_score` 评分管道测试、宏观因子派生（macro_vix_pctile / macro_risk_on）测试、
-  D 系列 `attach_*_features` 函数测试、覆盖率统计（目标 >70%）
+#### C.8 ETL unit tests ✅ Partially done (`tests/test_feature_build.py`)
+- Covered: `aggregate_news_features` (counts/ratios/rolling windows),
+  `aggregate_llm_sentiment_features` (weighted sentiment/earnings beat signal/empty input edge case),
+  `quality_score` ranking, date parsing/bucketing utility functions
+- Still needed: `attach_price_labels` (forward-return calculation) dedicated tests,
+  `compute_score` pipeline tests, macro factor derivation (macro_vix_pctile / macro_risk_on) tests,
+  D-series `attach_*_features` function tests, coverage reporting (target >70%)
 
-#### C.9 因子分析报告 ✅ 完成（`research/factor_analysis.py`）
-- 已实现：IC 衰减表（多 horizon）、按年 IC 分解、SHAP feature importance
-  （含 LLM vs 传统因子贡献占比拆分）
-- 已更新：Long-short 组合 + 逐年 Sharpe/回撤图已在 `factor_analysis.py` walk-forward 段实现 ✅
-- 待补（可选增强）：因子相关性矩阵（VIF 冗余检测）
+#### C.9 Factor analysis report ✅ Done (`research/factor_analysis.py`)
+- Implemented: IC decay table (multi-horizon), year-by-year IC breakdown, SHAP feature importance
+  (including LLM vs traditional factor contribution split)
+- Updated: long-short portfolio + year-by-year Sharpe/drawdown chart implemented in `factor_analysis.py` walk-forward section ✅
+- Still needed (optional enhancement): factor correlation matrix (VIF redundancy check)
 
-### 完整可用路线（时间估算）
+### Full productionization path (time estimates)
 
 ```
-Stage 7 服务跑通（1周）
-  → C.2 风险指标 + C.9 因子报告（3天） ← 面试立刻能讲
-  → C.8 ETL 单元测试（3天）            ← DE 面试证明可靠性
-  → C.7 数据质量检查（2天）            ← 生产级可信度
-  → C.1 每日信号自动化（3天）          ← 项目开始"动起来"
-  → C.3 信号 UI 页面（3天）            ← 可视化决策
-  → C.4 仓位跟踪（1周）               ← 真正辅助决策
-  → C.5 退出提醒（3天）               ← 闭环完成
-  → C.6 Paper trading（持续）          ← 积累真实表现
-  → 项目实用化 + 面试两用 ✓
+Stage 7 services running end-to-end (1 week)
+  → C.2 risk metrics + C.9 factor report (3 days)  ← can discuss in interview immediately
+  → C.8 ETL unit tests (3 days)                    ← proves reliability in DE interviews
+  → C.7 data quality checks (2 days)               ← production-grade credibility
+  → C.1 daily signal automation (3 days)           ← project starts "moving"
+  → C.3 signal UI page (3 days)                    ← visualized decisions
+  → C.4 position tracking (1 week)                 ← real decision support
+  → C.5 exit alerts (3 days)                       ← loop closed
+  → C.6 paper trading (ongoing)                    ← accumulate real-world performance
+  → project productionized + interview-ready ✓
 ```
 
 ---
 
-## D. 研究层扩展（提升模型质量）
+## D. Research Layer Extensions (improve model quality)
 
-### D.1 宏观 Regime 特征 ✅ 完成 2026-06-16
-- VIX 水平/百分位、10Y 利率、美元指数、SPY 20日趋势
-- 字段：`macro_vix`, `macro_vix_pctile_252d`, `macro_vix_change_5d`, `macro_tnx`,
+### D.1 Macro Regime features ✅ Done 2026-06-16
+- VIX level/percentile, 10Y interest rate, US dollar index, SPY 20-day trend
+- Fields: `macro_vix`, `macro_vix_pctile_252d`, `macro_vix_change_5d`, `macro_tnx`,
   `macro_tnx_change_20d`, `macro_spy_ret_20d`, `macro_spy_above_200ma`,
   `macro_risk_on`, `macro_is_high_vol`, `macro_dxy_change_20d`
-- 2026 holdout 中 `macro_tnx` 是 LightGBM 特征重要性排名第 2 的特征
-- `macro_risk_on`/`macro_vix_pctile_252d` 已接入 `score_daily_signals.py` 作为
-  regime multiplier（risk-on ×1.20，高 VIX ×0.85）—— H.2.1 的基础版已实现
+- In 2026 holdout, `macro_tnx` is the #2 ranked feature in LightGBM feature importance
+- `macro_risk_on`/`macro_vix_pctile_252d` integrated into `score_daily_signals.py` as
+  regime multiplier (risk-on ×1.20, high VIX ×0.85) — H.2.1 baseline implemented
 - Deliverable: `macro_collector/collector.py`
 
-### D.2 Alternative Data — 散户情绪 ✅ 完成 2026-06-16
-- 接入 StockTwits 公开 API（无需 Reddit 开发者审核，绕开了注册被拒的问题）
-- 新因子：`retail_msg_count`, `retail_bull_ratio`, `retail_sent_score`,
-  `retail_sentiment_divergence`（= retail_sent_score − avg_sentiment_3d）
-- 覆盖仅 2025-12 起，fill 率低(~3-4%)，需持续积累；
-  2026-06-20 复核：IC 由 +0.09 反转为 -0.10（N 仍偏小，未下结论，**未调整权重**）
+### D.2 Alternative Data — Retail Sentiment ✅ Done 2026-06-16
+- Integrated StockTwits public API (no Reddit developer approval required, bypassing the registration rejection issue)
+- New factors: `retail_msg_count`, `retail_bull_ratio`, `retail_sent_score`,
+  `retail_sentiment_divergence` (= retail_sent_score − avg_sentiment_3d)
+- Coverage starts from 2025-12 only, fill rate low (~3-4%), requires ongoing accumulation;
+  2026-06-20 review: IC reversed from +0.09 to -0.10 (N still small, no conclusion yet, **weights not adjusted**)
 - Deliverable: `retail_collector/collector.py`
 
-### D.3 财报原文挖掘（10-K/10-Q）— 跳过
-- 原因：需要 LLM 解析大量长文本，工程量大，优先级低于其他 D 项
-- 状态：[ ] 暂不开发
+### D.3 Earnings filing text mining (10-K/10-Q) — Skipped
+- Reason: requires LLM to parse large volumes of long text; engineering effort is high, lower priority than other D items
+- Status: [ ] Not developing for now
 
-### D.4 分析师评级变化因子 ✅ 完成 2026-06-16
-- Finnhub `/api/v1/stock/recommendation`，通过 `urllib`（VPN 下 `requests`/`curl_cffi` 失败，
-  仅 `urllib.request.urlopen` 可用）
-- 新因子：`analyst_buy_ratio`, `analyst_sell_ratio`, `analyst_consensus_score`,
+### D.4 Analyst rating change factor ✅ Done 2026-06-16
+- Finnhub `/api/v1/stock/recommendation`, accessed via `urllib` (under VPN, `requests`/`curl_cffi` failed; only `urllib.request.urlopen` works)
+- New factors: `analyst_buy_ratio`, `analyst_sell_ratio`, `analyst_consensus_score`,
   `analyst_buy_ratio_chg_1m`
-- CS-IC（截面）：`analyst_buy_ratio_chg_1m` 5d=+0.155 / 20d=+0.151，全部 D 系列中最干净的信号之一
+- Cross-sectional IC: `analyst_buy_ratio_chg_1m` 5d=+0.155 / 20d=+0.151, one of the cleanest signals in the D series
 - Deliverable: `analyst_collector/collector.py`
 
-### D.5 期权市场信号 — 跳过
-- 原因：CBOE PCR 免费历史数据仅到 2019 年，无法覆盖近期回测窗口
-- 状态：[ ] 暂不开发
+### D.5 Options market signals — Skipped
+- Reason: CBOE PCR free historical data only goes back to 2019, cannot cover recent backtest window
+- Status: [ ] Not developing for now
 
-### D.6 Short Interest（做空压力）— 跳过
-- 原因：VPN 下 FINRA 网站返回 bot 防护页面，无法抓取
-- 状态：[ ] 暂不开发
+### D.6 Short Interest (short squeeze pressure) — Skipped
+- Reason: FINRA website returns bot protection page under VPN, unable to scrape
+- Status: [ ] Not developing for now
 
-### D.7 机构持仓变化（13F） ✅ 完成 2026-06-16
-- `edgartools`，跟踪 Vanguard/StateStreet/Fidelity 最近 2 个季度持仓
-- 新因子：`inst_holding_pct`（跨机构汇总持仓比例）、`inst_holding_pct_chg`（QoQ，
-  按机构各自最近两期分别计算后取平均，规避了不同机构披露周期错位的问题）
-- CS-IC：`inst_holding_pct_chg` 60d=**+0.198**，全部 D 系列单因子中最强
-- 2026 holdout 中是 LightGBM regression IC 贡献最大的单特征（IC=+0.337）
-- 已接入 `track_positions.py` 的 `inst_outflow` 退出触发
+### D.7 Institutional holdings change (13F) ✅ Done 2026-06-16
+- `edgartools`, tracking Vanguard/StateStreet/Fidelity holdings for the most recent 2 quarters
+- New factors: `inst_holding_pct` (aggregate holding percentage across institutions), `inst_holding_pct_chg` (QoQ,
+  computed separately for each institution's most recent two periods then averaged, avoiding misalignment from different institutions' disclosure cycles)
+- Cross-sectional IC: `inst_holding_pct_chg` 60d=**+0.198**, strongest single factor in the D series
+- In 2026 holdout, the single feature contributing most to LightGBM regression IC (IC=+0.337)
+- Integrated as `inst_outflow` exit trigger in `track_positions.py`
 - Deliverable: `inst_13f_collector/collector.py`
 
-### D.8 盘前盘后价格信号 ✅ 完成 2026-06-16
-- yfinance 1m 数据（`prepost=True`），7天窗口分块抓取规避"8天上限"报错
-- 新因子：`pm_gap`, `ah_gap`, `ah_volume_ratio`（`pm_volume_ratio` 已移除——yfinance
-  盘前 volume 字段恒为 0，无法计算有效比值）
-- CS-IC：`ah_gap` 5d=**+0.227**，全部 D 系列单因子中最强短线信号
-- yfinance 1m 历史上限 30 天，scheduler 每日累积，截至 2026-06-20 已有 23 个交易日
+### D.8 Pre-market / after-hours price signals ✅ Done 2026-06-16
+- yfinance 1-minute data (`prepost=True`), chunked into 7-day windows to avoid "8-day limit" error
+- New factors: `pm_gap`, `ah_gap`, `ah_volume_ratio` (`pm_volume_ratio` removed — yfinance pre-market volume field is always 0, cannot compute a valid ratio)
+- Cross-sectional IC: `ah_gap` 5d=**+0.227**, the strongest short-term signal in the D series
+- yfinance 1-minute history capped at 30 days; scheduler accumulates daily — as of 2026-06-20 there are 23 trading days
 - Deliverable: `premarket_collector/collector.py`
 
-### D 系列接入闭环（2026-06-16 ~ 2026-06-20）
-全部完成项已贯穿整条 pipeline：
-`daily_symbol_features.py`（特征）→ `train_baseline_models.py` / `backtest_news_factor.py`
-（训练，60d 目标显著优于 20d，2026 holdout IC=0.73 vs 历史基线 0.04-0.05）→
-`score_daily_signals.py`（打分权重 + macro regime 乘数）→ `track_positions.py`
-（`analyst_downgrade`/`inst_outflow` 新退出触发）→ `quant_api`/`quant_ui`
-（DailySignalEvent 新增 8 个 D 系列字段，SignalsPanel 展示 regime badge + 3 新列）。
+### D-series end-to-end integration (2026-06-16 ~ 2026-06-20)
+All completed items are wired through the full pipeline:
+`daily_symbol_features.py` (features) → `train_baseline_models.py` / `backtest_news_factor.py`
+(training; 60d target significantly outperforms 20d; 2026 holdout IC=0.73 vs historical baseline 0.04-0.05) →
+`score_daily_signals.py` (scoring weights + macro regime multiplier) → `track_positions.py`
+(`analyst_downgrade`/`inst_outflow` new exit triggers) → `quant_api`/`quant_ui`
+(DailySignalEvent expanded with 8 new D-series fields; SignalsPanel shows regime badge + 3 new columns).
 
-`backtest_portfolio.py` 全历史回测（2015-2026，复用 `score_daily_signals.compute_score`）：
-60d Sharpe=0.70，20d Sharpe=0.84，均跑赢 SPY（Sharpe 0.46-0.54）——但此结果主要由
-既有 LLM/earnings 因子驱动，D 系列因数据窗口短，对历史回测贡献尚未充分体现，
-真实增量需等待数据积累后再做 attribution。
+`backtest_portfolio.py` full-history backtest (2015-2026, reusing `score_daily_signals.compute_score`):
+60d Sharpe=0.70, 20d Sharpe=0.84, both outperforming SPY (Sharpe 0.46-0.54) — but these results are primarily driven by the existing LLM/earnings factors; D-series data windows are short, so their contribution to historical backtest is not yet fully reflected; true incremental impact requires attribution analysis after data accumulates.
 
-**运维修复**：2026-06-20 发现 `com.quant.scheduler`（旧）与 `com.quant.pipeline-scheduler`
-（新）两个 launchd job 同时运行，导致所有采集任务每天重复执行两次。已卸载旧 job
-（plist 移至 `~/Quant_trade_backups/`）。
+**Ops fix**: On 2026-06-20 discovered `com.quant.scheduler` (old) and `com.quant.pipeline-scheduler`
+(new) were both running as launchd jobs, causing all collection tasks to execute twice daily. The old job has been unloaded (plist moved to `~/Quant_trade_backups/`).
 
 ---
 
-## E. 工程层补全（面试加分 / 项目完整性）
+## E. Engineering Layer Completion (interview bonus / project completeness)
 
-### E.1 REST API 文档（Swagger / OpenAPI）
-- `quant_api` 所有接口加 Swagger 注解，生成可交互文档
-- 面试演示时打开 `/swagger-ui.html` 直接展示 API 设计
-- 状态：[ ] 待开发（1天）
+### E.1 REST API documentation (Swagger / OpenAPI)
+- Add Swagger annotations to all `quant_api` endpoints; generate interactive documentation
+- Open `/swagger-ui.html` during interview demo to directly showcase API design
+- Status: [ ] Pending development (1 day)
 
-### E.2 CI/CD Pipeline（GitHub Actions）
-- 每次 push 自动跑：Python lint（ruff）+ 单元测试 + Docker build
-- main branch 保护：PR 必须通过 CI 才能合并
-- 状态：[ ] 待开发（2天）
+### E.2 CI/CD Pipeline (GitHub Actions)
+- Auto-run on every push: Python lint (ruff) + unit tests + Docker build
+- main branch protection: PRs must pass CI before merging
+- Status: [ ] Pending development (2 days)
 
-### E.3 Docker 镜像版本管理
-- quant_api / quant_ui / quant_data 镜像打 git commit hash tag
-- docker-compose 固定版本，不用 `latest`
-- 支持一键回滚到上一个稳定版本
-- 状态：[ ] 待开发（1天）
+### E.3 Docker image version management
+- Tag quant_api / quant_ui / quant_data images with git commit hash
+- docker-compose pins versions, no `latest` tag
+- Support one-command rollback to previous stable version
+- Status: [ ] Pending development (1 day)
 
-### E.4 K8s 部署配置
-- 把 docker-compose 转成 Kubernetes YAML（Deployment / Service / ConfigMap）
-- 不需要真正跑 K8s，有配置文件面试就能讲
-- 大厂 DE / Platform 面试加分
-- 状态：[ ] 待开发（3天）
+### E.4 K8s deployment configuration
+- Convert docker-compose to Kubernetes YAML (Deployment / Service / ConfigMap)
+- No need to actually run K8s; having the config files is enough for interviews
+- Bonus for DE / Platform engineer interviews at large companies
+- Status: [ ] Pending development (3 days)
 
-### E.5 数据血缘图（OpenLineage）
-- 用 OpenLineage 或手写 lineage JSON 描述：
+### E.5 Data lineage diagram (OpenLineage)
+- Use OpenLineage or hand-written lineage JSON to describe:
   `news_articles` → `company_match` → `news_articles_company_matched_v2`
   → `daily_symbol_features_company_matched_v2` → `daily_signals`
-- 可视化数据流向，DE 面试高频考点
-- 状态：[ ] 待开发（2天）
+- Visualize data flow; a common DE interview topic
+- Status: [ ] Pending development (2 days)
 
-### E.6 WebSocket 实时推送
-- 持仓触发退出条件时，UI 实时弹出提醒（不需要刷页面）
-- Spring Boot WebSocket + quant_ui 前端 subscribe
-- 对应 5.1.2 Backtest orchestration API 的 WebSocket 基础设施
-- 状态：[ ] 待开发
+### E.6 WebSocket real-time push
+- When a position triggers an exit condition, UI pops an alert in real time (no page refresh needed)
+- Spring Boot WebSocket + quant_ui frontend subscribe
+- Corresponds to the WebSocket infrastructure for 5.1.2 Backtest orchestration API
+- Status: [ ] Pending development
 
-### E.7 项目 README + 架构图
-- 写完整 README：项目背景、架构图、快速启动、核心指标展示
-- 架构图展示：数据流 → 特征工程 → 模型 → 信号 → UI
-- 面试前必备，GitHub 展示第一印象
-- 状态：[ ] 待开发（1天）
+### E.7 Project README + architecture diagram
+- Write a complete README: project background, architecture diagram, quick start, key metrics
+- Architecture diagram: data flow → feature engineering → model → signals → UI
+- Required before any interview; first impression on GitHub
+- Status: [ ] Pending development (1 day)
 
-### E.8 Demo 视频 / 截图
-- 录制 2-3 分钟演示视频：UI 信号页面 + 回测结果 + 因子分析图
-- 放在 README 顶部 GIF 或 YouTube 链接
-- 状态：[ ] 待开发
-
----
-
-## F. AI 工程层（AI Engineer / MLE 面试加分）
-
-### F.1 Prompt Engineering 评测框架
-- 对比不同 prompt 模板的打标准确率（用人工标注的 100 篇作为 ground truth）
-- 输出评测报告：precision / recall / confusion matrix（event_type 分类）
-- 证明 LLM pipeline 是"经过验证的"，不是随便跑的
-- 状态：[ ] 待开发（2天）
-
-### F.2 向量数据库新闻语义搜索（RAG）
-- Qdrant 已部署，对 `news_articles_company_matched_v2` 做 embedding
-- 接口：`/search?q=NVIDIA earnings beat Q3` → 返回相关文章 + LLM 摘要
-- Embedding 模型：`nomic-embed-text`（LM Studio 本地）
-- quant_ui 加搜索框
-- 状态：[ ] 待开发（对应 5.3.1，2-3天可出原型）
-
-### F.3 模型可解释性报告（SHAP）
-- 对 LightGBM 模型跑 SHAP analysis
-- 输出：各因子贡献度排名、个股预测可解释（为什么给 AAPL 高分）
-- 面试演示杀手锏：不只是"IC=0.059"，还能说"主要由 avg_sentiment_5d 和
-  earnings_recency_weight 贡献"
-- 状态：[ ] 待开发（1天）
-
-### F.4 多 Agent 研究助手（LangGraph）
-扩展现有 `quant_langchain` 容器，从 LLMChain 升级为 LangGraph 有状态 Agent 图。
-
-**Agent 架构（4 节点图）：**
-```
-用户输入: "分析 NVDA 最近新闻，给出交易建议"
-    ↓
-data_agent      → 调 quant_api 拉新闻 + 价格 + 情感因子
-    ↓
-analysis_agent  → 读 IC 排名 + 情绪分布，LLM 解读近期事件
-    ↓
-strategy_agent  → 生成 entry/exit 规则（结合 LLM 评分 + 量化信号）
-    ↓
-risk_agent      → 仓位控制、止损条件、最终输出持仓建议 JSON
-```
-
-**当前状态（现有基础）：**
-- `quant_langchain/main.py`：已有 `/api/workflow/generate-spec`、`/api/workflow/generate-tasks` 占位接口，但只做 prompt → JSON，无执行能力
-- `quant_api/StrategyService.java`：已调用 langchain-agent，可直接作为 tools server
-- 缺：LangGraph agent loop、工具注册、状态持久化
-
-**开发步骤：**
-1. 安装 langgraph，重构 `quant_langchain/main.py`（2天）
-2. 注册工具：`search_news(symbol, days)` → 调 quant_api；`get_features(symbol)` → MongoDB；`run_backtest(rules)` → Python
-3. 实现 4 节点图 + 状态传递（2天）
-4. 加入 ReAct 循环：analysis_agent 可以决定是否需要更多数据（1天）
-5. 接入 Qdrant RAG（F.2 完成后）：data_agent 可语义搜索相关新闻（1天）
-
-**demo 演示流程（面试用）：**
-- 输入："AAPL 最近 30 天有没有负面消息，现在该持仓吗？"
-- data_agent 拉新闻 + 情感分布
-- analysis_agent 发现 `avg_sentiment_5d = -0.3`，识别监管风险事件
-- strategy_agent 给出"观望，等情绪回升再建仓"
-- risk_agent 补充：如持仓，止损 -3%，最大仓位 5%
-
-**面试价值：** 覆盖 ReAct 推理 + tool use + 状态图，是 MLE / AI Engineer 岗核心考点
-- 状态：[ ] 待开发（2周）
-
-### F.6 rule_validator 升级为真 Agent（ReAct 循环）
-**现状：** `quant_data/tools/rule_validator_agent.py` 已有"LLM判断→工具调用→再判断"雏形，但是硬编码顺序，无推理循环。
-
-**升级方向：**
-- 验证失败 → agent 自主决定：抓更多文章 / 修改 prompt / 标记 ambiguous
-- 处理 `ambiguous_names.py` 歧义词时，agent 主动搜索公司背景判断
-- 从"流水线"改为"带 memory 的 ReAct agent"
-
-**开发步骤：**
-1. 用 LangGraph 改写 `rule_validator_agent.py`，加工具：`fetch_article(url)`、`search_web(company)`、`label_ambiguous(name, reason)`
-2. Agent 自己决定是否需要更多证据，最多 N 步
-3. 输出 trace：每条规则验证了哪些步骤、最终判断依据
-
-- 状态：[ ] 待开发（3天）
-
-### F.7 Airflow 自适应调度 Agent
-**现状：** `airflow/dags/` 4 个 DAG 全是静态时间触发，无自适应能力。
-
-**升级方向：**
-- 新增 `quality_monitor_dag`：每天 pipeline 跑完后，agent 分析：
-  - 新闻量是否异常低？（数据源挂了？）
-  - LLM 标签分歧率是否升高？（模型性能退化？）
-  - 信号 IC 是否连续 5 天下降？（需要重训？）
-- Agent 输出决策：触发补跑 / 换用更强模型 / 发告警 / 自动提交 retraining job
-
-**开发步骤：**
-1. 建 `quality_monitor_dag.py`，BranchPythonOperator 根据指标决策（1天）
-2. 加 LLM 决策节点：把异常指标摘要发给 LLM，输出建议动作（1天）
-3. 接入 Kafka：agent 决策 → 发 topic → downstream 消费（1天）
-
-- 状态：[ ] 待开发（3天）
-
-### F.8 LLM 标注主动学习 Agent（分歧样本处理）
-**现状：** Gemma + Qwen 两模型分歧率 22.7%，靠 Snorkel Dawid-Skene 盲目投票合并。
-
-**升级方向：**
-- 对 label_model_probs < 0.7 的高不确定样本，agent 主动介入：
-  - 把原文 + 两个模型输出一起发给更强 LLM（Qwen3-27B / GPT-4o）
-  - Agent 给出最终标签 + 解释原因（"model A 误判，因为文章主体是财报，非公司事件"）
-  - 作为 hard negative examples 加入 FinBERT 训练集
-- 预期：分歧样本准确率从 ~60% 提升至 ~85%
-
-**开发步骤：**
-1. 筛选 `llm_disagreement=1 AND llm_label_model_probs < 0.7` 样本（~190K条）
-2. 写 `active_learning_agent.py`：批量发给强模型，解析输出，写回 MongoDB
-3. 更新 `llm_sentiment_final` 字段，重跑 feature build
-4. 对比前后 IC 变化
-
-- 状态：[ ] 待开发（4天）
-
-### F.5 FinBERT 微调（3.5.5）
-- 用 Gemma+Qwen 一致标签（~650K 样本）训练
-- 三个 head：sentiment regression + event_type 7分类 + signal_strength 3分类
-- 推理速度：~3.9 art/s → ~1000+ art/s（200x 加速）
-- 状态：[ ] 待开发（1-2周）
+### E.8 Demo video / screenshots
+- Record a 2-3 minute demo video: UI signal page + backtest results + factor analysis charts
+- Put at the top of README as a GIF or YouTube link
+- Status: [ ] Pending development
 
 ---
 
-## 综合优先级表（所有待开发项）
+## F. AI Engineering Layer (AI Engineer / MLE interview bonus)
 
-| 优先级 | 项目 | 面试价值 | 实用价值 | 工作量 | 状态 |
+### F.1 Prompt Engineering evaluation framework
+- Compare labeling accuracy of different prompt templates (use 100 manually-annotated articles as ground truth)
+- Output evaluation report: precision / recall / confusion matrix (event_type classification)
+- Proves the LLM pipeline is "validated", not just run arbitrarily
+- Status: [ ] Pending development (2 days)
+
+### F.2 Vector database news semantic search (RAG)
+- Qdrant already deployed; add embeddings for `news_articles_company_matched_v2`
+- Endpoint: `/search?q=NVIDIA earnings beat Q3` → returns relevant articles + LLM summary
+- Embedding model: `nomic-embed-text` (LM Studio local)
+- Add search box to quant_ui
+- Status: [ ] Pending development (corresponds to 5.3.1; prototype in 2-3 days)
+
+### F.3 Model interpretability report (SHAP)
+- Run SHAP analysis on LightGBM model
+- Output: factor contribution ranking, per-stock prediction explanation (why AAPL gets a high score)
+- Interview demo killer: not just "IC=0.059" but also "driven primarily by avg_sentiment_5d and earnings_recency_weight"
+- Status: [ ] Pending development (1 day)
+
+### F.4 Multi-Agent research assistant (LangGraph)
+Extend the existing `quant_langchain` container from LLMChain to a LangGraph stateful agent graph.
+
+**Agent architecture (4-node graph):**
+```
+User input: "Analyze recent NVDA news and give a trading recommendation"
+    ↓
+data_agent      → calls quant_api to fetch news + price + sentiment factors
+    ↓
+analysis_agent  → reads IC ranking + sentiment distribution, LLM interprets recent events
+    ↓
+strategy_agent  → generates entry/exit rules (combining LLM scores + quantitative signals)
+    ↓
+risk_agent      → position sizing, stop-loss conditions, final output: position recommendation JSON
+```
+
+**Current state (existing foundation):**
+- `quant_langchain/main.py`: placeholder endpoints `/api/workflow/generate-spec` and `/api/workflow/generate-tasks` already exist, but only do prompt → JSON with no execution capability
+- `quant_api/StrategyService.java`: already calls langchain-agent; can directly serve as tools server
+- Missing: LangGraph agent loop, tool registration, state persistence
+
+**Development steps:**
+1. Install langgraph, refactor `quant_langchain/main.py` (2 days)
+2. Register tools: `search_news(symbol, days)` → calls quant_api; `get_features(symbol)` → MongoDB; `run_backtest(rules)` → Python
+3. Implement 4-node graph + state passing (2 days)
+4. Add ReAct loop: analysis_agent can decide whether it needs more data (1 day)
+5. Integrate Qdrant RAG (after F.2 is done): data_agent can semantically search relevant news (1 day)
+
+**Demo flow (for interviews):**
+- Input: "Has AAPL had any negative news in the last 30 days? Should I hold a position now?"
+- data_agent fetches news + sentiment distribution
+- analysis_agent finds `avg_sentiment_5d = -0.3`, identifies regulatory risk event
+- strategy_agent recommends "wait and watch; build position after sentiment recovers"
+- risk_agent adds: if holding, stop-loss at -3%, max position size 5%
+
+**Interview value:** covers ReAct reasoning + tool use + state graph — core competency for MLE / AI Engineer roles
+- Status: [ ] Pending development (2 weeks)
+
+### F.6 Upgrade rule_validator to a real Agent (ReAct loop)
+**Current state:** `quant_data/tools/rule_validator_agent.py` has a prototype of "LLM judges → tool call → re-judges", but the sequence is hardcoded with no reasoning loop.
+
+**Upgrade direction:**
+- Validation failure → agent autonomously decides: fetch more articles / modify prompt / mark as ambiguous
+- When handling ambiguous names from `ambiguous_names.py`, agent proactively searches for company background to decide
+- Change from "pipeline" to "ReAct agent with memory"
+
+**Development steps:**
+1. Rewrite `rule_validator_agent.py` with LangGraph; add tools: `fetch_article(url)`, `search_web(company)`, `label_ambiguous(name, reason)`
+2. Agent decides on its own whether more evidence is needed, up to N steps
+3. Output trace: which steps each rule validation went through and the final reasoning basis
+
+- Status: [ ] Pending development (3 days)
+
+### F.7 Airflow adaptive scheduling Agent
+**Current state:** All 4 DAGs in `airflow/dags/` are static time-triggered, with no adaptive capability.
+
+**Upgrade direction:**
+- Add `quality_monitor_dag`: after the pipeline runs each day, agent analyzes:
+  - Is news volume abnormally low? (data source down?)
+  - Is LLM label disagreement rate increasing? (model degradation?)
+  - Has signal IC been declining for 5 consecutive days? (needs retraining?)
+- Agent outputs decision: trigger re-run / switch to stronger model / send alert / auto-submit retraining job
+
+**Development steps:**
+1. Create `quality_monitor_dag.py`; BranchPythonOperator decides based on metrics (1 day)
+2. Add LLM decision node: send anomaly metric summary to LLM, output recommended action (1 day)
+3. Integrate Kafka: agent decision → publish to topic → downstream consumes (1 day)
+
+- Status: [ ] Pending development (3 days)
+
+### F.8 LLM annotation active learning Agent (disagreement sample handling)
+**Current state:** Gemma + Qwen disagreement rate is 22.7%; merged blindly via Snorkel Dawid-Skene voting.
+
+**Upgrade direction:**
+- For high-uncertainty samples where label_model_probs < 0.7, agent actively intervenes:
+  - Sends the original text + both model outputs together to a stronger LLM (Qwen3-27B / GPT-4o)
+  - Agent produces the final label + explanation ("model A mislabeled because the article is about earnings, not a company event")
+  - Added as hard negative examples to the FinBERT training set
+- Expected: disagreement sample accuracy improved from ~60% to ~85%
+
+**Development steps:**
+1. Filter samples where `llm_disagreement=1 AND llm_label_model_probs < 0.7` (~190K records)
+2. Write `active_learning_agent.py`: batch-submit to stronger model, parse output, write back to MongoDB
+3. Update `llm_sentiment_final` field, rerun feature build
+4. Compare IC before and after
+
+- Status: [ ] Pending development (4 days)
+
+### F.5 FinBERT fine-tuning (3.5.5)
+- Train on Gemma+Qwen consensus labels (~650K samples)
+- Three heads: sentiment regression + event_type 7-class + signal_strength 3-class
+- Inference speed: ~3.9 art/s → ~1000+ art/s (200x speedup)
+- Status: [ ] Pending development (1-2 weeks)
+
+---
+
+## Consolidated Priority Table (all pending items)
+
+| Priority | Item | Interview Value | Practical Value | Effort | Status |
 |---|---|---|---|---|---|
-| ⭐⭐⭐ | **H.1 回测加交易成本+流动性过滤** | 量化必需 | 🔴 真实收益 | 2天 | [ ] 待开发 |
-| ⭐⭐⭐ | H.2 市场 Regime 检测（VIX过滤） | 量化必需 | 🔴 IC稳定性 | 4天 | 🟡 基础版完成（regime_mult），动态权重切换待开发 |
-| ⭐⭐⭐ | H.3 Paper Trading 引擎+止损 | 量化必需 | 🔴 OOS验证 | 4天 | 🟡 引擎+部分退出触发已完成，-5%止损/OOS IC监控待开发 |
-| ⭐⭐⭐ | Stage 7 Airflow + Kafka 跑通 | DE 关键 | 高 | 1周 | [ ] 待开发（日常调度用 launchd 跑通，非 Airflow） |
-| ⭐⭐⭐ | C.2 风险指标（Sharpe/回撤） | 量化必需 | 高 | - | ✅ 已完成 |
-| ⭐⭐⭐ | C.9 因子分析报告（IC/IR/SHAP） | 量化必需 | 中 | - | ✅ 已完成 |
-| ⭐⭐⭐ | C.8 ETL 单元测试 | DE 必需 | 中 | 3天 | 🟡 部分完成，待补 earnings/D系列测试+覆盖率 |
-| ⭐⭐⭐ | E.7 README + 架构图 | 全部面试 | 中 | 1天 | [ ] 待开发 |
-| ⭐⭐⭐ | Stage 7 MLflow 实际跑 | DE/MLE | 中 | 1天 | [ ] 待开发 |
-| ⭐⭐ | H.4 信号质量监控（rolling IC）| 量化强 | 🟡 信号健康 | 2天 | [ ] 待开发 |
-| ⭐⭐ | C.1 每日信号自动化 | 中 | 极高 | 3天 | ✅ 已完成（launchd，非 Airflow） |
-| ⭐⭐ | C.3 信号 UI 页面 | 中 | 极高 | 3天 | ✅ 已完成 |
-| ⭐⭐ | F.2 RAG 新闻搜索（Qdrant） | AI必需 | 高 | 3天 | [ ] 待开发 |
-| ⭐⭐ | F.3 SHAP 可解释性 | MLE强 | 中 | 1天 | ✅ 已完成（factor_analysis.py） |
-| ⭐⭐ | F.4 LangGraph 多 Agent 研究助手 | AI Engineer必杀 | 高 | 2周 | [ ] 待开发 |
-| ⭐⭐ | F.8 主动学习 Agent（分歧样本） | MLE+AI | 高 | 4天 | [ ] 待开发 |
-| ⭐⭐ | E.2 CI/CD GitHub Actions | DE强 | 中 | 2天 | [ ] 待开发 |
-| ⭐⭐ | C.7 数据质量检查 | DE强 | 高 | 2天 | ✅ 已完成（data_quality_check.py） |
-| ⭐⭐ | B 量化加分：Long-short 组合 | 量化强 | 中 | 3天 | [ ] 待开发 |
-| ⭐⭐ | B 量化加分：Beta 中性化 | 量化强 | 中 | 2天 | [ ] 待开发 |
-| ⭐⭐ | F.5 FinBERT 微调 | MLE强 | 高 | 1-2周 | [ ] 待开发 |
-| ⭐ | F.6 rule_validator ReAct Agent | AI加分 | 中 | 3天 | [ ] 待开发 |
-| ⭐ | F.7 Airflow 自适应调度 Agent | DE+AI | 中 | 3天 | [ ] 待开发 |
-| ⭐⭐⭐ | D.1 宏观 Regime 特征（已并入 H.2）| 量化必需 | 🔴 真实可用 | 4天 | ✅ 已完成 |
-| ⭐ | E.4 K8s 配置 | DE加分 | 低 | 3天 | [ ] 待开发 |
-| ⭐ | E.5 数据血缘图 | DE加分 | 低 | 2天 | [ ] 待开发 |
-| ⭐ | E.6 WebSocket 实时推送 | 后端加分 | 高 | 3天 | [ ] 待开发 |
-| ⭐ | D.2 散户情绪 | 量化加分 | 中 | 3天 | ✅ 已完成（StockTwits，非 Reddit） |
-| ⭐ | F.1 Prompt 评测框架 | MLE加分 | 中 | 2天 | [ ] 待开发 |
-| ⭐ | E.8 Demo 视频 | 全部加分 | 高 | 0.5天 | [ ] 待开发 |
-| — | D.4 分析师评级变化 | 量化加分 | 中 | 3天 | ✅ 已完成 |
-| — | D.7 机构 13F 持仓变化 | 量化加分 | 高 | 3天 | ✅ 已完成（最强单因子，60d IC=+0.20） |
-| — | D.8 盘前盘后价格信号 | 量化加分 | 高 | 1天 | ✅ 已完成（最强短线因子，5d IC=+0.23） |
+| ⭐⭐⭐ | **H.1 Backtest with transaction costs + liquidity filter** | Quant essential | 🔴 Real returns | 2 days | [ ] Pending |
+| ⭐⭐⭐ | H.2 Market Regime detection (VIX filter) | Quant essential | 🔴 IC stability | 4 days | 🟡 Baseline done (regime_mult); dynamic weight switching pending |
+| ⭐⭐⭐ | H.3 Paper Trading engine + stop-loss | Quant essential | 🔴 OOS validation | 4 days | 🟡 Engine + partial exit triggers done; -5% stop-loss / OOS IC monitoring pending |
+| ⭐⭐⭐ | Stage 7 Airflow + Kafka end-to-end | DE critical | High | 1 week | [ ] Pending (daily scheduling runs via launchd, not Airflow) |
+| ⭐⭐⭐ | C.2 Risk metrics (Sharpe / drawdown) | Quant essential | High | - | ✅ Done |
+| ⭐⭐⭐ | C.9 Factor analysis report (IC/IR/SHAP) | Quant essential | Medium | - | ✅ Done |
+| ⭐⭐⭐ | C.8 ETL unit tests | DE essential | Medium | 3 days | 🟡 Partially done; earnings/D-series tests + coverage reporting still needed |
+| ⭐⭐⭐ | E.7 README + architecture diagram | All interviews | Medium | 1 day | [ ] Pending |
+| ⭐⭐⭐ | Stage 7 MLflow actual runs | DE/MLE | Medium | 1 day | [ ] Pending |
+| ⭐⭐ | H.4 Signal quality monitoring (rolling IC) | Quant strong | 🟡 Signal health | 2 days | [ ] Pending |
+| ⭐⭐ | C.1 Daily signal automation | Medium | Extremely high | 3 days | ✅ Done (launchd, not Airflow) |
+| ⭐⭐ | C.3 Signal UI page | Medium | Extremely high | 3 days | ✅ Done |
+| ⭐⭐ | F.2 RAG news search (Qdrant) | AI essential | High | 3 days | [ ] Pending |
+| ⭐⭐ | F.3 SHAP interpretability | MLE strong | Medium | 1 day | ✅ Done (factor_analysis.py) |
+| ⭐⭐ | F.4 LangGraph multi-agent research assistant | AI Engineer must-have | High | 2 weeks | [ ] Pending |
+| ⭐⭐ | F.8 Active learning Agent (disagreement samples) | MLE+AI | High | 4 days | [ ] Pending |
+| ⭐⭐ | E.2 CI/CD GitHub Actions | DE strong | Medium | 2 days | [ ] Pending |
+| ⭐⭐ | C.7 Data quality checks | DE strong | High | 2 days | ✅ Done (data_quality_check.py) |
+| ⭐⭐ | B quant bonus: Long-short portfolio | Quant strong | Medium | 3 days | [ ] Pending |
+| ⭐⭐ | B quant bonus: Beta neutralization | Quant strong | Medium | 2 days | [ ] Pending |
+| ⭐⭐ | F.5 FinBERT fine-tuning | MLE strong | High | 1-2 weeks | [ ] Pending |
+| ⭐ | F.6 rule_validator ReAct Agent | AI bonus | Medium | 3 days | [ ] Pending |
+| ⭐ | F.7 Airflow adaptive scheduling Agent | DE+AI | Medium | 3 days | [ ] Pending |
+| ⭐⭐⭐ | D.1 Macro Regime features (merged into H.2) | Quant essential | 🔴 Real utility | 4 days | ✅ Done |
+| ⭐ | E.4 K8s configuration | DE bonus | Low | 3 days | [ ] Pending |
+| ⭐ | E.5 Data lineage diagram | DE bonus | Low | 2 days | [ ] Pending |
+| ⭐ | E.6 WebSocket real-time push | Backend bonus | High | 3 days | [ ] Pending |
+| ⭐ | D.2 Retail sentiment | Quant bonus | Medium | 3 days | ✅ Done (StockTwits, not Reddit) |
+| ⭐ | F.1 Prompt evaluation framework | MLE bonus | Medium | 2 days | [ ] Pending |
+| ⭐ | E.8 Demo video | All bonus | High | 0.5 days | [ ] Pending |
+| — | D.4 Analyst rating changes | Quant bonus | Medium | 3 days | ✅ Done |
+| — | D.7 Institutional 13F holdings change | Quant bonus | High | 3 days | ✅ Done (strongest single factor, 60d IC=+0.20) |
+| — | D.8 Pre-market / after-hours price signals | Quant bonus | High | 1 day | ✅ Done (strongest short-term factor, 5d IC=+0.23) |
 
 ---
 
@@ -1337,39 +1314,39 @@ Recommended build order, each item ~1-2 weeks:
 
 ---
 
-## Stage 6 — GDELT GKG 全量索引导入 MongoDB（待开发）
+## Stage 6 — GDELT GKG Full Index Import into MongoDB (Pending development)
 
-### 6.1 背景与目标
+### 6.1 Background and Goal
 
-当前匹配新股票历史 GDELT 数据需要逐批扫描 ~35 万个 CSV 文件，耗时约 13 小时。
-目标：将 CSV 中 7 个关键列导入 MongoDB，建立 `$text` 全文索引，使新股票关键词匹配从 **13 小时 → 秒级**。
+Matching historical GDELT data for new stocks currently requires scanning ~350,000 CSV files in batches, taking about 13 hours.
+Goal: import 7 key columns from the CSVs into MongoDB and build a `$text` full-text index, reducing new-stock keyword matching from **13 hours → seconds**.
 
-### 6.2 GDELT CSV 列结构（保留 7 列）
+### 6.2 GDELT CSV column structure (7 columns retained)
 
-| 列号 | 字段名     | MongoDB 字段    | 用途                    |
+| Col # | Field Name | MongoDB Field | Purpose |
 |------|-----------|-----------------|------------------------|
-| 1    | DATE      | `date`          | 发布日期（YYYYMMDDHHMMSS）|
-| 4    | URL       | `url`           | 文章链接                 |
-| 7    | V1Themes  | `themes`        | 主题关键词（匹配主力）     |
-| 11   | V1Persons | `persons`       | 人名                    |
-| 13   | V1Orgs    | `orgs`          | 机构/公司名（匹配辅助）   |
-| 15   | V1Tone    | `tone`          | GCAM 情绪分数（辅助特征）|
-| 23   | AllNames  | `all_names`     | 所有实体名               |
+| 1    | DATE      | `date`          | Publication date (YYYYMMDDHHMMSS) |
+| 4    | URL       | `url`           | Article URL |
+| 7    | V1Themes  | `themes`        | Theme keywords (primary matching) |
+| 11   | V1Persons | `persons`       | Person names |
+| 13   | V1Orgs    | `orgs`          | Organizations / company names (secondary matching) |
+| 15   | V1Tone    | `tone`          | GCAM sentiment score (auxiliary feature) |
+| 23   | AllNames  | `all_names`     | All entity names |
 
-原始 27 列 CSV 中，列 17（GCAM）占 72% 体积；保留 7 列后，数据量从 7TB 降至约 **160 GB**（Parquet 估算），MongoDB BSON + WiredTiger 压缩后约 **300–600 GB**（含 `$text` 索引）。
+In the original 27-column CSV, column 17 (GCAM) accounts for 72% of the size; retaining 7 columns reduces data from 7TB to approximately **160 GB** (Parquet estimate), and MongoDB BSON + WiredTiger compression brings it to roughly **300–600 GB** (including `$text` index).
 
-### 6.3 开发任务
+### 6.3 Development tasks
 
-#### 6.3.1 导入脚本（`tools/gdelt_import_to_mongo.py`）
+#### 6.3.1 Import script (`tools/gdelt_import_to_mongo.py`)
 
-- 多进程并行读取 Data24T + Data6T 上的 `.csv` 文件（约 35 万个）
-- 每行提取 7 列，构造 MongoDB 文档
-- 按批次（batch_size=5000）写入集合 `quant_data.gkg_index`
-- 支持断点续跑：已导入的文件记录进度集合 `gkg_import_progress`
-- 去重：以 URL 为唯一键（`url` 建 unique index）
+- Multi-process parallel read of `.csv` files (~350,000) from Data24T + Data6T
+- Extract 7 columns per row; construct MongoDB document
+- Write to collection `quant_data.gkg_index` in batches (batch_size=5000)
+- Supports resume from checkpoint: imported files tracked in `gkg_import_progress` collection
+- Deduplication: URL as unique key (`url` unique index)
 
 ```python
-# 文档结构示例
+# Example document structure
 {
     "date": "20200314120000",
     "url": "https://example.com/article",
@@ -1381,113 +1358,111 @@ Recommended build order, each item ~1-2 weeks:
 }
 ```
 
-#### 6.3.2 索引建立
+#### 6.3.2 Index creation
 
 ```javascript
-// 复合文本索引（匹配主力）
+// Compound text index (primary matching)
 db.gkg_index.createIndex(
     { themes: "text", persons: "text", orgs: "text", all_names: "text" },
     { name: "gkg_text_idx", weights: { orgs: 10, themes: 5, all_names: 3, persons: 1 } }
 )
 
-// 辅助查询索引
+// Auxiliary query indexes
 db.gkg_index.createIndex({ date: 1 })
 db.gkg_index.createIndex({ url: 1 }, { unique: true })
 ```
 
-#### 6.3.3 新匹配流程改造
+#### 6.3.3 New matching pipeline
 
-替换当前 `historical_collector.py` 中的 CSV 批次扫描，改为：
+Replace the current CSV batch scan in `historical_collector.py` with:
 
-1. **Step 1**：`db.gkg_index.find({ $text: { $search: "keyword" } })` → 秒级返回候选 URL 列表
-2. **Step 2**：查 `news_articles` 集合，复用已抓取的正文
-3. **Step 3**：对缺失 URL 发起抓取（旧 URL 2016-2020 可能大量失效，需处理 404）
-4. **Step 4**：写入 `news_articles_company_matched_v2`
+1. **Step 1**: `db.gkg_index.find({ $text: { $search: "keyword" } })` → returns candidate URL list in seconds
+2. **Step 2**: Query `news_articles` collection; reuse already-fetched body text
+3. **Step 3**: Fetch missing URLs (many old URLs from 2016-2020 may be dead; handle 404 gracefully)
+4. **Step 4**: Write to `news_articles_company_matched_v2`
 
-#### 6.3.4 验证
+#### 6.3.4 Validation
 
-- 对已有 60 只股票中抽取 10 只，用新流程重新匹配
-- 对比 URL 命中率与当前 CSV 方案是否一致
-- 检查 `$text` 索引召回率（有无漏匹配）
+- Pick 10 stocks from the existing 60; re-match using the new pipeline
+- Compare URL hit rate against the current CSV approach to verify consistency
+- Check `$text` index recall rate (any missed matches?)
 
-### 6.4 存储预估
+### 6.4 Storage estimate
 
-| 项目                        | 估算大小    |
+| Item | Estimated size |
 |-----------------------------|------------|
-| 原始 CSV（7TB）→ 提取 7 列  | ~160 GB    |
-| MongoDB BSON（未压缩）       | ~200 GB    |
-| WiredTiger 压缩后（~3.5x）  | ~60 GB     |
-| `$text` 索引                | ~200–400 GB|
-| **总计（含索引）**           | **~300–600 GB** |
+| Raw CSV (7TB) → 7 columns extracted | ~160 GB |
+| MongoDB BSON (uncompressed) | ~200 GB |
+| After WiredTiger compression (~3.5x) | ~60 GB |
+| `$text` index | ~200–400 GB |
+| **Total (including index)** | **~300–600 GB** |
 
-导入验证通过后，原始 CSV 可删除，节省 **6TB+** 硬盘空间。
+Once import is validated, the original CSVs can be deleted, saving **6TB+** of disk space.
 
-### 6.5 注意事项
+### 6.5 Notes
 
-- MongoDB 服务器需预留至少 **600 GB** 可用空间（含索引构建临时空间）
-- `$text` 索引构建约需 **数小时**（570M 条记录），建议在导入完成后一次性创建
-- V1Tone（`tone` 字段）格式为逗号分隔的多个分数，使用时取第一个值（整体情绪分）
-- 旧 URL（2016–2020）大量已失效，URL 抓取阶段需做 404/timeout 容错并记录失效率
-- 导入脚本须支持多磁盘（Data24T + Data6T）并行读取，避免单盘 I/O 成为瓶颈
+- MongoDB server needs at least **600 GB** of free space (including temporary space for index build)
+- Building the `$text` index will take **several hours** (570M records); recommended to create it all at once after import is complete
+- V1Tone (`tone` field) format is comma-separated multiple scores; use the first value (overall sentiment score)
+- Many old URLs (2016–2020) are likely dead; the URL fetching stage must handle 404/timeout gracefully and log the dead-link rate
+- Import script must support parallel reads from multiple disks (Data24T + Data6T) to avoid single-disk I/O bottleneck
 
-### 6.6 前置条件
+### 6.6 Prerequisites
 
-- [ ] MongoDB 服务器确认有 600 GB+ 可用空间
-- [ ] Data24T 和 Data6T 已挂载并可读
-- [ ] 导入完成后对 10 只样本股票做回归测试，通过后再删除原始 CSV
+- [ ] MongoDB server confirmed to have 600 GB+ free space
+- [ ] Data24T and Data6T are mounted and readable
+- [ ] After import, run regression tests on 10 sample stocks; delete original CSVs only after passing
 
 ---
 
-# Stage 7 — 新 Mac 校验 + 定时任务验证 + 执行记录（待开发）
+# Stage 7 — New Mac Validation + Scheduled Task Verification + Execution Records (Pending development)
 
-## 7.1 背景
+## 7.1 Background
 
-已购置 48GB 内存 Mac 并完成数据和代码的复制，需要全面校验各服务和定时任务
-在新机器上正常运行，并补充执行结果的可观测性。
+A 48GB RAM Mac has been purchased and data/code migration is complete. A comprehensive validation of all services and scheduled tasks on the new machine is needed, along with adding observability for execution results.
 
-## 7.2 服务校验
+## 7.2 Service validation
 
-### 7.2.1 Docker 服务验证
-- [ ] 验证所有容器正常启动：mongo6 / quant_api / quant_ui / quant_data /
-      airflow-webserver / airflow-scheduler / kafka / mlflow 等
-- [ ] 检查各服务间网络连通性（project-net 内部通信）
-- [ ] 验证外部卷挂载正确（MongoDB、MySQL、Airflow logs 等数据完整）
-- [ ] 确认 `.env` 中连接地址在新机器上有效
+### 7.2.1 Docker service verification
+- [ ] Verify all containers start correctly: mongo6 / quant_api / quant_ui / quant_data /
+      airflow-webserver / airflow-scheduler / kafka / mlflow, etc.
+- [ ] Check inter-service network connectivity (project-net internal communication)
+- [ ] Verify external volume mounts are correct (MongoDB, MySQL, Airflow logs, etc. data intact)
+- [ ] Confirm `.env` connection addresses are valid on the new machine
 
-### 7.2.2 Airflow 定时任务跑通（不只是校验，要真正运行）
-- [ ] 逐一检查 `airflow/dags/` 中所有 DAG 的调度时间和依赖关系
-- [ ] 手动触发每条 DAG，确认全链路端到端执行成功（不只是"定义了"）
-- [ ] 确认 Docker socket 挂载路径正确（`/var/run/docker.sock`）
-- [ ] 等待至少一次自动调度触发，确认定时执行正常
-- [ ] 检查 DAG 执行日志，修复任何失败的 task
-- [ ] 目标：news 采集 / feature build / model training 三条主 DAG 稳定运行
+### 7.2.2 Airflow scheduled tasks running end-to-end (not just validation, must actually run)
+- [ ] Check scheduling times and dependencies for all DAGs in `airflow/dags/`
+- [ ] Manually trigger each DAG; confirm full end-to-end execution succeeds (not just "defined")
+- [ ] Confirm Docker socket mount path is correct (`/var/run/docker.sock`)
+- [ ] Wait for at least one automatic schedule trigger; confirm timed execution works
+- [ ] Check DAG execution logs; fix any failing tasks
+- [ ] Goal: news collection / feature build / model training — all three main DAGs running stably
 
-### 7.2.3 Kafka 实际运行（不只是部署，要有真实数据流）
-- [ ] 确认 kafka 容器正常，可连接 `kafka:9092`
-- [ ] 创建必要的 topic（如 `quant.signals`, `quant.news`）
-- [ ] 实现至少一个 producer：每日信号生成后推送到 `quant.signals` topic
-- [ ] 实现至少一个 consumer：消费信号写入 `daily_signals` 集合或触发告警
-- [ ] 通过 kafka-ui（端口 15070）验证消息正常流转
-- [ ] 目标：信号生成 → Kafka → 消费写库，完整链路跑通
+### 7.2.3 Kafka actually running (not just deployed, must have real data flow)
+- [ ] Confirm kafka container is healthy and reachable at `kafka:9092`
+- [ ] Create required topics (e.g. `quant.signals`, `quant.news`)
+- [ ] Implement at least one producer: push to `quant.signals` topic after daily signal generation
+- [ ] Implement at least one consumer: consume signals and write to `daily_signals` collection or trigger alert
+- [ ] Verify message flow through kafka-ui (port 15070)
+- [ ] Goal: signal generation → Kafka → consume and write to DB — full pipeline running
 
-### 7.2.4 MLflow 实际记录 run
-- [ ] 确认 mlflow 容器正常（端口 15050）
-- [ ] 在 `train_baseline_models.py` 中启用 `--mlflow-uri`，跑一次训练并记录
-- [ ] 验证 MLflow UI 中可看到参数、指标、模型文件
-- [ ] 目标：每次模型训练都有 run 记录，IC / Top5 超额可追溯
+### 7.2.4 MLflow actual run recording
+- [ ] Confirm mlflow container is healthy (port 15050)
+- [ ] Enable `--mlflow-uri` in `train_baseline_models.py`; run one training and record
+- [ ] Verify parameters, metrics, and model files are visible in MLflow UI
+- [ ] Goal: every model training run is recorded; IC / Top5 excess return is traceable
 
-### 7.2.5 LLM 推理校验
-- [ ] 在新 Mac 上验证 LM Studio / Ollama 可用，模型已加载
-- [ ] 验证 `SLM_API_URL` 环境变量指向正确端点
-- [ ] 跑一小批 `llm_enrich_articles.py` 确认推理正常
+### 7.2.5 LLM inference validation
+- [ ] Verify LM Studio / Ollama is available on the new Mac and models are loaded
+- [ ] Verify `SLM_API_URL` environment variable points to the correct endpoint
+- [ ] Run a small batch of `llm_enrich_articles.py` to confirm inference is working
 
-## 7.3 执行结果记录（UI / API）
+## 7.3 Execution result recording (UI / API)
 
-当前问题：Airflow 和 Python 脚本的执行结果（成功/失败、处理条数、耗时、关键指标）
-没有统一的可见性入口，排查问题困难。
+Current problem: execution results for Airflow and Python scripts (success/failure, rows processed, duration, key metrics) have no unified visibility entry point, making troubleshooting difficult.
 
-### 7.3.1 quant_api 执行日志接口
-- [ ] 新增 `pipeline_runs` 集合（MongoDB）或表（MySQL），记录每次任务执行：
+### 7.3.1 quant_api execution log endpoint
+- [ ] Add `pipeline_runs` collection (MongoDB) or table (MySQL) to record each task execution:
   ```json
   {
     "task_name": "feature_build",
@@ -1499,333 +1474,333 @@ db.gkg_index.createIndex({ url: 1 }, { unique: true })
     "metadata": { "collection": "daily_symbol_features_company_matched_v2" }
   }
   ```
-- [ ] quant_api 提供 REST 接口：`POST /api/pipeline-runs`（写入）、
-      `GET /api/pipeline-runs`（查询最近 N 条）
-- [ ] 在各 Python 脚本（daily_symbol_features.py、llm_enrich_articles.py 等）
-      执行完成后调用接口上报结果
+- [ ] quant_api provides REST endpoints: `POST /api/pipeline-runs` (write) and
+      `GET /api/pipeline-runs` (query most recent N records)
+- [ ] Each Python script (daily_symbol_features.py, llm_enrich_articles.py, etc.)
+      calls the endpoint to report results after completion
 
-### 7.3.2 quant_ui 执行历史页面
-- [ ] 在 UI 中新增"任务执行记录"页面，展示：
-  - 任务名称、状态（成功/失败）、开始/结束时间、处理条数
-  - 最近 30 天执行趋势图
-  - 失败任务高亮 + 错误信息展示
-- [ ] 支持按任务名称筛选和时间范围查询
+### 7.3.2 quant_ui execution history page
+- [ ] Add a "Task Execution Records" page in the UI showing:
+  - Task name, status (success/failure), start/end time, rows processed
+  - Execution trend chart for the last 30 days
+  - Failed tasks highlighted + error message display
+- [ ] Support filtering by task name and time range
 
-### 7.3.3 模型训练结果持久化
-- [ ] 每次 `train_baseline_models.py` 运行后，将各 horizon 的 IC / Top5 超额收益
-      写入 `model_results` 集合，带时间戳和 feature set 版本标记
-- [ ] quant_ui 展示模型历史结果趋势，方便对比不同 feature 版本的效果
+### 7.3.3 Model training result persistence
+- [ ] After each `train_baseline_models.py` run, write per-horizon IC / Top5 excess return
+      to `model_results` collection with timestamp and feature set version tag
+- [ ] quant_ui displays model historical result trends to facilitate comparison across different feature versions
 
-## 7.4 优先级
+## 7.4 Priority
 
-1. Docker 基础服务验证（阻塞后续所有工作）
-2. **Airflow DAG 真正跑通**（不只是定义，要稳定运行，面试关键证明）
-3. **Kafka producer/consumer 真正运行**（信号→topic→消费写库完整链路）
-4. **MLflow 实际记录 run**（每次训练可追溯）
-5. quant_api 执行日志接口（pipeline_runs 写库）
-6. quant_ui 执行历史页面
-7. 模型结果持久化
+1. Docker baseline service validation (blocks all subsequent work)
+2. **Airflow DAG actually running** (not just defined; must run stably — key interview proof)
+3. **Kafka producer/consumer actually running** (signal → topic → consume and write to DB full pipeline)
+4. **MLflow actual run recording** (every training run is traceable)
+5. quant_api execution log endpoint (pipeline_runs write to DB)
+6. quant_ui execution history page
+7. Model result persistence
 
 ---
 
-## G. 参考资源（2026-05-22 整理）
+## G. Reference Resources (compiled 2026-05-22)
 
-### G.1 LLM 情绪因子 / Alpha 挖掘论文
+### G.1 LLM sentiment factor / alpha mining papers
 
-| 论文 | 要点 |
+| Paper | Key points |
 |------|------|
-| [Event-Aware Sentiment Factors from LLM-Augmented Financial Tweets (arXiv 2508.07408)](https://arxiv.org/pdf/2508.07408) | 可解释 LLM 量化框架，事件感知情绪因子构建，适合和本项目 LLM tagging 方案对比 |
-| [Interpretable ML for Macro Alpha: News Sentiment Case Study (arXiv 2505.16136)](https://arxiv.org/pdf/2505.16136) | FinBERT + GDELT → 外汇/国债策略，OOS Sharpe >4；验证了 GDELT + LLM 路线可行性 |
-| [AlphaAgent: LLM-Driven Alpha Mining (arXiv 2502.16789)](https://arxiv.org/html/2502.16789v2) | LLM 自动化挖掘 alpha 因子，含对抗 alpha 衰减机制 |
-| [Automate Strategy Finding with LLM in Quant Investment (arXiv 2409.06289)](https://arxiv.org/html/2409.06289v1) | LLM 驱动的策略自动寻找流程，可参考 prompt 设计 |
+| [Event-Aware Sentiment Factors from LLM-Augmented Financial Tweets (arXiv 2508.07408)](https://arxiv.org/pdf/2508.07408) | Interpretable LLM quantitative framework, event-aware sentiment factor construction; useful to compare against this project's LLM tagging approach |
+| [Interpretable ML for Macro Alpha: News Sentiment Case Study (arXiv 2505.16136)](https://arxiv.org/pdf/2505.16136) | FinBERT + GDELT → FX/treasury strategy, OOS Sharpe >4; validates the GDELT + LLM approach |
+| [AlphaAgent: LLM-Driven Alpha Mining (arXiv 2502.16789)](https://arxiv.org/html/2502.16789v2) | LLM-automated alpha factor mining including anti-decay mechanism |
+| [Automate Strategy Finding with LLM in Quant Investment (arXiv 2409.06289)](https://arxiv.org/html/2409.06289v1) | LLM-driven strategy discovery pipeline; useful prompt design reference |
 
-### G.2 CBOE 期权数据（免费下载）
+### G.2 CBOE options data (free download)
 
-- **PCR 历史 CSV**（对应 D.5 Put/Call Ratio 因子）：
+- **PCR historical CSV** (for D.5 Put/Call Ratio factor):
   `https://cdn.cboe.com/resources/options/volume_and_call_put_ratios/indexpcarchive.csv`
-- **CBOE 历史数据总页面**：
+- **CBOE historical data main page**:
   `https://www.cboe.com/us/options/market_statistics/historical_data/`
-- 用法：直接 `pd.read_csv(url)` 即可加载日频 PCR 数据，无需注册
+- Usage: load daily PCR data directly with `pd.read_csv(url)`; no registration required
 
-### G.3 FinBERT 微调资源（对应 F.5 / Stage 3.5.5）
+### G.3 FinBERT fine-tuning resources (for F.5 / Stage 3.5.5)
 
-| 资源 | 要点 |
+| Resource | Key points |
 |------|------|
-| [Fine-Tuning FinBERT for Sector-Specific Financial News (MDPI Electronics 2025)](https://www.mdpi.com/2079-9292/14/23/4680) | zero-shot F1=0.555 → 微调后 F1=**0.707**；含分行业训练方案，可直接参考训练脚本设计 |
-| [ProsusAI/finbert on HuggingFace](https://huggingface.co/ProsusAI/finbert) | 官方 FinBERT 预训练权重，直接加载使用 |
-| [Efficient FinBERT via Quantization (ACL FinNLP 2025)](https://aclanthology.org/2025.finnlp-2.6.pdf) | INT8/INT4 量化压缩方案，Mac M 芯片可本地运行 |
+| [Fine-Tuning FinBERT for Sector-Specific Financial News (MDPI Electronics 2025)](https://www.mdpi.com/2079-9292/14/23/4680) | zero-shot F1=0.555 → after fine-tuning F1=**0.707**; includes sector-specific training approach, directly applicable as training script reference |
+| [ProsusAI/finbert on HuggingFace](https://huggingface.co/ProsusAI/finbert) | Official FinBERT pre-trained weights, ready to load |
+| [Efficient FinBERT via Quantization (ACL FinNLP 2025)](https://aclanthology.org/2025.finnlp-2.6.pdf) | INT8/INT4 quantization compression; runnable locally on Mac M-series chips |
 
-### G.4 SEC EDGAR 13F Python 工具（对应 D.7）
+### G.4 SEC EDGAR 13F Python tools (for D.7)
 
-| 库 | 说明 |
+| Library | Description |
 |----|------|
-| [edgartools](https://github.com/dgunning/edgartools) | **首选**，免费开源，将 13F 解析为结构化 Python 对象，数据回溯到 2005 年，`pip install edgartools` |
-| [sec-api-python](https://github.com/janlukasschroeder/sec-api-python) | 付费 SDK，有免费试用额度，适合生产环境批量抓取 |
+| [edgartools](https://github.com/dgunning/edgartools) | **Preferred**, free and open-source; parses 13F into structured Python objects; data goes back to 2005; `pip install edgartools` |
+| [sec-api-python](https://github.com/janlukasschroeder/sec-api-python) | Paid SDK with free trial quota; suitable for bulk production scraping |
 
 ---
 
-## H. 真实交易系统路线图（从研究 → 真正能用）
+## H. Live Trading System Roadmap (from research → truly usable)
 
-### 背景：为什么现在还不能上实盘
+### Background: why live trading is not yet possible
 
-回测结果（Long-short 年化 +21.7%，Sharpe 0.85）看起来不错，但以下问题会让真实交易亏钱：
+Backtest results (long-short annualized +21.7%, Sharpe 0.85) look promising, but the following issues would cause real money to lose:
 
-| 问题 | 具体表现 | 风险等级 |
+| Problem | Specific manifestation | Risk level |
 |------|---------|---------|
-| IC 年度不稳定 | 2022/2024/2025 年 IC 为负，信号反向 | 🔴 致命 |
-| 无交易成本 | 回测未扣佣金+滑点，实际收益减少 30-40% | 🔴 致命 |
-| 信号滞后 | 新闻公开后 LLM 处理需要数小时 | 🟡 严重 |
-| 无仓位控制 | 等权重配置，单票风险未限制 | 🟡 严重 |
-| 无 out-of-sample 验证 | 所有数据都用于回测，过拟合风险 | 🟡 严重 |
-| 仅 100 只股票 | 集中度太高，流动性风险 | 🟠 中等 |
+| IC year-over-year instability | IC was negative in 2022/2024/2025, signal reversed | 🔴 Fatal |
+| No transaction costs | Backtest does not deduct commissions + slippage; real returns reduced by 30-40% | 🔴 Fatal |
+| Signal lag | LLM processing takes several hours after news is published | 🟡 Serious |
+| No position sizing | Equal-weight allocation; single-stock risk is unconstrained | 🟡 Serious |
+| No out-of-sample validation | All data used for backtest; overfitting risk | 🟡 Serious |
+| Only 100 stocks | Concentration too high; liquidity risk | 🟠 Moderate |
 
 ---
 
-### H.1 修复回测真实性（🔴 必须先做）
+### H.1 Fix backtest realism (🔴 must do first)
 
-**H.1.1 加入交易成本模型**
-- 单边佣金：0.05%（万5，券商一般水平）
-- 滑点模型：小票 0.3%，大票 0.1%（按市值分级）
-- 修改 `backtest_news_factor.py` 和 `backtest_event_driven.py`：
+**H.1.1 Add transaction cost model**
+- One-way commission: 0.05% (standard broker level)
+- Slippage model: 0.3% for small-cap, 0.1% for large-cap (tiered by market cap)
+- Modify `backtest_news_factor.py` and `backtest_event_driven.py`:
   ```python
   net_return = gross_return - commission * 2 - slippage * 2
   ```
-- 目标：看扣成本后 Long-short 年化还剩多少
-- 状态：[ ] 待开发（1天）
+- Goal: determine how much of the long-short annualized return remains after costs
+- Status: [ ] Pending development (1 day)
 
-**H.1.2 加入流动性过滤**
-- 剔除日均成交量 < 500万美元的股票（避免无法执行）
-- 加入 `avg_daily_volume` 特征，在选仓时过滤
-- 状态：[ ] 待开发（0.5天）
+**H.1.2 Add liquidity filter**
+- Exclude stocks with average daily volume < $5M (avoid execution failure)
+- Add `avg_daily_volume` feature; filter at position selection
+- Status: [ ] Pending development (0.5 days)
 
-**H.1.3 加入仓位上限约束**
-- 单票最大仓位：5%（避免过度集中）
-- 单行业最大仓位：25%
-- 修改 `score_daily_signals.py` 加入仓位约束逻辑
-- 状态：[ ] 待开发（0.5天）
+**H.1.3 Add position limit constraints**
+- Max position per stock: 5% (avoid over-concentration)
+- Max position per sector: 25%
+- Modify `score_daily_signals.py` to add position constraint logic
+- Status: [ ] Pending development (0.5 days)
 
 ---
 
-### H.2 解决 IC 不稳定问题（🔴 必须先做）
+### H.2 Resolve IC instability (🔴 must do first)
 
-**H.2.1 市场 Regime 检测**
+**H.2.1 Market Regime detection**
 
-IC 年度分析揭示信号只在"趋势市场"有效：
+Year-by-year IC analysis reveals the signal is only effective in "trending markets":
 ```
-2022（熊市/高 VIX）: IC = -0.035 → 关闭信号
-2023（反弹/低 VIX）: IC = +0.163 → 开启信号  
-2024（震荡）       : IC = -0.022 → 关闭信号
-2025（震荡）       : IC = -0.020 → 关闭信号
+2022 (bear market / high VIX): IC = -0.035 → disable signal
+2023 (recovery / low VIX):     IC = +0.163 → enable signal  
+2024 (choppy):                  IC = -0.022 → disable signal
+2025 (choppy):                  IC = -0.020 → disable signal
 ```
 
-实现方案：
-- 数据源：`yfinance` 拉取 VIX 日频数据
-- Regime 定义：
-  - **趋势市场**：VIX < 20 且 SPY 20日均线向上 → 开启 LLM 情绪因子权重
-  - **震荡/恐慌**：VIX > 25 → 降低仓位至 50%，切换均值回归因子
-- 新字段：`market_regime`（trend / volatile / crisis）
-- 在 `score_daily_signals.py` 中按 regime 调整 composite_score 权重
-- 状态：[ ] 待开发（2天）
+Implementation:
+- Data source: `yfinance` for daily VIX data
+- Regime definitions:
+  - **Trending market**: VIX < 20 AND SPY 20-day moving average trending up → enable LLM sentiment factor weighting
+  - **Choppy / panic**: VIX > 25 → reduce position to 50%, switch to mean-reversion factors
+- New field: `market_regime` (trend / volatile / crisis)
+- Adjust composite_score weights by regime in `score_daily_signals.py`
+- Status: [ ] Pending development (2 days)
 
-**H.2.2 动态因子权重**
-- 不同 regime 下各因子权重不同：
-  - 趋势市场：LLM 情绪权重 40%，动量权重 30%，earnings 权重 30%
-  - 震荡市场：LLM 情绪权重 10%，均值回归权重 50%，earnings 权重 40%
-- 在模型训练时加入 `market_regime` 作为特征，或分 regime 单独训练
-- 状态：[ ] 待开发（2天）
-
----
-
-### H.3 Paper Trading 验证（🔴 必须做，至少跑 3-6 个月）
-
-**目标**：在真实市场环境中验证信号，积累 out-of-sample 数据
-
-**H.3.1 Paper Trading 引擎**
-- 每日盘后自动执行：
-  1. 读取当日 `daily_signals` 中 composite_score 前 10 只
-  2. 检查 regime：如果 VIX > 25，跳过或减半仓位
-  3. 模拟下单，记录入场价（用次日开盘价）
-  4. 写入 `paper_positions` 集合
-- 字段：`symbol`, `entry_date`, `entry_price`, `size`, `score_at_entry`, `regime_at_entry`
-- 状态：[ ] 待开发（2天）
-
-**H.3.2 Paper Trading 绩效追踪**
-- 每日更新持仓浮盈浮亏
-- 计算真实 out-of-sample IC（每天实际持仓的预测 vs 实际表现）
-- 目标指标：
-  - OOS IC > 0.02（说明信号在真实市场有效）
-  - OOS Sharpe > 0.5（说明策略可执行）
-  - 连续 3 个月正超额收益（说明稳定）
-- 状态：[ ] 待开发（1天）
-
-**H.3.3 止损和退出逻辑**
-- 单票止损：入场后跌 -5% 自动退出
-- 情感逆转止损：持仓期间 `avg_sentiment_5d` 变负，主动退出
-- 时间止损：持仓超过 `max_hold_days`（默认 45 天）自动退出
-- 状态：[ ] 待开发（1天）
+**H.2.2 Dynamic factor weights**
+- Different factor weights for different regimes:
+  - Trending market: LLM sentiment weight 40%, momentum weight 30%, earnings weight 30%
+  - Choppy market: LLM sentiment weight 10%, mean-reversion weight 50%, earnings weight 40%
+- Add `market_regime` as a feature during model training, or train separate models per regime
+- Status: [ ] Pending development (2 days)
 
 ---
 
-### H.4 信号质量监控（🟡 重要）
+### H.3 Paper Trading validation (🔴 must do, run for at least 3-6 months)
 
-**H.4.1 实时 IC 监控**
-- 每天计算最近 20 个交易日的 rolling IC
-- IC 连续 5 天低于 0 → 触发告警，暂停新建仓
-- 写入 `signal_quality` 集合，UI 显示 IC 趋势图
-- 状态：[ ] 待开发（1天）
+**Goal**: validate signals in a real market environment and accumulate out-of-sample data
 
-**H.4.2 模型漂移检测**
-- 每周对比最新特征分布和训练时分布（KL 散度）
-- 分布偏移超过阈值 → 触发重训提醒
-- 状态：[ ] 待开发（1天）
+**H.3.1 Paper Trading engine**
+- Execute automatically after market close each day:
+  1. Read the top 10 stocks by composite_score from that day's `daily_signals`
+  2. Check regime: if VIX > 25, skip or halve the position
+  3. Simulate order entry; record entry price (use next day's open price)
+  4. Write to `paper_positions` collection
+- Fields: `symbol`, `entry_date`, `entry_price`, `size`, `score_at_entry`, `regime_at_entry`
+- Status: [ ] Pending development (2 days)
+
+**H.3.2 Paper Trading performance tracking**
+- Update unrealized P&L daily
+- Compute real out-of-sample IC (each day's actual holdings: predicted vs actual performance)
+- Target metrics:
+  - OOS IC > 0.02 (signal is effective in real markets)
+  - OOS Sharpe > 0.5 (strategy is executable)
+  - 3 consecutive months of positive excess return (signal is stable)
+- Status: [ ] Pending development (1 day)
+
+**H.3.3 Stop-loss and exit logic**
+- Per-stock stop-loss: auto-exit if the position drops -5% from entry
+- Sentiment reversal stop-loss: if `avg_sentiment_5d` turns negative during holding, actively exit
+- Time stop-loss: auto-exit if holding exceeds `max_hold_days` (default 45 days)
+- Status: [ ] Pending development (1 day)
 
 ---
 
-### H.5 实盘准备检查清单
+### H.4 Signal quality monitoring (🟡 important)
 
-在考虑用真实资金之前，必须全部满足：
+**H.4.1 Real-time IC monitoring**
+- Compute rolling IC over the most recent 20 trading days every day
+- If IC stays below 0 for 5 consecutive days → trigger alert, pause new position entries
+- Write to `signal_quality` collection; UI displays IC trend chart
+- Status: [ ] Pending development (1 day)
 
-- [ ] Paper trading 运行 **至少 3 个月**，OOS IC > 0.02
-- [ ] 加入交易成本后回测 Sharpe **仍然 > 0.5**
-- [ ] Regime 检测正常工作，VIX > 25 时自动降仓
-- [ ] 止损逻辑测试通过（模拟极端行情）
-- [ ] 单票最大仓位 ≤ 5%，整体杠杆 = 1x（不加杠杆）
-- [ ] 已接入 broker API（Interactive Brokers / Alpaca）
-- [ ] 第一次实盘资金 ≤ 总资金的 10%（测试阶段）
+**H.4.2 Model drift detection**
+- Weekly: compare the latest feature distribution against the training-time distribution (KL divergence)
+- If distribution shift exceeds threshold → trigger retraining reminder
+- Status: [ ] Pending development (1 day)
 
 ---
 
-### H. 路线总览
+### H.5 Live trading readiness checklist
+
+All of the following must be satisfied before considering real capital:
+
+- [ ] Paper trading has run for **at least 3 months**, OOS IC > 0.02
+- [ ] Backtest Sharpe **remains > 0.5** after including transaction costs
+- [ ] Regime detection works correctly; automatically reduces position when VIX > 25
+- [ ] Stop-loss logic tested (simulated extreme market conditions)
+- [ ] Max position per stock ≤ 5%; overall leverage = 1x (no leverage)
+- [ ] Broker API connected (Interactive Brokers / Alpaca)
+- [ ] First live-trading capital ≤ 10% of total capital (testing phase)
+
+---
+
+### H. Roadmap overview
 
 ```
-现在（研究验证完成）
+Now (research validation complete)
     ↓
-H.1 修复回测真实性（3天）    ← 知道真实收益
-H.2 Regime 检测（4天）       ← 知道什么时候用
-H.3 Paper Trading（1个月跑通）← 真实市场验证
-    ↓ 持续跑 3-6 个月
-H.4 信号监控（2天）          ← 保持信号有效性
-    ↓ Paper trading 指标达标
-H.5 实盘准备清单全部 ✓
+H.1 Fix backtest realism (3 days)        ← know the real returns
+H.2 Regime detection (4 days)            ← know when to use the signal
+H.3 Paper Trading (1 month to get going) ← real-market validation
+    ↓ continue running 3-6 months
+H.4 Signal monitoring (2 days)           ← keep signal effective
+    ↓ paper trading metrics pass
+H.5 Live trading checklist all ✓
     ↓
-小仓位实盘（总资金 10% 以内）
-    ↓ 6个月稳定超额
-真正可用的量化交易系统 ✓
+Small live position (≤10% of total capital)
+    ↓ 6 months of stable excess return
+Truly usable quantitative trading system ✓
 ```
 
 ---
 
-## G. Strategy Generation 完整实现计划（quant_langchain）
+## G. Strategy Generation Complete Implementation Plan (quant_langchain)
 
-> 当前状态：`quant_langchain/main.py` 已有 `/api/workflow/generate-spec` 和 `/api/workflow/generate-tasks` 接口框架，但三个核心功能均为伪实现，需要补全。
-
----
-
-### G.1 RAG — 向量检索替换关键词匹配（3天）
-
-**现状问题：**
-- `retrieve_context()` 用关键词 token 重叠打分，不是语义检索
-- knowledge 目录只有 1 个文件（26行），RAG几乎没有实际作用
-- 命中率低：用户输入 "RSI mean reversion" 无法匹配 "相对强弱指数均值回归"
-
-**目标：** 用 Qdrant（已在 docker-compose 中运行）替换关键词匹配，实现真正的向量语义检索
-
-**开发步骤：**
-
-1. **补充知识库文档**（1天）
-   - `knowledge/strategies/` — 策略模板：RSI、MACD、动量、均值回归示例
-   - `knowledge/factors/` — 因子说明：各因子IC、使用场景、参数范围
-   - `knowledge/risk/` — 风控规则：止损、仓位、最大回撤默认值
-   - `knowledge/modules/` — MODULE_CATALOG 各模块的详细参数说明
-
-2. **接入 Qdrant 向量检索**（2天）
-   - 安装：`langchain-qdrant`, `sentence-transformers`
-   - 用 `all-MiniLM-L6-v2` 对 knowledge 文档做 embedding，写入 Qdrant
-   - 替换 `retrieve_context()`：改为 `qdrant_client.search(query_vector, top_k=4)`
-   - 启动时异步建索引，增量更新
-
-**完成标志：** 输入 "RSI buy when oversold" 能检索到 RSI 策略模板文档
+> Current state: `quant_langchain/main.py` already has the endpoint framework for `/api/workflow/generate-spec` and `/api/workflow/generate-tasks`, but all three core features are stub implementations that need to be completed.
 
 ---
 
-### G.2 MCP — 工具真正可执行（4天）
+### G.1 RAG — Replace keyword matching with vector retrieval (3 days)
 
-**现状问题：**
-- `MODULE_CATALOG` 里的模块路径（如 `quant_langchain.features.momentum`）不存在
-- LLM 在 prompt 里只是"看到"工具列表，无法真正调用
-- 没有 tool call loop：LLM 生成的 spec 里的模块名是幻觉，不会实际执行
+**Current problems:**
+- `retrieve_context()` scores by keyword token overlap, not semantic retrieval
+- The knowledge directory has only 1 file (26 lines); RAG has almost no real effect
+- Low hit rate: user input "RSI mean reversion" cannot match if phrased differently
 
-**目标：** 将 MODULE_CATALOG 里每个工具封装成可调用函数，实现 LLM → tool call → 结果回传 的闭环
+**Goal:** Replace keyword matching with Qdrant (already running in docker-compose) for true vector semantic retrieval
 
-**开发步骤：**
+**Development steps:**
 
-1. **实现工具函数**（2天）
+1. **Add knowledge base documents** (1 day)
+   - `knowledge/strategies/` — strategy templates: RSI, MACD, momentum, mean-reversion examples
+   - `knowledge/factors/` — factor descriptions: IC per factor, use cases, parameter ranges
+   - `knowledge/risk/` — risk control rules: stop-loss, position, max drawdown defaults
+   - `knowledge/modules/` — detailed parameter descriptions for each module in MODULE_CATALOG
+
+2. **Integrate Qdrant vector retrieval** (2 days)
+   - Install: `langchain-qdrant`, `sentence-transformers`
+   - Embed knowledge documents with `all-MiniLM-L6-v2`; write to Qdrant
+   - Replace `retrieve_context()` with `qdrant_client.search(query_vector, top_k=4)`
+   - Build index asynchronously at startup; support incremental updates
+
+**Done when:** Input "RSI buy when oversold" retrieves the RSI strategy template document
+
+---
+
+### G.2 MCP — Tools actually executable (4 days)
+
+**Current problems:**
+- Module paths in `MODULE_CATALOG` (e.g. `quant_langchain.features.momentum`) do not exist
+- LLM only "sees" the tool list in the prompt; it cannot actually call them
+- No tool call loop: module names in the LLM-generated spec are hallucinated and never executed
+
+**Goal:** Wrap each tool in MODULE_CATALOG as a callable function; close the loop of LLM → tool call → result returned
+
+**Development steps:**
+
+1. **Implement tool functions** (2 days)
 
 ```python
 # quant_langchain/tools/market_data.py
 def fetch_market_data(symbols: list, timeframe: str, lookback_days: int) -> dict:
-    """调用 quant_api /api/signals 拉取历史信号和价格数据"""
+    """Call quant_api /api/signals to fetch historical signals and price data"""
     resp = requests.get(f"{QUANT_API}/api/signals", params={"symbols": symbols})
     return resp.json()
 
 # quant_langchain/tools/feature_builder.py
 def build_features(indicators: list, window: int) -> dict:
-    """调用 quant_api /api/features 获取特征数据"""
+    """Call quant_api /api/features to get feature data"""
     ...
 
 # quant_langchain/tools/backtest.py
 def backtest_strategy(spec: dict, initial_cash: int, fee_bps: int) -> dict:
-    """基于 spec 生成回测摘要（调用 quant_data research 模块）"""
+    """Generate backtest summary based on spec (calls quant_data research module)"""
     ...
 ```
 
-2. **工具注册到 LangChain**（1天）
-   - 用 `@tool` 装饰器注册每个函数
-   - 在 `generate-spec` 接口里改为 `AgentExecutor`，让 LLM 真正调用工具
-   - 收集每次 tool call 的结果，组装进最终 spec
+2. **Register tools with LangChain** (1 day)
+   - Register each function with the `@tool` decorator
+   - Change the `generate-spec` endpoint to use `AgentExecutor` so the LLM actually calls tools
+   - Collect results from each tool call and assemble into the final spec
 
-3. **MCP 协议封装（可选升级）**（1天）
-   - 为每个工具加 JSON schema 描述
-   - 输出格式符合 MCP tool result 规范
-   - 为未来接入 Claude MCP 做准备
+3. **MCP protocol wrapping (optional upgrade)** (1 day)
+   - Add JSON schema description for each tool
+   - Output format complies with MCP tool result spec
+   - Prepares for future Claude MCP integration
 
-**完成标志：** 生成 spec 时日志能看到 `[Tool Call] fetch_market_data(AAPL, daily, 60)` → 真实数据返回
+**Done when:** Spec generation logs show `[Tool Call] fetch_market_data(AAPL, daily, 60)` → real data returned
 
 ---
 
-### G.3 API Key 路由 — 按任务复杂度主动分层（1天）
+### G.3 API Key routing — proactive tiering by task complexity (1 day)
 
-**现状问题：**
-- 用的是 `OpenAI`（text completion），应改为 `ChatOpenAI`（chat model）
-- 路由逻辑只有"Ollama 挂了才 fallback"，没有按任务类型主动选模型
-- `LLMChain` 是 deprecated API，应改为 LCEL（LangChain Expression Language）
+**Current problems:**
+- Uses `OpenAI` (text completion); should switch to `ChatOpenAI` (chat model)
+- Routing logic only falls back when Ollama is down; no proactive model selection by task type
+- `LLMChain` is a deprecated API; should migrate to LCEL (LangChain Expression Language)
 
-**目标：** 本地小模型处理简单任务，云端大模型处理复杂推理
+**Goal:** Local small model handles simple tasks; cloud large model handles complex reasoning
 
-**路由规则：**
+**Routing rules:**
 
-| 任务 | 模型 | 理由 |
+| Task | Model | Reason |
 |------|------|------|
-| generate-spec（简单策略） | Qwen3-8B 本地 | 有 MODULE_CATALOG 约束，输出结构固定 |
-| generate-spec（复杂多因子） | Claude Sonnet / GPT-4o | 需要推理因子组合，小模型幻觉率高 |
-| generate-tasks（代码生成） | Claude Sonnet / GPT-4o | 代码质量要求高 |
-| chat（策略问答） | Qwen3-8B 本地 | 对话轮次多，成本敏感 |
+| generate-spec (simple strategy) | Qwen3-8B local | MODULE_CATALOG constrains output; structure is fixed |
+| generate-spec (complex multi-factor) | Claude Sonnet / GPT-4o | Factor combination reasoning; small models hallucinate |
+| generate-tasks (code generation) | Claude Sonnet / GPT-4o | High code quality required |
+| chat (strategy Q&A) | Qwen3-8B local | Many conversation turns; cost-sensitive |
 
-**开发步骤：**
+**Development steps:**
 
 ```python
-# 改为 ChatOpenAI + LCEL
+# Switch to ChatOpenAI + LCEL
 from langchain_openai import ChatOpenAI
 from langchain_anthropic import ChatAnthropic
 from langchain_core.prompts import ChatPromptTemplate
 
 def get_llm(task_type: str = "simple"):
-    # 复杂任务主动用云端模型
+    # Proactively use cloud model for complex tasks
     if task_type == "code_generation" and ANTHROPIC_API_KEY:
         return ChatAnthropic(model="claude-sonnet-4-6", api_key=ANTHROPIC_API_KEY)
     if task_type == "complex_spec" and OPENAI_API_KEY:
         return ChatOpenAI(model="gpt-4o-mini", api_key=OPENAI_API_KEY)
-    # 默认本地
+    # Default to local
     try:
         # health check Ollama...
         return ChatOllama(model=LOCAL_MODEL_NAME)
@@ -1833,20 +1808,20 @@ def get_llm(task_type: str = "simple"):
         return ChatOpenAI(model="gpt-4o-mini", api_key=OPENAI_API_KEY)
 ```
 
-**完成标志：** generate-tasks 接口日志显示 `[Router] task=code_generation → claude-sonnet-4-6`
+**Done when:** generate-tasks endpoint logs show `[Router] task=code_generation → claude-sonnet-4-6`
 
 ---
 
-### G.4 优先级和时间估算
+### G.4 Priority and time estimate
 
-| 优先级 | 功能 | 工作量 | 价值 |
+| Priority | Feature | Effort | Value |
 |--------|------|--------|------|
-| 🔴 最高 | G.2 MCP 工具真正可执行 | 4天 | 策略生成从"幻觉输出"变成"真实可执行" |
-| 🟠 高 | G.3 API Key 路由改造 | 1天 | 代码质量提升，deprecated API 清除 |
-| 🟡 中 | G.1 RAG 向量检索 | 3天 | 检索精度提升，面试展示亮点 |
+| 🔴 Highest | G.2 MCP tools actually executable | 4 days | Strategy generation changes from "hallucinated output" to "real execution" |
+| 🟠 High | G.3 API Key routing refactor | 1 day | Code quality improvement; deprecated API removed |
+| 🟡 Medium | G.1 RAG vector retrieval | 3 days | Retrieval precision improved; interview demo highlight |
 
-**总工期：约 8 天**
+**Total timeline: approximately 8 days**
 
-建议顺序：G.3（1天，改底层）→ G.2（4天，工具层）→ G.1（3天，知识层）
+Recommended order: G.3 (1 day, base layer) → G.2 (4 days, tool layer) → G.1 (3 days, knowledge layer)
 
-**预计从现在到"真正可用"的时间：约 6-9 个月**（其中 3-6 个月是等 paper trading 数据积累）
+**Estimated time from now to "truly usable": approximately 6-9 months** (of which 3-6 months is waiting for paper trading data to accumulate)
