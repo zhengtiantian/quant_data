@@ -5,20 +5,20 @@ import json
 import sys
 
 # =====================================================
-# 配置区域
+# Config
 # =====================================================
 MONGO_URI = "mongodb://root:root@127.0.0.1:37018/"
 DB_NAME = "quant_data"
 COLLECTION = "stock_universe"
 LANGCHAIN_API = "http://127.0.0.1:18000/api/ask"
 TIMEOUT = 120
-FIELD_NAME = "related_keywords"  # 新增字段名
-BATCH_SIZE = 10  # 每10个写入一次数据库
+FIELD_NAME = "related_keywords"
+BATCH_SIZE = 10
 # =====================================================
 
 
 def check_mongo_connection(uri):
-    """检查 MongoDB 连接"""
+    """Verify MongoDB is reachable."""
     try:
         client = MongoClient(uri, serverSelectionTimeoutMS=3000)
         client.admin.command("ping")
@@ -30,7 +30,7 @@ def check_mongo_connection(uri):
 
 
 def generate_related_keywords(company_name):
-    """调用 LangChain API，让模型生成严格 JSON 数组格式的关键词字符串"""
+    """Call LangChain API to generate a JSON array of related keywords for a company."""
     prompt = f"""
     You are a financial market intelligence AI.
     Given the company name "{company_name}", list **15 to 20** related products, services, brands, technologies, or economic factors that can significantly affect its stock price.
@@ -53,7 +53,7 @@ def generate_related_keywords(company_name):
         )
         if resp.status_code == 200:
             answer = resp.json().get("answer", "").strip()
-            # 尝试解析成 JSON
+            # try to parse as JSON
             try:
                 arr = json.loads(answer)
                 if isinstance(arr, list):
@@ -96,7 +96,7 @@ def main():
         print(json.dumps(keywords, indent=2, ensure_ascii=False))
         print("-" * 80)
 
-        # 更新操作
+        # queue update
         ops.append(
             UpdateOne(
                 {"_id": doc["_id"]},
@@ -109,7 +109,7 @@ def main():
             print(f"💾 Wrote {len(ops)} updates to MongoDB.\n")
             ops = []
 
-    # 写入剩余部分
+    # flush remaining
     if ops:
         result = col.bulk_write(ops)
         print(f"💾 Wrote final {len(ops)} updates to MongoDB.\n")

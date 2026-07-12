@@ -1,10 +1,10 @@
 """
-把 files/ 下的 CSV 文件按 masterfilelist 顺序，每 100 个一批移入 batch_XXXX 子目录。
-batch_id 与 MySQL gdelt_batch_tasks 表一一对应。
+Move CSV files under files/ into batch_XXXX subdirectories, 100 files per batch,
+following masterfilelist order. batch_id maps 1-to-1 with the MySQL gdelt_batch_tasks table.
 
-用法:
-  python tools/organize_files_by_batch.py --dry-run   # 预览
-  python tools/organize_files_by_batch.py             # 正式执行
+Usage:
+  python tools/organize_files_by_batch.py --dry-run   # preview only
+  python tools/organize_files_by_batch.py             # execute
 """
 import os
 import argparse
@@ -18,7 +18,7 @@ START_DATE = datetime(2016, 1, 1)
 
 
 def get_ordered_urls():
-    """从 masterfilelist 读取 2016 年起的 .gkg.csv.zip URL，正序排列。"""
+    """Read .gkg.csv.zip URLs from masterfilelist, filtered to >= 2016, sorted ascending."""
     urls = []
     with open(MASTER_FILE, "r") as f:
         for line in f:
@@ -41,7 +41,7 @@ def csv_name(filename):
 
 
 def find_file(filename):
-    """在 year 子目录或根目录找到文件，返回路径或 None。"""
+    """Locate a file in the year subdirectory or root; return path or None."""
     csv = csv_name(filename)
     year = filename[:4]
     candidates = [
@@ -103,7 +103,7 @@ def main():
             print(f"  [{batch_id}/{total_batches}] found={found:,} moved={moved:,} missing={missing:,} errors={errors}")
 
     tag = "[dry-run] " if args.dry_run else ""
-    print(f"\n{tag}完成: found={found:,}, moved={moved:,}, missing={missing:,}, errors={errors}")
+    print(f"\n{tag}Done: found={found:,}, moved={moved:,}, missing={missing:,}, errors={errors}")
 
 
 if __name__ == "__main__":

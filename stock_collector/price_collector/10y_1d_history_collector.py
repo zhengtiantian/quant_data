@@ -142,8 +142,8 @@ def collect_history_all():
 
     total = 0
 
-    # Default to an incremental window ("1mo") so the daily job只补最近几天;
-    # 设 PRICE_HISTORY_PERIOD=10y 可做一次性全量回填。
+    # Default to an incremental window so the daily job only backfills recent days;
+    # set PRICE_HISTORY_PERIOD=10y for a one-time full backfill.
     period = os.getenv("PRICE_HISTORY_PERIOD", "1mo")
     sleep_s = float(os.getenv("PRICE_HISTORY_SLEEP", "0.8"))
 

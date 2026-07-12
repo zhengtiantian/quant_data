@@ -2,7 +2,7 @@ import re
 from pymongo import MongoClient
 
 # =====================================================
-# MongoDB 配置
+# Config
 # =====================================================
 MONGO_URI = "mongodb://root:root@127.0.0.1:37018/"
 DB_NAME = "quant_data"
@@ -21,7 +21,7 @@ def clean_stock_universe():
 
     print("🚀 Starting stock_universe cleanup...\n")
 
-    # 1️⃣ 检查 name 中是否包含股票代码（如含大写字母组合 2~5 位）
+    # 1. Remove records where name contains the ticker symbol (2–5 uppercase letters)
     pattern = re.compile(r"\b[A-Z]{2,5}\b")
     count_removed_name_symbol = 0
 
@@ -35,7 +35,7 @@ def clean_stock_universe():
 
     print(f"✅ Removed {count_removed_name_symbol} records with code in name.\n")
 
-    # 2️⃣ 检查重复 symbol
+    # 2. Remove duplicate symbols
     symbols = {}
     duplicate_symbol_count = 0
     for doc in col.find({}, {"_id": 1, "symbol": 1}):
@@ -50,7 +50,7 @@ def clean_stock_universe():
 
     print(f"✅ Removed {duplicate_symbol_count} duplicate symbol records.\n")
 
-    # 3️⃣ 检查重复 name
+    # 3. Remove duplicate names
     names = {}
     duplicate_name_count = 0
     for doc in col.find({}, {"_id": 1, "name": 1}):

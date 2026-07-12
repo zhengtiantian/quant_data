@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""GDELT GKG 缺失文件校验 + 补下载（MongoDB 版）。
+"""Validate and backfill missing GDELT GKG files (MongoDB edition).
 
-逻辑：
-  1. 读 masterfilelist.txt（存于 Data4T，不存在则自动下载）
-  2. 对比 MongoDB gkg_import_progress 集合，找出缺失文件
-  3. 下载缺失的 zip → 解压 csv → 导入 gkg_index → 删除 csv/zip
+Logic:
+  1. Read masterfilelist.txt (stored on Data4T; auto-downloaded if absent)
+  2. Diff against MongoDB gkg_import_progress collection to find missing files
+  3. Download missing zips → extract csv → import into gkg_index → delete csv/zip
 
-用法：
-  # 只校验，不下载
+Usage:
+  # Validate only, no download
   DRY_RUN=true python tools/gdelt_fill_missing.py
 
-  # 校验 + 下载导入
+  # Validate + download + import
   caffeinate -i env FILL_WORKERS=10 python tools/gdelt_fill_missing.py
 """
 
@@ -36,7 +36,7 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-# ── 配置 ──────────────────────────────────────────────────────────────────────
+# ── Config ────────────────────────────────────────────────────────────────────
 DATA4T       = os.getenv("GDELT_CACHE_DIR", "/Volumes/Data4T/docker-volumes/gdelt_cache")
 TMP_DIR      = os.getenv("GKG_TMP_DIR",    "/Volumes/Data4T/gdelt_tmp")
 MASTER       = os.path.join(DATA4T, "masterfilelist.txt")
@@ -96,7 +96,7 @@ def load_gkg_entries(master_path: str) -> list[tuple[str, str]]:
     return entries
 
 
-# ── MongoDB 比对 ──────────────────────────────────────────────────────────────
+# ── MongoDB diff ──────────────────────────────────────────────────────────────
 
 def find_missing(entries: list[tuple[str, str]], prog_col) -> list[tuple[str, str]]:
     """Return entries whose csv_name is NOT in gkg_import_progress."""
@@ -116,7 +116,7 @@ def find_missing(entries: list[tuple[str, str]], prog_col) -> list[tuple[str, st
     return missing
 
 
-# ── 解析 + 导入 ───────────────────────────────────────────────────────────────
+# ── Parse + import ────────────────────────────────────────────────────────────
 
 def _strip(text: str) -> str:
     text = re.sub(r"(?is)<PAGE_LINKS>.*?</PAGE_LINKS>", " ", text)
@@ -165,7 +165,7 @@ def _parse_and_import(csv_path: str, gkg_col, prog_col) -> int:
     return len(docs)
 
 
-# ── 下载 ──────────────────────────────────────────────────────────────────────
+# ── Download ──────────────────────────────────────────────────────────────────
 
 def _download_one(name: str, url: str, gkg_col, prog_col) -> tuple[str, bool, int]:
     os.makedirs(TMP_DIR, exist_ok=True)

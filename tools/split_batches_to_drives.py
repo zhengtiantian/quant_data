@@ -1,8 +1,8 @@
 """
-将奇数批次 (batch_id % 2 == 1) 从 Data24T 移动到 Data6T。
-偶数批次留在 Data24T 不动。逐文件复制，可中断重启。
+Move odd-numbered batches (batch_id % 2 == 1) from Data24T to Data6T.
+Even batches stay on Data24T. Copies file-by-file so it can be interrupted and resumed.
 
-用法:
+Usage:
   python tools/split_batches_to_drives.py --dry-run
   python tools/split_batches_to_drives.py
 """
@@ -16,13 +16,13 @@ DATA6T_FILES  = "/Volumes/Data6T/gdelt_cache/files"
 
 def check_drives():
     if not os.path.isdir(DATA24T_FILES):
-        raise RuntimeError(f"Data24T 未挂载: {DATA24T_FILES}")
+        raise RuntimeError(f"Data24T not mounted: {DATA24T_FILES}")
     if not os.path.isdir(DATA6T_FILES):
-        raise RuntimeError(f"Data6T 未挂载: {DATA6T_FILES}")
+        raise RuntimeError(f"Data6T not mounted: {DATA6T_FILES}")
 
 
 def move_batch(name):
-    """逐文件复制批次目录，全部成功后删除源目录。"""
+    """Copy a batch directory file-by-file, then delete the source once all files succeed."""
     src_dir = os.path.join(DATA24T_FILES, name)
     dst_dir = os.path.join(DATA6T_FILES, name)
     os.makedirs(dst_dir, exist_ok=True)
@@ -35,7 +35,7 @@ def move_batch(name):
             continue
         shutil.copy2(src_f, dst_f)
 
-    # 全部复制成功后删除源
+    # delete source only after all files copied successfully
     shutil.rmtree(src_dir)
 
 
@@ -52,10 +52,10 @@ def main():
         key=lambda x: int(x)
     )
     odd_dirs = [e for e in batch_dirs if int(e) % 2 == 1]
-    print(f"📊 Data24T 找到 {len(batch_dirs)} 个批次目录，其中奇数 {len(odd_dirs)} 个需移到 Data6T")
+    print(f"Data24T: {len(batch_dirs)} batch dirs found, {len(odd_dirs)} odd batches to move to Data6T")
 
     if args.dry_run:
-        print("[dry-run] 不执行移动")
+        print("[dry-run] no moves executed")
         return
 
     moved = skipped = errors = 0
@@ -63,7 +63,7 @@ def main():
         dst_dir = os.path.join(DATA6T_FILES, name)
         src_dir = os.path.join(DATA24T_FILES, name)
 
-        # 已完全迁移（源不存在或目标已有且源为空）
+        # already fully migrated (source gone or destination exists and source is empty)
         if not os.path.exists(src_dir):
             skipped += 1
             continue
@@ -72,9 +72,9 @@ def main():
             skipped += 1
             continue
 
-        # 检查盘是否仍然可用
+        # abort if either drive became unavailable
         if not os.path.isdir(DATA24T_FILES) or not os.path.isdir(DATA6T_FILES):
-            print("⚠️  硬盘断开，停止迁移，可重新运行脚本继续")
+            print("Drive disconnected — stopping; re-run the script to resume")
             break
 
         try:
@@ -86,9 +86,9 @@ def main():
             print(f"  ❌ ERROR batch {name}: {type(e).__name__}: {e}")
             errors += 1
 
-    print(f"\n完成: moved={moved}, skipped={skipped}, errors={errors}")
+    print(f"\nDone: moved={moved}, skipped={skipped}, errors={errors}")
     if errors == 0 and moved > 0:
-        print("✅ 全部成功，可重启收集脚本")
+        print("All batches moved successfully")
 
 
 if __name__ == "__main__":
