@@ -43,6 +43,8 @@ scratch/
 # Output artifacts
 audit_validation_latest.json
 
-# GCP / cloud credentials (never commit service account keys)
+# Credentials and secrets — NEVER commit
+.env
+**/.env
 news_collectors/gdelt/gdelt.json
 *_service_account.json
