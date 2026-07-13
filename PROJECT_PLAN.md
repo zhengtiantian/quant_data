@@ -1066,6 +1066,90 @@ risk_agent      → position sizing, stop-loss conditions, final output: positio
 - Inference speed: ~3.9 art/s → ~1000+ art/s (200x speedup)
 - Status: [ ] Pending development (1-2 weeks)
 
+### F.9 Rule Optimization Agent (Iterative Self-Improving Loop)
+
+**Goal**: After news collection, automatically evaluate collection quality by stratified sampling across years, computing precision/recall with an LLM judge, diagnosing failure modes, modifying rules, and repeating — converging on optimal rules without manual tuning.
+
+This directly addresses the known SLM Phase 3 "incidental mention" false positive problem (Morgan Stanley survey cited in Apple articles, da Vinci art in ISRG articles, etc.) and eliminates the need for manual rule maintenance.
+
+**Agent architecture (4-phase loop):**
+
+```
+Round N:
+  ┌─ Sampler    → stratified sample: 10 articles × 10 years × target symbols
+  ├─ Evaluator  → LLM judge (Claude/GPT-4o) labels each: TP / FP / FN
+  ├─ Diagnoser  → groups errors by failure type:
+  │               - incidental mention FP
+  │               - wrong company FP (similar name)
+  │               - relevant article FN (missed match)
+  │               - rule too aggressive (over-filtered)
+  └─ Modifier   → proposes rule changes; applies them; logs diff
+
+Repeat up to 10 rounds; stop when F1 improvement < 1% between rounds.
+```
+
+**What can be modified per round:**
+| Rule layer | Modification type |
+|---|---|
+| SLM Phase 3 prompt (`slm_filter.py`) | Strengthen "primary subject" constraint; add incidental-mention examples |
+| `ambiguous_names.py` entries | Add/remove disambiguation entries for specific symbols |
+| Relevance threshold | Adjust score cutoff per symbol type (large-cap vs small-cap) |
+| Special per-symbol rules | Add blocklist keywords that generate systematic FPs |
+
+**Ground truth strategy:**
+- Primary judge: Claude Opus (silver standard; low cost per article, fully automated)
+- Escalation: articles where judge confidence < 0.7 → flag for human review
+- Batch size: 100 articles per round (10/year × 10 years); full evaluation costs ~$0.50/round
+
+**Sampling strategy:**
+```python
+# Stratified sample: balanced across years and symbols
+years = range(2015, 2025)          # 10 years
+articles_per_year = 10             # 10 per year = 100 total per round
+symbols_sampled = 5                # rotate symbols each round to avoid overfitting
+# → 100 articles judged per round × 10 rounds = 1000 total labels
+```
+
+**Output per round:**
+- Accuracy report: precision / recall / F1, broken down by year and by error type
+- Rule diff: unified diff of what changed vs previous round
+- Convergence tracker: F1 trend across rounds (stop condition: ΔF1 < 1%)
+
+**Stored in MongoDB:**
+```json
+{
+  "round": 3,
+  "timestamp": "2026-07-15T10:00:00Z",
+  "metrics": { "precision": 0.87, "recall": 0.91, "f1": 0.89 },
+  "error_breakdown": { "incidental_mention_fp": 6, "wrong_company_fp": 2, "fn_missed": 4 },
+  "rules_changed": ["slm_filter.py prompt v3", "ambiguous_names: +MSFT_survey_blocklist"],
+  "sample_ids": ["article_id_1", "..."]
+}
+```
+
+**Development tasks:**
+1. `tools/rule_optimizer_agent.py` — main agent loop (LangGraph or simple Python loop)
+2. `tools/news_sampler.py` — stratified sampling from `news_articles_company_matched_v2`
+3. `tools/llm_judge.py` — call Claude API, parse TP/FP/FN verdict + reason
+4. `tools/rule_modifier.py` — apply proposed changes to SLM prompt / ambiguous_names.py, write diff to MongoDB
+5. `tools/accuracy_reporter.py` — compute metrics, print round summary, decide continue/stop
+6. Integrate into `scheduler/task.py` as a weekly or on-demand job
+
+**Execution modes:**
+- `--mode eval` (evaluation only; no rule changes) — runs before any deploy to get baseline
+- `--mode optimize` (full loop; modifies rules) — run after adding new symbols or when FP rate spikes
+- `--mode audit --round 3` (inspect a specific round's samples and verdicts)
+
+**Interview framing:**
+*"Built a self-improving news validation agent that iteratively samples historical articles across 10 years, evaluates relevance with an LLM judge, diagnoses failure modes (incidental mention FP, wrong-company FP, missed matches), and modifies SLM prompts and disambiguation rules — converging from F1=0.XX to F1=0.XX in 10 rounds."*
+
+**Relates to:** F.6 (rule_validator ReAct), F.8 (active learning), project_slm_optimization (incidental mention FP)
+
+- Status: 🟡 Developed, not yet tested (2026-07-13)
+  - `tools/llm_judge.py` — LLM judge (Claude API + local SLM fallback, TP/FP + fp_type + regex proposal)
+  - `tools/rule_optimizer.py` — main loop (sample → judge → diagnose → propose → patch → repeat)
+  - `news_collectors/gdelt/special_rules/ambiguous_names.py` — patch loader added (merges `tools/rule_optimizer_patches.json` at init)
+
 ---
 
 ## Consolidated Priority Table (all pending items)
@@ -1088,6 +1172,7 @@ risk_agent      → position sizing, stop-loss conditions, final output: positio
 | ⭐⭐ | F.3 SHAP interpretability | MLE strong | Medium | 1 day | ✅ Done (factor_analysis.py) |
 | ⭐⭐ | F.4 LangGraph multi-agent research assistant | AI Engineer must-have | High | 2 weeks | [ ] Pending |
 | ⭐⭐ | F.8 Active learning Agent (disagreement samples) | MLE+AI | High | 4 days | [ ] Pending |
+| ⭐⭐ | **F.9 Rule Optimization Agent (iterative eval→modify loop)** | AI Engineer strong | 🔴 Fixes FP/FN in rule layer | 5-7 days | 🟡 Developed, not tested |
 | ⭐⭐ | E.2 CI/CD GitHub Actions | DE strong | Medium | 2 days | [ ] Pending |
 | ⭐⭐ | C.7 Data quality checks | DE strong | High | 2 days | ✅ Done (data_quality_check.py) |
 | ⭐⭐ | B quant bonus: Long-short portfolio | Quant strong | Medium | 3 days | [ ] Pending |

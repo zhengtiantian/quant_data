@@ -4,6 +4,7 @@ Ambiguous Names Rule Handler
 处理歧义名称的特殊规则
 """
 
+import json
 import re
 import os
 import threading
@@ -11,6 +12,32 @@ from collections import defaultdict
 from collections import Counter
 from datetime import datetime
 from .base_rule import BaseRule
+
+# ── Optimizer patch loader ─────────────────────────────────────────────────
+_PATCHES_FILE = os.path.join(os.path.dirname(__file__), "..", "..", "..", "tools", "rule_optimizer_patches.json")
+_patches_cache: dict | None = None
+_patches_lock = threading.Lock()
+
+def _load_optimizer_patches() -> dict:
+    """Load agent-proposed patterns from rule_optimizer_patches.json (cached per process)."""
+    global _patches_cache
+    if _patches_cache is not None:
+        return _patches_cache
+    with _patches_lock:
+        if _patches_cache is not None:
+            return _patches_cache
+        path = os.path.normpath(_PATCHES_FILE)
+        if os.path.exists(path):
+            try:
+                with open(path) as f:
+                    _patches_cache = json.load(f)
+                print(f"🔧 Loaded optimizer patches v{_patches_cache.get('version', '?')} from {path}")
+            except Exception as e:
+                print(f"⚠️  Failed to load optimizer patches: {e}")
+                _patches_cache = {}
+        else:
+            _patches_cache = {}
+    return _patches_cache
 
 # 延迟导入 SLM Filter（避免循环依赖）
 _slm_filter = None
@@ -522,14 +549,21 @@ class AmbiguousNameRule(BaseRule):
         self.rule_verbose = os.getenv("RULE_VERBOSE", "false").lower() == "true"
         self.log_slm_interceptions = os.getenv("SLM_LOG_INTERCEPTIONS", "false").lower() == "true"
 
+        # Merge optimizer-proposed patterns before compilation
+        _opt = _load_optimizer_patches()
+        _static_patterns    = (self.STATIC_KILL_PATTERNS.get(symbol, [])
+                                + _opt.get("STATIC_KILL_PATTERNS", {}).get(symbol, []))
+        _reject_patterns    = (self.CONTEXTUAL_REJECT_PATTERNS.get(symbol, [])
+                                + _opt.get("CONTEXTUAL_REJECT_PATTERNS", {}).get(symbol, []))
+
         # Pre-compile all patterns once at construction time to avoid per-call compilation overhead
         self._compiled_static_kill = [
             re.compile(p, re.IGNORECASE)
-            for p in self.STATIC_KILL_PATTERNS.get(symbol, [])
+            for p in _static_patterns
         ]
         self._compiled_contextual_reject = [
             re.compile(p, re.IGNORECASE)
-            for p in self.CONTEXTUAL_REJECT_PATTERNS.get(symbol, [])
+            for p in _reject_patterns
         ]
         self._compiled_contextual_keep = [
             re.compile(p, re.IGNORECASE)
