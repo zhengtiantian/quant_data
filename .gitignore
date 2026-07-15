@@ -43,6 +43,11 @@ scratch/
 # Output artifacts
 audit_validation_latest.json
 
+# pytest / coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
 # Credentials and secrets — NEVER commit
 .env
 **/.env
