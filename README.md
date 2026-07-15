@@ -318,19 +318,41 @@ cd quant_data
 ### Live Trading
 - [ ] **G.1** Broker API integration (Alpaca) — connect existing signals to real order execution with pre-trade risk guardrails (max position 5%, daily loss kill-switch, fill reconciliation); Stage 1: paper account → Stage 2: live with small capital
 
-### AI Engineering
+### AI Engineering — LLM / RAG
 - [ ] **F.2** RAG news search (Qdrant) — replace MongoDB full-scan with vector similarity search for quant_ai
-- [ ] **F.4** LangGraph multi-agent research assistant — 4-node graph: data_agent → analysis_agent → strategy_agent → risk_agent
 - [ ] **F.5** FinBERT fine-tuning — replace dual-LLM labeling with a single fine-tuned model (~200× inference speedup)
+- [ ] **F.10** Strategy Studio → backtest execution — wire the existing natural-language strategy UI to `backtest_portfolio.py` so generated strategies produce real Sharpe / drawdown results
+- [ ] **F.11** News pre-filter SLM — lightweight binary classifier (distilbert) before dual-LLM pass; eliminates ~70% irrelevant GDELT articles
+- [ ] **F.12** Signal explanation generation — SLM generates a 2-sentence "why this stock scored high" explanation for each top signal; displayed inline in SignalsPanel
+- [ ] **F.13** Morning briefing agent — 07:00 daily pre-market summary for held positions: overnight news, regime, exit warnings
+- [ ] **F.14** Earnings surprise prediction — in the 10-day pre-earnings window, LLM aggregates news sentiment + analyst consensus → beat/miss probability as a new factor
+- [ ] **F.15** SEC EDGAR + earnings transcript RAG — 10-K/10-Q risk sections and earnings call transcripts embedded in Qdrant; natural language queries on filing content
+- [ ] **F.19** LLM factor hypothesis generator — prompt LLM with current IC table + failure modes → suggests new factor ideas for human review
+
+### AI Engineering — Agents
+- [ ] **F.4** LangGraph multi-agent research assistant — 4-node graph: data_agent → analysis_agent → strategy_agent → risk_agent
 - [ ] **F.8** Active learning agent — surface low-confidence LLM labels for human review; close the annotation feedback loop
 - [ ] **F.9** Rule optimization agent — iterative self-improving loop: sample → LLM judge → diagnose FP/FN → modify rules (🟡 code written, not yet tested)
-- [ ] **F.10** Strategy Studio → backtest execution — wire the existing natural-language strategy UI to `backtest_portfolio.py` so generated strategies produce real Sharpe / drawdown results
+- [ ] **F.16** Real-time news monitoring agent — 30-minute polling of NewsAPI for held positions; instant alert on sentiment spike or negative event cluster
+- [ ] **F.17** Portfolio Manager Agent — LangGraph 2-node agent reads daily signals + positions + regime → structured add/reduce/hold recommendation
+- [ ] **F.18** Backtest reflection agent — auto-diagnoses weak-year IC failures (2022/2024) and generates a hypothesis report
+- [ ] **F.6** Rule validator ReAct agent — LLM-powered interactive rule debugging loop
+- [ ] **F.7** Airflow adaptive scheduling agent — dynamically adjust collection windows based on data quality metrics
+
+### MCP Integration
+- [ ] **I.1** quant_mcp_server — expose signals, news, positions, factor IC, regime, and backtest trigger as MCP tools; any MCP-compatible client can query live platform data
+- [ ] **I.2** Claude Desktop integration — register quant_mcp_server in Claude Desktop; natural language trading queries with zero custom integration code
+- [ ] **I.3** Alpaca order execution via MCP — extend MCP server with order tools so LLM agents can place/cancel orders through the same interface (pre-trade guardrails enforced server-side)
+- [ ] **I.4** External data MCP tools — wrap Finnhub, SEC EDGAR, yfinance as MCP tools so agents autonomously decide what data to fetch
+- [ ] **I.5** MCP inter-service communication — replace quant_ai → quant_api REST calls with MCP protocol for dynamic tool discovery
 
 ### Platform & Infrastructure
 - [ ] **E.6** WebSocket real-time push — stream live signal scores to the React dashboard without polling
-- [ ] **E.8** Demo video — 3-minute walkthrough of the full platform for interviews
+- [ ] **E.9** UI intraday price chart — TradingView Lightweight Charts + Alpaca bars API; entry/stop-loss overlay on each position; no hourly data stored in own DB
 - [ ] **E.4** Kubernetes configuration — replace Docker Compose with K8s manifests for production deployment
-- [ ] **F.6** Rule validator ReAct agent — LLM-powered interactive rule debugging loop
-- [ ] **F.7** Airflow adaptive scheduling agent — dynamically adjust collection windows based on data quality metrics
+- [ ] **E.8** Demo video — 3-minute walkthrough of the full platform for interviews
+
+### Stock Universe
+- [ ] **G.2** Phase 2 expansion — energy/materials (XOM, CVX, NEE, LIN, APD); Phase 3 international ADRs (BABA, JD, PDD, SE); Phase 4 REITs/financials
 
 See [PROJECT_PLAN.md](PROJECT_PLAN.md) for detailed specs and effort estimates per item.
