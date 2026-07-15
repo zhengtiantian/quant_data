@@ -17,6 +17,8 @@ Run:
 
 from __future__ import annotations
 
+import bisect
+import math
 import os
 from datetime import datetime, timezone
 from pathlib import Path
@@ -37,9 +39,49 @@ SENT_REVERSAL = float(os.getenv("POSITION_SENT_REVERSAL", "-0.1"))  # exit if se
 ANALYST_DOWNGRADE = float(os.getenv("POSITION_ANALYST_DOWNGRADE", "-0.1"))  # exit if analyst_buy_ratio_chg_1m < this
 INST_OUTFLOW = float(os.getenv("POSITION_INST_OUTFLOW", "-0.01"))  # exit if inst_holding_pct_chg < this
 
+# H.3 volatility-adaptive stop-loss: stop = ATR_MULT × daily_vol, clamped [floor, cap]
+ATR_MULT   = float(os.getenv("STOP_ATR_MULT",   "2.0"))
+STOP_FLOOR = float(os.getenv("STOP_FLOOR_PCT",  "0.04"))   # never tighter than -4%
+STOP_CAP   = float(os.getenv("STOP_CAP_PCT",    "0.12"))   # never wider than -12%
+
+# H.3 OOS IC monitoring
+OOS_HORIZON       = int(os.getenv("OOS_HORIZON_DAYS",   "20"))   # forward trading days
+OOS_IC_THRESHOLD  = float(os.getenv("OOS_IC_THRESHOLD", "0.02")) # alert below this
+OOS_WINDOW        = int(os.getenv("OOS_ROLLING_WINDOW", "20"))   # rolling window (trading days)
+
 
 def _date_str(v) -> str:
     return str(v)[:10]
+
+
+def compute_daily_vols(prices: dict) -> dict:
+    """Rolling 20-day daily return std for each symbol → {symbol: {date: vol}}."""
+    vols: dict[str, dict[str, float]] = {}
+    for symbol, series in prices.items():
+        if len(series) < 22:
+            vols[symbol] = {}
+            continue
+        dates = [d for d, _ in series]
+        closes = [c for _, c in series]
+        rets = [0.0] + [
+            (closes[i] - closes[i - 1]) / closes[i - 1] if closes[i - 1] else 0.0
+            for i in range(1, len(closes))
+        ]
+        sym_vols: dict[str, float] = {}
+        for i in range(20, len(dates)):
+            window = rets[i - 20:i]
+            mean = sum(window) / 20
+            variance = sum((r - mean) ** 2 for r in window) / 19
+            sym_vols[dates[i]] = math.sqrt(variance)
+        vols[symbol] = sym_vols
+    return vols
+
+
+def _stop_pct(vol: float | None) -> float:
+    """Volatility-adaptive stop: ATR_MULT × daily_vol, clamped to [STOP_FLOOR, STOP_CAP]."""
+    if not vol or vol <= 0:
+        return STOP_FLOOR
+    return max(STOP_FLOOR, min(STOP_CAP, ATR_MULT * vol))
 
 
 def load_signals(db):
@@ -74,7 +116,7 @@ def load_prices(db):
     return prices
 
 
-def build_positions(signals_by_date, signals_by_sym_date, prices):
+def build_positions(signals_by_date, signals_by_sym_date, prices, daily_vols):
     """Day-by-day simulation. Returns (positions, alerts)."""
     # union trading calendar across tracked symbols
     all_dates = sorted({d for series in prices.values() for d, _ in series})
@@ -123,7 +165,10 @@ def build_positions(signals_by_date, signals_by_sym_date, prices):
             sig = signals_by_sym_date.get((symbol, date))  # only on signal dates
 
             trigger = None
-            if held >= MAX_HOLD_DAYS:
+            stop = pos.get("stop_pct", STOP_FLOOR)
+            if ret < -stop:
+                trigger = "stop_loss"
+            elif held >= MAX_HOLD_DAYS:
                 trigger = "max_hold"
             elif sig is not None:
                 if sig.get("earnings_miss_signal") == 1:
@@ -148,7 +193,8 @@ def build_positions(signals_by_date, signals_by_sym_date, prices):
                     "alert_date": date, "symbol": symbol, "alert_type": trigger,
                     "entry_date": pos["entry_date"], "days_held": held,
                     "return_at_alert": round(ret, 6),
-                    "message": _alert_msg(trigger, symbol, held, ret),
+                    "stop_pct": pos.get("stop_pct"),
+                    "message": _alert_msg(trigger, symbol, held, ret, pos.get("stop_pct")),
                     "created_at": datetime.now(timezone.utc),
                 })
                 del open_pos[symbol]
@@ -162,10 +208,13 @@ def build_positions(signals_by_date, signals_by_sym_date, prices):
                 price, pdate = close_on_or_before(symbol, date)
                 if price is None:
                     continue
+                vol = daily_vols.get(symbol, {}).get(date)
                 open_pos[symbol] = {
                     "symbol": symbol, "entry_date": date, "entry_price": round(price, 4),
                     "entry_score": round(float(sig.get("composite_score") or 0.0), 6),
                     "entry_rank": int(sig.get("signal_rank") or 0),
+                    "stop_pct": round(_stop_pct(vol), 4),
+                    "entry_vol_20d": round(vol, 6) if vol else None,
                     "status": "open",
                 }
 
@@ -183,16 +232,111 @@ def build_positions(signals_by_date, signals_by_sym_date, prices):
     return positions, alerts
 
 
-def _alert_msg(trigger, symbol, held, ret):
+def _alert_msg(trigger, symbol, held, ret, stop_pct=None):
     reason = {
-        "max_hold": f"held {held}d (max {MAX_HOLD_DAYS}d) — time exit",
+        "stop_loss":        f"hit vol-adaptive stop ({stop_pct:.1%} threshold)" if stop_pct else "stop-loss triggered",
+        "max_hold":         f"held {held}d (max {MAX_HOLD_DAYS}d) — time exit",
         "score_below_exit": "signal score dropped below exit threshold",
-        "earnings_miss": "negative earnings surprise",
-        "sentiment_reversal": "5d sentiment reversed negative",
-        "analyst_downgrade": "analyst buy ratio dropped sharply (1m)",
-        "inst_outflow": "institutional holdings declined QoQ",
+        "earnings_miss":    "negative earnings surprise",
+        "sentiment_reversal":  "5d sentiment reversed negative",
+        "analyst_downgrade":   "analyst buy ratio dropped sharply (1m)",
+        "inst_outflow":        "institutional holdings declined QoQ",
     }.get(trigger, trigger)
     return f"EXIT {symbol}: {reason} (return {ret:+.1%})"
+
+
+def _spearman_ic(scores: list, rets: list) -> float:
+    """Spearman rank correlation between signal scores and forward returns."""
+    n = len(scores)
+    if n < 5:
+        return float("nan")
+
+    def _rank(lst):
+        order = sorted(range(n), key=lambda i: lst[i])
+        r = [0.0] * n
+        for ri, oi in enumerate(order):
+            r[oi] = float(ri)
+        return r
+
+    rs, rr = _rank(scores), _rank(rets)
+    mean_s = sum(rs) / n
+    mean_r = sum(rr) / n
+    cov = sum((rs[i] - mean_s) * (rr[i] - mean_r) for i in range(n)) / n
+    std_s = math.sqrt(sum((x - mean_s) ** 2 for x in rs) / n)
+    std_r = math.sqrt(sum((x - mean_r) ** 2 for x in rr) / n)
+    return cov / (std_s * std_r) if std_s > 0 and std_r > 0 else float("nan")
+
+
+def compute_oos_ic(signals_by_sym_date: dict, prices: dict) -> None:
+    """Realized IC: rank-correlation of composite_score vs OOS_HORIZON-day fwd return.
+
+    Prints rolling IC vs the historical in-sample baseline (IC ≈ 0.059) and
+    warns if the rolling window falls below OOS_IC_THRESHOLD.
+    """
+    # build per-symbol sorted date list and close lookup for O(log n) fwd price lookup
+    sym_dates: dict[str, list[str]] = {}
+    sym_closes: dict[str, list[float]] = {}
+    for symbol, series in prices.items():
+        sym_dates[symbol] = [d for d, _ in series]
+        sym_closes[symbol] = [c for _, c in series]
+
+    # group all signals by date
+    by_date: dict[str, list[dict]] = {}
+    for (sym, date), sig in signals_by_sym_date.items():
+        by_date.setdefault(date, []).append({**sig, "_symbol": sym})
+
+    date_ics: list[tuple[str, float]] = []
+    for date in sorted(by_date):
+        rows = by_date[date]
+        scores, fwd_rets = [], []
+        for row in rows:
+            sym = row["_symbol"]
+            score = row.get("composite_score")
+            if score is None:
+                continue
+            dates_list = sym_dates.get(sym, [])
+            idx = bisect.bisect_left(dates_list, date)
+            if idx >= len(dates_list) or dates_list[idx] != date:
+                continue
+            fwd_idx = idx + OOS_HORIZON
+            if fwd_idx >= len(dates_list):
+                continue
+            entry_close = sym_closes[sym][idx]
+            fwd_close   = sym_closes[sym][fwd_idx]
+            if entry_close <= 0:
+                continue
+            scores.append(float(score))
+            fwd_rets.append((fwd_close - entry_close) / entry_close)
+
+        if len(scores) >= 10:
+            ic = _spearman_ic(scores, fwd_rets)
+            if not math.isnan(ic):
+                date_ics.append((date, ic))
+
+    if not date_ics:
+        print(f"\nOOS IC ({OOS_HORIZON}d): no dates with sufficient forward price data yet")
+        return
+
+    all_ics = [ic for _, ic in date_ics]
+    overall = sum(all_ics) / len(all_ics)
+
+    # rolling window IC
+    rolling: list[float] = []
+    for i in range(len(all_ics)):
+        w = all_ics[max(0, i - OOS_WINDOW + 1): i + 1]
+        rolling.append(sum(w) / len(w))
+
+    latest_rolling = rolling[-1]
+    status = "⚠  BELOW THRESHOLD — consider retraining" if latest_rolling < OOS_IC_THRESHOLD else "OK"
+
+    print(f"\nOOS IC ({OOS_HORIZON}d horizon, {len(date_ics)} signal dates with fwd prices):")
+    print(f"  Overall mean IC : {overall:+.4f}  (in-sample baseline: +0.059)")
+    print(f"  Rolling {OOS_WINDOW:>2}d IC  : {latest_rolling:+.4f}  [{status}]")
+    print(f"  Recent daily ICs (newest last):")
+    for d, ic in date_ics[-6:]:
+        bar = "█" * max(0, round((ic + 0.05) * 40))
+        flag = " ⚠" if ic < OOS_IC_THRESHOLD else ""
+        print(f"    {d}  {ic:+.4f}  {bar}{flag}")
 
 
 def upsert(col, docs, keys):
@@ -212,7 +356,8 @@ def main():
 
     signals_by_date, signals_by_sym_date = load_signals(db)
     prices = load_prices(db)
-    positions, alerts = build_positions(signals_by_date, signals_by_sym_date, prices)
+    daily_vols = compute_daily_vols(prices)
+    positions, alerts = build_positions(signals_by_date, signals_by_sym_date, prices, daily_vols)
 
     up_p = upsert(db.positions, positions, ["symbol", "entry_date"])
     up_a = upsert(db.alerts, alerts, ["symbol", "entry_date", "alert_type"])
@@ -234,6 +379,8 @@ def main():
         print("\nRecent exit alerts:")
         for a in sorted(alerts, key=lambda x: x["alert_date"], reverse=True)[:8]:
             print(f"  {a['alert_date']} {a['message']}")
+
+    compute_oos_ic(signals_by_sym_date, prices)
 
 
 if __name__ == "__main__":
