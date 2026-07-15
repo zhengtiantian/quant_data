@@ -1200,6 +1200,77 @@ Returns to UI: Sharpe, annualized return, max drawdown, hit rate
 
 ---
 
+### G.1 Live Trading Execution (Automated Trading)
+
+**Goal**: Connect the existing signal pipeline to a real broker API so that daily signals automatically place live orders, with position reconciliation and risk guardrails. This is the final step that turns the platform from a research/paper-trading system into a real execution system.
+
+**Three-stage progression:**
+
+```
+Stage 1 (paper → broker paper account)   ← safest starting point
+  track_positions.py signals
+      ↓
+  Alpaca Paper Trading API (free, no real money)
+      ↓
+  Real order book simulation with live market prices
+
+Stage 2 (live trading, small size)
+  Same signal pipeline
+      ↓
+  Alpaca Live API / Interactive Brokers TWS API
+      ↓
+  Real orders, real fills, real P&L
+
+Stage 3 (full automation)
+  launchd triggers score_daily_signals at 08:30
+      ↓
+  live_trader.py reads top-N signals → places market orders at open
+      ↓
+  Position monitor runs intraday → fires stop-loss orders if triggered
+      ↓
+  EOD reconciliation: compare expected vs actual fills
+```
+
+**What needs to be built:**
+
+| Component | Description | Effort |
+|-----------|-------------|--------|
+| `research/live_trader.py` | Read top-N LONG signals from MongoDB → submit buy orders via broker API | 2 days |
+| `research/order_manager.py` | Track open orders, handle partial fills, cancel stale orders | 2 days |
+| `research/position_reconciler.py` | Compare paper positions vs broker positions; alert on drift | 1 day |
+| Broker API integration | Alpaca REST API (simpler) or IBKR TWS API (more powerful) | 2-3 days |
+| Pre-trade risk checks | Max position size, daily loss limit, no-trade list, market hours check | 1 day |
+| Alert system | Kafka → Spring Boot → push notification on fill / stop-loss / error | 1 day |
+
+**Pre-trade risk guardrails (non-negotiable before going live):**
+- Max single position: 5% of portfolio
+- Max daily drawdown kill-switch: halt all trading if down >3% intraday
+- No trading in first/last 15 minutes of session (wide spreads)
+- Whitelist: only trade symbols already in the 100-stock universe
+- Position size = `kelly_fraction × account_equity / entry_price`, capped at 100 shares for initial testing
+
+**Broker options:**
+
+| Broker | API | Cost | Best for |
+|--------|-----|------|---------|
+| Alpaca | REST + WebSocket, Python SDK | Free (commission-free US stocks) | Starting point; easiest integration |
+| Interactive Brokers | TWS API (Python `ib_insync`) | Low commission | Professional; supports options/futures later |
+| Webull | Unofficial API | Free | Not recommended (unofficial) |
+
+**Recommended starting point**: Alpaca paper account → validate that orders match signal intent → switch to live with $1K–$5K test capital.
+
+**Key difference from paper trading:**
+- `track_positions.py` simulates fills at closing price → no slippage, no partial fills, no API errors
+- Live trading introduces: slippage, order rejection, partial fills, API downtime, margin calls
+- Need fill confirmation loop: place order → poll for fill → update position → log to MongoDB
+
+**Interview framing:**
+*"The platform currently runs paper trading — the full signal-to-position pipeline is live, with automated entry/exit and stop-loss monitoring. The next engineering step is wiring the existing signals to a broker API (Alpaca) with pre-trade risk guardrails: position sizing, daily loss limits, and a kill-switch. The architecture is already designed for this — it's an execution layer addition, not a redesign."*
+
+- Status: [ ] Pending (2–3 weeks for Stage 1 + Stage 2)
+
+---
+
 ## Consolidated Priority Table (all pending items)
 
 | Priority | Item | Interview Value | Practical Value | Effort | Status |
@@ -1208,6 +1279,7 @@ Returns to UI: Sharpe, annualized return, max drawdown, hit rate
 | ⭐⭐⭐ | H.2 Market Regime detection (VIX filter) | Quant essential | 🔴 IC stability | 4 days | ✅ Done (2026-07-15) — 4-regime weight switching (RISK_ON/NEUTRAL/STRESSED/RISK_OFF) |
 | ⭐⭐⭐ | H.3 Paper Trading engine + stop-loss | Quant essential | 🔴 OOS validation | 4 days | ✅ Done (2026-07-15) — vol-adaptive stop-loss (2×vol_20d) + OOS IC rolling monitor |
 | ⭐⭐⭐ | Stage 7 Airflow + Kafka end-to-end | DE critical | High | 1 week | [ ] Pending (daily scheduling runs via launchd, not Airflow) |
+| ⭐⭐⭐ | G.1 Live trading execution (Alpaca API) | Quant/Prod | 🔴 Real money | 2-3 weeks | [ ] Pending — paper trading done; need broker API + order manager + risk guardrails |
 | ⭐⭐⭐ | C.2 Risk metrics (Sharpe / drawdown) | Quant essential | High | - | ✅ Done |
 | ⭐⭐⭐ | C.9 Factor analysis report (IC/IR/SHAP) | Quant essential | Medium | - | ✅ Done |
 | ⭐⭐⭐ | C.8 ETL unit tests | DE essential | Medium | 3 days | ✅ Done (2026-07-15) — 90 tests passing; scoring 60%, positions 52%, features 40% cov |

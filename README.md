@@ -315,6 +315,9 @@ cd quant_data
 - [ ] **B.1** Long-short portfolio enhancement — beta neutralization, sector exposure limits
 - [ ] **Stage 7** Airflow + Kafka end-to-end verified — replace launchd with Airflow DAGs in production
 
+### Live Trading
+- [ ] **G.1** Broker API integration (Alpaca) — connect existing signals to real order execution with pre-trade risk guardrails (max position 5%, daily loss kill-switch, fill reconciliation); Stage 1: paper account → Stage 2: live with small capital
+
 ### AI Engineering
 - [ ] **F.2** RAG news search (Qdrant) — replace MongoDB full-scan with vector similarity search for quant_ai
 - [ ] **F.4** LangGraph multi-agent research assistant — 4-node graph: data_agent → analysis_agent → strategy_agent → risk_agent
