@@ -31,36 +31,95 @@ SIGNAL_COLLECTION = "daily_signals"
 TOP_N = int(os.getenv("SIGNAL_TOP_N", "10"))
 LOOKBACK_DAYS = int(os.getenv("SIGNAL_LOOKBACK_DAYS", "1"))
 
-# Cross-sectional alpha weights (each feature is rank-normalised to [-0.5, +0.5])
-# Weights are calibrated to approximate IC contribution at the 20-60d horizon.
-_WEIGHTS = {
-    # --- news quality ---
-    "quality_score":        1.0,
-    "news_burst_20d":       0.8,
-    "full_ratio":           0.5,
-    # --- LLM sentiment ---
-    "avg_sentiment_5d":     1.5,
-    "sentiment_shift_5d":   0.8,
-    "earnings_beat_signal": 1.2,
-    "high_signal_count_3d": 0.6,
-    # --- price momentum ---
-    "past_ret_20d":        -0.3,   # mild mean-reversion
-    # --- D.8 pre/after-market (short-term momentum) ---
-    "ah_gap":               1.2,   # CS IC5d = +0.23
-    # --- D.4 analyst consensus ---
-    "analyst_buy_ratio_chg_1m": 0.9,  # CS IC20d = +0.15
-    "analyst_buy_ratio":        0.7,  # CS IC20d = +0.11
-    # --- D.7 institutional 13F ---
-    "inst_holding_pct_chg": 0.6,   # CS IC60d = +0.20, scaled for daily
-    # --- D.2 retail sentiment ---
-    "retail_sent_score":    0.3,   # IC5d = +0.09, sparse but directional
+# ---------------------------------------------------------------------------
+# H.2 Dynamic regime weights
+# Each regime gets its own weight dict; classify_regime() picks which to use.
+# Features are still rank-normalised to [-0.5, +0.5] before weighting.
+# ---------------------------------------------------------------------------
+
+# RISK_ON: VIX calm (pctile < 0.3), SPY above 200MA → amplify short-term signals
+_WEIGHTS_RISK_ON = {
+    "quality_score":            1.0,
+    "news_burst_20d":           0.9,
+    "full_ratio":               0.5,
+    "avg_sentiment_5d":         2.0,   # sentiment reliable in calm markets
+    "sentiment_shift_5d":       1.0,
+    "earnings_beat_signal":     1.5,   # earnings surprises rewarded more
+    "high_signal_count_3d":     0.8,
+    "past_ret_20d":            -0.2,
+    "ah_gap":                   1.6,   # pre/after-hours gap CS IC5d=+0.23
+    "analyst_buy_ratio_chg_1m": 1.0,
+    "analyst_buy_ratio":        0.8,
+    "inst_holding_pct_chg":     0.5,
+    "retail_sent_score":        0.4,
 }
 
-# Macro regime: multiplier applied to the final composite score.
-# macro_risk_on=1 / low VIX → bullish regime → amplify signals.
-# macro_risk_on=0 / extreme VIX → reduce signal conviction.
-_MACRO_REGIME_BOOST = 0.2      # bonus multiplier when risk_on=1
-_MACRO_HIGH_VOL_PENALTY = 0.15  # reduction multiplier when vix_pctile > 0.8
+# NEUTRAL: VIX moderate, market trending — current default calibration
+_WEIGHTS_NEUTRAL = {
+    "quality_score":            1.0,
+    "news_burst_20d":           0.8,
+    "full_ratio":               0.5,
+    "avg_sentiment_5d":         1.5,
+    "sentiment_shift_5d":       0.8,
+    "earnings_beat_signal":     1.2,
+    "high_signal_count_3d":     0.6,
+    "past_ret_20d":            -0.3,
+    "ah_gap":                   1.2,
+    "analyst_buy_ratio_chg_1m": 0.9,
+    "analyst_buy_ratio":        0.7,
+    "inst_holding_pct_chg":     0.6,
+    "retail_sent_score":        0.3,
+}
+
+# STRESSED: VIX elevated (pctile 0.5-0.8) or risk_on=0 → shift toward slow/smart signals
+_WEIGHTS_STRESSED = {
+    "quality_score":            0.8,
+    "news_burst_20d":           0.5,
+    "full_ratio":               0.4,
+    "avg_sentiment_5d":         0.8,   # LLM sentiment noisier under stress
+    "sentiment_shift_5d":       0.4,
+    "earnings_beat_signal":     1.0,
+    "high_signal_count_3d":     0.3,
+    "past_ret_20d":             0.0,   # no momentum in choppy market
+    "ah_gap":                   0.6,
+    "analyst_buy_ratio_chg_1m": 0.7,
+    "analyst_buy_ratio":        0.6,
+    "inst_holding_pct_chg":     1.0,   # smart-money signal more reliable
+    "retail_sent_score":        0.1,
+}
+
+# RISK_OFF: VIX extreme (pctile >= 0.8) / crisis — reduce all, follow institutions
+_WEIGHTS_RISK_OFF = {
+    "quality_score":            0.4,
+    "news_burst_20d":           0.2,
+    "full_ratio":               0.2,
+    "avg_sentiment_5d":         0.3,   # news sentiment is noise in crisis
+    "sentiment_shift_5d":       0.2,
+    "earnings_beat_signal":     0.7,
+    "high_signal_count_3d":     0.1,
+    "past_ret_20d":             0.2,   # slight mean-reversion in bear market
+    "ah_gap":                   0.3,
+    "analyst_buy_ratio_chg_1m": 0.5,
+    "analyst_buy_ratio":        0.4,
+    "inst_holding_pct_chg":     1.2,   # follow smart money; highest weight
+    "retail_sent_score":       -0.2,   # retail is contrarian signal in crisis
+}
+
+_WEIGHTS_BY_REGIME: dict[str, dict[str, float]] = {
+    "RISK_ON":  _WEIGHTS_RISK_ON,
+    "NEUTRAL":  _WEIGHTS_NEUTRAL,
+    "STRESSED": _WEIGHTS_STRESSED,
+    "RISK_OFF": _WEIGHTS_RISK_OFF,
+}
+
+# Overall conviction scalar per regime (scales composite score magnitude;
+# does NOT change cross-sectional ranking — only affects downstream sizing)
+_REGIME_CONVICTION: dict[str, float] = {
+    "RISK_ON":  1.20,
+    "NEUTRAL":  1.00,
+    "STRESSED": 0.75,
+    "RISK_OFF": 0.50,
+}
 
 
 def load_latest_features(col) -> pd.DataFrame:
@@ -72,33 +131,52 @@ def load_latest_features(col) -> pd.DataFrame:
     return pd.DataFrame(docs)
 
 
+def classify_regime(df: pd.DataFrame) -> str:
+    """Classify today's market regime from macro features (same value for all symbols)."""
+    row = df.iloc[0]
+
+    def _get(field):
+        v = row.get(field)
+        try:
+            f = float(v)
+            return None if np.isnan(f) else f
+        except (TypeError, ValueError):
+            return None
+
+    vix_pct = _get("macro_vix_pctile_252d")
+    risk_on = _get("macro_risk_on")
+
+    if vix_pct is None:
+        return "NEUTRAL"
+    if vix_pct >= 0.8:
+        return "RISK_OFF"
+    if vix_pct >= 0.5 or risk_on == 0:
+        return "STRESSED"
+    if risk_on == 1 and vix_pct < 0.3:
+        return "RISK_ON"
+    return "NEUTRAL"
+
+
 def compute_score(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
+    regime = classify_regime(df)
+    weights = _WEIGHTS_BY_REGIME[regime]
+    conviction = _REGIME_CONVICTION[regime]
+
     score = pd.Series(0.0, index=df.index)
-    for feat, w in _WEIGHTS.items():
+    for feat, w in weights.items():
         if feat not in df.columns:
             continue
         col = pd.to_numeric(df[feat], errors="coerce").fillna(0.0)
-        # cross-sectional rank normalised to [-0.5, +0.5]
-        ranked = col.rank(pct=True) - 0.5
+        ranked = col.rank(pct=True) - 0.5   # cross-sectional, [-0.5, +0.5]
         score += w * ranked
 
-    # Macro regime multiplier (applies same factor to all symbols on the date,
-    # so it doesn't change cross-sectional ranking but scales signal conviction).
-    regime_mult = 1.0
-    if "macro_risk_on" in df.columns:
-        risk_on = pd.to_numeric(df["macro_risk_on"], errors="coerce").iloc[0]
-        if pd.notna(risk_on) and risk_on == 1:
-            regime_mult += _MACRO_REGIME_BOOST
-    if "macro_vix_pctile_252d" in df.columns:
-        vix_pct = pd.to_numeric(df["macro_vix_pctile_252d"], errors="coerce").iloc[0]
-        if pd.notna(vix_pct) and vix_pct > 0.8:
-            regime_mult -= _MACRO_HIGH_VOL_PENALTY
-    score *= max(regime_mult, 0.5)  # floor at 0.5× to avoid sign flip
+    score *= conviction
 
     df["composite_score"] = score
     df["signal_rank"] = score.rank(ascending=False).astype(int)
-    df["regime_mult"] = regime_mult
+    df["regime_label"] = regime
+    df["regime_mult"] = conviction
     return df
 
 
@@ -115,6 +193,7 @@ def build_signal_docs(df: pd.DataFrame, top_n: int) -> list[dict]:
             "signal_rank": rank,
             "signal_type": signal_type,
             "top_n": top_n,
+            "regime_label": str(row.get("regime_label", "NEUTRAL")),
             "regime_mult": _safe_float(row.get("regime_mult")),
             # existing context fields
             "avg_sentiment_5d": _safe_float(row.get("avg_sentiment_5d")),
@@ -191,8 +270,10 @@ def main() -> None:
     upsert_signals(signal_col, docs)
 
     top = [d for d in docs if d["signal_type"] == "LONG"]
-    regime = docs[0].get("regime_mult", 1.0) if docs else 1.0
-    print(f"\nTop {TOP_N} signals for {trade_date_str}  [regime_mult={regime:.2f}]:")
+    regime_label = docs[0].get("regime_label", "NEUTRAL") if docs else "NEUTRAL"
+    regime_mult = docs[0].get("regime_mult", 1.0) if docs else 1.0
+    print(f"\nTop {TOP_N} signals for {trade_date_str}  "
+          f"[regime={regime_label}  conviction={regime_mult:.2f}]:")
     print(f"  {'#':>2} {'sym':<6}  {'score':>7}  {'sent5d':>6}  {'ah_gap':>6}  "
           f"{'ana_chg':>7}  {'inst_chg':>8}  {'beat':>4}")
     for d in top:
