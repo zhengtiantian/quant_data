@@ -1271,6 +1271,40 @@ Stage 3 (full automation)
 
 ---
 
+### G.2 Stock Universe Expansion
+
+**Goal**: Grow the current 103-stock universe to cover a broader range of sectors and international names.
+
+**Current state (2026-07-15):**
+- 100 original stocks (US tech, SaaS, biotech, financials, consumer, industrials)
+- 3 just added (STX, WDC, HXSCL) → **103 total**
+- Storage sector is now complete: MU (DRAM), HXSCL (DRAM/NAND), STX (HDD), WDC (HDD/NAND)
+
+**Planned expansions:**
+
+| Phase | Symbols | Notes | Effort |
+|-------|---------|-------|--------|
+| Phase 1 (near-term) | STX, WDC, HXSCL | ✅ Done 2026-07-15 | 0 days |
+| Phase 2 (energy/materials) | XOM, CVX, NEE, LIN, APD | Complete sector diversification; no current energy/materials coverage | 2 days |
+| Phase 3 (international ADRs) | BABA, JD, PDD, BIDU, SE, GRAB | US-listed ADRs for China/SE Asia tech; significant news coverage available | 2 days |
+| Phase 4 (broader S&P) | SPG, PLD, AMT (REITs), BRK-B, BAC, WFC | Financials/REITs expansion; less news-driven, lower priority | 3 days |
+
+**What adding a new symbol requires:**
+1. Add to `COMPANY_UNIVERSE` in `slm_company_match_v2.py` (keywords for news matching)
+2. Collect price history: `stock_prices_history` via `daily_price_collector/collector.py`
+3. Collect news history: `news_articles` via GDELT backfill (already running, just needs symbol added)
+4. Run `company_match_rescore` to label historical articles for the new symbol
+5. Rebuild features: `daily_symbol_features.py --symbol NEW_SYMBOL` or full rebuild
+6. Re-run backtests to verify IC is stable with the expanded universe
+
+**Note on HXSCL (SK Hynix):** Listed on US OTC markets (Pink Sheet: HXSCL). yfinance can pull price data. News coverage available via GDELT (English-language coverage of Korean semiconductor industry is substantial due to global supply chain relevance).
+
+**Note on hourly/intraday data:** Not planned. Current strategy holds 5–60 days; daily + pre-market/after-hours gaps are sufficient. Intraday bars would only help with sub-day execution timing, which is not a priority until Stage 2 live trading is proven.
+
+- Status: Phase 1 ✅ Done; Phases 2–4 [ ] Pending (low priority, expand only after live trading is validated)
+
+---
+
 ## Consolidated Priority Table (all pending items)
 
 | Priority | Item | Interview Value | Practical Value | Effort | Status |
@@ -1280,6 +1314,7 @@ Stage 3 (full automation)
 | ⭐⭐⭐ | H.3 Paper Trading engine + stop-loss | Quant essential | 🔴 OOS validation | 4 days | ✅ Done (2026-07-15) — vol-adaptive stop-loss (2×vol_20d) + OOS IC rolling monitor |
 | ⭐⭐⭐ | Stage 7 Airflow + Kafka end-to-end | DE critical | High | 1 week | [ ] Pending (daily scheduling runs via launchd, not Airflow) |
 | ⭐⭐⭐ | G.1 Live trading execution (Alpaca API) | Quant/Prod | 🔴 Real money | 2-3 weeks | [ ] Pending — paper trading done; need broker API + order manager + risk guardrails |
+| ⭐ | G.2 Stock universe expansion (103→150+) | Quant bonus | Medium | 2-7 days | Phase 1 ✅ Done (STX/WDC/HXSCL added 2026-07-15); Phase 2 energy/materials [ ] Pending |
 | ⭐⭐⭐ | C.2 Risk metrics (Sharpe / drawdown) | Quant essential | High | - | ✅ Done |
 | ⭐⭐⭐ | C.9 Factor analysis report (IC/IR/SHAP) | Quant essential | Medium | - | ✅ Done |
 | ⭐⭐⭐ | C.8 ETL unit tests | DE essential | Medium | 3 days | ✅ Done (2026-07-15) — 90 tests passing; scoring 60%, positions 52%, features 40% cov |

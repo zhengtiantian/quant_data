@@ -2,14 +2,14 @@
 
 [![Tests](https://github.com/zhengtiantian/quant_data/actions/workflows/test.yml/badge.svg)](https://github.com/zhengtiantian/quant_data/actions/workflows/test.yml)
 
-An end-to-end quantitative research platform that processes financial news through LLM pipelines to generate daily equity trading signals across 100 US stocks.
+An end-to-end quantitative research platform that processes financial news through LLM pipelines to generate daily equity trading signals across 103 stocks.
 
 ## Key Results
 
 | Metric | Value |
 |--------|-------|
 | News articles processed | 840K+ (from 8TB+ raw GDELT data) |
-| Stock universe | 100 US equities |
+| Stock universe | 103 equities (100 US + HXSCL OTC) |
 | LLM agreement rate | 77.3% (Gemma + Qwen) |
 | Portfolio backtest Sharpe (20d, net of cost) | **0.77** (gross 0.92) vs SPY 0.54 |
 | Portfolio backtest Sharpe (60d, net of cost) | **0.73** (gross 0.77) vs SPY 0.47 |
@@ -64,7 +64,7 @@ An end-to-end quantitative research platform that processes financial news throu
 │  inst_holding_* SEC EDGAR 13F QoQ change          (D.7, edgartools) │
 │  ah_gap/pm_gap  yfinance 1m extended-hours gap    (D.8, yfinance)   │
 │                                                                       │
-│  → daily_symbol_features (189K+ rows, 100 symbols × 7 horizons)     │
+│  → daily_symbol_features (189K+ rows, 103 symbols × 7 horizons)     │
 └──────────────────────────┬──────────────────────────────────────────┘
                            │
                            ▼

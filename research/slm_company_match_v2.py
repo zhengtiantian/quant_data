@@ -82,7 +82,7 @@ def _parse_endpoints() -> list[tuple[str, str]]:
 
 _ENDPOINT_ASSIGNMENTS = _parse_endpoints()
 
-# 100-stock universe: symbol → (company_name, scan_keywords)
+# 103-stock universe: symbol → (company_name, scan_keywords)
 COMPANY_UNIVERSE: dict[str, tuple[str, list[str]]] = {
     # ── Original 40 tech stocks ──────────────────────────────────────────────
     "AAPL":  ("Apple Inc.",                 ["Apple", "iPhone", "iPad", "MacBook", "Tim Cook"]),
@@ -125,6 +125,10 @@ COMPANY_UNIVERSE: dict[str, tuple[str, list[str]]] = {
     "DELL":  ("Dell Technologies",          ["Dell Technologies", "Dell Computer"]),
     "SMCI":  ("Super Micro Computer",       ["Supermicro", "Super Micro Computer"]),
     "INTU":  ("Intuit Inc.",                ["Intuit", "TurboTax", "QuickBooks"]),
+    # ── Storage expansion (2026-07-15) ───────────────────────────────────────
+    "STX":   ("Seagate Technology",        ["Seagate", "Seagate Technology", "IronWolf", "BarraCuda", "Nytro SSD", "Dave Mosley"]),
+    "WDC":   ("Western Digital",           ["Western Digital", "WD Blue", "WD Red", "SanDisk", "HGST", "Ultrastar", "David Goeckeler"]),
+    "HXSCL": ("SK Hynix",                  ["SK Hynix", "Kwak Noh-jung", "SK hynix DRAM", "HBM3E", "SK Hynix memory"]),
     # ── NEW 60: SaaS / growth tech ───────────────────────────────────────────
     "SHOP":  ("Shopify",                    ["Shopify", "Tobi Lütke", "Shop Pay", "Shopify Plus", "Shopify Payments"]),
     "NET":   ("Cloudflare",                 ["Cloudflare", "Matthew Prince", "Cloudflare Workers", "DDoS protection"]),
