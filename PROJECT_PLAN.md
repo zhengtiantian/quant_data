@@ -1163,7 +1163,7 @@ symbols_sampled = 5                # rotate symbols each round to avoid overfitt
 | ⭐⭐⭐ | C.2 Risk metrics (Sharpe / drawdown) | Quant essential | High | - | ✅ Done |
 | ⭐⭐⭐ | C.9 Factor analysis report (IC/IR/SHAP) | Quant essential | Medium | - | ✅ Done |
 | ⭐⭐⭐ | C.8 ETL unit tests | DE essential | Medium | 3 days | 🟡 Partially done; earnings/D-series tests + coverage reporting still needed |
-| ⭐⭐⭐ | E.7 README + architecture diagram | All interviews | Medium | 1 day | [ ] Pending |
+| ⭐⭐⭐ | E.7 README + architecture diagram | All interviews | Medium | 1 day | ✅ Done (2026-07-15) |
 | ⭐⭐⭐ | Stage 7 MLflow actual runs | DE/MLE | Medium | 1 day | [ ] Pending |
 | ⭐⭐ | H.4 Signal quality monitoring (rolling IC) | Quant strong | 🟡 Signal health | 2 days | [ ] Pending |
 | ⭐⭐ | C.1 Daily signal automation | Medium | Extremely high | 3 days | ✅ Done (launchd, not Airflow) |
