@@ -298,6 +298,7 @@ cd quant_data
 
 ## Roadmap
 
+### Completed
 - [x] **D.1/D.2/D.4/D.7/D.8** Alt-data research layer (macro, retail, analyst, 13F, premarket)
 - [x] **H.1** Transaction cost model (commission + liquidity-tiered slippage)
 - [x] **H.2** Dynamic 4-regime weight switching (RISK_ON / NEUTRAL / STRESSED / RISK_OFF)
@@ -306,9 +307,27 @@ cd quant_data
 - [x] **C.4/C.5** Paper-trading position tracker + exit alerts
 - [x] **C.7/C.9** Data quality checks + factor analysis report (IC decay, SHAP)
 - [x] **C.8** ETL unit tests — 90 tests, CI-enforced via GitHub Actions
+- [x] **E.2** CI/CD GitHub Actions — auto-run tests on every push
 - [x] **E.7** Root README + Mermaid architecture diagram
-- [ ] **Stage 7** Airflow/Kafka/MLflow verified end-to-end
-- [ ] **F.2** RAG news search (Qdrant vector store)
-- [ ] **F.5** FinBERT fine-tuning (200× inference speedup)
 
-See [PROJECT_PLAN.md](PROJECT_PLAN.md) for the full roadmap and per-item status.
+### Signal & Quant Research
+- [ ] **H.4** Rolling signal quality monitor — dashboard view of OOS IC trend over time
+- [ ] **B.1** Long-short portfolio enhancement — beta neutralization, sector exposure limits
+- [ ] **Stage 7** Airflow + Kafka end-to-end verified — replace launchd with Airflow DAGs in production
+
+### AI Engineering
+- [ ] **F.2** RAG news search (Qdrant) — replace MongoDB full-scan with vector similarity search for quant_ai
+- [ ] **F.4** LangGraph multi-agent research assistant — 4-node graph: data_agent → analysis_agent → strategy_agent → risk_agent
+- [ ] **F.5** FinBERT fine-tuning — replace dual-LLM labeling with a single fine-tuned model (~200× inference speedup)
+- [ ] **F.8** Active learning agent — surface low-confidence LLM labels for human review; close the annotation feedback loop
+- [ ] **F.9** Rule optimization agent — iterative self-improving loop: sample → LLM judge → diagnose FP/FN → modify rules (🟡 code written, not yet tested)
+- [ ] **F.10** Strategy Studio → backtest execution — wire the existing natural-language strategy UI to `backtest_portfolio.py` so generated strategies produce real Sharpe / drawdown results
+
+### Platform & Infrastructure
+- [ ] **E.6** WebSocket real-time push — stream live signal scores to the React dashboard without polling
+- [ ] **E.8** Demo video — 3-minute walkthrough of the full platform for interviews
+- [ ] **E.4** Kubernetes configuration — replace Docker Compose with K8s manifests for production deployment
+- [ ] **F.6** Rule validator ReAct agent — LLM-powered interactive rule debugging loop
+- [ ] **F.7** Airflow adaptive scheduling agent — dynamically adjust collection windows based on data quality metrics
+
+See [PROJECT_PLAN.md](PROJECT_PLAN.md) for detailed specs and effort estimates per item.
