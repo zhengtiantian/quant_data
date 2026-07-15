@@ -947,11 +947,6 @@ All completed items are wired through the full pipeline:
 - Required before any interview; first impression on GitHub
 - Status: [ ] Pending development (1 day)
 
-### E.8 Demo video / screenshots
-- Record a 2-3 minute demo video: UI signal page + backtest results + factor analysis charts
-- Put at the top of README as a GIF or YouTube link
-- Status: [ ] Pending development
-
 ### E.9 UI Intraday Price Chart
 
 **Goal**: Add a price chart to the signal/position panels in `quant_ui` so users can see intraday price action alongside signal scores.
@@ -1628,7 +1623,6 @@ Stage 3 (full automation)
 | ⭐ | F.18 Backtest reflection agent (自动诊断弱年份+生成报告) | Research | 低 | 2 days | [ ] Pending |
 | ⭐ | F.19 LLM factor hypothesis generator (LLM建议新因子) | Research | 低 | 1 day | [ ] Pending |
 | ⭐ | I.5 MCP inter-service (quant_ai→quant_api改MCP协议) | 架构 | 低 | 3 days | [ ] Pending (after I.1) |
-| ⭐ | E.8 Demo video | All bonus | High | 0.5 days | [ ] Pending |
 | — | D.4 Analyst rating changes | Quant bonus | Medium | 3 days | ✅ Done |
 | — | D.7 Institutional 13F holdings change | Quant bonus | High | 3 days | ✅ Done (strongest single factor, 60d IC=+0.20) |
 | — | D.8 Pre-market / after-hours price signals | Quant bonus | High | 1 day | ✅ Done (strongest short-term factor, 5d IC=+0.23) |

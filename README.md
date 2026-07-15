@@ -350,7 +350,6 @@ cd quant_data
 - [ ] **E.6** WebSocket real-time push — stream live signal scores to the React dashboard without polling
 - [ ] **E.9** UI intraday price chart — TradingView Lightweight Charts + Alpaca bars API; entry/stop-loss overlay on each position; no hourly data stored in own DB
 - [ ] **E.4** Kubernetes configuration — replace Docker Compose with K8s manifests for production deployment
-- [ ] **E.8** Demo video — 3-minute walkthrough of the full platform for interviews
 
 ### Stock Universe
 - [ ] **G.2** Phase 2 expansion — energy/materials (XOM, CVX, NEE, LIN, APD); Phase 3 international ADRs (BABA, JD, PDD, SE); Phase 4 REITs/financials
