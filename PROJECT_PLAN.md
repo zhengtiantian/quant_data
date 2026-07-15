@@ -1149,6 +1149,51 @@ symbols_sampled = 5                # rotate symbols each round to avoid overfitt
 **Relates to:** F.6 (rule_validator ReAct), F.8 (active learning), project_slm_optimization (incidental mention FP)
 
 - Status: 🟡 Developed, not yet tested (2026-07-13)
+
+---
+
+### F.10 Strategy Studio → Backtest Execution Pipeline
+
+**Goal**: Close the loop on the existing Strategy Studio UI (quant_ui `StrategyStudio.tsx`). Currently the UI generates StrategySpec JSON + Tasks JSON + Strategy XML via LLM and saves them to the DB — but nothing executes them. This item wires the saved strategy into the existing Python backtest engine so users get real P&L results back in the UI.
+
+**Current state:**
+- `quant_ui/src/pages/StrategyStudio.tsx`: full prompt → spec → tasks → XML → save flow already works
+- `quant_ai` (localhost:18000): generates StrategySpec/Tasks/XML via local LLM
+- `quant_api/StrategyService.java`: `/api/v1/strategies/save` stores to MySQL
+- **Missing**: a run-backtest endpoint that parses the saved strategy and routes to Python backtest
+
+**Design:**
+
+```
+User clicks "Run Backtest" in Strategy Studio UI
+    ↓
+POST /api/v1/strategies/{id}/backtest  (quant_api)
+    ↓
+StrategyService.java parses StrategySpec JSON:
+  - instruments (e.g. ["AAPL", "MSFT"])
+  - entry_rule  (e.g. "rsi_14 < 30" or "avg_sentiment_5d > 0.3")
+  - exit_rule   (e.g. "rsi_14 > 70" or "stop_loss: 0.05")
+  - horizon_days, lookback_years
+    ↓
+Triggers Python subprocess or HTTP call:
+  research/backtest_portfolio.py  (signal-based strategies)
+  research/backtest_event_driven.py  (event-driven strategies)
+    ↓
+Returns to UI: Sharpe, annualized return, max drawdown, hit rate
+```
+
+**Development steps:**
+1. **StrategySpec parser** (`research/strategy_runner.py`): read JSON spec, map `entry_rule` field to existing signal columns in `daily_symbol_features`; validate that required features exist (1 day)
+2. **Backtest adapter**: wrap `backtest_portfolio.py` so it accepts a StrategySpec dict instead of hardcoded parameters; add `--spec-file` CLI flag (1 day)
+3. **quant_api endpoint**: `POST /api/v1/strategies/{id}/backtest` → call Python subprocess, poll result, return metrics JSON (1 day)
+4. **UI result panel**: add "Run Backtest" button + result card below Save Result in `StrategyStudio.tsx` showing Sharpe/return/drawdown (0.5 day)
+
+**Scope constraint**: Only support strategies whose `entry_rule` maps to existing feature columns (avg_sentiment_5d, rsi, etc.) — not arbitrary code execution. This keeps scope tight while making the demo fully functional.
+
+**Interview framing:**
+*"Built a full natural-language → backtest pipeline: user describes a strategy in plain English, the local LLM (via LM Studio) generates a structured StrategySpec, which is then executed against 5 years of historical data using the existing walk-forward backtest engine, returning Sharpe / drawdown / hit rate directly in the UI."*
+
+- Status: [ ] Pending (3-4 days)
   - `tools/llm_judge.py` — LLM judge (Claude API + local SLM fallback, TP/FP + fp_type + regex proposal)
   - `tools/rule_optimizer.py` — main loop (sample → judge → diagnose → propose → patch → repeat)
   - `news_collectors/gdelt/special_rules/ambiguous_names.py` — patch loader added (merges `tools/rule_optimizer_patches.json` at init)
@@ -1173,6 +1218,7 @@ symbols_sampled = 5                # rotate symbols each round to avoid overfitt
 | ⭐⭐ | C.3 Signal UI page | Medium | Extremely high | 3 days | ✅ Done |
 | ⭐⭐ | F.2 RAG news search (Qdrant) | AI essential | High | 3 days | [ ] Pending |
 | ⭐⭐ | F.3 SHAP interpretability | MLE strong | Medium | 1 day | ✅ Done (factor_analysis.py) |
+| ⭐⭐ | F.10 Strategy Studio → Backtest execution pipeline | AI+Quant full-loop | High | 3-4 days | [ ] Pending — UI exists, need backtest adapter + quant_api endpoint |
 | ⭐⭐ | F.4 LangGraph multi-agent research assistant | AI Engineer must-have | High | 2 weeks | [ ] Pending |
 | ⭐⭐ | F.8 Active learning Agent (disagreement samples) | MLE+AI | High | 4 days | [ ] Pending |
 | ⭐⭐ | **F.9 Rule Optimization Agent (iterative eval→modify loop)** | AI Engineer strong | 🔴 Fixes FP/FN in rule layer | 5-7 days | 🟡 Developed, not tested |
