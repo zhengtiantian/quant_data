@@ -952,6 +952,31 @@ All completed items are wired through the full pipeline:
 - Put at the top of README as a GIF or YouTube link
 - Status: [ ] Pending development
 
+### E.9 UI Intraday Price Chart
+
+**Goal**: Add a price chart to the signal/position panels in `quant_ui` so users can see intraday price action alongside signal scores.
+
+**Design:**
+- Use **TradingView Lightweight Charts** (open-source, MIT license, no CDN dependency — bundle inline)
+- Data source: Alpaca historical bars API (intraday 1h, up to 2 years; no need to store hourly data in own MongoDB)
+- Display: overlay signal entry date (green arrow) + stop-loss level (red dashed line) on the price chart
+- Placement: expandable panel below each position row in `PositionsPanel.tsx`; also available in `SignalsPanel.tsx` on click
+
+**What is NOT needed:**
+- Storing hourly bars in MongoDB — Alpaca API serves them on-demand
+- Any change to the Python pipeline — purely a frontend + quant_api thin adapter
+- Historical hourly data for backtesting — current strategy is 5–60d, intraday features not used
+
+**Development steps:**
+1. `quant_api`: add `GET /api/v1/prices/{symbol}/intraday?period=3m&interval=1h` — calls Alpaca bars API, returns OHLC JSON (0.5 day)
+2. `quant_ui`: install `lightweight-charts` npm package; create `PriceChart.tsx` component (1 day)
+3. Wire chart into `PositionsPanel.tsx` (expandable on row click) + `SignalsPanel.tsx` (1 day)
+4. Overlay: entry date vertical line, stop-loss horizontal line, signal score color band (0.5 day)
+
+**Note on automated trading**: For live order execution, intraday stop-loss monitoring uses Alpaca WebSocket real-time quotes — not stored hourly bars. Historical hourly bars are only needed if the strategy itself uses intraday features (it does not currently).
+
+- Status: [ ] Pending (3 days)
+
 ---
 
 ## F. AI Engineering Layer (AI Engineer / MLE interview bonus)
@@ -1340,6 +1365,7 @@ Stage 3 (full automation)
 | ⭐ | E.4 K8s configuration | DE bonus | Low | 3 days | [ ] Pending |
 | ⭐ | E.5 Data lineage diagram | DE bonus | Low | 2 days | [ ] Pending |
 | ⭐ | E.6 WebSocket real-time push | Backend bonus | High | 3 days | [ ] Pending |
+| ⭐ | E.9 UI intraday price chart (TradingView + Alpaca API) | UI bonus | Medium | 3 days | [ ] Pending — no hourly DB needed; Alpaca API on-demand |
 | ⭐ | D.2 Retail sentiment | Quant bonus | Medium | 3 days | ✅ Done (StockTwits, not Reddit) |
 | ⭐ | F.1 Prompt evaluation framework | MLE bonus | Medium | 2 days | [ ] Pending |
 | ⭐ | E.8 Demo video | All bonus | High | 0.5 days | [ ] Pending |
