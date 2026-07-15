@@ -78,7 +78,7 @@ An end-to-end quantitative research platform that processes financial news throu
 │  LightGBM Ranker ───┘                                                │
 │                                                                       │
 │  Factor Analysis: IC decay (5-60d) │ SHAP importance │ Long-short   │
-│  MLflow: experiment tracking & model versioning                      │
+│  MLflow: experiment tracking & model versioning (8 runs logged)      │
 └──────────────────────────┬──────────────────────────────────────────┘
                            │ daily signals
                            ▼
@@ -123,7 +123,7 @@ An end-to-end quantitative research platform that processes financial news throu
 | Component | Technology |
 |-----------|-----------|
 | News collection | GDELT, Finnhub, NewsAPI, Yahoo Finance, FMP |
-| LLM labeling | Gemma 3B + Qwen 4B (via Ollama) |
+| LLM labeling | Gemma 3B + Qwen 4B (via LM Studio) |
 | Label aggregation | Snorkel (Dawid-Skene) |
 | ML models | LightGBM, Ridge Regression, Ensemble |
 | Feature store | MongoDB (189K rows, 100 symbols) |
@@ -166,20 +166,28 @@ quant_data/
 │
 ├── research/                 # Core research pipeline
 │   ├── daily_symbol_features.py     # Feature engineering (60+ features incl. D-series)
-│   ├── llm_enrich_articles.py       # Dual LLM labeling (Gemma + Qwen)
+│   ├── llm_enrich_articles.py       # Dual LLM labeling (Gemma + Qwen via LM Studio)
 │   ├── train_baseline_models.py     # Walk-forward model training
 │   ├── backtest_news_factor.py      # Single-factor backtest + risk metrics
 │   ├── backtest_event_driven.py     # Event-driven backtest
 │   ├── backtest_portfolio.py        # Top-N portfolio backtest + cost model
 │   ├── factor_analysis.py           # IC decay, SHAP, Long-short portfolio
-│   ├── score_daily_signals.py       # Daily signal scoring + macro regime multiplier
-│   ├── track_positions.py           # Paper-trading position tracker + exit alerts
+│   ├── score_daily_signals.py       # H.2: 4-regime weight switching (RISK_ON/NEUTRAL/STRESSED/RISK_OFF)
+│   ├── track_positions.py           # H.3: vol-adaptive stop-loss (2×vol_20d) + OOS IC monitor
 │   └── data_quality_check.py        # Pipeline health checks
+│
+├── tests/                    # Unit test suite (90 tests, CI-enforced)
+│   ├── conftest.py           # sys.path setup for research/ imports
+│   ├── test_feature_build.py # News aggregation, LLM sentiment, quality score
+│   ├── test_regime_scoring.py# H.2: classify_regime, compute_score, _safe_float
+│   ├── test_positions.py     # H.3: _stop_pct, compute_daily_vols, _spearman_ic, stop-loss trigger
+│   └── test_earnings_regime.py # Earnings features, macro regime (D-series)
 │
 ├── airflow/dags/             # Airflow orchestration (defined, not yet verified e2e)
 ├── stock_collector/          # Stock price & universe management
 ├── tools/                    # GDELT import, index building utilities
-└── scheduler/                # task.py — production scheduler (launchd)
+├── scheduler/                # task.py — production scheduler (launchd)
+└── pytest.ini                # Test config + coverage settings
 ```
 
 ---
@@ -232,9 +240,13 @@ LightGBM trained on 2016–2025, evaluated on 2026 holdout (all features incl. D
 ## Getting Started
 
 ### Prerequisites
-- Docker Desktop
+- Docker Desktop (48GB+ RAM recommended — all LLMs run via LM Studio)
 - Python 3.11+
-- Ollama (for local LLM inference: `gemma3:4b`, `qwen3:4b-q4_K_M`)
+- [LM Studio](https://lmstudio.ai/) with the following models loaded:
+  - `gemma3:4b` — news labeling Pass A
+  - `qwen3:4b` — news labeling Pass B
+  - `qwen3.5-9b-mlx` — quant_ai chat assistant
+  - `nomic-embed-text` — quant_ai RAG embeddings
 
 ### Start Platform
 
@@ -275,18 +287,28 @@ python research/backtest_news_factor.py \
 python research/backtest_portfolio.py   # BACKTEST_HOLD_DAYS=20|60 env var
 ```
 
+### Run Tests
+
+```bash
+cd quant_data
+.venv311/bin/python -m pytest tests/ -q
+```
+
 ---
 
 ## Roadmap
 
 - [x] **D.1/D.2/D.4/D.7/D.8** Alt-data research layer (macro, retail, analyst, 13F, premarket)
 - [x] **H.1** Transaction cost model (commission + liquidity-tiered slippage)
+- [x] **H.2** Dynamic 4-regime weight switching (RISK_ON / NEUTRAL / STRESSED / RISK_OFF)
+- [x] **H.3** Volatility-adaptive stop-loss (2×vol_20d, clamped 4–12%) + rolling OOS IC monitor
 - [x] **C.1** Daily signal automation (launchd production scheduler)
 - [x] **C.4/C.5** Paper-trading position tracker + exit alerts
 - [x] **C.7/C.9** Data quality checks + factor analysis report (IC decay, SHAP)
-- [ ] **H.2** Dynamic factor re-weighting by regime
-- [ ] **H.3** Paper trading stop-loss + rolling OOS-IC monitor
+- [x] **C.8** ETL unit tests — 90 tests, CI-enforced via GitHub Actions
+- [x] **E.7** Root README + Mermaid architecture diagram
 - [ ] **Stage 7** Airflow/Kafka/MLflow verified end-to-end
+- [ ] **F.2** RAG news search (Qdrant vector store)
 - [ ] **F.5** FinBERT fine-tuning (200× inference speedup)
 
 See [PROJECT_PLAN.md](PROJECT_PLAN.md) for the full roadmap and per-item status.
