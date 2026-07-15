@@ -1,0 +1,30 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements-ci.txt
+
+      - name: Run tests
+        run: pytest tests/ -q --tb=short
+        env:
+          # Modules read this at import time; tests don't actually connect to MongoDB.
+          MONGO_URI: mongodb://localhost:27017/
+          LOCAL_MONGO_URI: mongodb://localhost:27017/

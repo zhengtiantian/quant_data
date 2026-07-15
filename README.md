@@ -1,5 +1,7 @@
 # AI-Driven Equity Signal Platform
 
+[![Tests](https://github.com/zhengtiantian/quant_data/actions/workflows/test.yml/badge.svg)](https://github.com/zhengtiantian/quant_data/actions/workflows/test.yml)
+
 An end-to-end quantitative research platform that processes financial news through LLM pipelines to generate daily equity trading signals across 100 US stocks.
 
 ## Key Results
