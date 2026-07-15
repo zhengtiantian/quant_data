@@ -1225,6 +1225,252 @@ Returns to UI: Sharpe, annualized return, max drawdown, hit rate
 
 ---
 
+### F.11 News Pre-filter SLM (Fast Relevance Triage)
+
+**Goal**: Add a lightweight binary classifier before the expensive Gemma+Qwen dual-pass pipeline to discard obviously irrelevant GDELT articles early, reducing LLM inference load by ~70%.
+
+**Design**: Fine-tune a tiny SLM (e.g. `distilbert-base-uncased`, 66M params) on the existing labeled set where both Gemma and Qwen agree (`llm_sentiment_final` non-null + `llm_disagreement=0`). Binary output: relevant / irrelevant. Articles classified as irrelevant skip the dual-LLM pass entirely.
+
+**Expected impact**: ~70% of GDELT articles are low-quality noise; filtering these reduces dual-LLM cost without degrading labeled dataset quality.
+
+- Status: [ ] Pending (3 days)
+
+---
+
+### F.12 Signal Explanation Generation (SLM → UI)
+
+**Goal**: For each stock with a high signal score today, auto-generate a 2-sentence plain-English explanation of *why* — visible in the Signals UI panel.
+
+**Example output**: *"NVDA scores 87/100 today. Institutional holdings increased 2.1% QoQ (strongest factor) and avg_sentiment_5d hit +0.42 following multiple positive data center coverage articles."*
+
+**Implementation**: After `score_daily_signals.py` runs, pass top-N stocks' feature values to local SLM (Qwen 3.5 9B via LM Studio) with a prompt template → store explanation string in `daily_signals` MongoDB collection → `quant_api` exposes it → `SignalsPanel.tsx` renders inline.
+
+- Status: [ ] Pending (2 days)
+
+---
+
+### F.13 Morning Briefing Agent (Daily Pre-market Summary)
+
+**Goal**: Every trading day at 07:00 (before market open), auto-generate a short briefing for currently held positions: overnight news, regime status, any exit warnings.
+
+**Output example**:
+```
+Morning Briefing — 2026-07-15 07:00
+
+PANW (+62.6% unrealised) — No material news overnight. Regime: RISK_ON.
+LRCX (+50.5%) — 2 articles mentioning inventory correction risk. Consider monitoring.
+Regime: RISK_ON (macro_vix_pctile=0.22, macro_risk_on=1)
+Exit alerts today: None
+```
+
+**Implementation**: `scheduler/task.py` new job at 07:00 → fetch held positions + overnight GDELT + regime → prompt local SLM → write to `daily_briefings` collection → push to UI + optional email.
+
+- Status: [ ] Pending (2 days)
+
+---
+
+### F.14 Earnings Surprise Prediction Agent
+
+**Goal**: In the 10-day window before a company's earnings date, aggregate news sentiment + analyst consensus trend + historical surprise patterns → LLM produces a beat/miss probability estimate as an additional signal.
+
+**Input features per stock:**
+- `avg_sentiment_5d/10d` (news tone heading into earnings)
+- `analyst_buy_ratio_chg_1m` (analyst momentum)
+- `days_to_earnings` (0–10 window)
+- Historical `surprise_pct_last` (prior 4 quarters)
+
+**Output**: `pre_earnings_beat_prob` (0–1) stored in `daily_symbol_features`; used as an additional factor in `score_daily_signals.py`.
+
+**Backtest**: compare pre-earnings beat_prob vs actual surprise_pct — if IC > 0.05 across 100 symbols, add to model.
+
+- Status: [ ] Pending (3 days)
+
+---
+
+### F.15 SEC EDGAR + Earnings Transcript RAG
+
+**Goal**: Extend `quant_ai` RAG to cover SEC filings and earnings call transcripts, enabling natural language queries like "What did NVDA management say about data center margins last quarter?"
+
+**Two sub-components:**
+
+1. **SEC EDGAR RAG**: Use `edgartools` (already a dependency) to pull 10-K/10-Q risk factor sections → chunk → embed → store in Qdrant (separate collection from news)
+2. **Earnings transcript RAG**: Pull transcripts from Seeking Alpha / Motley Fool → chunk management commentary → embed → Qdrant
+
+**Integration with quant_ai**: Extend `/api/ask` to route queries: news questions → news collection; filing questions → edgar collection; transcript questions → transcript collection. Use query classification with a small routing prompt.
+
+- Status: [ ] Pending (depends on F.2 Qdrant RAG; 3 days after F.2)
+
+---
+
+### F.16 Real-time News Monitoring Agent
+
+**Goal**: Instead of waiting for the nightly GDELT batch, continuously monitor news feeds for currently held positions and trigger instant alerts on major negative events.
+
+**Architecture**:
+```
+Every 30 min (launchd job)
+    ↓
+Poll NewsAPI / Finnhub news feed for held symbols
+    ↓
+SLM relevance filter (F.11) → discard noise
+    ↓
+LLM sentiment score → if negative_event_count spike detected
+    ↓
+Write to alerts collection → push to quant_ui (WebSocket, E.6)
+```
+
+**Trigger condition**: `avg_sentiment_3d` drops > 0.3 units from prior reading, or `negative_event_count` spike of 3+ articles in one session.
+
+- Status: [ ] Pending (3 days)
+
+---
+
+### F.17 Portfolio Manager Agent (Rebalancing Recommendations)
+
+**Goal**: After daily signals are scored, an LLM agent synthesizes current positions + new signals + regime → outputs a structured rebalancing recommendation.
+
+**Agent output format**:
+```json
+{
+  "add": [{"symbol": "NVDA", "reason": "score 89, regime RISK_ON, no exit signals"}],
+  "reduce": [{"symbol": "LRCX", "reason": "score dropped to 41, inst_outflow trigger"}],
+  "hold": ["PANW", "AMZN"],
+  "regime_note": "RISK_ON — increase conviction on high-score positions"
+}
+```
+
+**Implementation**: LangGraph 2-node graph (analysis_agent → recommendation_agent); reads `daily_signals` + `positions` + `regime` → structured JSON → stored in MongoDB + displayed in UI.
+
+- Status: [ ] Pending (3 days; simpler version of F.4 LangGraph; can do before F.4)
+
+---
+
+### F.18 Backtest Reflection Agent
+
+**Goal**: After each backtest run, an LLM agent automatically analyzes weak years (2022, 2024) and generates a diagnostic report with hypotheses for why the signal failed.
+
+**Input**: year-by-year IC + Sharpe table (already produced by `factor_analysis.py`) → LLM reads the numbers and produces: "2022 failure likely driven by macro regime shift (VIX spike); macro_vix_pctile feature had negative IC that year — consider regime-conditional model."
+
+**Output**: `backtest_reflections` MongoDB collection + downloadable PDF from UI.
+
+- Status: [ ] Pending (2 days)
+
+---
+
+### F.19 LLM Factor Hypothesis Generator
+
+**Goal**: Given the current IC table + feature correlation matrix, prompt an LLM to suggest new factor ideas not yet in the feature set.
+
+**Prompt input**: current top/bottom IC factors, known failure modes (2022/2024), sector composition of universe.
+
+**Expected output**: list of 5–10 testable hypotheses, e.g. "options implied volatility spread could predict 20d returns for high-beta names" or "google search trend spike 3 days before earnings beats".
+
+**Workflow**: human reviews suggestions → select 1–2 → implement → backtest → add to model if IC > 0.05.
+
+- Status: [ ] Pending (1 day — prompt engineering + review loop, no code pipeline needed)
+
+---
+
+## I. MCP Integration
+
+MCP (Model Context Protocol) standardizes how LLM clients interact with external tools and data. Adding MCP to this platform enables any MCP-compatible client (Claude Desktop, Claude Code, custom agents) to directly query signals, news, positions, and trigger backtests via natural language — with no custom API integration needed on the client side.
+
+### I.1 quant_mcp_server — Core Platform MCP Server
+
+**Goal**: Expose the quant platform as an MCP server so Claude or any MCP client can query live trading data through tool calls.
+
+**MCP tools exposed:**
+
+| Tool | Description |
+|------|-------------|
+| `get_signals(date?)` | Returns today's top-N signal scores, regime, signal_type |
+| `get_news(symbol, days)` | Returns recent labeled articles for a symbol |
+| `get_positions()` | Returns current paper positions + unrealized P&L |
+| `get_factor_ic(factor?, horizon?)` | Returns IC table for a factor or all factors |
+| `get_regime()` | Returns current macro regime + VIX / SPY trend |
+| `run_backtest(spec_json)` | Triggers Python backtest, returns Sharpe/return/drawdown |
+| `get_briefing(date?)` | Returns today's morning briefing text |
+
+**MCP resources exposed:**
+- `daily_signals` — subscribable resource; clients receive push when new signals are written
+
+**Implementation**: Python `mcp` SDK (`pip install mcp`); standalone FastAPI server on port 18002; reads directly from MongoDB. Register in Claude Desktop `claude_desktop_config.json` for local use.
+
+- Status: [ ] Pending (3 days)
+
+---
+
+### I.2 Claude Desktop Integration
+
+**Goal**: Connect `quant_mcp_server` to Claude Desktop so daily trading analysis can happen in a normal Claude conversation — no custom UI needed.
+
+**Usage after setup:**
+> *"What's the current signal for NVDA?"* → Claude calls `get_signals()` via MCP → returns live score
+> *"Show me all positions with unrealized loss"* → Claude calls `get_positions()` → filters + explains
+> *"Run a backtest for a strategy that buys on avg_sentiment_5d > 0.4"* → Claude calls `run_backtest()`
+
+**Setup**: Add `quant_mcp_server` entry to `~/Library/Application Support/Claude/claude_desktop_config.json`.
+
+**Interview value**: "The platform is MCP-native — any Claude client can query live signals and positions without writing a single line of integration code."
+
+- Status: [ ] Pending (0.5 day after I.1)
+
+---
+
+### I.3 Alpaca Order Execution via MCP
+
+**Goal**: Extend `quant_mcp_server` with order execution tools so an LLM agent can read signals AND place orders through the same MCP interface — creating a true AI-driven trading loop.
+
+**Additional MCP tools:**
+
+| Tool | Description |
+|------|-------------|
+| `place_order(symbol, qty, side)` | Submit paper/live order to Alpaca; enforces pre-trade guardrails |
+| `cancel_order(order_id)` | Cancel an open order |
+| `get_account()` | Returns Alpaca account equity, buying power, positions |
+
+**Safety**: All order tools enforce the same guardrails as G.1 (max 5% position, kill-switch, whitelist-only). LLM cannot bypass these — guardrails are in the MCP server, not in the prompt.
+
+**Integration with G.1**: G.1 `live_trader.py` and this MCP tool share the same order execution logic; MCP is just an additional interface to the same engine.
+
+- Status: [ ] Pending (2 days; requires G.1 broker integration first)
+
+---
+
+### I.4 External Data MCP Tools (Finnhub / EDGAR / News)
+
+**Goal**: Wrap external data sources as MCP tools so LLM agents can autonomously decide what data to fetch during analysis — instead of hardcoding API calls.
+
+**Tools:**
+
+| Tool | Source | Description |
+|------|--------|-------------|
+| `search_news(query, days)` | NewsAPI / GDELT | Full-text news search |
+| `get_earnings_calendar(symbol)` | Finnhub | Next earnings date + estimates |
+| `get_analyst_ratings(symbol)` | Finnhub | Current buy/sell/hold breakdown |
+| `get_sec_filing(symbol, form)` | SEC EDGAR | Pull latest 10-K or 10-Q text |
+| `get_price_history(symbol, period)` | yfinance | OHLCV history |
+
+**Value**: Agents (F.4 LangGraph, F.17 Portfolio Manager) can call these tools autonomously during reasoning, rather than having all data pre-loaded into context — reduces token usage and increases flexibility.
+
+- Status: [ ] Pending (2 days)
+
+---
+
+### I.5 MCP Inter-service Communication
+
+**Goal**: Replace the current `quant_ai → quant_api` REST calls with MCP protocol, so quant_ai becomes a proper MCP client that discovers and calls quant_api capabilities dynamically.
+
+**Current state**: `quant_ai/main.py` hardcodes `requests.get("http://quant_api:18081/api/v1/signals/daily")` — tightly coupled.
+
+**MCP version**: `quant_ai` connects to `quant_mcp_server` via MCP client; tool discovery is automatic; adding a new quant_api endpoint just requires registering a new MCP tool — no quant_ai code change needed.
+
+**Interview value**: Demonstrates understanding of MCP as a service mesh protocol for AI systems, not just a chatbot feature.
+
+- Status: [ ] Pending (3 days; do after I.1)
+
+---
+
 ### G.1 Live Trading Execution (Automated Trading)
 
 **Goal**: Connect the existing signal pipeline to a real broker API so that daily signals automatically place live orders, with position reconciliation and risk guardrails. This is the final step that turns the platform from a research/paper-trading system into a real execution system.
@@ -1348,10 +1594,19 @@ Stage 3 (full automation)
 | ⭐⭐ | H.4 Signal quality monitoring (rolling IC) | Quant strong | 🟡 Signal health | 2 days | [ ] Pending |
 | ⭐⭐ | C.1 Daily signal automation | Medium | Extremely high | 3 days | ✅ Done (launchd, not Airflow) |
 | ⭐⭐ | C.3 Signal UI page | Medium | Extremely high | 3 days | ✅ Done |
+| ⭐⭐⭐ | I.1 quant_mcp_server (signals/news/positions/backtest as MCP tools) | AI差异化 | 极高 | 3 days | [ ] Pending |
+| ⭐⭐⭐ | I.2 Claude Desktop integration (quant MCP → Claude对话查信号) | AI差异化 | 高 | 0.5 days | [ ] Pending (after I.1) |
 | ⭐⭐ | F.2 RAG news search (Qdrant) | AI essential | High | 3 days | [ ] Pending |
 | ⭐⭐ | F.3 SHAP interpretability | MLE strong | Medium | 1 day | ✅ Done (factor_analysis.py) |
 | ⭐⭐ | F.10 Strategy Studio → Backtest execution pipeline | AI+Quant full-loop | High | 3-4 days | [ ] Pending — UI exists, need backtest adapter + quant_api endpoint |
 | ⭐⭐ | F.4 LangGraph multi-agent research assistant | AI Engineer must-have | High | 2 weeks | [ ] Pending |
+| ⭐⭐ | F.17 Portfolio Manager Agent (signals+positions→rebalance recommendation) | AI+Quant | 高 | 3 days | [ ] Pending |
+| ⭐⭐ | F.16 Real-time news monitoring agent (30min轮询→即时告警) | 实用价值高 | 高 | 3 days | [ ] Pending |
+| ⭐⭐ | F.14 Earnings surprise prediction (pre-earnings beat/miss概率因子) | Quant+AI | 高 | 3 days | [ ] Pending |
+| ⭐⭐ | F.12 Signal explanation SLM (为高评分股票生成原因解释→UI展示) | AI+UX | 中 | 2 days | [ ] Pending |
+| ⭐⭐ | I.3 Alpaca order via MCP (LLM自主决策下单，保留风控) | AI自动交易 | 极高 | 2 days | [ ] Pending (after G.1+I.1) |
+| ⭐⭐ | I.4 External data MCP tools (Finnhub/EDGAR/yfinance as Agent工具) | AI Agent基础 | 高 | 2 days | [ ] Pending |
+| ⭐⭐ | F.15 SEC EDGAR + earnings transcript RAG | AI+Research | 中 | 3 days | [ ] Pending (after F.2) |
 | ⭐⭐ | F.8 Active learning Agent (disagreement samples) | MLE+AI | High | 4 days | [ ] Pending |
 | ⭐⭐ | **F.9 Rule Optimization Agent (iterative eval→modify loop)** | AI Engineer strong | 🔴 Fixes FP/FN in rule layer | 5-7 days | 🟡 Developed, not tested |
 | ⭐⭐ | E.2 CI/CD GitHub Actions | DE strong | Medium | 2 days | [ ] Pending |
@@ -1368,6 +1623,11 @@ Stage 3 (full automation)
 | ⭐ | E.9 UI intraday price chart (TradingView + Alpaca API) | UI bonus | Medium | 3 days | [ ] Pending — no hourly DB needed; Alpaca API on-demand |
 | ⭐ | D.2 Retail sentiment | Quant bonus | Medium | 3 days | ✅ Done (StockTwits, not Reddit) |
 | ⭐ | F.1 Prompt evaluation framework | MLE bonus | Medium | 2 days | [ ] Pending |
+| ⭐ | F.11 News pre-filter SLM (双LLM前加轻量二分类，降70%推理量) | ML效率 | 中 | 3 days | [ ] Pending |
+| ⭐ | F.13 Morning briefing agent (07:00盘前持仓简报) | 实用 | 中 | 2 days | [ ] Pending |
+| ⭐ | F.18 Backtest reflection agent (自动诊断弱年份+生成报告) | Research | 低 | 2 days | [ ] Pending |
+| ⭐ | F.19 LLM factor hypothesis generator (LLM建议新因子) | Research | 低 | 1 day | [ ] Pending |
+| ⭐ | I.5 MCP inter-service (quant_ai→quant_api改MCP协议) | 架构 | 低 | 3 days | [ ] Pending (after I.1) |
 | ⭐ | E.8 Demo video | All bonus | High | 0.5 days | [ ] Pending |
 | — | D.4 Analyst rating changes | Quant bonus | Medium | 3 days | ✅ Done |
 | — | D.7 Institutional 13F holdings change | Quant bonus | High | 3 days | ✅ Done (strongest single factor, 60d IC=+0.20) |
