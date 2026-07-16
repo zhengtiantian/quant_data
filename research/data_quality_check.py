@@ -108,11 +108,19 @@ def check_signal_freshness(db):
 
 def check_news_volume(db):
     now = datetime.now(timezone.utc)
-    lo = (now - timedelta(days=2)).strftime("%Y%m%d000000")
-    hi = now.strftime("%Y%m%d235959")  # exclude corrupt future dates
-    n = db.news_articles.count_documents({"date": {"$gte": lo, "$lte": hi}})
+    # GDELT articles use "date" field (YYYYMMDDHHMMSS string).
+    # Finnhub / NewsAPI / Yahoo use "publishedAt" (ISO-8601 string).
+    lo_gdelt = (now - timedelta(days=2)).strftime("%Y%m%d000000")
+    hi_gdelt = now.strftime("%Y%m%d235959")
+    lo_iso = (now - timedelta(days=2)).strftime("%Y-%m-%dT00:00:00")
+    n_gdelt = db.news_articles.count_documents({"date": {"$gte": lo_gdelt, "$lte": hi_gdelt}})
+    n_iso = db.news_articles.count_documents({"publishedAt": {"$gte": lo_iso}})
+    n = n_gdelt + n_iso
     status = "ok" if n >= MIN_NEWS_2D else "warn"
-    return _check("news_volume", status, n, f"{n} articles in last 2d (min {MIN_NEWS_2D})")
+    return _check(
+        "news_volume", status, n,
+        f"{n} articles in last 2d (GDELT={n_gdelt}, realtime={n_iso}, min {MIN_NEWS_2D})",
+    )
 
 
 def main():

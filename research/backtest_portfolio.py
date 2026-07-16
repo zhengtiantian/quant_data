@@ -29,7 +29,9 @@ from pymongo import MongoClient
 
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from score_daily_signals import compute_score, _WEIGHTS  # reuse live scoring
+from score_daily_signals import compute_score, _WEIGHTS_BY_REGIME  # reuse live scoring
+# All regimes share the same feature keys; use NEUTRAL as the canonical key set.
+_WEIGHTS = _WEIGHTS_BY_REGIME["NEUTRAL"]
 
 ROOT = Path(__file__).resolve().parents[1]
 MONGO_URI = os.getenv("LOCAL_MONGO_URI", "mongodb://root:root@127.0.0.1:37018/")
