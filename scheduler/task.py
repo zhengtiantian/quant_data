@@ -3,12 +3,14 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import subprocess
 import sys
 import threading
 import time
+import urllib.request
 from pathlib import Path
 from urllib.parse import urlparse, urlunparse
 
@@ -33,6 +35,25 @@ logging.basicConfig(
 JOB_LOCKS: dict[str, threading.Lock] = {}
 MANAGED_PROCESSES: dict[str, subprocess.Popen] = {}
 STREAM_THREADS: dict[str, threading.Thread] = {}
+
+SLACK_WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL", "")
+
+
+def send_alert(job_name: str, detail: str) -> None:
+    """Post a failure notification to Slack. No-op if SLACK_WEBHOOK_URL is unset."""
+    if not SLACK_WEBHOOK_URL:
+        return
+    text = f":red_circle: *Pipeline failure*: `{job_name}`\n```{detail[-600:]}```"
+    try:
+        body = json.dumps({"text": text}).encode()
+        req = urllib.request.Request(
+            SLACK_WEBHOOK_URL,
+            data=body,
+            headers={"Content-Type": "application/json"},
+        )
+        urllib.request.urlopen(req, timeout=10)
+    except Exception as exc:
+        logging.warning("send_alert failed (Slack unreachable): %s", exc)
 
 
 def env_bool(name: str, default: str = "false") -> bool:
@@ -100,12 +121,15 @@ def run_script_once(job_name: str, relative_path: str, timeout: int | None = Non
             logging.warning("%s stderr:\n%s", job_name, result.stderr.strip())
         if result.returncode != 0:
             logging.error("%s failed with exit code %s", job_name, result.returncode)
+            send_alert(job_name, f"exit code {result.returncode}\n{result.stderr.strip()}")
         else:
             logging.info("%s finished successfully", job_name)
     except subprocess.TimeoutExpired:
         logging.error("%s timed out after %ss", job_name, timeout)
-    except Exception:
+        send_alert(job_name, f"timed out after {timeout}s")
+    except Exception as exc:
         logging.exception("%s crashed", job_name)
+        send_alert(job_name, str(exc))
     finally:
         lock.release()
 

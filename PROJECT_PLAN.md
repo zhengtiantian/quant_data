@@ -1466,6 +1466,272 @@ MCP (Model Context Protocol) standardizes how LLM clients interact with external
 
 ---
 
+## J. Pipeline Workflow Orchestration & Daily Enrichment
+
+### J.0 Current Pipeline Overview
+
+The daily pipeline is driven by `launchd → scheduler/task.py` using the Python `schedule` library with fixed clock times. All 14 daily tasks and their implicit dependencies:
+
+```
+05:15  gdelt_backfill ──────────────────────────────────────────────────────┐
+06:00  inst_13f (Sunday only) ──────────────────────────────────────────────┤
+*/30m  finnhub_news / newsapi_news / yahoo_news (continuous, all day) ──────┤
+                                                                             │
+07:30  daily_price_quotes ──────────────────────────────────────────────────┤
+07:45  premarket_signals ───────────────────────────────────────────────────┤
+07:48  analyst_consensus ───────────────────────────────────────────────────┤
+07:50  macro_indicators ────────────────────────────────────────────────────┤
+                                                                             │ all above
+                                                                             ▼
+08:00  daily_symbol_features ──────── (depends on all data collectors above)
+                                                                             │
+                                                                             ▼
+08:30  score_daily_signals ──────────────────── (depends on features)
+                                │
+              ┌─────────────────┴──────────────────┐
+              ▼                                     ▼
+08:40  track_positions                  08:45  backtest_portfolio
+              │
+              ▼
+09:00  data_quality_check
+20:30  retail_sentiment  (standalone, next-day feature input)
+```
+
+**Problem with pure time-based scheduling:**
+
+| Risk | Current behavior | Desired behavior |
+|------|-----------------|-----------------|
+| Price collector fails at 07:30 | Features still run at 08:00 with stale prices | Wait for price success; skip or alert if failed |
+| GDELT backfill runs >2.5 hours | Features use yesterday's GDELT news | Wait for backfill; or soft-dependency with timeout |
+| Any task fails | No notification; next task starts anyway | Alert + optionally skip downstream tasks |
+| Tasks have hard-coded time gaps | 30-min buffer between price (07:30) and features (08:00); fragile | Dependency → task B starts immediately when A succeeds |
+
+---
+
+### J.1 Airflow DAG Migration (Dependency-Based Pipeline Orchestration)
+
+**Goal**: Replace the fixed-clock `schedule` library in `task.py` with proper Airflow DAGs that enforce task dependencies. Airflow is already deployed in Docker (`airflow-webserver:15060`); DAGs exist but haven't been validated end-to-end on the new machine.
+
+**Target DAG: `daily_pipeline_dag`**
+
+```
+gdelt_backfill (05:15 start)
+       │
+       │  [timeout 4h, soft dependency]
+       │
+daily_price_quotes ──► premarket_signals ──┐
+                         analyst_consensus ──┤
+                         macro_indicators  ──┤
+                                             │ all done
+                                             ▼
+                              daily_symbol_features
+                                             │
+                                             ▼
+                              score_daily_signals
+                                    │           │
+                                    ▼           ▼
+                              track_positions  backtest_portfolio
+                                    │
+                                    ▼
+                              data_quality_check
+```
+
+**Secondary DAGs (keep separate):**
+- `news_collection_dag`: finnhub/newsapi/yahoo every 30 min (TriggerRule.ALL_DONE, no upstream dep)
+- `weekly_dag`: inst_13f on Sunday 06:00
+- `evening_dag`: retail_sentiment at 20:30
+
+**Key Airflow advantages over current task.py:**
+1. Task failure stops downstream tasks automatically (no wasted compute on stale data)
+2. Visual DAG view in Airflow UI — see which step failed without log-diving
+3. Retry with backoff: `retries=2, retry_delay=timedelta(minutes=5)`
+4. Cross-task XComs: backfill task can pass "rows written" count to features task
+5. Backfill single DAG runs for missed dates without re-running everything
+
+**What needs to be built:**
+1. `airflow/dags/daily_pipeline_dag.py` — wire existing Python scripts as BashOperator tasks with dependencies (1 day)
+2. `airflow/dags/news_collection_dag.py` — 30-min news collectors with overlap detection (1 day)
+3. `airflow/dags/weekly_dag.py` — Sunday inst_13f + weekly performance summary (0.5 days)
+4. Alert hook: `on_failure_callback` → writes to MongoDB `pipeline_alerts` collection; quant_api polls and sends push notification (1 day)
+5. Disable corresponding jobs in `task.py` / launchd after each DAG is verified (migration, not big-bang switch)
+
+- Status: [ ] Pending (3.5 days; Stage 7.2.2 prerequisite)
+
+---
+
+### J.2 Daily SLM Company Match for Realtime News (Critical Pipeline Gap)
+
+**Goal**: Run SLM company matching on new Finnhub/NewsAPI/Yahoo articles every morning so they contribute to daily sentiment features.
+
+**Current gap (critical):**
+
+```
+Finnhub/NewsAPI/Yahoo collectors write to news_articles
+   → articles have NO "symbol" field
+   → daily_symbol_features.py filters {"symbol": {"$exists": true}}
+   → realtime news is COMPLETELY excluded from sentiment features
+   → sentiment features only use GDELT-matched articles
+```
+
+This means `avg_sentiment_3d`, `news_burst_20d`, `high_signal_count`, and other news-based features ignore ~30–50% of available news coverage for most stocks.
+
+**Fix**: Add a daily `slm_company_match_daily` job at ~07:55, just before `daily_symbol_features`:
+
+```python
+# Pseudocode for slm_company_match_daily.py
+articles = db.news_articles.find({
+    "symbol": {"$exists": False},   # unmatched realtime articles
+    "publishedAt": {"$gte": three_days_ago}   # only recent articles
+})
+for article in articles:
+    matched_symbol = run_slm_match(article["title"] + " " + article.get("content", ""))
+    if matched_symbol:
+        db.news_articles.update_one(
+            {"_id": article["_id"]},
+            {"$set": {"symbol": matched_symbol, "match_source": "slm_daily"}}
+        )
+```
+
+**Implementation:**
+1. Write `research/slm_company_match_daily.py` that calls `slm_company_match_v2.py` matching logic on articles with `publishedAt >= 3 days ago AND symbol not exists` (1 day)
+2. Add `ENABLE_SLM_MATCH_JOB` in `task.py` scheduled at `07:55` (before `08:00` features) (0.5 days)
+3. In Airflow: add as a node between news collectors and `daily_symbol_features`
+
+**Expected impact:**
+- Finnhub articles (very company-specific) → high match precision; adds targeted earnings/analyst news to sentiment
+- NewsAPI/Yahoo → moderate precision; adds broad market context
+- `avg_sentiment_3d` and `high_signal_count` features become richer without any feature engineering changes
+
+**Prerequisite:** Requires LM Studio `qwen3.5-4b` loaded (same as GDELT SLM filter; no new model needed)
+
+- Status: [ ] Pending (1.5 days)
+
+---
+
+### J.3 Daily LLM Sentiment Enrichment for New Articles
+
+**Goal**: Run Gemma 3B + Qwen 4B dual-pass labeling on new articles each morning so `llm_sentiment_final` stays current (currently only historical 840K articles have labels; new daily articles don't get scored).
+
+**Current gap**: Articles arriving via Finnhub/NewsAPI/Yahoo daily do not have `llm_sentiment_final` or `event_type` fields. The LLM labeling was a one-time batch job on historical data.
+
+**Daily enrichment job** (`research/llm_enrich_daily.py`):
+
+```
+07:56 (after J.2 company match, before 08:00 features)
+  1. Find articles: {symbol: {$exists: true}, llm_sentiment_final: {$exists: false}, publishedAt >= 3d}
+  2. Pass A: Gemma 3B → raw_sentiment, event_type
+  3. Pass B: Qwen 4B → cross-check; if agree → final label; if disagree → flag
+  4. Write llm_sentiment_final, event_type, llm_confidence to news_articles
+```
+
+**Volume estimate**: ~500–2,000 new company-matched articles per day (Finnhub + NewsAPI + Yahoo + new GDELT);
+at ~5 articles/sec (Gemma 3B), two-pass takes ~3–6 minutes → fits in the 07:56–08:00 window.
+
+**Implementation:**
+1. Write `research/llm_enrich_daily.py` using the same dual-pass logic as `llm_enrich_articles.py` but filtered to last-3d unscored articles (1 day)
+2. Add `ENABLE_LLM_ENRICH_JOB` in `task.py` at `07:56` (0.5 days)
+3. In Airflow DAG: `slm_company_match_daily` → `llm_enrich_daily` → `daily_symbol_features`
+
+**Prerequisite:** Requires LM Studio `gemma3:4b` + `qwen3:4b` loaded (or a single Qwen3.5-4b if using single-pass for speed)
+
+- Status: [ ] Pending (1.5 days; do after J.2)
+
+---
+
+### J.4 Pipeline Failure Alert System
+
+**Goal**: When any daily pipeline task fails, send an immediate push notification so failures are caught before the trading day starts, not discovered hours later by checking logs.
+
+**Current state**: Failures are logged to `pipeline_scheduler.log` only. No proactive notification.
+
+**Implementation options (pick one):**
+
+| Option | Description | Effort |
+|--------|-------------|--------|
+| Email alert | `smtplib` sends email on task failure | 0.5 days |
+| Slack webhook | `POST` to Slack incoming webhook URL | 0.5 days |
+| MongoDB + UI poll | Task writes `{status: "failed"}` to `pipeline_alerts`; quant_ui polls | 1 day |
+| macOS notification | `osascript -e 'display notification...'` | 0.5 days |
+
+**Recommended**: Slack webhook (works remotely; zero setup on client side; free).
+
+**What to alert on:**
+- Any `run_script_once` returns non-zero exit code
+- `data_quality_check` overall status is "warn" or "fail"
+- `track_positions` triggers a stop-loss exit
+- `gdelt_backfill` exits with `/Volumes/Data4T` mount error (the known failure mode)
+- `score_daily_signals` produces 0 LONG signals
+
+**In Airflow**: `on_failure_callback` + `on_success_callback` for key tasks (no code change to pipeline scripts).
+
+**In task.py (before Airflow migration)**: Wrap `run_script_once` to check `result.returncode` and call `send_alert(job_name, stderr)` on failure.
+
+- Status: [ ] Pending (0.5 days; high impact, low effort)
+
+---
+
+### J.5 Intraday Position Stop-Loss Monitor
+
+**Goal**: Check live prices during market hours (09:30–16:00 ET) every 5 minutes for held positions, and trigger a stop-loss alert instantly when price falls through the stop level — instead of waiting for the 08:40 `track_positions` next morning.
+
+**Current behavior**: `track_positions.py` runs once at 08:40 and looks at yesterday's closing price. If a position drops 8% intraday, the stop-loss is not detected until next morning's close.
+
+**Target**: Real-time intraday monitoring using Alpaca WebSocket streaming (the same WebSocket planned for live trading).
+
+```
+scheduler/intraday_monitor.py   (long-running process during market hours)
+  │
+  ├─ On startup: load current positions from MongoDB (track_positions.py output)
+  │              load stop-loss levels (entry_price × (1 - stop_pct))
+  │
+  ├─ Connect to Alpaca WebSocket: subscribe to live quotes for held symbols
+  │
+  ├─ On each price tick:
+  │    if current_price < stop_loss_level:
+  │        → send Slack/email alert: "STOP-LOSS TRIGGERED: {symbol} @ {price}"
+  │        → write to MongoDB: {event: "stop_loss_breach", symbol, price, timestamp}
+  │        → if live trading enabled: submit sell order via Alpaca REST API
+  │
+  └─ 16:00 ET: close WebSocket, write daily EOD position summary
+```
+
+**Scheduler integration:**
+- Add `ENABLE_INTRADAY_MONITOR_JOB = true` in `.env`
+- `ensure_long_running("intraday_monitor", ...)` at 09:28 ET daily
+- Kill/restart handled by process poll loop (already in `task.py`)
+
+**Prerequisites:** Alpaca API key (needed for G.1 live trading anyway); no new models needed.
+
+- Status: [ ] Pending (2 days; do after G.1 Alpaca integration)
+
+---
+
+### J.6 Weekly Performance Summary Report
+
+**Goal**: Every Sunday after `inst_13f` completes, auto-generate a weekly summary: signal IC for the past week, positions opened/closed, P&L vs SPY, top/worst performers, factor attribution.
+
+**Implementation:**
+1. Write `research/weekly_summary.py` that reads last-7d `daily_signals` + `portfolio_positions` + `portfolio_performance` (1 day)
+2. Format as JSON → quant_api `GET /api/weekly-report` → quant_ui weekly report tab (0.5 days)
+3. Optional: send as Slack message or email attachment
+
+- Status: [ ] Pending (1.5 days; do after J.4 alert system)
+
+---
+
+### J. Priority Summary
+
+| Priority | Item | Effort | Depends on |
+|----------|------|--------|-----------|
+| ⭐⭐⭐ | **J.2 Daily SLM company match** (fills critical pipeline gap; realtime news → features) | 1.5 days | LM Studio qwen3.5-4b |
+| ⭐⭐⭐ | **J.4 Pipeline failure alerts** (Slack webhook on task failure) | 0.5 days | None |
+| ⭐⭐ | **J.3 Daily LLM sentiment enrichment** (daily Gemma+Qwen on new articles) | 1.5 days | J.2, LM Studio gemma3+qwen |
+| ⭐⭐ | **J.1 Airflow DAG migration** (dependency-based DAG; replaces time-gap scheduling) | 3.5 days | Stage 7.2.2 |
+| ⭐⭐ | **J.5 Intraday stop-loss monitor** (Alpaca WebSocket real-time) | 2 days | G.1 Alpaca |
+| ⭐ | **J.6 Weekly performance summary** | 1.5 days | J.4 |
+
+---
+
 ### G.1 Live Trading Execution (Automated Trading)
 
 **Goal**: Connect the existing signal pipeline to a real broker API so that daily signals automatically place live orders, with position reconciliation and risk guardrails. This is the final step that turns the platform from a research/paper-trading system into a real execution system.
@@ -1571,11 +1837,238 @@ Stage 3 (full automation)
 
 ---
 
+## L. Multi-Frequency Strategy Layer (多周期策略扩展)
+
+### L.0 背景：新闻信号的 IC 衰减规律
+
+新闻驱动的信号 IC 并非在所有时间周期均等，学术研究和实践均表明：
+
+```
+信号强度（IC）随持仓周期变化示意：
+
+    IC
+  0.15 │▓▓
+  0.12 │▓▓▓
+  0.09 │▓▓▓▓▓
+  0.06 │▓▓▓▓▓▓▓▓       ← 当前系统在此区间 (5-60d, IC≈0.059)
+  0.03 │▓▓▓▓▓▓▓▓▓▓▓▓
+  0.00 └──────────────────────────────────
+       隔夜  1d  2d  5d  10d  20d  60d
+```
+
+**核心洞察**：新闻对价格的冲击在发布后数小时到隔夜最为集中，随后被市场消化。
+当前系统只捕捉了 5–60 天的"尾部效应"，最强的短期反应被丢弃了。
+
+**两类可扩展的短周期策略：**
+
+| 策略 | 持仓周期 | 需要新基础设施 | 难度 |
+|------|---------|--------------|------|
+| L.1 隔夜新闻动量 | 收盘买入 → 次日开盘卖出 | 仅需 Alpaca 下单 | 低 |
+| L.2 日内快速信号 | 1–4 小时 | 小时线 + Alpaca WebSocket | 高 |
+
+---
+
+### L.1 隔夜新闻动量策略 (Overnight News Momentum)
+
+**原理**：下午盘中出现的重大正面新闻，往往在当日收盘价还未完全反映，隔夜 gap 上涨是可预测的超额收益来源。
+
+**策略逻辑：**
+
+```
+每日 15:30 ET (收盘前 30 分钟)
+  │
+  ├─ 扫描过去 4 小时内所有公司匹配的新闻文章
+  │    条件: publishedAt >= 11:30 AND symbol IS NOT NULL
+  │
+  ├─ 计算"新闻冲击分"：
+  │    sentiment_spike = avg_llm_sentiment (今日) - avg_llm_sentiment (过去5日均值)
+  │    news_burst     = 今日文章数 / 过去20日均值
+  │    overnight_score = sentiment_spike × news_burst × analyst_surprise_weight
+  │
+  ├─ 选取 overnight_score 排名前 3 只股票 (同时满足 score > 阈值)
+  │
+  └─ 执行:
+       15:55 ET: 市价买入 (收盘前 5 分钟，接近收盘价)
+       次日 09:35 ET: 市价卖出 (开盘后 5 分钟，锁定隔夜 gap)
+```
+
+**为什么这个策略用现有基础设施就能实现：**
+- 新闻采集：Finnhub/NewsAPI/Yahoo 每 30 分钟一次，已覆盖日内新闻 ✅
+- 情绪打分：完成 J.3 后，新文章有 `llm_sentiment_final` ✅
+- 下单执行：G.1 Alpaca 集成后，market order 只需一行 SDK 调用 ✅
+- 不需要小时线，不需要新的数据基础设施 ✅
+
+**新增的 pipeline 任务：**
+
+```
+scheduler/task.py 中新增:
+  15:30 ET  overnight_signal_scan   # 扫描当日新闻冲击
+  09:35 ET  overnight_exit          # 隔夜仓位出场
+```
+
+**因子验证（先做，再上线）：**
+1. 计算历史 overnight return (收盘价 → 次日开盘价) 作为新标签
+2. 用现有 `llm_sentiment_final` + `news_burst` 跑单因子 IC (目标: IC > 0.08)
+3. 回测：隔夜策略的 Sharpe 预期比 20d 策略更高但波动也更大
+4. 容量限制：隔夜策略仓位必须小（每笔 ≤ 2% 净值），因为流动性在收盘前变差
+
+**与当前中频策略的关系：**
+- 两套策略**完全独立运行**，不共享仓位预算
+- 中频策略 (5–60d)：持仓 top-5，占用 80% 资金
+- 隔夜策略：持仓 top-3，占用 ≤ 10% 资金（高换手，小仓位）
+- 可以在同一个 Alpaca 账户下并行运行，用 `strategy_type` 字段区分 MongoDB 持仓记录
+
+- Status: [ ] Pending (4 days; do after G.1 Alpaca + J.3 LLM enrichment)
+
+---
+
+### L.2 日内快速信号 (Intraday Fast Signal)
+
+**原理**：重大新闻发布后，价格在最初 30–120 分钟内的动量往往持续，随后均值回归。捕捉这个初始冲击窗口。
+
+**需要的新基础设施：**
+- **小时线历史数据**：Alpaca bars API (`timeframe=1Hour`)，用于计算日内 realized volatility 和动量基准
+- **Alpaca WebSocket 实时行情**：J.5 盘中监控已规划，可复用
+- **更快的新闻处理**：目前 30 分钟一次采集；日内策略需要缩短到 5 分钟以内（Finnhub WebSocket 实时新闻推送）
+
+**策略逻辑（简化版）：**
+
+```
+Finnhub 实时新闻推送 (WebSocket)
+  │
+  ├─ 新文章到达 → 实时 SLM company match → 情绪打分
+  │
+  ├─ 若 sentiment_spike > 阈值 AND 当前时间在 09:45–15:00 ET 之间:
+  │    → 立即查询 Alpaca 实时报价 (bid/ask spread)
+  │    → 若 spread < 0.1% AND 买入信号:
+  │         → 市价买入，设置 2% 止损 + 60 分钟时间止损
+  │
+  └─ 持仓期间: 每 5 分钟检查动量是否衰减 → 动态出场
+```
+
+**难度较高，原因：**
+- 需要 Finnhub WebSocket 实时新闻（替换现有 30 分钟轮询）
+- 小时线 backfill（103 只股票 × 2 年 × 6.5h）
+- 日内仓位管理更复杂（需要盘中止损 + 时间止损双重逻辑）
+- 滑点和手续费对日内策略影响更大（round-trip cost 对 1–4h 持仓影响 > 对 20d 持仓 10 倍）
+
+**前置条件**：L.1 隔夜策略验证 + Alpaca live trading 稳定运行后再考虑。
+
+- Status: [ ] Pending (2 weeks; do after L.1 is validated live)
+
+---
+
+### L.3 5-Minute Bar Data Infrastructure (5分钟线数据基础设施)
+
+**Goal**: 采集并维护 103 只股票的 5 分钟 OHLCV 数据，作为 L.2 日内策略和 J.5 盘中止损监控的数据基础。
+
+**为什么选 5 分钟而非 1 分钟：**
+
+| 粒度 | 年数据量 (103只) | 新闻反应窗口捕捉 | 噪声 | 推荐 |
+|------|----------------|----------------|------|------|
+| 1分钟 | ~1,200万行 | 过细，bid-ask spread 主导 | 极高 | ❌ |
+| **5分钟** | **~240万行** | **覆盖 30–90 分钟反应窗口** | **可控** | **✅** |
+| 1小时 | ~20万行 | 太粗，错过入场时机 | 低 | ❌ |
+
+**数据来源**: Alpaca Markets bars API (`/v2/stocks/{symbol}/bars?timeframe=5Min`)
+- 免费 tier 提供 2 年历史 5 分钟线
+- 速率限制: 200 req/min（103 只股票 backfill 约需 20 分钟）
+
+**存储设计**:
+
+```
+MongoDB collection: stock_prices_5min
+{
+  "symbol":    "AAPL",
+  "timestamp": ISODate("2026-07-16T14:30:00Z"),   // UTC, 5min bar open time
+  "open":      220.15,
+  "high":      220.48,
+  "low":       220.02,
+  "close":     220.35,
+  "volume":    125430,
+  "vwap":      220.28
+}
+Index: { symbol: 1, timestamp: -1 }  (unique compound)
+```
+
+预估存储：240万行/年 × 平均 100 bytes ≈ **240MB/年**，两年历史约 500MB，可接受。
+
+**实现步骤：**
+
+1. **Backfill 脚本** `stock_collector/price_collector/5min_history_collector.py` (1.5 days)
+   - 对 103 只股票依次调用 Alpaca bars API，拉取过去 2 年 5 分钟线
+   - 写入 `stock_prices_5min`，建立 `{symbol, timestamp}` 唯一索引
+   - 进度断点续传：已存在的数据跳过，从最新 timestamp 续拉
+
+2. **每日增量采集** (0.5 days)
+   - 新增 `ENABLE_5MIN_PRICE_JOB=true` 在 `.env`
+   - 在 `task.py` 中添加每日 `16:35 ET` 触发（收盘后 5 分钟）
+   - 只拉当天 09:30–16:00 的 5 分钟线（78 根 × 103 只 = 8034 条/天）
+
+3. **可复用的新特征** (加入 daily_symbol_features.py 或新建 intraday_features.py)
+
+   | 特征 | 计算方式 | 用途 |
+   |------|---------|------|
+   | `realized_vol_1d` | 当日 78 根 5min 收益率标准差 × √78 | 更准确的日内波动率估计 |
+   | `intraday_momentum_1h` | (14:30 收盘 - 13:30 收盘) / 13:30 收盘 | 尾盘动量因子 |
+   | `vwap_deviation` | (收盘价 - VWAP) / VWAP | 偏离 VWAP 程度 |
+   | `open_gap_fill_ratio` | 开盘 gap 在首小时内回填比例 | 趋势 vs 均值回归判断 |
+   | `volume_concentration_close` | 最后 30 分钟成交量 / 全天成交量 | 机构尾盘行为 |
+
+4. **L.2 日内策略数据支撑**：5 分钟线提供日内动量基准和 realized vol，替代 Alpaca WebSocket 实时行情在回测中的角色
+
+**与现有 daily price 的关系**：
+- `stock_prices_history`（日线）继续维护，用于中频特征和回测，不变
+- `stock_prices_5min`（5分钟线）是新增补充，仅用于日内特征和 L.2 策略
+
+- Status: [ ] Pending (2 days total: 1.5d backfill + 0.5d scheduler integration; do before L.2)
+
+---
+
+### L. Priority Summary
+
+| 优先级 | 项目 | 前置条件 | 工期 |
+|--------|------|---------|------|
+| ⭐⭐ | **L.1 隔夜新闻动量策略** (15:30 情绪扫描→收盘买→次日开盘卖，无需5分钟线) | G.1 Alpaca + J.3 LLM enrichment | 4 days |
+| ⭐⭐ | **L.3 5分钟线数据基础设施** (Alpaca API backfill + 每日增量 + 5个日内特征) | G.1 Alpaca API key | 2 days |
+| ⭐ | **L.2 日内快速信号** (5分钟线 + Finnhub WebSocket实时新闻 → 日内动量) | L.1 验证通过 + L.3 数据就绪 | 2 weeks |
+
+---
+
+## K. Architecture & Language Decisions (决策记录)
+
+记录已评估但主动排除的技术选型，避免未来重复讨论。
+
+### K.1 不引入 Go / C / C++ (决策日期: 2026-07-16)
+
+**结论**: 当前及可预见的未来不需要用 Go、C 或 C++ 替换任何现有服务。
+
+**理由:**
+
+| 潜在场景 | 实际瓶颈 | 结论 |
+|---------|---------|------|
+| GDELT 下载 / 新闻采集 | 网络 I/O，带宽限制 | Python 足够；换语言无收益 |
+| LLM 推理 (Gemma / Qwen) | GPU/CPU 推理内核 | LM Studio 底层已是 C++；无需重写 |
+| 特征工程 (pandas) | 内存操作，100 symbols × 189K rows | Python + numpy 足够；算法优化比语言切换收益高 |
+| REST API (quant_api) | 内部服务，并发量低 | Java Spring Boot 完全足够 |
+| 信号评分 / 回测 | 每日单次运行，秒级耗时 | 无延迟要求 |
+
+**核心原因**: 策略持仓周期 5–60 天，信号只需每天 08:30 计算一次，延迟要求是**分钟级**，不是毫秒级。需要 C/C++ 的场景是 HFT（微秒级订单路由、tick 级订单簿），与本项目场景差三个数量级。
+
+**唯一的例外条件**: 若未来升级为高频/盘中策略，需处理每秒千条以上 tick 数据，可考虑用 **Go** 编写 tick processor（goroutine 并发模型适合 WebSocket 流处理）。当前 J.5 盘中止损监控用 Python asyncio 足够。
+
+**现有技术栈不替换的理由:**
+- Python: data/ML pipeline 生态无可替代（pandas/LightGBM/Snorkel/LM Studio SDK）
+- Java Spring Boot: REST API 生产级可用，团队已有代码资产
+- React/TypeScript: 前端无替代方案
+
+---
+
 ## Consolidated Priority Table (all pending items)
 
 | Priority | Item | Interview Value | Practical Value | Effort | Status |
 |---|---|---|---|---|---|
-| ⭐⭐⭐ | **H.1 Backtest with transaction costs + liquidity filter** | Quant essential | 🔴 Real returns | 2 days | [ ] Pending |
+| ⭐⭐⭐ | **H.1 Backtest with transaction costs + liquidity filter** | Quant essential | 🔴 Real returns | 2 days | ✅ Done — COMMISSION_BPS=5, SLIPPAGE 10/30bps tiered, MIN_DOLLAR_VOL=$5M filter in backtest_portfolio.py |
 | ⭐⭐⭐ | H.2 Market Regime detection (VIX filter) | Quant essential | 🔴 IC stability | 4 days | ✅ Done (2026-07-15) — 4-regime weight switching (RISK_ON/NEUTRAL/STRESSED/RISK_OFF) |
 | ⭐⭐⭐ | H.3 Paper Trading engine + stop-loss | Quant essential | 🔴 OOS validation | 4 days | ✅ Done (2026-07-15) — vol-adaptive stop-loss (2×vol_20d) + OOS IC rolling monitor |
 | ⭐⭐⭐ | Stage 7 Airflow + Kafka end-to-end | DE critical | High | 1 week | [ ] Pending (daily scheduling runs via launchd, not Airflow) |
@@ -1589,10 +2082,14 @@ Stage 3 (full automation)
 | ⭐⭐ | H.4 Signal quality monitoring (rolling IC) | Quant strong | 🟡 Signal health | 2 days | [ ] Pending |
 | ⭐⭐ | C.1 Daily signal automation | Medium | Extremely high | 3 days | ✅ Done (launchd, not Airflow) |
 | ⭐⭐ | C.3 Signal UI page | Medium | Extremely high | 3 days | ✅ Done |
+| ⭐⭐⭐ | **J.2 Daily SLM company match for realtime news** (Finnhub/NewsAPI/Yahoo → symbol field → 情绪特征) | DE关键 | 🔴 填补数据缺口 | 1.5 days | [ ] Pending |
+| ⭐⭐⭐ | **J.4 Pipeline failure alert** (Slack webhook on任意任务失败) | DE essential | 🔴 运维必需 | 0.5 days | [ ] Pending |
 | ⭐⭐⭐ | I.1 quant_mcp_server (signals/news/positions/backtest as MCP tools) | AI差异化 | 极高 | 3 days | [ ] Pending |
 | ⭐⭐⭐ | I.2 Claude Desktop integration (quant MCP → Claude对话查信号) | AI差异化 | 高 | 0.5 days | [ ] Pending (after I.1) |
 | ⭐⭐ | F.2 RAG news search (Qdrant) | AI essential | High | 3 days | [ ] Pending |
 | ⭐⭐ | F.3 SHAP interpretability | MLE strong | Medium | 1 day | ✅ Done (factor_analysis.py) |
+| ⭐⭐ | **J.3 Daily LLM sentiment enrichment** (每日Gemma+Qwen对新文章打分，保持情绪特征最新) | MLE+DE | 高 | 1.5 days | [ ] Pending (after J.2) |
+| ⭐⭐ | **J.1 Airflow DAG migration** (依赖链调度；任务失败自动停止下游；可视化DAG视图) | DE强 | 高 | 3.5 days | [ ] Pending (Stage 7.2.2) |
 | ⭐⭐ | F.10 Strategy Studio → Backtest execution pipeline | AI+Quant full-loop | High | 3-4 days | [ ] Pending — UI exists, need backtest adapter + quant_api endpoint |
 | ⭐⭐ | F.4 LangGraph multi-agent research assistant | AI Engineer must-have | High | 2 weeks | [ ] Pending |
 | ⭐⭐ | F.17 Portfolio Manager Agent (signals+positions→rebalance recommendation) | AI+Quant | 高 | 3 days | [ ] Pending |
@@ -1606,6 +2103,9 @@ Stage 3 (full automation)
 | ⭐⭐ | **F.9 Rule Optimization Agent (iterative eval→modify loop)** | AI Engineer strong | 🔴 Fixes FP/FN in rule layer | 5-7 days | 🟡 Developed, not tested |
 | ⭐⭐ | E.2 CI/CD GitHub Actions | DE strong | Medium | 2 days | [ ] Pending |
 | ⭐⭐ | C.7 Data quality checks | DE strong | High | 2 days | ✅ Done (data_quality_check.py) |
+| ⭐⭐ | **L.1 隔夜新闻动量策略** (15:30 情绪扫描→收盘买→次日开盘卖，无需小时线) | Quant+AI | 高 | 4 days | [ ] Pending (after G.1+J.3) |
+| ⭐⭐ | **L.3 5分钟线数据基础设施** (Alpaca API backfill + 每日16:35增量 + 日内特征) | Quant+DE | 高 | 2 days | [ ] Pending (after G.1 Alpaca key) |
+| ⭐ | **L.2 日内快速信号** (5分钟线 + Finnhub WebSocket实时新闻 → 日内动量) | Quant+AI | 中 | 2 weeks | [ ] Pending (after L.1+L.3) |
 | ⭐⭐ | B quant bonus: Long-short portfolio | Quant strong | Medium | 3 days | [ ] Pending |
 | ⭐⭐ | B quant bonus: Beta neutralization | Quant strong | Medium | 2 days | [ ] Pending |
 | ⭐⭐ | F.5 FinBERT fine-tuning | MLE strong | High | 1-2 weeks | [ ] Pending |

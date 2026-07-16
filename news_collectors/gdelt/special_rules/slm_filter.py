@@ -134,11 +134,15 @@ class SLMFilter:
         self.skill = get_skill(self.skill_name)
         self.cache = {}
         self._cache_lock = threading.Lock()
+        self._server_available = True   # flips to False on first connection failure; resets hourly
+        self._unavailable_since: float = 0.0
+        self._UNAVAILABLE_RETRY_SECS = 3600  # re-probe LM Studio after 1 hour
         self._test_connection()
 
     def _test_connection(self):
-        """测试所有唯一端点连接，仅打印结果，不阻塞也不 disable filter"""
+        """测试所有唯一端点连接。连接失败时将 _server_available 置 False（pass-through 模式）。"""
         unique_urls = dict.fromkeys(url for url, _ in self._endpoint_pool)
+        any_ok = False
         for base_url in unique_urls:
             url = f"{base_url}/models" if self.provider == "lmstudio" else f"{base_url}/api/tags"
             try:
@@ -154,17 +158,33 @@ class SLMFilter:
                         f"✅ SLM Filter: {base_url} ({provider_name}), "
                         f"concurrency={_SLM_MAX_CONCURRENCY}, models={models}"
                     )
+                    any_ok = True
                 else:
                     print(f"⚠️ SLM Filter: {base_url} returned {resp.status_code}, will retry on first request")
             except Exception as e:
-                print(f"⚠️ SLM Filter: Cannot connect to {base_url} ({e}), will retry on first request")
+                print(f"⚠️ SLM Filter: Cannot connect to {base_url} ({e}), switching to pass-through mode")
+        if not any_ok:
+            self._server_available = False
+            self._unavailable_since = time.time()
+            print("⚠️ SLM Filter: No endpoints reachable — pass-through mode active (articles bypass SLM, rule-match only)")
 
     def is_relevant(self, symbol: str, company_name: str, title: str, content: str, trigger_keywords: str = "") -> bool:
         """
-        判断文章是否真正讨论该公司
+        判断文章是否真正讨论该公司。
+        LM Studio 不可达时进入 pass-through 模式（返回 True），避免静默丢弃所有文章。
+        每小时自动重试探测 LM Studio 是否恢复。
         """
         if not self.enabled:
             return True
+
+        # Pass-through mode: LM Studio unreachable → let rule-based match decide
+        if not self._server_available:
+            if time.time() - self._unavailable_since > self._UNAVAILABLE_RETRY_SECS:
+                print("🔄 SLM Filter: re-probing LM Studio after 1h...")
+                self._server_available = True  # optimistic reset; _test_connection will flip back if still down
+                self._test_connection()
+            if not self._server_available:
+                return True  # still down → pass-through
 
         title_key = title.strip().lower()
         content_key = content[:300].strip().lower()
@@ -263,7 +283,14 @@ class SLMFilter:
         except Exception as e:
             track_slm_stat("elapsed_ms", int((time.time() - _t_slm) * 1000))
             track_slm_stat("errors")
-            print(f"⚠️ {self.provider} 调用失败/超时: {e}，默认拒绝")
+            is_conn_err = any(t in type(e).__name__ for t in ("ConnectionError", "ConnectTimeout", "NewConnectionError"))
+            if is_conn_err:
+                if self._server_available:
+                    self._server_available = False
+                    self._unavailable_since = time.time()
+                    print(f"⚠️ SLM Filter: {self.provider} unreachable ({e}) — switching to pass-through mode")
+                return True  # pass-through when server is down
+            print(f"⚠️ {self.provider} 调用失败: {e}，默认拒绝")
             return False
 
     def _extract_answer(self, data: Dict) -> str:
