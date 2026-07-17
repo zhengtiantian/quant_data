@@ -1,7 +1,8 @@
 """
 LLM enrichment pipeline DAG (host-based BashOperator).
 
-Schedule: weekdays 09:00
+Schedule: None (manual trigger only — requires LM Studio with
+  qwen3.5-4b, google/gemma-4-e4b and qwen/qwen3.5-9b loaded)
   company_match_v2 → [llm_enrich_a, llm_enrich_b] → snorkel_merge → feature_rebuild
 """
 
@@ -26,7 +27,7 @@ with DAG(
     dag_id="quant_llm_enrichment",
     default_args=default_args,
     description="Company match → LLM sentiment (pass A+B) → label merge → feature rebuild",
-    schedule="0 9 * * 1-5",
+    schedule=None,
     start_date=datetime(2024, 1, 1),
     catchup=False,
     max_active_runs=1,

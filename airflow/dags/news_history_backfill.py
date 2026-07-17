@@ -8,7 +8,7 @@ Trigger example:
     --conf '{"start_date": "2023-01-01"}'
 
 Pipeline:
-  gdelt_collect → company_match → [llm_pass_a, llm_pass_b] → snorkel_merge → feature_rebuild
+  gdelt_collect → company_match → [llm_pass_a, llm_pass_b] → snorkel_merge → feature_rebuild → validation_audit
 """
 
 from __future__ import annotations
@@ -105,4 +105,10 @@ with DAG(
         timeout=timedelta(hours=3),
     )
 
-    gdelt_collect >> company_match >> [llm_a, llm_b] >> snorkel >> feature_rebuild
+    validation_audit = make_task(
+        "news_validation_audit",
+        "research/news_validation_audit.py",
+        timeout=timedelta(minutes=30),
+    )
+
+    gdelt_collect >> company_match >> [llm_a, llm_b] >> snorkel >> feature_rebuild >> validation_audit

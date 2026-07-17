@@ -108,8 +108,8 @@ YEARS_BACK = 11  # Extended range to ensure coverage from 2016-01-01
 START_DATE_STR = os.getenv("START_DATE", "2016-01-01")  # Pin cache start date
 MAX_FILES = None  # Full set
 TEST_MODE = False  # Production mode
-CACHE_DIR  = os.getenv("GDELT_CACHE_DIR",  "/Volumes/Data24T/docker-volumes/gdelt_cache")
-CACHE_DIR2 = os.getenv("GDELT_CACHE_DIR2", "/Volumes/Data6T/gdelt_cache")
+CACHE_DIR  = os.getenv("GDELT_CACHE_DIR",  "/Volumes/Data4T/docker-volumes/gdelt_cache")
+CACHE_DIR2 = os.getenv("GDELT_CACHE_DIR2", "/Volumes/Data4T/docker-volumes/gdelt_cache")
 FILES_DIR  = os.path.join(CACHE_DIR,  "files")   # Even batches
 FILES_DIR2 = os.path.join(CACHE_DIR2, "files")   # Odd batches
 os.makedirs(CACHE_DIR, exist_ok=True)
@@ -903,22 +903,54 @@ def ensure_index():
 # ============================
 # masterfilelist cache
 # ============================
-def load_masterfilelist():
-    print("⬇️ Refreshing masterfilelist.txt from GDELT...")
+def _masterfilelist_latest_ts(path):
+    """Return the newest GKG timestamp in a masterfilelist file, or None."""
     try:
-        with requests.get(f"{BASE_URL}/masterfilelist.txt", stream=True, timeout=1800) as r:
-            r.raise_for_status()
-            with open(MASTER_FILE, "wb") as f:
-                for chunk in r.iter_content(8192):
-                    f.write(chunk)
-    except Exception as e:
-        if os.path.exists(MASTER_FILE):
-            print(
-                f"⚠️ Refresh masterfilelist failed: {e}. "
-                f"Falling back to cached file ({os.path.getsize(MASTER_FILE)/1e6:.1f} MB)"
+        with open(path, "r") as f:
+            lines = f.readlines()
+        for line in reversed(lines):
+            if ".gkg.csv.zip" not in line:
+                continue
+            ts = parse_gdelt_timestamp(os.path.basename(line.split()[-1]))
+            if ts:
+                return ts["datetime"]
+    except Exception:
+        return None
+    return None
+
+
+def load_masterfilelist(max_attempts=3, max_stale_days=7):
+    # Download to a temp file and atomically replace: a mid-transfer connection
+    # reset must never leave a truncated masterfilelist as the cache.
+    tmp_file = MASTER_FILE + ".tmp"
+    for attempt in range(1, max_attempts + 1):
+        print(f"⬇️ Refreshing masterfilelist.txt from GDELT (attempt {attempt}/{max_attempts})...")
+        try:
+            with requests.get(f"{BASE_URL}/masterfilelist.txt", stream=True, timeout=1800) as r:
+                r.raise_for_status()
+                with open(tmp_file, "wb") as f:
+                    for chunk in r.iter_content(8192):
+                        f.write(chunk)
+            os.replace(tmp_file, MASTER_FILE)
+            break
+        except Exception as e:
+            print(f"⚠️ Refresh masterfilelist failed (attempt {attempt}/{max_attempts}): {e}")
+            if os.path.exists(tmp_file):
+                os.remove(tmp_file)
+    else:
+        if not os.path.exists(MASTER_FILE):
+            raise RuntimeError("masterfilelist.txt download failed and no cached copy exists")
+        latest = _masterfilelist_latest_ts(MASTER_FILE)
+        age_days = (datetime.utcnow() - latest).days if latest else None
+        if latest is None or age_days > max_stale_days:
+            raise RuntimeError(
+                f"masterfilelist.txt download failed and cached copy is stale "
+                f"(newest entry: {latest}, {age_days} days old) — refusing to run on an outdated file list"
             )
-        else:
-            raise
+        print(
+            f"⚠️ Using cached masterfilelist ({os.path.getsize(MASTER_FILE)/1e6:.1f} MB, "
+            f"newest entry {latest}, {age_days} days old)"
+        )
     with open(MASTER_FILE, "r") as f:
         return f.readlines()
 
@@ -1074,7 +1106,24 @@ def predownload_recent_missing_files(urls):
     if not STARTUP_PREDOWNLOAD_ENABLED or not urls:
         return
 
+    gkg = None
+    if USE_GKG_MONGO:
+        try:
+            gkg = get_gkg_col()
+        except Exception as e:
+            print(f"⚠️ Startup predownload: gkg_index unavailable ({e}), falling back to file-cache check only")
+
     latest_cached_dt = get_latest_cached_gkg_timestamp()
+    if latest_cached_dt is None and gkg is not None:
+        # Cache files are deleted after Mongo import, so use the newest ingested
+        # timestamp instead of falling back to a blind "latest N files" window.
+        doc = gkg.find_one(sort=[("ts", -1)], projection={"ts": 1, "_id": 0})
+        if doc and doc.get("ts"):
+            try:
+                latest_cached_dt = datetime.strptime(doc["ts"], "%Y%m%d%H%M%S")
+            except ValueError:
+                pass
+
     if latest_cached_dt is None:
         lookback = max(1, STARTUP_PREDOWNLOAD_RECENT_FILES)
         candidate_urls = urls[-lookback:]
@@ -1087,12 +1136,16 @@ def predownload_recent_missing_files(urls):
                 continue
             if ts["datetime"] > latest_cached_dt:
                 candidate_urls.append(url)
-        mode_desc = f"latest cached file at {latest_cached_dt.strftime('%Y-%m-%d %H:%M:%S')}"
+        mode_desc = f"latest cached/ingested at {latest_cached_dt.strftime('%Y-%m-%d %H:%M:%S')}"
 
-    missing = [
-        url for url in candidate_urls
-        if not _file_cached(url)
-    ]
+    def _have(url):
+        if _file_cached(url):
+            return True
+        if gkg is not None:
+            return _gkg_in_mongo(_gkg_ts(os.path.basename(url)), gkg)
+        return False
+
+    missing = [url for url in candidate_urls if not _have(url)]
     if not missing:
         print(f"📦 Startup predownload: nothing missing to catch up ({mode_desc})")
         return
@@ -1100,7 +1153,7 @@ def predownload_recent_missing_files(urls):
         f"📦 Startup predownload: caching {len(missing)}/{len(candidate_urls)} files "
         f"before workers start ({mode_desc})"
     )
-    batch_download_files(candidate_urls, batch_size=50, worker_name="startup-cache")
+    batch_download_files(missing, batch_size=50, worker_name="startup-cache", gkg_col=gkg)
 
 
 # ============================

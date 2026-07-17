@@ -46,7 +46,7 @@ with DAG(
         env={
             **BASE_ENV,
             "FEATURE_OUTPUT_COLLECTION": "daily_symbol_features",
-            "MLFLOW_TRACKING_URI": "http://127.0.0.1:15000",
+            "MLFLOW_TRACKING_URI": "http://127.0.0.1:15050",
         },
         append_env=True,
         execution_timeout=timedelta(hours=4),
