@@ -1,15 +1,14 @@
 """
-Historical News Article Backfill DAG.
-
-Full pipeline:
-  gdelt_collect → company_match → llm_pass_a ─┐
-                                  llm_pass_b ─┴→ snorkel_merge → feature_rebuild
+Historical News Article Backfill DAG (host-based BashOperator).
 
 Schedule: None (manual trigger only)
 
-Trigger with date range:
+Trigger example:
   airflow dags trigger news_history_backfill \\
     --conf '{"start_date": "2023-01-01"}'
+
+Pipeline:
+  gdelt_collect → company_match → [llm_pass_a, llm_pass_b] → snorkel_merge → feature_rebuild
 """
 
 from __future__ import annotations
@@ -18,40 +17,11 @@ import os
 from datetime import datetime, timedelta
 
 from airflow import DAG
-from airflow.providers.docker.operators.docker import DockerOperator
-from docker.types import Mount
+from airflow.operators.bash import BashOperator
 
-QUANT_IMAGE = os.getenv("QUANT_IMAGE", "xiz001/quant_data:9df26b0")
-NETWORK = "quant_docker_project-net"
-QUANT_DATA_PATH = "/Users/xiz/Quant_trade/quant_data"
+from _host_common import ROOT, PYTHON, BASE_ENV, GDELT_ENV
 
-BASE_ENV = {
-    "MONGO_URI": "mongodb://root:root@mongo6:27017/quant_data?authSource=admin",
-    "LOCAL_MONGO_URI": "mongodb://root:root@mongo6:27017/quant_data?authSource=admin",
-    "MYSQL_HOST": "mysql8",
-    "MYSQL_PORT": "3306",
-    "MYSQL_USER": "root",
-    "MYSQL_PASSWORD": "root",
-    "MYSQL_DATABASE": "workflow",
-    "USE_MYSQL_BATCH_QUEUE": "true",
-    "GDELT_CACHE_DIR": "/Volumes/Data4T/docker-volumes/gdelt_cache",
-    "GKG_TMP_DIR": "/Volumes/Data4T/gdelt_tmp",
-    "RESET_ALL_RUNNING_ON_START": "false",
-}
-
-SOURCE_MOUNT = Mount(
-    source=QUANT_DATA_PATH,
-    target="/app",
-    type="bind",
-    read_only=False,
-)
-
-GDELT_MOUNT = Mount(
-    source="/Volumes/Data4T/docker-volumes/gdelt_cache",
-    target="/Volumes/Data4T/docker-volumes/gdelt_cache",
-    type="bind",
-    read_only=False,
-)
+SLM_API_URL = os.getenv("SLM_API_URL", "http://127.0.0.1:1234/v1")
 
 default_args = {
     "owner": "quant",
@@ -61,17 +31,13 @@ default_args = {
 
 
 def make_task(task_id: str, script: str, extra_env: dict | None = None,
-              timeout: timedelta = timedelta(hours=4)):
-    return DockerOperator(
+              timeout: timedelta = timedelta(hours=4)) -> BashOperator:
+    env = {**BASE_ENV, **(extra_env or {})}
+    return BashOperator(
         task_id=task_id,
-        image=QUANT_IMAGE,
-        command=f"python /app/{script}",
-        environment={**BASE_ENV, **(extra_env or {})},
-        mounts=[SOURCE_MOUNT, GDELT_MOUNT],
-        network_mode=NETWORK,
-        docker_url="unix://var/run/docker.sock",
-        auto_remove="success",
-        mount_tmp_dir=False,
+        bash_command=f"cd {ROOT} && {PYTHON} {ROOT}/{script}",
+        env=env,
+        append_env=True,
         execution_timeout=timeout,
     )
 
@@ -84,67 +50,59 @@ with DAG(
     start_date=datetime(2024, 1, 1),
     catchup=False,
     tags=["quant", "backfill", "news"],
-    params={
-        "start_date": "2016-01-01",
-    },
+    params={"start_date": "2016-01-01"},
 ) as dag:
 
-    gdelt_collect = make_task(
+    gdelt_collect = BashOperator(
         task_id="gdelt_collect",
-        script="news_collectors/gdelt/historical_collector.py",
-        extra_env={
+        bash_command=f"cd {ROOT} && {PYTHON} {ROOT}/news_collectors/gdelt/historical_collector.py",
+        env={
+            **GDELT_ENV,
             "START_DATE": "{{ dag_run.conf.get('start_date', '2016-01-01') }}",
-            "RESET_ALL_RUNNING_ON_START": "false",
             "USE_GKG_MONGO": "true",
         },
-        timeout=timedelta(hours=8),
+        append_env=True,
+        execution_timeout=timedelta(hours=8),
     )
 
     company_match = make_task(
-        task_id="company_match",
-        script="research/slm_company_match_v2.py",
+        "company_match",
+        "research/slm_company_match_v2.py",
         extra_env={
+            "SLM_API_URL": SLM_API_URL,
             "DST_COLLECTION": "news_articles_company_matched_v2",
         },
         timeout=timedelta(hours=4),
     )
 
-    llm_pass_a = make_task(
-        task_id="llm_enrich_pass_a",
-        script="research/llm_enrich_articles.py",
-        extra_env={
-            "LLM_PASS": "a",
-            "OLLAMA_MODEL": "gemma3:4b-q4_K_M",
-            "OLLAMA_API": "http://host.docker.internal:11434",
-        },
+    llm_a = make_task(
+        "llm_enrich_pass_a",
+        "research/llm_enrich_articles.py",
+        extra_env={"SLM_API_URL": SLM_API_URL, "ENRICH_PASS": "A"},
         timeout=timedelta(hours=6),
     )
 
-    llm_pass_b = make_task(
-        task_id="llm_enrich_pass_b",
-        script="research/llm_enrich_articles.py",
-        extra_env={
-            "LLM_PASS": "b",
-            "OLLAMA_MODEL": "qwen3:4b-q4_K_M",
-            "OLLAMA_API": "http://host.docker.internal:11434",
-        },
+    llm_b = make_task(
+        "llm_enrich_pass_b",
+        "research/llm_enrich_articles.py",
+        extra_env={"SLM_API_URL": SLM_API_URL, "ENRICH_PASS": "B"},
         timeout=timedelta(hours=6),
     )
 
     snorkel = make_task(
-        task_id="snorkel_merge",
-        script="research/snorkel_label_merge.py",
+        "snorkel_merge",
+        "research/snorkel_label_merge.py",
         timeout=timedelta(hours=1),
     )
 
     feature_rebuild = make_task(
-        task_id="feature_rebuild",
-        script="research/daily_symbol_features.py",
+        "feature_rebuild",
+        "research/daily_symbol_features.py",
         extra_env={
-            "FEATURE_OUTPUT_COLLECTION": "daily_symbol_features_company_matched_v2",
+            "FEATURE_OUTPUT_COLLECTION": "daily_symbol_features",
             "FEATURE_LLM_COLLECTION": "news_articles_company_matched_v2",
         },
         timeout=timedelta(hours=3),
     )
 
-    gdelt_collect >> company_match >> [llm_pass_a, llm_pass_b] >> snorkel >> feature_rebuild
+    gdelt_collect >> company_match >> [llm_a, llm_b] >> snorkel >> feature_rebuild

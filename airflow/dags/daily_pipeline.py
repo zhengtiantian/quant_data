@@ -1,114 +1,64 @@
 """
-Daily pipeline DAG.
+Daily pipeline DAG (host-based BashOperator).
 
-Runs every day starting at 05:00:
-  gdelt_backfill ──┐
-  finnhub_news  ───┤──▶ price_update ──▶ feature_build
-  newsapi_news  ───┤
-  yahoo_news    ───┘
-
-Replaces: scheduler/task.py (daily jobs).
-LLM enrichment runs in a separate DAG (quant_llm_enrichment) at 09:00.
+Schedule: 07:30 daily
+  [daily_price, premarket, analyst, macro]
+      → daily_features → score_signals → [track_positions, backtest] → data_quality
 """
 
 from __future__ import annotations
 
-import os
 from datetime import datetime, timedelta
 
 from airflow import DAG
-from airflow.providers.docker.operators.docker import DockerOperator
-from docker.types import Mount
 
-QUANT_IMAGE = os.getenv("QUANT_IMAGE", "xiz001/quant_data:9df26b0")
-NETWORK = "quant_docker_project-net"
-QUANT_DATA_PATH = "/Users/xiz/Quant_trade/quant_data"
-
-BASE_ENV = {
-    "MONGO_URI": "mongodb://root:root@mongo6:27017/quant_data?authSource=admin",
-    "LOCAL_MONGO_URI": "mongodb://root:root@mongo6:27017/quant_data?authSource=admin",
-    "MYSQL_HOST": "mysql8",
-    "MYSQL_PORT": "3306",
-    "MYSQL_USER": "root",
-    "MYSQL_PASSWORD": "root",
-    "MYSQL_DATABASE": "workflow",
-    "USE_MYSQL_BATCH_QUEUE": "true",
-}
-
-SOURCE_MOUNT = Mount(
-    source=QUANT_DATA_PATH,
-    target="/app",
-    type="bind",
-    read_only=False,
-)
+from _host_common import host_task
 
 default_args = {
     "owner": "quant",
-    "retries": 2,
+    "retries": 1,
     "retry_delay": timedelta(minutes=10),
-    "execution_timeout": timedelta(hours=3),
 }
-
-
-def make_task(task_id: str, script: str, extra_env: dict | None = None, **kwargs):
-    env = {**BASE_ENV, **(extra_env or {})}
-    return DockerOperator(
-        task_id=task_id,
-        image=QUANT_IMAGE,
-        command=f"python /app/{script}",
-        environment=env,
-        mounts=[SOURCE_MOUNT],
-        network_mode=NETWORK,
-        docker_url="unix://var/run/docker.sock",
-        auto_remove="success",
-        mount_tmp_dir=False,
-        **kwargs,
-    )
-
 
 with DAG(
     dag_id="quant_daily_pipeline",
     default_args=default_args,
-    description="Daily news collection → price update → feature build",
-    schedule="0 5 * * *",
+    description="Daily: price → premarket → analyst → macro → features → signals → positions → DQ",
+    schedule="30 7 * * *",
     start_date=datetime(2024, 1, 1),
     catchup=False,
-    tags=["quant", "pipeline"],
+    max_active_runs=1,
+    tags=["quant", "pipeline", "daily"],
 ) as dag:
 
-    gdelt = make_task(
-        "gdelt_backfill",
-        "news_collectors/gdelt/historical_collector.py",
-        extra_env={"RESET_ALL_RUNNING_ON_START": "false"},
-        execution_timeout=timedelta(hours=2),
-    )
-
-    finnhub = make_task(
-        "finnhub_news",
-        "news_collectors/finnhub/collector.py",
-        execution_timeout=timedelta(minutes=30),
-    )
-
-    newsapi = make_task(
-        "newsapi_news",
-        "news_collectors/newsapi/collector.py",
-        execution_timeout=timedelta(minutes=30),
-    )
-
-    yahoo = make_task(
-        "yahoo_news",
-        "news_collectors/yahoo/collector.py",
-        execution_timeout=timedelta(minutes=30),
-    )
-
-    price = make_task(
-        "daily_price_update",
+    daily_price = host_task(
+        "daily_price",
         "stock_collector/price_collector/collector.py",
         execution_timeout=timedelta(minutes=30),
     )
 
-    features = make_task(
-        "feature_build",
+    premarket = host_task(
+        "premarket_signals",
+        "premarket_collector/collector.py",
+        extra_env={"PREMARKET_PERIOD": "5d"},
+        execution_timeout=timedelta(minutes=20),
+    )
+
+    analyst = host_task(
+        "analyst_consensus",
+        "analyst_collector/collector.py",
+        execution_timeout=timedelta(minutes=20),
+    )
+
+    macro = host_task(
+        "macro_indicators",
+        "macro_collector/collector.py",
+        extra_env={"MACRO_PERIOD": "1mo"},
+        execution_timeout=timedelta(minutes=20),
+    )
+
+    features = host_task(
+        "daily_features",
         "research/daily_symbol_features.py",
         extra_env={
             "FEATURE_OUTPUT_COLLECTION": "daily_symbol_features",
@@ -117,11 +67,29 @@ with DAG(
         execution_timeout=timedelta(hours=2),
     )
 
-    signal_score = make_task(
-        "score_daily_signals",
+    signals = host_task(
+        "score_signals",
         "research/score_daily_signals.py",
         extra_env={"SIGNAL_TOP_N": "10"},
+        execution_timeout=timedelta(minutes=15),
+    )
+
+    positions = host_task(
+        "track_positions",
+        "research/track_positions.py",
+        execution_timeout=timedelta(minutes=15),
+    )
+
+    backtest = host_task(
+        "backtest_portfolio",
+        "research/backtest_portfolio.py",
+        execution_timeout=timedelta(minutes=30),
+    )
+
+    data_quality = host_task(
+        "data_quality_check",
+        "research/data_quality_check.py",
         execution_timeout=timedelta(minutes=10),
     )
 
-    [gdelt, finnhub, newsapi, yahoo] >> price >> features >> signal_score
+    [daily_price, premarket, analyst, macro] >> features >> signals >> [positions, backtest] >> data_quality
