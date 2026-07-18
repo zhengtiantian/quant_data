@@ -2075,6 +2075,54 @@ Index: { symbol: 1, timestamp: -1 }  (unique compound)
 
 ---
 
+## M. Signal Research Rigor (Quant Researcher Interview Defense — low priority)
+
+Hardens the signal research so its claims survive a quant-researcher-style interrogation
+(IC significance? out-of-sample? survivorship bias? why not overfit?). Low priority:
+only invest here when targeting Quant Researcher roles — for Quant Dev / platform /
+AI-engineer interviews the current walk-forward + cost-adjusted results are sufficient.
+Accepted risk: rigorous treatment may show the signal is weaker than current numbers;
+that outcome is itself a defensible research finding when written up honestly.
+
+### M.1 Point-in-Time Universe (kill survivorship & selection bias)
+Replace the hand-picked 103-stock tech universe with point-in-time S&P 500 membership
+including delisted names. The current universe is the single most attackable weakness:
+almost any signal "works" on a winners-only mega-cap list.
+- Source historical index membership (incl. delistings), rebuild features/backtests on it
+- Keep the 103-stock universe as a separate "tech sleeve" study
+- Effort: 1–2 weeks (data sourcing is the hard part) — Status: [ ] Pending
+
+### M.2 Point-in-Time Data Hygiene Audit
+- Purge corrupt future-dated articles (2034/2037 timestamps in `news_articles.date`)
+- Full-lineage check: for every feature, verify signal-available-time vs data-creation-time
+  (news collected_at vs published_at, 13F filing lag, analyst revision lag)
+- Effort: 3 days — Status: [ ] Pending
+
+### M.3 IC Statistical Significance
+- Rank IC with Newey-West adjusted t-stats (overlapping horizons inflate naive t-stats)
+- IC decay curve / half-life per factor; per-year and per-regime IC stability tables
+- Effort: 3 days — Status: [ ] Pending
+
+### M.4 Factor Orthogonalization (the core question)
+Does news sentiment contain information not already in price? Residualize sentiment
+factors against momentum / short-term reversal / size / sector, then measure residual IC.
+If residual IC ≈ 0, the "news signal" is repackaged momentum — better to know.
+- Effort: 1 week — Status: [ ] Pending
+
+### M.5 Overfitting Defenses
+- Reserve a never-touched final holdout window (e.g. last 6 months) for one-shot evaluation
+- Experiment registry: log every parameter combination tried (honest denominator for
+  deflated Sharpe); report deflated Sharpe alongside raw
+- Effort: 2 days — Status: [ ] Pending
+
+### M.6 Research Report Writeup
+Paper-style writeup: hypothesis → data → methodology → results → failure cases →
+limitations. An honest "post-cost alpha is marginal, but sentiment shows orthogonal
+incremental IC in earnings windows" beats a flashy Sharpe 3.0 backtest in any QR interview.
+- Effort: 3 days — Status: [ ] Pending
+
+---
+
 ## K. Architecture & Language Decisions (决策记录)
 
 记录已评估但主动排除的技术选型，避免未来重复讨论。
@@ -2163,6 +2211,12 @@ Index: { symbol: 1, timestamp: -1 }  (unique compound)
 | ⭐ | F.18 Backtest reflection agent (自动诊断弱年份+生成报告) | Research | 低 | 2 days | [ ] Pending |
 | ⭐ | F.19 LLM factor hypothesis generator (LLM建议新因子) | Research | 低 | 1 day | [ ] Pending |
 | ⭐ | I.5 MCP inter-service (quant_ai→quant_api改MCP协议) | 架构 | 低 | 3 days | [ ] Pending (after I.1) |
+| ⭐ | M.1 Point-in-time S&P 500 universe (survivorship-free) | QR essential | 🔴 Signal validity | 1-2 weeks | [ ] Pending (only if targeting QR roles) |
+| ⭐ | M.2 PIT data hygiene audit (dirty dates, lookahead lineage) | QR essential | 🔴 Signal validity | 3 days | [ ] Pending |
+| ⭐ | M.3 IC significance (Newey-West t-stat, decay, regime tables) | QR essential | Medium | 3 days | [ ] Pending |
+| ⭐ | M.4 Sentiment orthogonalization vs momentum/size/sector | QR essential | 🔴 Core question | 1 week | [ ] Pending |
+| ⭐ | M.5 Overfitting defenses (holdout, trial registry, deflated Sharpe) | QR essential | Medium | 2 days | [ ] Pending |
+| ⭐ | M.6 Research report writeup (paper-style, honest conclusions) | QR essential | Medium | 3 days | [ ] Pending |
 | — | D.4 Analyst rating changes | Quant bonus | Medium | 3 days | ✅ Done |
 | — | D.7 Institutional 13F holdings change | Quant bonus | High | 3 days | ✅ Done (strongest single factor, 60d IC=+0.20) |
 | — | D.8 Pre-market / after-hours price signals | Quant bonus | High | 1 day | ✅ Done (strongest short-term factor, 5d IC=+0.23) |
