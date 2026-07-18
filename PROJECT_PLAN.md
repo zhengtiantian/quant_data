@@ -1366,6 +1366,46 @@ Write to alerts collection → push to quant_ui (WebSocket, E.6)
 
 ---
 
+### F.20 Dip-Buy Scanner Agent (Contrarian Entry Candidates)
+
+**Goal**: Monitor a watchlist (held positions + custom list). When a stock is hammered by a wave of negative news or a weak earnings report, decide whether the drawdown is a *sentiment washout* (buyable dip) or *structural deterioration* (falling knife), and generate contrarian entry candidates.
+
+**Trigger signals (all source data already collected)**:
+
+| Signal | Source | Condition |
+|---|---|---|
+| Negative-news burst | `news_articles_company_matched_v2` LLM sentiment | negative article count over N days ≫ per-symbol baseline AND `avg_sentiment_5d` below threshold |
+| Earnings miss | `analyst_consensus` + price data | EPS/revenue miss vs consensus, or guidance cut |
+| Price washout | `stock_prices_history` | N-day drawdown > X%, sector-relative (exclude broad selloffs) |
+
+**Agent core — dip vs falling knife triage**: an LLM reads the clustered negative articles and classifies the cause: one-off event (lawsuit, recall, single miss, sector-wide sentiment contagion) → dip candidate; structural (demand collapse, business model impairment, repeated guidance cuts) → reject. Output includes the reasoning and evidence articles.
+
+**Output**: `dip_candidates` MongoDB collection + Slack alert (existing `send_alert` pipeline) + UI card:
+```json
+{
+  "symbol": "PYPL",
+  "drawdown_20d": -0.23,
+  "neg_articles_5d": 18,
+  "avg_sentiment_5d": -0.41,
+  "sentiment_fading": true,
+  "triage": "sentiment_washout",
+  "reasoning": "Selloff driven by one-off FTC inquiry headlines; revenue guidance unchanged; negative article count decaying since day 3.",
+  "watch_zone": "entry interest below 52.0 (61.8% retrace of gap)"
+}
+```
+
+**Scheduling**: new DAG `quant_dip_scanner`, daily after `quant_daily_pipeline` features complete (~08:30); optional intraday re-check reusing F.16's 30-min polling.
+
+**Phased implementation**:
+1. Phase 1 — rule-based detector (no LLM): 3-signal filter → candidate list → Slack (1–2 days)
+2. Phase 2 — LLM triage layer (dip vs knife) via LM Studio (2 days)
+3. Phase 3 — calibrate with backtest engine: historical win rate of "20d rebound after negative-burst" → tune thresholds (2 days)
+4. Phase 4 — merge into F.17 Portfolio Manager Agent as its contrarian-entry submodule
+
+- Status: [ ] Pending (Phase 1–2 ≈ 4 days; overlaps F.14 earnings data and F.16 monitoring loop)
+
+---
+
 ## I. MCP Integration
 
 MCP (Model Context Protocol) standardizes how LLM clients interact with external tools and data. Adding MCP to this platform enables any MCP-compatible client (Claude Desktop, Claude Code, custom agents) to directly query signals, news, positions, and trigger backtests via natural language — with no custom API integration needed on the client side.
