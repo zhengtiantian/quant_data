@@ -974,6 +974,30 @@ All completed items are wired through the full pipeline:
 
 ---
 
+### E.10 Inference Node Health Check + Failover
+
+**Context**: LLM/SLM inference runs on a dedicated GPU node (Windows, Ryzen 9800X + RTX 5090 + 96G, LM Studio at `192.168.31.226:1234`); the Mac pipeline calls it via `SLM_API_URL`. A local fallback LM Studio exists on the Mac (`127.0.0.1:1234`) but switching is manual today. The SLM filter already degrades to pass-through when no endpoint responds — failover should try the local node *before* giving up.
+
+**Goal**: automatic endpoint selection so labeling jobs keep running when the GPU node is offline.
+
+```
+resolve_slm_endpoint():
+    for url in [SLM_API_URL_PRIMARY (5090 node), SLM_API_URL_FALLBACK (local)]:
+        GET {url}/models with 2s timeout → healthy? return url
+    return None → existing pass-through degradation
+```
+
+**Implementation**:
+1. Shared helper in `slm_filter.py` / `llm_enrich_articles.py`: probe on startup + re-probe on connection error (cached 60s)
+2. Log which endpoint served each batch (throughput differs ~5×; needed for run-time estimates)
+3. Optional: Slack alert on failover so silent GPU-node outages are visible
+
+**Interview value**: turns the multi-node setup into a defensible story — "heterogeneous GPU offload with health-checked failover and graceful degradation".
+
+- Status: [ ] Pending (1 day)
+
+---
+
 ## F. AI Engineering Layer (AI Engineer / MLE interview bonus)
 
 ### F.1 Prompt Engineering evaluation framework
