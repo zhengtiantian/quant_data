@@ -1,5 +1,5 @@
 """
-Daily pipeline DAG (host-based BashOperator).
+Daily signal pipeline DAG (host-based BashOperator).
 
 Schedule: 07:30 daily
   [daily_price, premarket, analyst, macro]
@@ -21,9 +21,9 @@ default_args = {
 }
 
 with DAG(
-    dag_id="quant_daily_pipeline",
+    dag_id="daily_signal_pipeline",
     default_args=default_args,
-    description="Daily: price → premarket → analyst → macro → features → signals → positions → DQ",
+    description="Daily 07:30: price → premarket → analyst → macro → features → signals → positions → DQ",
     schedule="30 7 * * *",
     start_date=datetime(2024, 1, 1),
     catchup=False,

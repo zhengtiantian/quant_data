@@ -100,18 +100,27 @@ An end-to-end quantitative research platform that processes financial news throu
 ┌─────────────────────────────────────────────────────────────────────┐
 │                       ORCHESTRATION LAYER                            │
 │                                                                       │
-│  Production schedule (launchd, scheduler/task.py) — currently live: │
+│  Apache Airflow, host-based scheduler (launchd-managed) — 14 DAGs   │
+│                                                                       │
+│  Scheduled (7):                                                      │
 │  ┌─────────────────────────────────────────────────────────┐        │
-│  │ 05:15  gdelt_backfill        07:45  premarket_signals    │        │
-│  │ 06:00  inst_13f (Sun)        07:48  analyst_consensus    │        │
-│  │ 07:30  daily_price           07:50  macro_indicators     │        │
-│  │ 08:00  daily_symbol_features 08:30  score_daily_signals  │        │
-│  │ 08:40  track_positions       09:00  data_quality_check   │        │
-│  │ 20:30  retail_sentiment                                  │        │
+│  │ */30 min   quant_intraday_news    (Finnhub+NewsAPI+Yahoo)│        │
+│  │ 06:30 d.   price_history_backfill                        │        │
+│  │ 07:30 d.   daily_signal_pipeline  (price→feat→signal→DQ) │        │
+│  │ 20:30 d.   quant_retail_sentiment (StockTwits)            │        │
+│  │ 04:00 Sun  gdelt_batch_verify     (batch self-heal check)│        │
+│  │ 06:00 Sun  weekly_inst13f_holdings                        │        │
+│  │ 07:00 Sun  weekly_model_training  (Ridge+LightGBM CV)     │        │
 │  └─────────────────────────────────────────────────────────┘        │
 │                                                                       │
-│  Airflow DAGs are defined (airflow/dags/) but not yet verified      │
-│  to run this schedule end-to-end — Stage 7 migration item.          │
+│  Manual / on-demand (7) — full-history news backfill, split into    │
+│  independently-triggerable steps + a quality-audit tool:            │
+│  ┌─────────────────────────────────────────────────────────┐        │
+│  │ backfill_1_gdelt_collect → backfill_2_company_match →     │        │
+│  │   backfill_3/4_llm_enrich_a/b → backfill_5_snorkel_merge  │        │
+│  │   → backfill_6_feature_rebuild                            │        │
+│  │ quant_news_validation (relevance/quality audit report)   │        │
+│  └─────────────────────────────────────────────────────────┘        │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -132,7 +141,7 @@ An end-to-end quantitative research platform that processes financial news throu
 ### Infrastructure
 | Component | Technology |
 |-----------|-----------|
-| Orchestration | Apache Airflow 2.10 (defined) / launchd (live) |
+| Orchestration | Apache Airflow 2.10, host-based scheduler (launchd-managed) — 14 production DAGs |
 | Message queue | Apache Kafka 3.7 |
 | Database | MongoDB 6.0, MySQL 8.0 |
 | Auth | Keycloak |
@@ -183,10 +192,10 @@ quant_data/
 │   ├── test_positions.py     # H.3: _stop_pct, compute_daily_vols, _spearman_ic, stop-loss trigger
 │   └── test_earnings_regime.py # Earnings features, macro regime (D-series)
 │
-├── airflow/dags/             # Airflow orchestration (defined, not yet verified e2e)
+├── airflow/dags/             # Airflow orchestration — 14 production DAGs (7 scheduled, 7 manual)
 ├── stock_collector/          # Stock price & universe management
 ├── tools/                    # GDELT import, index building utilities
-├── scheduler/                # task.py — production scheduler (launchd)
+├── scheduler/                # task.py — legacy launchd scheduler (superseded by Airflow, kept disabled)
 └── pytest.ini                # Test config + coverage settings
 ```
 

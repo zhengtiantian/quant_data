@@ -1,7 +1,13 @@
 """
 Weekly model training DAG (host-based BashOperator).
 
-Schedule: Sunday 02:00 — Ridge + LightGBM walk-forward CV, results saved to MongoDB + MLflow.
+Schedule: Sunday 07:00 — Ridge + LightGBM walk-forward CV on
+daily_symbol_features, results saved to MongoDB + MLflow.
+
+Runs 1 hour after weekly_inst13f_holdings (06:00, ~30min timeout) so this
+week's 13F refresh is already in the feature set being trained on. Standalone
+DAG, not chained — the two are time-sequenced via schedule, not a task
+dependency, so a slow/failed 13F run does not block training from firing.
 """
 
 from __future__ import annotations
@@ -20,14 +26,14 @@ default_args = {
 }
 
 with DAG(
-    dag_id="quant_model_training",
+    dag_id="weekly_model_training",
     default_args=default_args,
-    description="Weekly baseline model training (Ridge + LightGBM walk-forward CV)",
-    schedule="0 2 * * 0",
+    description="Weekly Sunday 07:00: baseline model training (Ridge + LightGBM walk-forward CV)",
+    schedule="0 7 * * 0",
     start_date=datetime(2024, 1, 1),
     catchup=False,
     max_active_runs=1,
-    tags=["quant", "model", "training"],
+    tags=["quant", "weekly", "model", "training"],
 ) as dag:
 
     BashOperator(

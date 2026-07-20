@@ -108,6 +108,7 @@ YEARS_BACK = 11  # Extended range to ensure coverage from 2016-01-01
 START_DATE_STR = os.getenv("START_DATE", "2016-01-01")  # Pin cache start date
 MAX_FILES = None  # Full set
 TEST_MODE = False  # Production mode
+VERIFY_MODE = os.getenv("VERIFY_MODE", "false").lower() == "true"  # Reopen 'done' batches with gaps; skip collection
 CACHE_DIR  = os.getenv("GDELT_CACHE_DIR",  "/Volumes/Data4T/docker-volumes/gdelt_cache")
 CACHE_DIR2 = os.getenv("GDELT_CACHE_DIR2", "/Volumes/Data4T/docker-volumes/gdelt_cache")
 FILES_DIR  = os.path.join(CACHE_DIR,  "files")   # Even batches
@@ -1101,6 +1102,76 @@ def get_latest_cached_gkg_timestamp():
     return None
 
 
+def verify_and_reopen_incomplete_batches(urls):
+    """Self-healing pass: 'done' batches are never reclaimed by claim_next_batch(),
+    so a batch that finished with a handful of individual file failures (transient
+    404/timeout during its one download attempt) stays silently incomplete forever.
+    Re-derive each done batch's expected file timestamps from the current URL list
+    (same deterministic slicing seed_tasks used) and check them against gkg_index;
+    reopen (status='pending') any batch missing files so the normal queue reprocesses
+    it — batch_download_files() already skips files that ARE present, so reopening
+    is safe and does not re-download or re-insert anything already complete.
+    """
+    if not USE_MYSQL_BATCH_QUEUE or not USE_GKG_MONGO:
+        print("⚠️ Batch verification requires USE_MYSQL_BATCH_QUEUE=true and USE_GKG_MONGO=true — skipping")
+        return
+
+    gkg_col = get_gkg_col()
+    conn = get_mysql_conn()
+    try:
+        cur = conn.cursor(dictionary=True)
+        cur.execute(f"SELECT batch_id FROM {MYSQL_TASK_TABLE} WHERE status='done' ORDER BY batch_id")
+        done_batch_ids = [row["batch_id"] for row in cur.fetchall()]
+    finally:
+        conn.close()
+
+    print(f"🔍 Verifying {len(done_batch_ids)} 'done' batches against gkg_index ({len(urls)} URLs in current list)...")
+
+    reopened = 0
+    checked = 0
+    total_missing_files = 0
+    for batch_id in done_batch_ids:
+        if SHUTDOWN_EVENT.is_set():
+            print("⚠️ Verification interrupted by shutdown")
+            break
+        start = (batch_id - 1) * BATCH_SIZE
+        batch_urls = urls[start : start + BATCH_SIZE]
+        if not batch_urls:
+            continue
+        expected_ts = {_gkg_ts(os.path.basename(u)) for u in batch_urls}
+        have_ts = set(gkg_col.distinct("ts", {"ts": {"$in": list(expected_ts)}}))
+        missing = expected_ts - have_ts
+        checked += 1
+        if missing:
+            _reopen_batch(batch_id, len(missing))
+            reopened += 1
+            total_missing_files += len(missing)
+        if checked % 500 == 0:
+            print(f"  ...checked {checked}/{len(done_batch_ids)}, reopened so far: {reopened}")
+
+    print(
+        f"✅ Verification complete: {checked} batches checked, {reopened} reopened "
+        f"({total_missing_files} files will be re-fetched by the next claim_next_batch pass)"
+    )
+
+
+def _reopen_batch(batch_id: int, missing_count: int) -> None:
+    conn = get_mysql_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            f"""
+            UPDATE {MYSQL_TASK_TABLE}
+            SET status='pending', owner=NULL, owner_host=NULL, last_error=%s, updated_at=NOW()
+            WHERE batch_id=%s
+            """,
+            (f"reopened by verify pass: {missing_count} file(s) missing from gkg_index", batch_id),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def predownload_recent_missing_files(urls):
     """On startup, download from the latest local cache up to today to fill any gaps in recent GKG files."""
     if not STARTUP_PREDOWNLOAD_ENABLED or not urls:
@@ -2076,6 +2147,12 @@ def _run_batch_worker(worker_id, shutdown_event, urls, valid_companies, total_ba
 # Main logic
 # ============================
 if __name__ == "__main__":
+    if VERIFY_MODE:
+        print("🔍 VERIFY_MODE: checking 'done' batches for internal gaps (no collection will run)\n")
+        _verify_urls = get_gkg_file_urls(YEARS_BACK, MAX_FILES)
+        verify_and_reopen_incomplete_batches(_verify_urls)
+        raise SystemExit(0)
+
     # Auto-adjust time range: test mode uses the earliest 2 days of data, production mode collects 10 years
     if TEST_MODE:
         # Test mode: fetch approximately 1 day of data
