@@ -2,14 +2,34 @@
 
 from __future__ import annotations
 
+import os
 from datetime import timedelta
+from pathlib import Path
 
 from airflow.operators.bash import BashOperator
 
 ROOT = "/Users/xiz/Quant_trade/quant_data"
 PYTHON = f"{ROOT}/.venv311/bin/python"
 
-LOCAL_MONGO = "mongodb://root:root@127.0.0.1:37018/quant_data?authSource=admin"
+
+def _load_dotenv_value(key: str) -> str | None:
+    """Minimal .env reader (no python-dotenv dependency in .venv-airflow)."""
+    env_path = Path(ROOT) / ".env"
+    if not env_path.exists():
+        return None
+    for line in env_path.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, _, v = line.partition("=")
+        if k.strip() == key:
+            return v.strip()
+    return None
+
+
+LOCAL_MONGO = os.environ.get("HOST_LOCAL_MONGO_URI") or _load_dotenv_value("HOST_LOCAL_MONGO_URI")
+if not LOCAL_MONGO:
+    raise RuntimeError("HOST_LOCAL_MONGO_URI not set (env var or quant_data/.env)")
 
 BASE_ENV = {
     "MONGO_URI": LOCAL_MONGO,
@@ -17,7 +37,7 @@ BASE_ENV = {
     "MYSQL_HOST": "127.0.0.1",
     "MYSQL_PORT": "23306",
     "MYSQL_USER": "root",
-    "MYSQL_PASSWORD": "root",
+    "MYSQL_PASSWORD": os.environ.get("HOST_MYSQL_PASSWORD") or _load_dotenv_value("HOST_MYSQL_PASSWORD") or "",
     "MYSQL_DATABASE": "workflow",
     "PYTHONUNBUFFERED": "1",
 }
