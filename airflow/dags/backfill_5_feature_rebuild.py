@@ -1,8 +1,8 @@
 """
-Backfill step 6/6: daily symbol feature rebuild with LLM labels (host-based BashOperator).
+Backfill step 5/5: daily symbol feature rebuild with LLM labels (host-based BashOperator).
 
 Schedule: None (manual trigger only)
-Standalone — run after step 5 (backfill_5_snorkel_merge). After this,
+Standalone — run after step 4 (backfill_4_snorkel_merge). After this,
 optionally trigger the separate quant_news_validation DAG to audit quality.
 """
 
@@ -21,14 +21,14 @@ default_args = {
 }
 
 with DAG(
-    dag_id="backfill_6_feature_rebuild",
+    dag_id="backfill_5_feature_rebuild",
     default_args=default_args,
-    description="Backfill step 6/6: daily symbol feature rebuild with LLM labels (manual, standalone)",
+    description="Backfill step 5/5: daily symbol feature rebuild with LLM labels (manual, standalone)",
     schedule=None,
     start_date=datetime(2024, 1, 1),
     catchup=False,
     max_active_runs=1,
-    tags=["quant", "backfill", "news", "step6"],
+    tags=["quant", "backfill", "news", "step5"],
 ) as dag:
 
     host_task(
