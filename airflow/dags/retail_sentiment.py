@@ -32,6 +32,6 @@ with DAG(
 
     host_task(
         "retail_sentiment",
-        "retail_collector/collector.py",
+        "collectors/retail/collector.py",
         execution_timeout=timedelta(minutes=15),
     )

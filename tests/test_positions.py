@@ -8,7 +8,7 @@ import math
 
 import pytest
 
-import track_positions as tp
+from research.signals import track_positions as tp
 
 
 # ── _stop_pct ─────────────────────────────────────────────────────────────────

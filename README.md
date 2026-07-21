@@ -18,7 +18,7 @@ An end-to-end quantitative research platform that processes financial news throu
 | 2026 holdout model IC (LightGBM, all features) | **0.73** vs ~0.05 historical baseline |
 | Platform services | 9 Docker microservices |
 
-*Net Sharpe includes a transaction cost model: 5bps commission + 10–30bps liquidity-tiered slippage round-trip, and excludes symbols with <$5M 20d avg dollar volume. See `research/backtest_portfolio.py`.*
+*Net Sharpe includes a transaction cost model: 5bps commission + 10–30bps liquidity-tiered slippage round-trip, and excludes symbols with <$5M 20d avg dollar volume. See `research/backtest/backtest_portfolio.py`.*
 
 ---
 
@@ -161,17 +161,17 @@ An end-to-end quantitative research platform that processes financial news throu
 
 ```
 quant_data/
-├── news_collectors/          # Multi-source news ingestion
+├── collectors/news/          # Multi-source news ingestion
 │   ├── gdelt/                # GDELT GKG pipeline (8TB+)
 │   ├── finnhub/              # Finnhub API collector
 │   ├── newsapi/              # NewsAPI collector
 │   └── yahoo/                # Yahoo Finance news
 │
-├── macro_collector/           # D.1 — VIX/rates/dollar/SPY regime (yfinance)
-├── retail_collector/          # D.2 — StockTwits retail sentiment (urllib)
-├── analyst_collector/         # D.4 — Finnhub analyst consensus (urllib)
-├── inst_13f_collector/        # D.7 — SEC EDGAR 13F holdings (edgartools)
-├── premarket_collector/       # D.8 — pre/after-market 1m gaps (yfinance)
+├── collectors/macro/           # D.1 — VIX/rates/dollar/SPY regime (yfinance)
+├── collectors/retail/          # D.2 — StockTwits retail sentiment (urllib)
+├── collectors/analyst/         # D.4 — Finnhub analyst consensus (urllib)
+├── collectors/inst_13f/        # D.7 — SEC EDGAR 13F holdings (edgartools)
+├── collectors/premarket/       # D.8 — pre/after-market 1m gaps (yfinance)
 │
 ├── research/                 # Core research pipeline
 │   ├── daily_symbol_features.py     # Feature engineering (60+ features incl. D-series)
@@ -193,7 +193,7 @@ quant_data/
 │   └── test_earnings_regime.py # Earnings features, macro regime (D-series)
 │
 ├── airflow/dags/             # Airflow orchestration — 14 production DAGs (7 scheduled, 7 manual)
-├── stock_collector/          # Stock price & universe management
+├── collectors/stock/          # Stock price & universe management
 ├── tools/                    # GDELT import, index building utilities
 ├── scheduler/                # task.py — legacy launchd scheduler (superseded by Airflow, kept disabled)
 └── pytest.ini                # Test config + coverage settings
@@ -278,22 +278,22 @@ cd quant_data
 source .venv311/bin/activate
 
 # Build daily features
-python research/daily_symbol_features.py
+python research/features/daily_symbol_features.py
 
 # Train models
-python research/train_baseline_models.py --target all
+python research/models/train_baseline_models.py --target all
 
 # Run factor analysis
-python research/factor_analysis.py --parts ic shap ls
+python research/backtest/factor_analysis.py --parts ic shap ls
 
 # Run single-factor backtest
-python research/backtest_news_factor.py \
+python research/backtest/backtest_news_factor.py \
   --collection daily_symbol_features_company_matched_v2 \
   --factors avg_sentiment_5d quality_score \
   --horizons 20 60 --strategies top long_short
 
 # Run portfolio backtest (Top-N, net of transaction cost)
-python research/backtest_portfolio.py   # BACKTEST_HOLD_DAYS=20|60 env var
+python research/backtest/backtest_portfolio.py   # BACKTEST_HOLD_DAYS=20|60 env var
 ```
 
 ### Run Tests

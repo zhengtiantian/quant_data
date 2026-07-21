@@ -464,7 +464,7 @@ All 840,212 articles in `news_articles_company_matched_v2` tagged with:
 - Snorkel merge: `llm_sentiment_final`, `llm_disagreement`, `llm_label_model_probs` — 100%
 - Inter-model agreement rate 77.3%; mean sentiment +0.296 (overall positive bias)
 
-Deliverable: `research/llm_enrich_articles.py`, `research/snorkel_label_merge.py`
+Deliverable: `research/labeling/llm_enrich_articles.py`, `research/snorkel_label_merge.py`
 
 Resume framing:
 *"Enriched 840K financial news articles with two-pass LLM ensemble (Gemma +
@@ -496,7 +496,7 @@ Multi-horizon model results with LLM features (walk-forward, 100 symbols):
 
 IC increases monotonically with holding period; the 60d signal is strongest.
 
-Deliverable: `research/daily_symbol_features.py`, `research/train_baseline_models.py`
+Deliverable: `research/features/daily_symbol_features.py`, `research/models/train_baseline_models.py`
 
 ### 3.5.3 Dynamic holding period backtest ✅ Done 2026-05-22
 
@@ -515,7 +515,7 @@ Event-driven outperforms the fixed 20d baseline within 13.7 days (+1.40% vs +1.2
 Exit reasons: score_below_exit 69%, sentiment_reversal 17% (reasonable).
 2022/2024 remain weak years (macroeconomic regime shifts).
 
-Deliverable: `research/backtest_event_driven.py`
+Deliverable: `research/backtest/backtest_event_driven.py`
 
 ### 3.5.4 Multi-horizon label expansion ✅ Done 2026-05-22
 
@@ -524,7 +524,7 @@ Added to `daily_symbol_features_company_matched_v2`:
 - `excess_ret_10d/15d/30d/45d` — 87-88% coverage
 - Also fixed `load_feature_frame` projection in `backtest_news_factor.py`
 
-Deliverable: `research/daily_symbol_features.py`, `research/backtest_news_factor.py`
+Deliverable: `research/features/daily_symbol_features.py`, `research/backtest/backtest_news_factor.py`
 
 ### 3.5.5 Fine-tune small model for sentiment scoring
 
@@ -600,14 +600,14 @@ strength accuracy."*
 
 ### Existing
 
-- `research/daily_symbol_features.py`
+- `research/features/daily_symbol_features.py`
 - `research/company_match_rescore.py`
-- `research/backtest_news_factor.py`
-- `research/load_earnings_events.py`
+- `research/backtest/backtest_news_factor.py`
+- `research/features/load_earnings_events.py`
 - `research/load_benchmark_prices.py`
-- `research/train_baseline_models.py`
-- `news_collectors/gdelt/special_rules/slm_filter.py`
-- `news_collectors/gdelt/special_rules/slm_skills.py`
+- `research/models/train_baseline_models.py`
+- `collectors/news/gdelt/special_rules/slm_filter.py`
+- `collectors/news/gdelt/special_rules/slm_skills.py`
 
 ### Suggested Next Files
 
@@ -761,7 +761,7 @@ Signal IC at 60d = 0.059 on the 100-symbol universe is more credible than the 0.
   `inst_holding_pct_chg`, `retail_sent_score`, `macro_risk_on`, `macro_vix`, etc.)
 - Note: still using launchd, not Airflow (Stage 7 / 5.2.1 Airflow migration still pending)
 
-#### C.2 Risk metrics ✅ Done (`research/backtest_portfolio.py`)
+#### C.2 Risk metrics ✅ Done (`research/backtest/backtest_portfolio.py`)
 - Available: Sharpe ratio (annualized, 4% risk-free rate), max drawdown, win rate, annualized return vs SPY
 - 2026-06-16 validation results (full history 2015-2026, reusing `score_daily_signals.compute_score`):
   - 20d holding: Sharpe 0.84, annualized 25.8%, vs SPY Sharpe 0.54/12.1%
@@ -777,7 +777,7 @@ Signal IC at 60d = 0.059 on the 100-symbol universe is more credible than the 0.
 
 ### Advanced (second priority)
 
-#### C.4 Position tracking ✅ Done (`research/track_positions.py`)
+#### C.4 Position tracking ✅ Done (`research/signals/track_positions.py`)
 - `positions` collection records simulated holdings: `symbol`, `entry_date`, `entry_price`, `entry_score`,
   `entry_rank`, `days_held`, `current_return`/`exit_return`, `exit_trigger`
 - Idempotent: each run fully rebuilds state from `daily_signals` + `stock_prices_history`
@@ -793,7 +793,7 @@ Signal IC at 60d = 0.059 on the 100-symbol universe is more credible than the 0.
 - Daily `daily_signals` Top-N used to simulate entries; unrealized P&L updated daily with real prices
 - Total running days are still short; 3-6 month out-of-sample performance is accumulating (ongoing task, not one-time development)
 
-#### C.7 ETL data quality checks ✅ Baseline done (`research/data_quality_check.py`)
+#### C.7 ETL data quality checks ✅ Baseline done (`research/quality/data_quality_check.py`)
 - Existing checks: news volume, price freshness, feature freshness, key field NULL rate thresholds
   (`quality_score`/`full_ratio`/`close`/`past_ret_20d`), signal freshness
 - Integrated with scheduler to auto-run at 09:00 daily (`ENABLE_DATA_QUALITY_JOB`)
@@ -810,7 +810,7 @@ Signal IC at 60d = 0.059 on the 100-symbol universe is more credible than the 0.
   signals, no-symbol-overlap), `compute_regime_features` (all output columns, calm/high-VIX/SPY-trend)
 - Coverage: `score_daily_signals.py` 60%, `track_positions.py` 52%, `daily_symbol_features.py` 40%
 
-#### C.9 Factor analysis report ✅ Done (`research/factor_analysis.py`)
+#### C.9 Factor analysis report ✅ Done (`research/backtest/factor_analysis.py`)
 - Implemented: IC decay table (multi-horizon), year-by-year IC breakdown, SHAP feature importance
   (including LLM vs traditional factor contribution split)
 - Updated: long-short portfolio + year-by-year Sharpe/drawdown chart implemented in `factor_analysis.py` walk-forward section ✅
@@ -843,7 +843,7 @@ Stage 7 services running end-to-end (1 week)
 - In 2026 holdout, `macro_tnx` is the #2 ranked feature in LightGBM feature importance
 - `macro_risk_on`/`macro_vix_pctile_252d` integrated into `score_daily_signals.py` as
   regime multiplier (risk-on ×1.20, high VIX ×0.85) — H.2.1 baseline implemented
-- Deliverable: `macro_collector/collector.py`
+- Deliverable: `collectors/macro/collector.py`
 
 ### D.2 Alternative Data — Retail Sentiment ✅ Done 2026-06-16
 - Integrated StockTwits public API (no Reddit developer approval required, bypassing the registration rejection issue)
@@ -851,7 +851,7 @@ Stage 7 services running end-to-end (1 week)
   `retail_sentiment_divergence` (= retail_sent_score − avg_sentiment_3d)
 - Coverage starts from 2025-12 only, fill rate low (~3-4%), requires ongoing accumulation;
   2026-06-20 review: IC reversed from +0.09 to -0.10 (N still small, no conclusion yet, **weights not adjusted**)
-- Deliverable: `retail_collector/collector.py`
+- Deliverable: `collectors/retail/collector.py`
 
 ### D.3 Earnings filing text mining (10-K/10-Q) — Skipped
 - Reason: requires LLM to parse large volumes of long text; engineering effort is high, lower priority than other D items
@@ -862,7 +862,7 @@ Stage 7 services running end-to-end (1 week)
 - New factors: `analyst_buy_ratio`, `analyst_sell_ratio`, `analyst_consensus_score`,
   `analyst_buy_ratio_chg_1m`
 - Cross-sectional IC: `analyst_buy_ratio_chg_1m` 5d=+0.155 / 20d=+0.151, one of the cleanest signals in the D series
-- Deliverable: `analyst_collector/collector.py`
+- Deliverable: `collectors/analyst/collector.py`
 
 ### D.5 Options market signals — Skipped
 - Reason: CBOE PCR free historical data only goes back to 2019, cannot cover recent backtest window
@@ -879,14 +879,14 @@ Stage 7 services running end-to-end (1 week)
 - Cross-sectional IC: `inst_holding_pct_chg` 60d=**+0.198**, strongest single factor in the D series
 - In 2026 holdout, the single feature contributing most to LightGBM regression IC (IC=+0.337)
 - Integrated as `inst_outflow` exit trigger in `track_positions.py`
-- Deliverable: `inst_13f_collector/collector.py`
+- Deliverable: `collectors/inst_13f/collector.py`
 
 ### D.8 Pre-market / after-hours price signals ✅ Done 2026-06-16
 - yfinance 1-minute data (`prepost=True`), chunked into 7-day windows to avoid "8-day limit" error
 - New factors: `pm_gap`, `ah_gap`, `ah_volume_ratio` (`pm_volume_ratio` removed — yfinance pre-market volume field is always 0, cannot compute a valid ratio)
 - Cross-sectional IC: `ah_gap` 5d=**+0.227**, the strongest short-term signal in the D series
 - yfinance 1-minute history capped at 30 days; scheduler accumulates daily — as of 2026-06-20 there are 23 trading days
-- Deliverable: `premarket_collector/collector.py`
+- Deliverable: `collectors/premarket/collector.py`
 
 ### D-series end-to-end integration (2026-06-16 ~ 2026-06-20)
 All completed items are wired through the full pipeline:
@@ -1220,8 +1220,8 @@ StrategyService.java parses StrategySpec JSON:
   - horizon_days, lookback_years
     ↓
 Triggers Python subprocess or HTTP call:
-  research/backtest_portfolio.py  (signal-based strategies)
-  research/backtest_event_driven.py  (event-driven strategies)
+  research/backtest/backtest_portfolio.py  (signal-based strategies)
+  research/backtest/backtest_event_driven.py  (event-driven strategies)
     ↓
 Returns to UI: Sharpe, annualized return, max drawdown, hit rate
 ```
@@ -1240,7 +1240,7 @@ Returns to UI: Sharpe, annualized return, max drawdown, hit rate
 - Status: [ ] Pending (3-4 days)
   - `tools/llm_judge.py` — LLM judge (Claude API + local SLM fallback, TP/FP + fp_type + regex proposal)
   - `tools/rule_optimizer.py` — main loop (sample → judge → diagnose → propose → patch → repeat)
-  - `news_collectors/gdelt/special_rules/ambiguous_names.py` — patch loader added (merges `tools/rule_optimizer_patches.json` at init)
+  - `collectors/news/gdelt/special_rules/ambiguous_names.py` — patch loader added (merges `tools/rule_optimizer_patches.json` at init)
 
 ---
 

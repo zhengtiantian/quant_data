@@ -11,7 +11,7 @@ from typing import Dict, List
 import requests
 from pymongo import MongoClient
 
-from news_collectors.gdelt.special_rules.slm_filter import SLMFilter
+from collectors.news.gdelt.special_rules.slm_filter import SLMFilter
 
 
 @dataclass

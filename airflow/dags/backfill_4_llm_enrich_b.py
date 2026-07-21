@@ -37,7 +37,7 @@ with DAG(
 
     host_task(
         "llm_enrich_pass_b",
-        "research/llm_enrich_articles.py",
+        "research/labeling/llm_enrich_articles.py",
         extra_env={"SLM_API_URL": SLM_API_URL, "ENRICH_PASS": "B"},
         execution_timeout=timedelta(hours=6),
     )

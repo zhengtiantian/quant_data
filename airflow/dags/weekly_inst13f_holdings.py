@@ -36,6 +36,6 @@ with DAG(
 
     host_task(
         "inst_13f_holdings",
-        "inst_13f_collector/collector.py",
+        "collectors/inst_13f/collector.py",
         execution_timeout=timedelta(minutes=30),
     )

@@ -37,7 +37,7 @@ with DAG(
 
     host_task(
         "company_match",
-        "research/slm_company_match_v2.py",
+        "research/labeling/slm_company_match_v2.py",
         extra_env={
             "SLM_API_URL": SLM_API_URL,
             "DST_COLLECTION": "news_articles_company_matched_v2",

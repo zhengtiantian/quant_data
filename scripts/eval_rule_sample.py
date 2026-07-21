@@ -1,7 +1,7 @@
 from pymongo import MongoClient
 
-from news_collectors.gdelt.special_rules import RuleManager
-from news_collectors.gdelt.special_rules.slm_filter import get_slm_stats
+from collectors.news.gdelt.special_rules import RuleManager
+from collectors.news.gdelt.special_rules.slm_filter import get_slm_stats
 
 
 def main() -> None:

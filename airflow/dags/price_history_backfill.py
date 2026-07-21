@@ -32,6 +32,6 @@ with DAG(
 
     host_task(
         "price_history_backfill",
-        "stock_collector/price_collector/10y_1d_history_collector.py",
+        "collectors/stock/price/10y_1d_history_collector.py",
         execution_timeout=timedelta(hours=2),
     )

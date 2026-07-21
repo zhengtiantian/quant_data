@@ -31,19 +31,19 @@ with DAG(
 
     finnhub = host_task(
         "finnhub_news",
-        "news_collectors/finnhub/collector.py",
+        "collectors/news/finnhub/collector.py",
         execution_timeout=timedelta(minutes=10),
     )
 
     newsapi = host_task(
         "newsapi_news",
-        "news_collectors/newsapi/collector.py",
+        "collectors/news/newsapi/collector.py",
         execution_timeout=timedelta(minutes=10),
     )
 
     yahoo = host_task(
         "yahoo_news",
-        "news_collectors/yahoo/collector.py",
+        "collectors/news/yahoo/collector.py",
         execution_timeout=timedelta(minutes=10),
     )
 

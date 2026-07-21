@@ -34,6 +34,6 @@ with DAG(
 
     host_task(
         "news_validation_audit",
-        "research/news_validation_audit.py",
+        "research/quality/news_validation_audit.py",
         execution_timeout=timedelta(minutes=30),
     )

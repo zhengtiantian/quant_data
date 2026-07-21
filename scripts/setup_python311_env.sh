@@ -31,7 +31,7 @@ Activate with:
   source $VENV_DIR/bin/activate
 
 Collector example:
-  cd $QUANT_DATA_DIR/news_collectors/gdelt
+  cd $QUANT_DATA_DIR/collectors/news/gdelt
   source $VENV_DIR/bin/activate
   python historical_collector.py
 EOF

@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-import daily_symbol_features as dsf
+from research.features import daily_symbol_features as dsf
 
 
 # ── date helpers ──────────────────────────────────────────────────────────────

@@ -207,7 +207,7 @@ def configure_schedule() -> None:
         schedule.every(env_int("FINNHUB_JOB_MINUTES", 30)).minutes.do(
             run_script_once,
             "finnhub_news",
-            "news_collectors/finnhub/collector.py",
+            "collectors/news/finnhub/collector.py",
             env_int("FINNHUB_JOB_TIMEOUT", 600),
         )
 
@@ -215,7 +215,7 @@ def configure_schedule() -> None:
         schedule.every(env_int("NEWSAPI_JOB_MINUTES", 60)).minutes.do(
             run_script_once,
             "newsapi_news",
-            "news_collectors/newsapi/collector.py",
+            "collectors/news/newsapi/collector.py",
             env_int("NEWSAPI_JOB_TIMEOUT", 600),
         )
 
@@ -223,7 +223,7 @@ def configure_schedule() -> None:
         schedule.every(env_int("YAHOO_JOB_MINUTES", 60)).minutes.do(
             run_script_once,
             "yahoo_news",
-            "news_collectors/yahoo/collector.py",
+            "collectors/news/yahoo/collector.py",
             env_int("YAHOO_JOB_TIMEOUT", 600),
         )
 
@@ -231,7 +231,7 @@ def configure_schedule() -> None:
         schedule.every(env_int("GDELT_LIVE_JOB_MINUTES", 120)).minutes.do(
             run_script_once,
             "gdelt_live_news",
-            "news_collectors/gdelt/collector.py",
+            "collectors/news/gdelt/collector.py",
             env_int("GDELT_LIVE_JOB_TIMEOUT", 1200),
         )
 
@@ -239,7 +239,7 @@ def configure_schedule() -> None:
         schedule.every().day.at(os.getenv("DAILY_PRICE_JOB_TIME", "07:30")).do(
             run_script_once,
             "daily_price_quotes",
-            "stock_collector/price_collector/collector.py",
+            "collectors/stock/price/collector.py",
             env_int("DAILY_PRICE_JOB_TIMEOUT", 1800),
         )
 
@@ -247,7 +247,7 @@ def configure_schedule() -> None:
         schedule.every().day.at(os.getenv("PRICE_HISTORY_BACKFILL_JOB_TIME", "06:30")).do(
             run_script_once,
             "historical_daily_prices",
-            "stock_collector/price_collector/10y_1d_history_collector.py",
+            "collectors/stock/price/10y_1d_history_collector.py",
             env_int("PRICE_HISTORY_BACKFILL_JOB_TIMEOUT", 7200),
         )
 
@@ -255,7 +255,7 @@ def configure_schedule() -> None:
         schedule.every().day.at(os.getenv("DAILY_GDELT_BACKFILL_JOB_TIME", "05:15")).do(
             ensure_long_running,
             "gdelt_backfill",
-            "news_collectors/gdelt/historical_collector.py",
+            "collectors/news/gdelt/historical_collector.py",
             {
                 "RESET_ALL_RUNNING_ON_START": "false",
                 "USE_MYSQL_BATCH_QUEUE": os.getenv("USE_MYSQL_BATCH_QUEUE", "true"),
@@ -266,7 +266,7 @@ def configure_schedule() -> None:
         schedule.every().day.at(os.getenv("PREMARKET_JOB_TIME", "07:45")).do(
             run_script_once,
             "premarket_signals",
-            "premarket_collector/collector.py",
+            "collectors/premarket/collector.py",
             env_int("PREMARKET_JOB_TIMEOUT", 900),
             {"PREMARKET_PERIOD": os.getenv("PREMARKET_PERIOD", "5d")},
         )
@@ -275,7 +275,7 @@ def configure_schedule() -> None:
         schedule.every().sunday.at(os.getenv("INST13F_JOB_TIME", "06:00")).do(
             run_script_once,
             "inst_13f_holdings",
-            "inst_13f_collector/collector.py",
+            "collectors/inst_13f/collector.py",
             env_int("INST13F_JOB_TIMEOUT", 1800),
         )
 
@@ -283,7 +283,7 @@ def configure_schedule() -> None:
         schedule.every().day.at(os.getenv("ANALYST_JOB_TIME", "07:48")).do(
             run_script_once,
             "analyst_consensus",
-            "analyst_collector/collector.py",
+            "collectors/analyst/collector.py",
             env_int("ANALYST_JOB_TIMEOUT", 600),
         )
 
@@ -291,7 +291,7 @@ def configure_schedule() -> None:
         schedule.every().day.at(os.getenv("RETAIL_JOB_TIME", "20:30")).do(
             run_script_once,
             "retail_sentiment",
-            "retail_collector/collector.py",
+            "collectors/retail/collector.py",
             env_int("RETAIL_JOB_TIMEOUT", 600),
         )
 
@@ -299,7 +299,7 @@ def configure_schedule() -> None:
         schedule.every().day.at(os.getenv("MACRO_JOB_TIME", "07:50")).do(
             run_script_once,
             "macro_indicators",
-            "macro_collector/collector.py",
+            "collectors/macro/collector.py",
             env_int("MACRO_JOB_TIMEOUT", 600),
             {"MACRO_PERIOD": os.getenv("MACRO_PERIOD", "1mo")},
         )
@@ -308,7 +308,7 @@ def configure_schedule() -> None:
         schedule.every().day.at(os.getenv("DAILY_FEATURE_JOB_TIME", "08:00")).do(
             run_script_once,
             "daily_symbol_features",
-            "research/daily_symbol_features.py",
+            "research/features/daily_symbol_features.py",
             env_int("DAILY_FEATURE_JOB_TIMEOUT", 7200),
             {
                 "FEATURE_OUTPUT_COLLECTION": os.getenv("FEATURE_OUTPUT_COLLECTION", "daily_symbol_features"),
@@ -320,7 +320,7 @@ def configure_schedule() -> None:
         schedule.every().day.at(os.getenv("DAILY_SIGNAL_JOB_TIME", "08:30")).do(
             run_script_once,
             "score_daily_signals",
-            "research/score_daily_signals.py",
+            "research/signals/score_daily_signals.py",
             env_int("DAILY_SIGNAL_JOB_TIMEOUT", 600),
             {"SIGNAL_TOP_N": os.getenv("SIGNAL_TOP_N", "10")},
         )
@@ -329,7 +329,7 @@ def configure_schedule() -> None:
         schedule.every().day.at(os.getenv("DAILY_POSITION_JOB_TIME", "08:40")).do(
             run_script_once,
             "track_positions",
-            "research/track_positions.py",
+            "research/signals/track_positions.py",
             env_int("DAILY_POSITION_JOB_TIMEOUT", 600),
         )
 
@@ -337,7 +337,7 @@ def configure_schedule() -> None:
         schedule.every().day.at(os.getenv("DATA_QUALITY_JOB_TIME", "09:00")).do(
             run_script_once,
             "data_quality_check",
-            "research/data_quality_check.py",
+            "research/quality/data_quality_check.py",
             env_int("DATA_QUALITY_JOB_TIMEOUT", 300),
         )
 
@@ -345,7 +345,7 @@ def configure_schedule() -> None:
         schedule.every().day.at(os.getenv("DAILY_BACKTEST_JOB_TIME", "08:45")).do(
             run_script_once,
             "backtest_portfolio",
-            "research/backtest_portfolio.py",
+            "research/backtest/backtest_portfolio.py",
             env_int("DAILY_BACKTEST_JOB_TIMEOUT", 1800),
         )
 
@@ -353,7 +353,7 @@ def configure_schedule() -> None:
         schedule.every(env_int("GDELT_BACKFILL_CHECK_MINUTES", 30)).minutes.do(
             ensure_long_running,
             "gdelt_backfill",
-            "news_collectors/gdelt/historical_collector.py",
+            "collectors/news/gdelt/historical_collector.py",
             {
                 "RESET_ALL_RUNNING_ON_START": "false",
                 "USE_MYSQL_BATCH_QUEUE": os.getenv("USE_MYSQL_BATCH_QUEUE", "true"),
@@ -363,28 +363,28 @@ def configure_schedule() -> None:
 
 def run_startup_jobs() -> None:
     if env_bool("RUN_STARTUP_INCREMENTAL_JOBS", "false"):
-        run_script_once("finnhub_news", "news_collectors/finnhub/collector.py", env_int("FINNHUB_JOB_TIMEOUT", 600))
-        run_script_once("newsapi_news", "news_collectors/newsapi/collector.py", env_int("NEWSAPI_JOB_TIMEOUT", 600))
-        run_script_once("yahoo_news", "news_collectors/yahoo/collector.py", env_int("YAHOO_JOB_TIMEOUT", 600))
+        run_script_once("finnhub_news", "collectors/news/finnhub/collector.py", env_int("FINNHUB_JOB_TIMEOUT", 600))
+        run_script_once("newsapi_news", "collectors/news/newsapi/collector.py", env_int("NEWSAPI_JOB_TIMEOUT", 600))
+        run_script_once("yahoo_news", "collectors/news/yahoo/collector.py", env_int("YAHOO_JOB_TIMEOUT", 600))
 
     if env_bool("RUN_STARTUP_FEATURE_BUILD", "false"):
         run_script_once(
             "daily_symbol_features",
-            "research/daily_symbol_features.py",
+            "research/features/daily_symbol_features.py",
             env_int("DAILY_FEATURE_JOB_TIMEOUT", 7200),
         )
 
     if env_bool("RUN_STARTUP_PRICE_HISTORY_BACKFILL", "true"):
         run_script_once(
             "historical_daily_prices",
-            "stock_collector/price_collector/10y_1d_history_collector.py",
+            "collectors/stock/price/10y_1d_history_collector.py",
             env_int("PRICE_HISTORY_BACKFILL_JOB_TIMEOUT", 7200),
         )
 
     if env_bool("RUN_STARTUP_GDELT_BACKFILL", "true"):
         ensure_long_running(
             "gdelt_backfill",
-            "news_collectors/gdelt/historical_collector.py",
+            "collectors/news/gdelt/historical_collector.py",
             {
                 "RESET_ALL_RUNNING_ON_START": "false",
                 "USE_MYSQL_BATCH_QUEUE": os.getenv("USE_MYSQL_BATCH_QUEUE", "true"),

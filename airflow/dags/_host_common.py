@@ -48,6 +48,11 @@ GDELT_ENV = {
     "GKG_TMP_DIR": "/Volumes/Data4T/gdelt_tmp",
     "USE_MYSQL_BATCH_QUEUE": "true",
     "RESET_ALL_RUNNING_ON_START": "false",
+    # M5 Pro/48G local LM Studio measured ~8-12 concurrent request ceiling
+    # after raising LM Studio's max-concurrency setting (was ~2 before).
+    # 6 leaves headroom since each worker's internal thread pool also
+    # issues multiple concurrent SLM calls on its own.
+    "BATCH_WORKERS": "6",
 }
 
 

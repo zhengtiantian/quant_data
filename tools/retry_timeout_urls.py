@@ -16,7 +16,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from pymongo import MongoClient, UpdateOne
-from news_collectors.gdelt.historical_collector import (
+from collectors.news.gdelt.historical_collector import (
     _extract_article_payload,
     _build_article_base_data,
     MONGO_URI,

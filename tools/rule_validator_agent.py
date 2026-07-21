@@ -11,7 +11,7 @@ from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 project_root = "/Users/xiz/Quant_trade/quant_data"
-collector_dir = os.path.join(project_root, "news_collectors/gdelt")
+collector_dir = os.path.join(project_root, "collectors/news/gdelt")
 for path in [project_root, collector_dir]:
     if path not in sys.path:
         sys.path.append(path)
@@ -28,7 +28,7 @@ except ImportError as e:
 
 BASE_DIR       = "/Volumes/Data24T/docker-volumes/gdelt_cache/files"
 BASE_DIR2      = "/Volumes/Data6T/gdelt_cache/files"   # odd batches
-RULES_DIR      = os.path.join(project_root, "news_collectors/gdelt/company_rules")
+RULES_DIR      = os.path.join(project_root, "collectors/news/gdelt/company_rules")
 FILES_PER_YEAR = 30    # files sampled per calendar year (10yr × 30 = ~300 total)
 FETCH_WORKERS  = 6
 MAX_FETCH      = 10   # Max article body fetches per symbol

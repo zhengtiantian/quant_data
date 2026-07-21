@@ -39,7 +39,7 @@ with DAG(
     BashOperator(
         task_id="train_baseline_models",
         bash_command=(
-            f"cd {ROOT} && {PYTHON} {ROOT}/research/train_baseline_models.py"
+            f"cd {ROOT} && {PYTHON} {ROOT}/research/models/train_baseline_models.py"
             " --collection daily_symbol_features"
         ),
         env={

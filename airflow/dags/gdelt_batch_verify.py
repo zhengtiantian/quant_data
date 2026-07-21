@@ -41,7 +41,7 @@ with DAG(
 
     host_task(
         "verify_batches",
-        "news_collectors/gdelt/historical_collector.py",
+        "collectors/news/gdelt/historical_collector.py",
         extra_env={**GDELT_ENV, "VERIFY_MODE": "true"},
         execution_timeout=timedelta(hours=1),
     )

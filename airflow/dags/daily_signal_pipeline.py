@@ -33,33 +33,33 @@ with DAG(
 
     daily_price = host_task(
         "daily_price",
-        "stock_collector/price_collector/collector.py",
+        "collectors/stock/price/collector.py",
         execution_timeout=timedelta(minutes=30),
     )
 
     premarket = host_task(
         "premarket_signals",
-        "premarket_collector/collector.py",
+        "collectors/premarket/collector.py",
         extra_env={"PREMARKET_PERIOD": "5d"},
         execution_timeout=timedelta(minutes=20),
     )
 
     analyst = host_task(
         "analyst_consensus",
-        "analyst_collector/collector.py",
+        "collectors/analyst/collector.py",
         execution_timeout=timedelta(minutes=20),
     )
 
     macro = host_task(
         "macro_indicators",
-        "macro_collector/collector.py",
+        "collectors/macro/collector.py",
         extra_env={"MACRO_PERIOD": "1mo"},
         execution_timeout=timedelta(minutes=20),
     )
 
     features = host_task(
         "daily_features",
-        "research/daily_symbol_features.py",
+        "research/features/daily_symbol_features.py",
         extra_env={
             "FEATURE_OUTPUT_COLLECTION": "daily_symbol_features",
             "FEATURE_LLM_COLLECTION": "news_articles_company_matched_v2",
@@ -69,26 +69,26 @@ with DAG(
 
     signals = host_task(
         "score_signals",
-        "research/score_daily_signals.py",
+        "research/signals/score_daily_signals.py",
         extra_env={"SIGNAL_TOP_N": "10"},
         execution_timeout=timedelta(minutes=15),
     )
 
     positions = host_task(
         "track_positions",
-        "research/track_positions.py",
+        "research/signals/track_positions.py",
         execution_timeout=timedelta(minutes=15),
     )
 
     backtest = host_task(
         "backtest_portfolio",
-        "research/backtest_portfolio.py",
+        "research/backtest/backtest_portfolio.py",
         execution_timeout=timedelta(minutes=30),
     )
 
     data_quality = host_task(
         "data_quality_check",
-        "research/data_quality_check.py",
+        "research/quality/data_quality_check.py",
         execution_timeout=timedelta(minutes=10),
     )
 

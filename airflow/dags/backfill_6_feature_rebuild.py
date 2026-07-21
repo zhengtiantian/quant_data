@@ -33,7 +33,7 @@ with DAG(
 
     host_task(
         "feature_rebuild",
-        "research/daily_symbol_features.py",
+        "research/features/daily_symbol_features.py",
         extra_env={
             "FEATURE_OUTPUT_COLLECTION": "daily_symbol_features",
             "FEATURE_LLM_COLLECTION": "news_articles_company_matched_v2",

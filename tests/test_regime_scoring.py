@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-import score_daily_signals as sds
+from research.signals import score_daily_signals as sds
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────

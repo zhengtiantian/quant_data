@@ -41,7 +41,7 @@ with DAG(
 
     BashOperator(
         task_id="gdelt_collect",
-        bash_command=f"cd {ROOT} && {PYTHON} {ROOT}/news_collectors/gdelt/historical_collector.py",
+        bash_command=f"cd {ROOT} && {PYTHON} {ROOT}/collectors/news/gdelt/historical_collector.py",
         env={
             **GDELT_ENV,
             "START_DATE": "{{ dag_run.conf.get('start_date', '2016-01-01') }}",

@@ -1,0 +1,175 @@
+import os
+import requests
+from datetime import datetime, UTC
+from pathlib import Path
+from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+from pymongo import MongoClient, errors
+
+
+# =========================================================
+# 1. Load env
+# =========================================================
+
+CURRENT = Path(__file__).resolve()
+ROOT = CURRENT.parents[3]
+GLOBAL_ENV = ROOT / ".env"
+
+load_dotenv(GLOBAL_ENV, override=False)
+print(f"Loaded GLOBAL .env: {GLOBAL_ENV}")
+
+MONGO_URI = os.getenv("MONGO_URI")
+
+TARGET_URL = "https://finance.yahoo.com/topic/stock-market-news/"
+
+
+# =========================================================
+# 2. US stock keywords + A/B level classifier
+# =========================================================
+
+US_STOCK_KEYWORDS = [
+    "nasdaq", "dow jones", "s&p", "s&p500", "sp500",
+    "federal reserve", "fed", "wall street",
+    "us stocks", "u.s. stocks", "stock market",
+    "rate cut", "rate hike", "inflation", "treasury yield",
+    "bond yield",
+    "microsoft", "google", "alphabet", "amazon",
+    "meta", "facebook", "apple", "tesla", "nvidia", "amd", "intel",
+    "goldman", "jpmorgan", "citigroup"
+]
+
+A_LEVEL_KEYWORDS = [
+    "federal reserve", "fed", "rate hike", "rate cut",
+    "inflation", "cpi", "ppi", "treasury yield",
+    "market crash", "selloff", "plunge", "rally",
+    "earnings", "forecast", "guidance", "revenue",
+    "lawsuit", "sec investigation", "antitrust",
+    "nvidia", "apple", "google", "tesla"
+]
+
+
+def is_us_stock_news(text: str):
+    text = text.lower()
+    return any(k in text for k in US_STOCK_KEYWORDS)
+
+
+def classify_impact(text: str):
+    text = text.lower()
+    for k in A_LEVEL_KEYWORDS:
+        if k in text:
+            return "A"
+    return "B"
+
+
+# =========================================================
+# 3. Yahoo scraper (HTML fallback version)
+# =========================================================
+
+def fetch_yahoo_news():
+    print(f"\nRequesting Yahoo Finance: {TARGET_URL}")
+
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Accept-Language": "en-US,en;q=0.9"
+    }
+
+    resp = requests.get(TARGET_URL, headers=headers)
+    if resp.status_code != 200:
+        print(f"❌ HTTP Error {resp.status_code}")
+        return []
+
+    soup = BeautifulSoup(resp.text, "html.parser")
+
+    raw_articles = []
+
+    for a in soup.find_all("a"):
+        h3 = a.find("h3")
+        if not h3:
+            continue
+
+        title = h3.get_text(strip=True)
+        href = a.get("href")
+
+        if not title or not href:
+            continue
+
+        if href.startswith("/"):
+            full_url = "https://finance.yahoo.com" + href
+        else:
+            full_url = href
+
+        raw_articles.append({
+            "title": title,
+            "url": full_url,
+            "publishedAt": None,
+            "source": "Yahoo Finance"
+        })
+
+    # =========================================================
+    # Filter US stock news + A/B classification
+    # =========================================================
+    filtered = []
+    for art in raw_articles:
+        text = art["title"]
+
+        if not is_us_stock_news(text):
+            continue
+
+        art["impact"] = classify_impact(text)
+        filtered.append(art)
+
+    return filtered
+
+
+# =========================================================
+# 4. Save to MongoDB
+# =========================================================
+
+def save_to_mongo(articles):
+    if not MONGO_URI:
+        print("⚠️ No MONGO_URI. Skipping save.")
+        return
+
+    client = MongoClient(MONGO_URI)
+    col = client["quant_data"]["news_articles"]
+
+    docs = []
+    for a in articles:
+        docs.append({
+            "source": "yahoo",
+            "title": a["title"],
+            "url": a["url"],
+            "impact": a["impact"],        # ★ Added A/B classification
+            "publishedAt": a["publishedAt"],
+            "collectedAt": datetime.now(UTC).isoformat(),
+            "language": "en",
+            "meta": {"collector": "yahoo.html", "version": "2.0"}
+        })
+
+    if docs:
+        try:
+            result = col.insert_many(docs, ordered=False)
+            print(f"Inserted {len(result.inserted_ids)} Yahoo news into MongoDB")
+        except errors.BulkWriteError as exc:
+            details = getattr(exc, "details", {}) or {}
+            inserted = int(details.get("nInserted", 0) or 0)
+            write_errors = details.get("writeErrors", [])
+            non_dup_errors = [err for err in write_errors if err.get("code") != 11000]
+            duplicate_count = len(write_errors) - len(non_dup_errors)
+            print(f"Inserted {inserted} Yahoo news into MongoDB (duplicates skipped: {duplicate_count})")
+            if non_dup_errors:
+                raise
+
+
+# =========================================================
+# 5. Main
+# =========================================================
+
+if __name__ == "__main__":
+    articles = fetch_yahoo_news()
+
+    print(f"\nFetched (US stock filtered): {len(articles)}")
+    for i, a in enumerate(articles[:10], 1):
+        print(f"{i}. ({a['impact']}) {a['title']}")
+
+    save_to_mongo(articles)
