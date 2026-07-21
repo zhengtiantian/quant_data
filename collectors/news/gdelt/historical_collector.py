@@ -1242,11 +1242,12 @@ def get_gkg_file_urls(years_back, max_files=None):
     lines = load_masterfilelist()
     urls = []
     
-    # Force collection starting from 2016-01-01
-    start_dt = datetime(2016, 1, 1)
+    # Force collection starting from 2018-01-01 (2016-2017 intentionally skipped: too old,
+    # low value for news-driven models; batch_id 1 now corresponds to 2018-01-01)
+    start_dt = datetime(2018, 1, 1)
     end_dt = datetime.utcnow()
-    
-    print(f"📅 Generating URL list from 2016-01-01 to {end_dt.date()}...")
+
+    print(f"📅 Generating URL list from 2018-01-01 to {end_dt.date()}...")
     
     for line in lines:
         if ".gkg.csv.zip" not in line:
@@ -1269,7 +1270,7 @@ def get_gkg_file_urls(years_back, max_files=None):
     _rebuild_filename_to_batch(urls)
 
     if urls:
-        print(f"✅ Sorted {len(urls)} GKG files chronologically starting from 2016.")
+        print(f"✅ Sorted {len(urls)} GKG files chronologically starting from 2018.")
 
     return urls
 
