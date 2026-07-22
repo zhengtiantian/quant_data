@@ -1,5 +1,5 @@
 """
-Backfill step 1/5: GDELT collection + SLM company match (host-based, merged).
+Backfill step 1/2: GDELT collection + SLM company match (host-based, merged).
 
 Schedule: None (manual trigger only). Two chained tasks:
     gdelt_collect >> company_match
@@ -35,7 +35,7 @@ default_args = {
 with DAG(
     dag_id="backfill_1_collect_and_match",
     default_args=default_args,
-    description="Backfill step 1/5: GDELT collection + SLM company match (manual, standalone)",
+    description="Backfill step 1/2: GDELT collection + SLM company match (manual, standalone)",
     schedule=None,
     start_date=datetime(2024, 1, 1),
     catchup=False,
