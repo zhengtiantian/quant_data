@@ -1,8 +1,15 @@
-# AI-Driven Equity Signal Platform
+# quant_data — Research & ML Pipeline
 
 [![Tests](https://github.com/zhengtiantian/quant_data/actions/workflows/test.yml/badge.svg)](https://github.com/zhengtiantian/quant_data/actions/workflows/test.yml)
 
-An end-to-end quantitative research platform that processes financial news through LLM pipelines to generate daily equity trading signals across 103 stocks.
+The data and machine-learning half of the [AI-Driven Equity Signal
+Platform](https://github.com/zhengtiantian/ai-equity-signal-platform): it collects financial
+news, labels it with a dual-LLM pipeline, engineers features, trains the ranking models, and
+writes the daily signals that the rest of the platform serves.
+
+Serving (REST API, dashboard, AI assistant, MCP) lives in the sibling repos — see the
+[platform README](https://github.com/zhengtiantian/ai-equity-signal-platform) for the whole
+system and the cross-repo roadmap.
 
 ## Key Results
 
@@ -16,7 +23,8 @@ An end-to-end quantitative research platform that processes financial news throu
 | Best single-factor cross-sectional IC | **+0.227** (`ah_gap`, 5d, after-hours price gap) |
 | Strongest 60d-horizon factor | **+0.198** (`inst_holding_pct_chg`, institutional 13F QoQ change) |
 | 2026 holdout model IC (LightGBM, all features) | **0.73** vs ~0.05 historical baseline |
-| Platform services | 13 active (11 Docker containers + 2 host processes) |
+| Feature store | 189K+ rows · 103 symbols × 7 return horizons |
+| Airflow DAGs owned by this repo | 10 (7 scheduled + 3 manual) |
 
 *Net Sharpe includes a transaction cost model: 5bps commission + 10–30bps liquidity-tiered slippage round-trip, and excludes symbols with <$5M 20d avg dollar volume. See `research/backtest/backtest_portfolio.py`.*
 
@@ -83,24 +91,17 @@ An end-to-end quantitative research platform that processes financial news throu
                            │ daily signals
                            ▼
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        SERVING / PLATFORM LAYER                      │
+│   HANDOFF — this repo ends here; serving lives in sibling repos      │
 │                                                                       │
-│  Kafka ──▶ Signal Distribution ──▶ Alert / Position Tracking        │
-│                                                                       │
-│  Spring Boot REST API (Keycloak JWT auth)                            │
-│       │                                                               │
-│       ▼                                                               │
-│  React UI Dashboard                                                  │
-│  (signal scores │ portfolio tracking │ trade alerts)                │
-│                                                                       │
-│  quant_ai (RAG + Local LLM) ──▶ natural language stock Q&A          │
+│   daily_signals + daily_symbol_features (MongoDB)                    │
+│        └──▶ quant_api (REST + Kafka) ──▶ quant_ui / quant_ai / MCP   │
 └─────────────────────────────────────────────────────────────────────┘
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │                       ORCHESTRATION LAYER                            │
 │                                                                       │
-│  Apache Airflow, host-based scheduler (launchd-managed) — 14 DAGs   │
+│  Apache Airflow, host-based scheduler (launchd-managed) — 10 DAGs   │
 │                                                                       │
 │  Scheduled (7):                                                      │
 │  ┌─────────────────────────────────────────────────────────┐        │
@@ -113,12 +114,13 @@ An end-to-end quantitative research platform that processes financial news throu
 │  │ 07:00 Sun  weekly_model_training  (Ridge+LightGBM CV)     │        │
 │  └─────────────────────────────────────────────────────────┘        │
 │                                                                       │
-│  Manual / on-demand (7) — full-history news backfill, split into    │
-│  independently-triggerable steps + a quality-audit tool:            │
+│  Manual / on-demand (3) — full-history news backfill in two         │
+│  chained stages + a quality-audit tool:                             │
 │  ┌─────────────────────────────────────────────────────────┐        │
-│  │ backfill_1_gdelt_collect → backfill_2_company_match →     │        │
-│  │   backfill_3/4_llm_enrich_a/b → backfill_5_snorkel_merge  │        │
-│  │   → backfill_6_feature_rebuild                            │        │
+│  │ backfill_1_collect_and_match                              │        │
+│  │   GDELT collect ⟶ SLM company match                       │        │
+│  │ backfill_2_enrich_and_features                            │        │
+│  │   LLM pass A ⟶ pass B ⟶ label merge ⟶ feature rebuild     │        │
 │  │ quant_news_validation (relevance/quality audit report)   │        │
 │  └─────────────────────────────────────────────────────────┘        │
 └─────────────────────────────────────────────────────────────────────┘
@@ -141,19 +143,14 @@ An end-to-end quantitative research platform that processes financial news throu
 ### Infrastructure
 | Component | Technology |
 |-----------|-----------|
-| Orchestration | Apache Airflow 2.10, host-based scheduler (launchd-managed) — 14 production DAGs |
-| Message queue | Apache Kafka 3.7 |
-| Database | MongoDB 6.0, MySQL 8.0 |
-| Auth | Keycloak |
+| Orchestration | Apache Airflow 2.10, host-based scheduler (launchd-managed) — 10 production DAGs |
+| Database | MongoDB 6.0 (articles, features, signals), MySQL 8.0 (GDELT batch queue) |
+| Distributed work | MySQL-backed task queue — multi-machine GDELT workers, crash-safe retry, idempotent upserts |
 | Containerization | Docker |
 
-### Backend / Frontend
-| Component | Technology |
-|-----------|-----------|
-| REST API | Spring Boot 3, Java 21 |
-| Auth | Keycloak JWT + RBAC |
-| Frontend | React + TypeScript + Vite |
-| AI assistant | Python FastAPI + RAG + LM Studio |
+> Serving-side technology (Spring Boot API, React dashboard, Keycloak, Kafka, quant_ai, MCP)
+> belongs to the sibling repos — see the
+> [platform README](https://github.com/zhengtiantian/ai-equity-signal-platform).
 
 ---
 
@@ -249,27 +246,15 @@ LightGBM trained on 2016–2025, evaluated on 2026 holdout (all features incl. D
 ## Getting Started
 
 ### Prerequisites
-- Docker Desktop (48GB+ RAM recommended — all LLMs run via LM Studio)
 - Python 3.11+
-- [LM Studio](https://lmstudio.ai/) with the following models loaded:
-  - `gemma3:4b` — news labeling Pass A
-  - `qwen3:4b` — news labeling Pass B
-  - `qwen3.5-9b-mlx` — quant_ai chat assistant
-  - `nomic-embed-text` — quant_ai RAG embeddings
+- MongoDB and MySQL reachable — start them from the platform repo (`cd quant_docker && docker compose up -d mongodb mysql`)
+- [LM Studio](https://lmstudio.ai/) with the labeling models loaded:
+  - `gemma-4-e4b-it-mlx` — news labeling pass A
+  - `qwen3.5-9b-mlx` — news labeling pass B
+  - `qwen3.5-4b-mlx` — SLM company match / relevance filter
 
-### Start Platform
-
-```bash
-cd quant_docker
-docker compose up -d
-```
-
-Services available at:
-- **quant_ui**: http://localhost:18080
-- **quant_api**: http://localhost:18081
-- **Airflow**: http://localhost:15060
-- **MLflow**: http://localhost:15050
-- **Kafka UI**: http://localhost:15070
+Bringing up the whole platform (API, dashboard, Airflow, MLflow, Kafka) is covered in the
+[platform README](https://github.com/zhengtiantian/ai-equity-signal-platform).
 
 ### Run Research Pipeline
 
@@ -307,61 +292,8 @@ cd quant_data
 
 ## Roadmap
 
-### Completed
-- [x] **D.1/D.2/D.4/D.7/D.8** Alt-data research layer (macro, retail, analyst, 13F, premarket)
-- [x] **H.1** Transaction cost model (commission + liquidity-tiered slippage)
-- [x] **H.2** Dynamic 4-regime weight switching (RISK_ON / NEUTRAL / STRESSED / RISK_OFF)
-- [x] **H.3** Volatility-adaptive stop-loss (2×vol_20d, clamped 4–12%) + rolling OOS IC monitor
-- [x] **C.1** Daily signal automation (launchd production scheduler)
-- [x] **C.4/C.5** Paper-trading position tracker + exit alerts
-- [x] **C.7/C.9** Data quality checks + factor analysis report (IC decay, SHAP)
-- [x] **C.8** ETL unit tests — 90 tests, CI-enforced via GitHub Actions
-- [x] **E.2** CI/CD GitHub Actions — auto-run tests on every push
-- [x] **E.7** Root README + Mermaid architecture diagram
-
-### Signal & Quant Research
-- [ ] **H.4** Rolling signal quality monitor — dashboard view of OOS IC trend over time
-- [ ] **B.1** Long-short portfolio enhancement — beta neutralization, sector exposure limits
-- [ ] **Stage 7** Airflow + Kafka end-to-end verified — replace launchd with Airflow DAGs in production
-
-### Live Trading
-- [ ] **G.1** Broker API integration (Alpaca) — connect existing signals to real order execution with pre-trade risk guardrails (max position 5%, daily loss kill-switch, fill reconciliation); Stage 1: paper account → Stage 2: live with small capital
-
-### AI Engineering — LLM / RAG
-- [ ] **F.2** RAG news search (Qdrant) — replace MongoDB full-scan with vector similarity search for quant_ai
-- [ ] **F.5** FinBERT fine-tuning — replace dual-LLM labeling with a single fine-tuned model (~200× inference speedup)
-- [ ] **F.10** Strategy Studio → backtest execution — wire the existing natural-language strategy UI to `backtest_portfolio.py` so generated strategies produce real Sharpe / drawdown results
-- [ ] **F.11** News pre-filter SLM — lightweight binary classifier (distilbert) before dual-LLM pass; eliminates ~70% irrelevant GDELT articles
-- [ ] **F.12** Signal explanation generation — SLM generates a 2-sentence "why this stock scored high" explanation for each top signal; displayed inline in SignalsPanel
-- [ ] **F.13** Morning briefing agent — 07:00 daily pre-market summary for held positions: overnight news, regime, exit warnings
-- [ ] **F.14** Earnings surprise prediction — in the 10-day pre-earnings window, LLM aggregates news sentiment + analyst consensus → beat/miss probability as a new factor
-- [ ] **F.15** SEC EDGAR + earnings transcript RAG — 10-K/10-Q risk sections and earnings call transcripts embedded in Qdrant; natural language queries on filing content
-- [ ] **F.19** LLM factor hypothesis generator — prompt LLM with current IC table + failure modes → suggests new factor ideas for human review
-
-### AI Engineering — Agents
-- [x] **F.21** Single-agent ReAct research loop — hand-written tool-calling loop on local qwen3.5-9b; read-only platform tools through `quant_api /api/agent-data/*` with mongo fallback; guardrails (per-step dedupe, cross-step cache, max-steps cap, thinking-model content fallback) covered by unit tests; SSE streaming into the React "AI Agent" tab
-- [ ] **F.4** Multi-agent research assistant — sentiment/fundamental/technical specialist agents feeding an orchestrator (extends the shipped F.21 loop; LangGraph optional)
-- [ ] **F.8** Active learning agent — surface low-confidence LLM labels for human review; close the annotation feedback loop
-- [ ] **F.9** Rule optimization agent — iterative self-improving loop: sample → LLM judge → diagnose FP/FN → modify rules (🟡 code written, not yet tested)
-- [ ] **F.16** Real-time news monitoring agent — 30-minute polling of NewsAPI for held positions; instant alert on sentiment spike or negative event cluster
-- [ ] **F.17** Portfolio Manager Agent — LangGraph 2-node agent reads daily signals + positions + regime → structured add/reduce/hold recommendation
-- [ ] **F.18** Backtest reflection agent — auto-diagnoses weak-year IC failures (2022/2024) and generates a hypothesis report
-- [ ] **F.6** Rule validator ReAct agent — LLM-powered interactive rule debugging loop
-- [ ] **F.7** Airflow adaptive scheduling agent — dynamically adjust collection windows based on data quality metrics
-
-### MCP Integration
-- [x] **I.1** quant_mcp_server — six read-only MCP tools (news sentiment, features, ranked signals, positions, performance, universe) over stdio, served through the `quant_api` layer
-- [x] **I.2** Claude Desktop integration — registered in `claude_desktop_config.json`, verified end-to-end over the real MCP protocol
-- [ ] **I.3** Alpaca order execution via MCP — extend MCP server with order tools so LLM agents can place/cancel orders through the same interface (pre-trade guardrails enforced server-side)
-- [ ] **I.4** External data MCP tools — wrap Finnhub, SEC EDGAR, yfinance as MCP tools so agents autonomously decide what data to fetch
-- [ ] **I.5** MCP inter-service communication — replace quant_ai → quant_api REST calls with MCP protocol for dynamic tool discovery
-
-### Platform & Infrastructure
-- [ ] **E.6** WebSocket real-time push — stream live signal scores to the React dashboard without polling
-- [ ] **E.9** UI intraday price chart — TradingView Lightweight Charts + Alpaca bars API; entry/stop-loss overlay on each position; no hourly data stored in own DB
-- [ ] **E.4** Kubernetes configuration — replace Docker Compose with K8s manifests for production deployment
-
-### Stock Universe
-- [ ] **G.2** Phase 2 expansion — energy/materials (XOM, CVX, NEE, LIN, APD); Phase 3 international ADRs (BABA, JD, PDD, SE); Phase 4 REITs/financials
-
-See [PROJECT_PLAN.md](PROJECT_PLAN.md) for detailed specs and effort estimates per item.
+The roadmap is maintained once, at the platform level, because most items span several repos.
+See the [platform README](https://github.com/zhengtiantian/ai-equity-signal-platform#roadmap)
+for the item list and
+[PROJECT_PLAN.md](https://github.com/zhengtiantian/ai-equity-signal-platform/blob/main/PROJECT_PLAN.md)
+for the detailed spec and effort estimate behind each ID.

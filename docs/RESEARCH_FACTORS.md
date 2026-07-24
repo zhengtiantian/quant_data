@@ -7,7 +7,7 @@ current mid-horizon stock research workflow.
 
 This file is intended to complement:
 
-- [PROJECT_PLAN.md](/Users/xiz/Quant_trade/quant_data/PROJECT_PLAN.md)
+- [PROJECT_PLAN.md](https://github.com/zhengtiantian/ai-equity-signal-platform/blob/main/PROJECT_PLAN.md)
 
 `PROJECT_PLAN.md` explains where the project is going.
 

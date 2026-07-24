@@ -7,7 +7,7 @@ of relying on ad hoc terminal output or memory.
 
 This file should be read together with:
 
-- [PROJECT_PLAN.md](/Users/xiz/Quant_trade/quant_data/PROJECT_PLAN.md)
+- [PROJECT_PLAN.md](https://github.com/zhengtiantian/ai-equity-signal-platform/blob/main/PROJECT_PLAN.md)
 - [RESEARCH_FACTORS.md](/Users/xiz/Quant_trade/quant_data/RESEARCH_FACTORS.md)
 
 ## Research Scope
