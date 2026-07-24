@@ -339,7 +339,8 @@ cd quant_data
 - [ ] **F.19** LLM factor hypothesis generator — prompt LLM with current IC table + failure modes → suggests new factor ideas for human review
 
 ### AI Engineering — Agents
-- [ ] **F.4** LangGraph multi-agent research assistant — 4-node graph: data_agent → analysis_agent → strategy_agent → risk_agent
+- [x] **F.21** Single-agent ReAct research loop — hand-written tool-calling loop on local qwen3.5-9b; read-only platform tools through `quant_api /api/agent-data/*` with mongo fallback; guardrails (per-step dedupe, cross-step cache, max-steps cap, thinking-model content fallback) covered by unit tests; SSE streaming into the React "AI Agent" tab
+- [ ] **F.4** Multi-agent research assistant — sentiment/fundamental/technical specialist agents feeding an orchestrator (extends the shipped F.21 loop; LangGraph optional)
 - [ ] **F.8** Active learning agent — surface low-confidence LLM labels for human review; close the annotation feedback loop
 - [ ] **F.9** Rule optimization agent — iterative self-improving loop: sample → LLM judge → diagnose FP/FN → modify rules (🟡 code written, not yet tested)
 - [ ] **F.16** Real-time news monitoring agent — 30-minute polling of NewsAPI for held positions; instant alert on sentiment spike or negative event cluster
@@ -349,8 +350,8 @@ cd quant_data
 - [ ] **F.7** Airflow adaptive scheduling agent — dynamically adjust collection windows based on data quality metrics
 
 ### MCP Integration
-- [ ] **I.1** quant_mcp_server — expose signals, news, positions, factor IC, regime, and backtest trigger as MCP tools; any MCP-compatible client can query live platform data
-- [ ] **I.2** Claude Desktop integration — register quant_mcp_server in Claude Desktop; natural language trading queries with zero custom integration code
+- [x] **I.1** quant_mcp_server — six read-only MCP tools (news sentiment, features, ranked signals, positions, performance, universe) over stdio, served through the `quant_api` layer
+- [x] **I.2** Claude Desktop integration — registered in `claude_desktop_config.json`, verified end-to-end over the real MCP protocol
 - [ ] **I.3** Alpaca order execution via MCP — extend MCP server with order tools so LLM agents can place/cancel orders through the same interface (pre-trade guardrails enforced server-side)
 - [ ] **I.4** External data MCP tools — wrap Finnhub, SEC EDGAR, yfinance as MCP tools so agents autonomously decide what data to fetch
 - [ ] **I.5** MCP inter-service communication — replace quant_ai → quant_api REST calls with MCP protocol for dynamic tool discovery
