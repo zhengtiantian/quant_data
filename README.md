@@ -8,7 +8,7 @@ An end-to-end quantitative research platform that processes financial news throu
 
 | Metric | Value |
 |--------|-------|
-| News articles processed | 840K+ (from 8TB+ raw GDELT data) |
+| News articles processed | 845K+ (from 13TB raw GDELT data) |
 | Stock universe | 103 equities (100 US + HXSCL OTC) |
 | LLM agreement rate | 77.3% (Gemma + Qwen) |
 | Portfolio backtest Sharpe (20d, net of cost) | **0.77** (gross 0.92) vs SPY 0.54 |
@@ -16,7 +16,7 @@ An end-to-end quantitative research platform that processes financial news throu
 | Best single-factor cross-sectional IC | **+0.227** (`ah_gap`, 5d, after-hours price gap) |
 | Strongest 60d-horizon factor | **+0.198** (`inst_holding_pct_chg`, institutional 13F QoQ change) |
 | 2026 holdout model IC (LightGBM, all features) | **0.73** vs ~0.05 historical baseline |
-| Platform services | 9 Docker microservices |
+| Platform services | 13 active (11 Docker containers + 2 host processes) |
 
 *Net Sharpe includes a transaction cost model: 5bps commission + 10–30bps liquidity-tiered slippage round-trip, and excludes symbols with <$5M 20d avg dollar volume. See `research/backtest/backtest_portfolio.py`.*
 
@@ -27,7 +27,7 @@ An end-to-end quantitative research platform that processes financial news throu
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                        DATA COLLECTION LAYER                         │
-│  GDELT (8TB+) │ Finnhub │ NewsAPI │ Yahoo Finance │ FMP             │
+│  GDELT (13TB) │ Finnhub │ NewsAPI │ Yahoo Finance │ FMP             │
 └──────────────────────────┬──────────────────────────────────────────┘
                            │ raw news articles
                            ▼
@@ -43,7 +43,7 @@ An end-to-end quantitative research platform that processes financial news throu
 │                               │                                       │
 │                    llm_sentiment_final / event_type                  │
 └──────────────────────────┬──────────────────────────────────────────┘
-                           │ 840K labeled articles
+                           │ 845K labeled articles
                            ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │                      FEATURE ENGINEERING LAYER                       │
@@ -162,7 +162,7 @@ An end-to-end quantitative research platform that processes financial news throu
 ```
 quant_data/
 ├── collectors/news/          # Multi-source news ingestion
-│   ├── gdelt/                # GDELT GKG pipeline (8TB+)
+│   ├── gdelt/                # GDELT GKG pipeline (13TB)
 │   ├── finnhub/              # Finnhub API collector
 │   ├── newsapi/              # NewsAPI collector
 │   └── yahoo/                # Yahoo Finance news
