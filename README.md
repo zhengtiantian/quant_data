@@ -16,14 +16,14 @@ system and the cross-repo roadmap.
 | Metric | Value |
 |--------|-------|
 | News articles processed | 845K+ (from 13TB raw GDELT data) |
-| Stock universe | 103 equities (100 US + HXSCL OTC) |
+| Stock universe | 100 US equities |
 | LLM agreement rate | 77.3% (Gemma + Qwen) |
 | Portfolio backtest Sharpe (20d, net of cost) | **0.77** (gross 0.92) vs SPY 0.54 |
 | Portfolio backtest Sharpe (60d, net of cost) | **0.73** (gross 0.77) vs SPY 0.47 |
 | Best single-factor cross-sectional IC | **+0.227** (`ah_gap`, 5d, after-hours price gap) |
 | Strongest 60d-horizon factor | **+0.198** (`inst_holding_pct_chg`, institutional 13F QoQ change) |
 | 2026 holdout model IC (LightGBM, all features) | **0.73** vs ~0.05 historical baseline |
-| Feature store | 189K+ rows · 103 symbols × 7 return horizons |
+| Feature store | 189K+ rows · 100 symbols × 7 return horizons |
 | Airflow DAGs owned by this repo | 10 (7 scheduled + 3 manual) |
 
 *Net Sharpe includes a transaction cost model: 5bps commission + 10–30bps liquidity-tiered slippage round-trip, and excludes symbols with <$5M 20d avg dollar volume. See `research/backtest/backtest_portfolio.py`.*
@@ -46,7 +46,7 @@ system and the cross-repo roadmap.
 │        │                        │                                    │
 │        │                   Pass B: Qwen 4B                           │
 │        │                        │                                    │
-│        └──────────────▶  Snorkel Dawid-Skene                        │
+│        └──────────────▶  dual-LLM merge                             │
 │                          (label aggregation)                          │
 │                               │                                       │
 │                    llm_sentiment_final / event_type                  │
@@ -72,7 +72,7 @@ system and the cross-repo roadmap.
 │  inst_holding_* SEC EDGAR 13F QoQ change          (D.7, edgartools) │
 │  ah_gap/pm_gap  yfinance 1m extended-hours gap    (D.8, yfinance)   │
 │                                                                       │
-│  → daily_symbol_features (189K+ rows, 103 symbols × 7 horizons)     │
+│  → daily_symbol_features (189K+ rows, 100 symbols × 7 horizons)     │
 └──────────────────────────┬──────────────────────────────────────────┘
                            │
                            ▼
@@ -135,7 +135,7 @@ system and the cross-repo roadmap.
 |-----------|-----------|
 | News collection | GDELT, Finnhub, NewsAPI, Yahoo Finance, FMP |
 | LLM labeling | Gemma 3B + Qwen 4B (via LM Studio) |
-| Label aggregation | Snorkel (Dawid-Skene) |
+| Label aggregation | Dual-LLM merge (`merge_ab_labels.py`) |
 | ML models | LightGBM, Ridge Regression, Ensemble |
 | Feature store | MongoDB (189K rows, 100 symbols) |
 | Experiment tracking | MLflow |
