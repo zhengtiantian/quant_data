@@ -1,4 +1,5 @@
 import os
+import sys
 import requests
 from datetime import datetime, UTC
 from pathlib import Path
@@ -6,6 +7,10 @@ from dotenv import load_dotenv
 from pymongo import MongoClient, errors
 
 CURRENT_FILE = Path(__file__).resolve()
+
+# Run as a script, not imported as a package, so the shared canonicaliser needs a path.
+sys.path.insert(0, str(CURRENT_FILE.parents[1]))
+from _canonical import canonicalise  # noqa: E402
 PROJECT_ROOT = CURRENT_FILE.parents[3]
 GLOBAL_ENV = PROJECT_ROOT / ".env"
 MODULE_ENV = CURRENT_FILE.parent / ".env"
@@ -120,8 +125,11 @@ def save_to_mongo(articles):
             "collectedAt": datetime.now(UTC).isoformat(),
             "language": LANGUAGE,
             "impact": a.get("impact", "B"),
-            "meta": {"collector": "newsapi.collector", "version": "1.0"},
+            "meta": {"collector": "newsapi.collector", "version": "1.1"},
         }
+        # `date` and a candidate `symbol`: without them slm_company_match_v2 never sees
+        # the article, since its query requires a symbol to exist.
+        doc = canonicalise(doc)
 
         try:
             col.insert_one(doc)

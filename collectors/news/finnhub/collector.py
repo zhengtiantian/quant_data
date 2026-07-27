@@ -1,4 +1,5 @@
 import os
+import sys
 import requests
 from datetime import datetime, UTC
 from pathlib import Path
@@ -7,6 +8,11 @@ from pymongo import MongoClient, errors
 
 CURRENT = Path(__file__).resolve()
 ROOT = CURRENT.parents[3]
+
+# The collectors are run as scripts rather than imported as a package, so the shared
+# canonicaliser has to be reachable by path.
+sys.path.insert(0, str(CURRENT.parents[1]))
+from _canonical import canonicalise  # noqa: E402
 GLOBAL_ENV = ROOT / ".env"
 
 if GLOBAL_ENV.exists():
@@ -75,7 +81,11 @@ def save_to_mongo(articles):
             if a.get("datetime") else None
         )
 
-        docs.append({
+        # canonicalise() adds `date` and, where a company can be identified, `symbol`.
+        # Without those two fields slm_company_match_v2 cannot see the article at all —
+        # its query requires a symbol — so everything collected here used to stop dead
+        # in news_articles.
+        docs.append(canonicalise({
             "source": {"platform": "finnhub"},
             "title": a.get("headline"),
             "description": a.get("summary"),
@@ -85,8 +95,8 @@ def save_to_mongo(articles):
             "publishedAt": published,
             "collectedAt": datetime.now(UTC).isoformat(),
             "language": LANGUAGE,
-            "meta": {"collector": "finnhub", "version": "1.2"}
-        })
+            "meta": {"collector": "finnhub", "version": "1.3"}
+        }))
 
     if docs:
         try:
