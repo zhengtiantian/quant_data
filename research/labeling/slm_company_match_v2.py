@@ -20,6 +20,7 @@ Usage:
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import sys
@@ -59,6 +60,15 @@ LIMIT = int(os.getenv("V2_LIMIT", "0"))
 FORCE = os.getenv("V2_FORCE", "false").lower() == "true"
 RESUME = os.getenv("V2_RESUME", "true").lower() == "true"
 SYMBOLS_FILTER = [s.strip().upper() for s in os.getenv("V2_SYMBOLS", "").split(",") if s.strip()]
+# Extra mongo filter as JSON, ANDed into the source query. The cursor advances by _id, so
+# articles that gain a symbol after the cursor has passed their position are unreachable
+# by a normal resume — which is exactly what happened to the intraday articles repaired by
+# tools/backfill_intraday_canonical.py. Pair this with V2_JOB_NAME to give the targeted
+# run its own cursor and leave the main job's position untouched:
+#
+#   V2_JOB_NAME=intraday_repair V2_RESUME=false \
+#   V2_SOURCE_FILTER='{"meta.collector": {"$exists": true}}' python slm_company_match_v2.py
+SOURCE_FILTER = json.loads(os.getenv("V2_SOURCE_FILTER", "") or "{}")
 SLM_MODELS = [m.strip() for m in os.getenv("SLM_MODELS", "").split(",") if m.strip()]
 SCAN_OTHER = os.getenv("V2_SCAN_OTHER", "true").lower() == "true"
 CONTENT_CHARS = int(os.getenv("V2_CONTENT_CHARS", "1500"))
@@ -370,6 +380,7 @@ def build_query(last_id: ObjectId | None = None) -> dict[str, Any]:
         query["_id"] = {"$gt": last_id}
     if SYMBOLS_FILTER:
         query["symbol"] = {"$in": SYMBOLS_FILTER}
+    query.update(SOURCE_FILTER)
     return query
 
 

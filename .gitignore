@@ -53,3 +53,7 @@ htmlcov/
 **/.env
 news_collectors/gdelt/gdelt.json
 *_service_account.json
+
+# Stray SQLite file created when the Airflow CLI is run without the postgres
+# connection string; the real metadata DB is the airflow-postgres container.
+airflow/airflow.db
