@@ -37,6 +37,12 @@ MAX_HOLD_DAYS = int(os.getenv("POSITION_MAX_HOLD_DAYS", "60"))  # trading days
 EXIT_SCORE = float(os.getenv("POSITION_EXIT_SCORE", "0.0"))     # exit if latest score < this
 SENT_REVERSAL = float(os.getenv("POSITION_SENT_REVERSAL", "-0.1"))  # exit if sentiment_shift_5d < this
 ANALYST_DOWNGRADE = float(os.getenv("POSITION_ANALYST_DOWNGRADE", "-0.1"))  # exit if analyst_buy_ratio_chg_1m < this
+# M.7: dormant while ENABLE_INST13F_FEATURES is off. The trigger below guards on
+# `is not None`, so once the scorer stops emitting inst_holding_pct_chg it simply never
+# fires — no branch to remove. Worth noting what this rule was actually doing before:
+# the stored value is one constant per symbol, so "institutional outflow" either held for
+# a symbol on every single day or on none of them. It was a permanent per-symbol
+# blacklist wearing the costume of an exit signal.
 INST_OUTFLOW = float(os.getenv("POSITION_INST_OUTFLOW", "-0.01"))  # exit if inst_holding_pct_chg < this
 
 # H.3 volatility-adaptive stop-loss: stop = ATR_MULT × daily_vol, clamped [floor, cap]

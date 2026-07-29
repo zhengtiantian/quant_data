@@ -34,7 +34,9 @@ from research.backtest.backtest_news_factor import load_feature_frame
 SECTOR_REL_COLS = [
     "full_ratio", "quality_score", "news_burst_20d", "earnings_recency_weight",
     # D-series cross-sectional features worth sector-normalising
-    "analyst_buy_ratio", "analyst_buy_ratio_chg_1m", "inst_holding_pct_chg",
+    "analyst_buy_ratio", "analyst_buy_ratio_chg_1m",
+    # M.7: inst_holding_pct_chg removed — the stored value is one constant per symbol, so
+    # its sector-relative form was a constant too, not a cross-sectional signal.
 ]
 
 
@@ -470,10 +472,10 @@ def main():
         "analyst_buy_ratio_chg_1m",
         "analyst_buy_ratio_sector_rel",
         "analyst_buy_ratio_chg_1m_sector_rel",
-        # D.7 — institutional 13F
-        "inst_holding_pct",
-        "inst_holding_pct_chg",
-        "inst_holding_pct_chg_sector_rel",
+        # D.7 — institutional 13F: dropped by M.7 (look-ahead). The 13F store holds one
+        # dateless row per symbol, broadcast to every trade_date, so a 2018 training row
+        # carried 2026 holdings. Re-add all three once inst_13f_raw has filing-dated
+        # history and the join is as-of the filing date.
         # D.1 — macro regime
         "macro_vix",
         "macro_vix_pctile_252d",

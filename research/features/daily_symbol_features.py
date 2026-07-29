@@ -1197,6 +1197,26 @@ def attach_analyst_features(feature_df: pd.DataFrame) -> pd.DataFrame:
 INST13F_COLLECTION = os.getenv("INST13F_COLLECTION", "inst_13f_holdings")
 INST13F_FEATURE_COLS = ["inst_holding_pct", "inst_holding_pct_chg"]
 
+# M.7 — disabled by default because this factor was reading the future.
+#
+# `inst_13f_holdings` holds one row per symbol with no date, quarter or filing date, and
+# the join below broadcasts it to every trade_date. Measured on the built store: 79 of the
+# 100 symbols carry a single value across all 8 years and the other 21 carry two (the
+# second being null). So this was never a time series — it is a constant per symbol, which
+# after rank-normalisation adds a fixed score offset to that symbol across all of history.
+#
+# The constant is "which symbols institutions were accumulating in 2026", applied to rows
+# dated 2018. That is hindsight momentum with the answer written into the input, which is
+# why it measured IC +0.198 — the strongest factor in the platform — while carrying up to
+# 1.2 weight in the regime scorer.
+#
+# Re-enabling requires point-in-time 13F: filings joined as-of their FILING date, not their
+# reporting period, since the 45-day statutory lag is exactly the information that must not
+# leak. `inst_13f_raw` currently holds only 3 quarters (2025-09 … 2026-03) against a feature
+# store spanning 2018-2026, so the history does not exist yet and must be backfilled from
+# EDGAR first.
+ENABLE_INST13F = os.getenv("ENABLE_INST13F_FEATURES", "false").lower() == "true"
+
 
 def load_inst13f_frame() -> pd.DataFrame:
     """Load institutional 13F holding features (one row per symbol, latest quarter)."""
@@ -1215,10 +1235,18 @@ def load_inst13f_frame() -> pd.DataFrame:
 
 
 def attach_inst13f_features(feature_df: pd.DataFrame) -> pd.DataFrame:
-    """Left-join static institutional holding features onto feature_df by symbol.
+    """Join institutional holding features onto feature_df by symbol.
 
-    These values are quarterly; broadcast to all trade_dates for each symbol.
+    Off unless ENABLE_INST13F_FEATURES=true — see the note on that flag. The join is by
+    symbol alone, which broadcasts one value across every trade_date, so with only the
+    latest quarter available it hands 2026 information to rows dated 2018.
+
+    Left as a no-op rather than deleted: the shape is correct once `inst_13f_raw` carries
+    filing-dated history and this becomes an as-of join, and keeping the seam makes that a
+    smaller change than reintroducing the feature from scratch.
     """
+    if not ENABLE_INST13F:
+        return feature_df
     inst_df = load_inst13f_frame()
     if inst_df.empty or "symbol" not in feature_df.columns:
         return feature_df

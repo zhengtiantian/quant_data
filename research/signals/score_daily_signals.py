@@ -112,6 +112,20 @@ _WEIGHTS_BY_REGIME: dict[str, dict[str, float]] = {
     "RISK_OFF": _WEIGHTS_RISK_OFF,
 }
 
+# M.7 — inst_holding_pct_chg is dropped from every regime unless point-in-time 13F is
+# available. The stored value is a single constant per symbol (measured: 79 of 100 symbols
+# carry one value across the whole 2018-2026 store), so after rank-normalisation it added a
+# fixed per-symbol offset reflecting who institutions were accumulating in 2026 — hindsight
+# momentum, and it carried the highest weight of any factor under RISK_OFF at 1.2.
+#
+# Zeroing the weights rather than deleting the keys keeps the calibration visible: the
+# numbers that were used are still in the dicts above, so restoring them after a PIT
+# backfill is one flag rather than a re-derivation.
+ENABLE_INST13F = os.getenv("ENABLE_INST13F_FEATURES", "false").lower() == "true"
+if not ENABLE_INST13F:
+    for _w in _WEIGHTS_BY_REGIME.values():
+        _w.pop("inst_holding_pct_chg", None)
+
 # Overall conviction scalar per regime (scales composite score magnitude;
 # does NOT change cross-sectional ranking — only affects downstream sizing)
 _REGIME_CONVICTION: dict[str, float] = {
