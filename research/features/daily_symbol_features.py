@@ -47,9 +47,15 @@ FORWARD_HORIZONS = [5, 10, 15, 20, 30, 45, 60]
 # subdomains differ, and unique_source_count falls back to the platform name because
 # GDELT rows carry no source.name.
 #
-# Default OFF until the walk-forward comparison is done, so this changes nothing about
-# production output while the impact is being measured. Flipping the default is the fix.
-NEWS_DEDUPE_SYNDICATION = os.getenv("NEWS_DEDUPE_SYNDICATION", "false").lower() == "true"
+# Default ON since 2026-07-30. The shadow comparison measured the cost of turning it on:
+# the ML walk-forward barely moves (60d Ensemble rank IC 0.0572 -> 0.0549) but the regime
+# scorer loses 0.074 net Sharpe (0.654 -> 0.580), because news_burst_20d carries a
+# hand-assigned 0.9 weight there. That 0.074 was being earned from an artifact of how
+# GDELT ingests syndication networks, so the lower number is the true one -- the same
+# reasoning as M.7. Drawdown and win rate both improve.
+#
+# Set to "false" only to reproduce the pre-fix numbers.
+NEWS_DEDUPE_SYNDICATION = os.getenv("NEWS_DEDUPE_SYNDICATION", "true").lower() == "true"
 
 FEATURE_REBUILD_ALL = os.getenv("FEATURE_REBUILD_ALL", "false").lower() == "true"
 FEATURE_LOOKBACK_DAYS = int(os.getenv("FEATURE_LOOKBACK_DAYS", "180"))
