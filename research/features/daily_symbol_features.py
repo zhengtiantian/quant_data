@@ -40,6 +40,17 @@ PRIMARY_BENCHMARK = os.getenv("FEATURE_PRIMARY_BENCHMARK", "QQQ").strip().upper(
 
 FORWARD_HORIZONS = [5, 10, 15, 20, 30, 45, 60]
 
+# M.12 — GDELT ingests each site of a syndication network as a separate article, so one
+# story can appear hundreds of times with a byte-identical body (measured worst case: 402
+# copies of one MCD story across *.iheart.com subdomains on 2025-11-03). The two fields
+# meant to catch this cannot: unique_url_count sees 402 distinct URLs because the
+# subdomains differ, and unique_source_count falls back to the platform name because
+# GDELT rows carry no source.name.
+#
+# Default OFF until the walk-forward comparison is done, so this changes nothing about
+# production output while the impact is being measured. Flipping the default is the fix.
+NEWS_DEDUPE_SYNDICATION = os.getenv("NEWS_DEDUPE_SYNDICATION", "false").lower() == "true"
+
 FEATURE_REBUILD_ALL = os.getenv("FEATURE_REBUILD_ALL", "false").lower() == "true"
 FEATURE_LOOKBACK_DAYS = int(os.getenv("FEATURE_LOOKBACK_DAYS", "180"))
 FEATURE_START_DATE = os.getenv("FEATURE_START_DATE")
@@ -159,6 +170,7 @@ def load_news_frame() -> pd.DataFrame:
             "symbol": 1,
             "name": 1,
             "date": 1,
+            "title": 1,
             "publishedAt": 1,
             "timestamp": 1,
             "collectedAt": 1,
@@ -195,6 +207,7 @@ def load_news_frame() -> pd.DataFrame:
                 "symbol": doc.get("symbol"),
                 "name": doc.get("name"),
                 "date": date_ts,
+                "title": doc.get("title") or "",
                 "data_quality": doc.get("data_quality") or "unknown",
                 "content_length": content_length,
                 "url": doc.get("url"),
@@ -207,7 +220,30 @@ def load_news_frame() -> pd.DataFrame:
         )
     if not rows:
         return pd.DataFrame()
-    return pd.DataFrame(rows)
+    return _dedupe_syndication(pd.DataFrame(rows), "news")
+
+
+def _dedupe_syndication(df: pd.DataFrame, label: str) -> pd.DataFrame:
+    """M.12 — collapse syndicated copies of the same story to one row.
+
+    Applied at load time rather than inside the aggregators so every downstream
+    feature inherits it: article_count, the news_count_* rollups, news_burst_20d and
+    the sentiment weighted mean are all row-weighted, and fixing them one at a time
+    would leave the next one added broken by default.
+
+    Keyed on (symbol, date, title) because the syndicated copies differ only by URL
+    host. The collectors should also stop ingesting them, but the feature layer must
+    not depend on that being true.
+    """
+    if not NEWS_DEDUPE_SYNDICATION or df.empty or "title" not in df.columns:
+        return df
+    before = len(df)
+    df = df.drop_duplicates(subset=["symbol", "date", "title"], keep="first")
+    dropped = before - len(df)
+    if dropped:
+        print(f"[M.12] {label}: dropped {dropped:,} syndicated duplicates of {before:,} "
+              f"rows ({100 * dropped / before:.1f}%)")
+    return df
 
 
 def aggregate_news_features(news_df: pd.DataFrame) -> pd.DataFrame:
@@ -792,6 +828,7 @@ def load_llm_sentiment_frame() -> pd.DataFrame:
             "_id": 0,
             "symbol": 1,
             "date": 1,
+            "title": 1,
             "llm_sentiment_final": 1,
             "llm_signal_strength_a": 1,
             "llm_event_type_a": 1,
@@ -812,15 +849,19 @@ def load_llm_sentiment_frame() -> pd.DataFrame:
         rows.append({
             "symbol": doc.get("symbol"),
             "date": date_ts,
+            "title": doc.get("title") or "",
             "sentiment": float(doc.get("llm_sentiment_final", 0.0)),
             "strength": doc.get("llm_signal_strength_a", "low"),
             "event_type": doc.get("llm_event_type_a", "other"),
             "disagreement": float(doc.get("llm_disagreement", 0.0)),
         })
 
-    return pd.DataFrame(rows) if rows else pd.DataFrame(
-        columns=["symbol", "date", "sentiment", "strength", "event_type", "disagreement"]
-    )
+    if not rows:
+        return pd.DataFrame(
+            columns=["symbol", "date", "title", "sentiment", "strength",
+                     "event_type", "disagreement"]
+        )
+    return _dedupe_syndication(pd.DataFrame(rows), "llm_sentiment")
 
 
 def aggregate_llm_sentiment_features(llm_df: pd.DataFrame) -> pd.DataFrame:
