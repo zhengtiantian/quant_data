@@ -52,7 +52,10 @@ with DAG(
             "START_DATE": "{{ dag_run.conf.get('start_date', '2018-01-01') }}",
         },
         append_env=True,
-        execution_timeout=timedelta(hours=10),
+        # A 2.5-month gap is ~7,500 GKG files; importing them into gkg_index (325GB $text
+        # index) runs well past 10 hours. The collector resumes, but a timeout mid-run
+        # only wastes the retry.
+        execution_timeout=timedelta(hours=48),
     )
 
     company_match = host_task(
@@ -61,7 +64,7 @@ with DAG(
         extra_env={
             "SLM_API_URL": SLM_API_URL,
             "DST_COLLECTION": "news_articles_company_matched_v2",
-            "SLM_MODELS": os.getenv("SLM_MODELS", "qwen3.5-4b,qwen3.5-4b:2"),
+            "SLM_MODELS": os.getenv("SLM_MODELS", "qwen3.5-4b-mlx"),  # one loaded instance
             "V2_WORKERS": "32",
         },
         execution_timeout=timedelta(hours=4),

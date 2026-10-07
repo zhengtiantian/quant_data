@@ -40,6 +40,10 @@ BASE_ENV = {
     "MYSQL_PASSWORD": os.environ.get("HOST_MYSQL_PASSWORD") or _load_dotenv_value("HOST_MYSQL_PASSWORD") or "",
     "MYSQL_DATABASE": "workflow",
     "PYTHONUNBUFFERED": "1",
+    # LM Studio model id for the SLM news filter / company match. On the M5 Max the model
+    # loads as "qwen3.5-4b-mlx" (one instance); the old "qwen3.5-4b" alias no longer exists.
+    "SLM_MODEL": os.getenv("SLM_MODEL", "qwen3.5-4b-mlx"),
+    "SLM_MODELS": os.getenv("SLM_MODELS", "qwen3.5-4b-mlx"),
 }
 
 GDELT_ENV = {

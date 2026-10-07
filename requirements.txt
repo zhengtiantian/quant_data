@@ -31,3 +31,6 @@ uvicorn[standard]==0.30.1
 
 newspaper3k==0.2.8
 lxml_html_clean>=0.1.0
+# GKG columnar copy: tools/gkg_parquet.py (Parquet export + DuckDB search)
+pyarrow>=15.0.0
+duckdb>=1.1.0
