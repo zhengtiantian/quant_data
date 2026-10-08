@@ -31,6 +31,7 @@ import json
 import logging
 import os
 import re
+import sys
 import threading
 import time
 from concurrent.futures import Future, ThreadPoolExecutor
@@ -65,6 +66,12 @@ PROGRESS_EVERY= int(os.getenv("ENRICH_PROGRESS_EVERY","500"))
 CONTENT_CHARS = int(os.getenv("ENRICH_CONTENT_CHARS", "500"))
 LLM_TIMEOUT   = int(os.getenv("ENRICH_LLM_TIMEOUT",  "30"))
 LIMIT         = int(os.getenv("ENRICH_LIMIT",         "0"))   # 0 = all
+# LM Studio answers 500 to every request that arrives while a model is (re)loading.
+# Retry those with backoff, and warm the model up before fanning out to WORKERS.
+LLM_RETRIES   = int(os.getenv("ENRICH_LLM_RETRIES",  "3"))
+WARMUP_SECS   = int(os.getenv("ENRICH_WARMUP_SECS",  "180"))
+# Idle seconds before LM Studio unloads a JIT-loaded model (0 = server default).
+LLM_TTL       = int(os.getenv("ENRICH_LLM_TTL",      "600"))
 
 logging.basicConfig(
     level=logging.INFO,
@@ -196,12 +203,7 @@ def call_llm(title: str, content: str, symbol: str = "", name: str = "",
         payload["model"] = model
 
     try:
-        resp = requests.post(
-            f"{API_URL}/chat/completions", json=payload,
-            timeout=(5, LLM_TIMEOUT),  # (connect, read) — hard ceiling per request
-        )
-        resp.raise_for_status()
-        resp_json = resp.json()
+        resp_json = _post_chat(payload)
         partial = resp_json["choices"][0]["message"]["content"].strip()
         finish_reason = resp_json["choices"][0].get("finish_reason", "")
         raw = "{" + partial if not partial.startswith("{") else partial
@@ -233,6 +235,42 @@ def call_llm(title: str, content: str, symbol: str = "", name: str = "",
     except Exception as e:
         log.warning("PARSE_ERR | model=%s | %s | raw=%r", model, e, locals().get("raw", "")[:200])
         return None
+
+
+def _post_chat(payload: dict) -> dict:
+    """POST /chat/completions, retrying 5xx and connection errors with backoff."""
+    if LLM_TTL:
+        payload = {**payload, "ttl": LLM_TTL}
+    for attempt in range(LLM_RETRIES + 1):
+        try:
+            resp = requests.post(
+                f"{API_URL}/chat/completions", json=payload,
+                timeout=(5, LLM_TIMEOUT),  # (connect, read) — hard ceiling per request
+            )
+            if resp.status_code < 500 or attempt == LLM_RETRIES:
+                resp.raise_for_status()
+                return resp.json()
+        except requests.exceptions.ConnectionError:
+            if attempt == LLM_RETRIES:
+                raise
+        time.sleep((2, 5, 15, 30)[min(attempt, 3)])
+    raise RuntimeError("unreachable")
+
+
+def warm_up(model: str) -> bool:
+    """Send one tiny request and wait until the model answers, so the first burst
+    of WORKERS requests doesn't land while LM Studio is still loading it."""
+    deadline = time.time() + WARMUP_SECS
+    while True:
+        try:
+            _post_chat({"model": model, "max_tokens": 1, "stream": False,
+                        "messages": [{"role": "user", "content": "ping"}]})
+            return True
+        except requests.exceptions.RequestException as e:
+            if time.time() > deadline:
+                log.error("WARMUP_FAILED | model=%s | %s", model, e)
+                return False
+            time.sleep(5)
 
 
 # ── Pass A/B: single-model with round-robin across available instances ─────────
@@ -382,6 +420,10 @@ def main() -> None:
         suffix = PASS.lower()
         next_model_fn, models = _build_model_cycle(PASS)
         log.info("PASS=%s | models: %s | workers: %d", PASS, models, WORKERS)
+        t0 = time.time()
+        if not all(warm_up(m) for m in models):
+            sys.exit(1)
+        log.info("Models ready in %.1fs", time.time() - t0)
 
         query = {f"llm_sentiment_{suffix}": {"$exists": False}}
         projection = {"_id": 1, "title": 1, "content": 1, "symbol": 1, "name": 1}

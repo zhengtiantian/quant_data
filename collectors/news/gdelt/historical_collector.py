@@ -724,13 +724,33 @@ def seed_tasks(total_batches, resume_batch, batch_signatures):
                 chunk
             )
         
-        # Populate signatures (if missing)
+        # Signatures: set where missing, and REOPEN batches whose file list changed.
+        # The last batch is usually partial; files GDELT publishes after a run land in it while
+        # it is already 'done'. Without this check those files reached gkg_index (startup
+        # predownload) but never went through rules / SLM / article fetch, so they produced no
+        # articles — invisible for a run every few weeks, but most of each day's news for a
+        # daily schedule. Found 2026-10-08: batches 2939 and 3014 had stale signatures.
+        cur.execute(f"SELECT batch_id, batch_sig, status FROM {MYSQL_TASK_TABLE}")
+        stored = {row[0]: (row[1], row[2]) for row in cur.fetchall()}
+        reopened = []
         for batch_id, batch_sig in batch_signatures:
-            cur.execute(
-                f"UPDATE {MYSQL_TASK_TABLE} SET batch_sig=%s WHERE batch_id=%s AND batch_sig IS NULL",
-                (batch_sig, batch_id)
-            )
-            
+            old_sig, status = stored.get(batch_id, (None, None))
+            if old_sig is None:
+                cur.execute(
+                    f"UPDATE {MYSQL_TASK_TABLE} SET batch_sig=%s WHERE batch_id=%s AND batch_sig IS NULL",
+                    (batch_sig, batch_id)
+                )
+            elif old_sig != batch_sig:
+                cur.execute(
+                    f"UPDATE {MYSQL_TASK_TABLE} SET batch_sig=%s, status='pending', retries=0, "
+                    f"last_error='reopened: batch file list changed since it was processed' WHERE batch_id=%s",
+                    (batch_sig, batch_id)
+                )
+                if status == 'done':
+                    reopened.append(batch_id)
+        if reopened:
+            print(f"🔁 Reopened {len(reopened)} batch(es) whose file list grew since processing: {reopened[:20]}")
+
         conn.commit()
     finally:
         conn.close()
