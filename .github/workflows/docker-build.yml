@@ -35,18 +35,27 @@ jobs:
             xiz001/quant_data:${{ env.COMMIT_TAG }}
 
       - name: Clone quant_docker and modify compose file
+        id: compose
         run: |
           git clone https://zhengtiantian:${{ secrets.MAIN_REPO_PAT }}@github.com/zhengtiantian/quant_docker.git
           cd quant_docker
           sed -i -E "s|(xiz001/quant_data:)[^[:space:]]+|\1${{ env.COMMIT_TAG }}|g" docker-compose.yml
           git config user.name "github-actions"
           git config user.email "actions@github.com"
+          # Already pinned (e.g. the tag was set by hand when deploying locally): nothing to propose.
+          if git diff --quiet docker-compose.yml; then
+            echo "docker-compose.yml already points at quant_data:${{ env.COMMIT_TAG }}; no PR needed."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           git checkout -b update-data-image-${{ env.COMMIT_TAG }}
           git add docker-compose.yml
           git commit -m "Update quant_data image tag to ${{ env.COMMIT_TAG }}"
           git push origin update-data-image-${{ env.COMMIT_TAG }}
+          echo "changed=true" >> "$GITHUB_OUTPUT"
 
       - name: Create Pull Request via GitHub API
+        if: steps.compose.outputs.changed == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.MAIN_REPO_PAT }}
         run: |
