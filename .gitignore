@@ -57,3 +57,4 @@ news_collectors/gdelt/gdelt.json
 # Stray SQLite file created when the Airflow CLI is run without the postgres
 # connection string; the real metadata DB is the airflow-postgres container.
 airflow/airflow.db
+airflow_task_failures.log
