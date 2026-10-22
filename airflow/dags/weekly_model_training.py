@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 
-from _host_common import ROOT, PYTHON, BASE_ENV
+from _host_common import ROOT, PYTHON, BASE_ENV, notify_failure
 
 default_args = {
     "owner": "quant",
@@ -38,6 +38,7 @@ with DAG(
 
     BashOperator(
         task_id="train_baseline_models",
+        on_failure_callback=notify_failure,
         bash_command=(
             f"cd {ROOT} && {PYTHON} {ROOT}/research/models/train_baseline_models.py"
             " --collection daily_symbol_features"

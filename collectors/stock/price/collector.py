@@ -12,7 +12,9 @@ from pymongo import MongoClient
 CURRENT = Path(__file__).resolve()
 ROOT = CURRENT.parents[3]
 GLOBAL_ENV = ROOT / ".env"
-FINNHUB_ENV = ROOT / "news_collectors" / "finnhub" / ".env"
+# The key lives with the Finnhub news collector since the 2026-07-21 reorganisation (d14f30c);
+# the old news_collectors/ path silently found nothing and every run failed for three months.
+FINNHUB_ENV = ROOT / "collectors" / "news" / "finnhub" / ".env"
 
 load_dotenv(GLOBAL_ENV, override=False)
 load_dotenv(FINNHUB_ENV, override=False)

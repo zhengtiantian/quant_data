@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
 import os
-from datetime import timedelta
+import subprocess
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from airflow.operators.bash import BashOperator
@@ -60,6 +62,29 @@ GDELT_ENV = {
 }
 
 
+FAILURE_LOG = f"{ROOT}/airflow_task_failures.log"
+
+
+def notify_failure(context) -> None:
+    """A task failed for good (retries used up): a macOS notification, and one line in
+    FAILURE_LOG. The pipeline was down for a week in October 2026 without anyone noticing;
+    quant_ai's freshness watchdog covers the case where nothing runs at all."""
+    ti = context.get("task_instance")
+    dag_id, task_id = getattr(ti, "dag_id", "?"), getattr(ti, "task_id", "?")
+    err = str(context.get("exception") or "")[:200]
+    try:
+        with open(FAILURE_LOG, "a") as f:
+            f.write(json.dumps({"at": datetime.now().isoformat(timespec="seconds"), "dag": dag_id, "task": task_id,
+                                "try": getattr(ti, "try_number", None), "error": err}) + "\n")
+    except OSError:
+        pass
+    script = f"display notification {json.dumps(err or 'see the Airflow log')} with title {json.dumps(f'Airflow failed: {dag_id}.{task_id}')}"
+    try:
+        subprocess.run(["osascript", "-e", script], capture_output=True, timeout=10)
+    except Exception:  # noqa: BLE001 - alerting must never raise inside a callback
+        pass
+
+
 def host_task(
     task_id: str,
     script: str,
@@ -73,4 +98,5 @@ def host_task(
         env=env,
         append_env=True,
         execution_timeout=execution_timeout,
+        on_failure_callback=notify_failure,
     )

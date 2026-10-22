@@ -25,7 +25,8 @@ from pymongo import MongoClient, UpdateOne
 
 ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(ROOT / ".env", override=False)
-load_dotenv(ROOT / "news_collectors" / "finnhub" / ".env", override=False)
+# collectors/news/finnhub since the 2026-07-21 reorganisation (the old path broke this job).
+load_dotenv(ROOT / "collectors" / "news" / "finnhub" / ".env", override=False)
 
 FINNHUB_KEY = (
     os.getenv("FINNHUB_API_KEY")

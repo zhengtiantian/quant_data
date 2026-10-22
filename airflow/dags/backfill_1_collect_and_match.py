@@ -27,7 +27,7 @@ from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 
-from _host_common import ROOT, PYTHON, BASE_ENV, GDELT_ENV, host_task
+from _host_common import ROOT, PYTHON, BASE_ENV, GDELT_ENV, host_task, notify_failure
 
 SLM_API_URL = os.getenv("SLM_API_URL", "http://127.0.0.1:1234/v1")
 
@@ -51,6 +51,7 @@ with DAG(
 
     gdelt_collect = BashOperator(
         task_id="gdelt_collect",
+        on_failure_callback=notify_failure,
         bash_command=f"cd {ROOT} && {PYTHON} {ROOT}/collectors/news/gdelt/historical_collector.py",
         env={
             **GDELT_ENV,
@@ -79,6 +80,7 @@ with DAG(
     # Re-exports whole months from MongoDB, starting at the last month already exported.
     gkg_export = BashOperator(
         task_id="gkg_export",
+        on_failure_callback=notify_failure,
         bash_command=f"cd {ROOT} && {PYTHON} {ROOT}/tools/gkg_parquet.py export --since-last",
         env={**BASE_ENV, "GKG_PARQUET_DIR": os.getenv("GKG_PARQUET_DIR", "/Volumes/Data4T/gkg_parquet")},
         append_env=True,

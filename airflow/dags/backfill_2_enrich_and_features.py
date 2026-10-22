@@ -30,7 +30,7 @@ from datetime import datetime, timedelta
 
 from airflow import DAG
 
-from _host_common import BASE_ENV, ROOT, host_task
+from _host_common import BASE_ENV, ROOT, host_task, notify_failure
 from airflow.operators.bash import BashOperator
 
 QUANT_AI = os.path.join(os.path.dirname(ROOT), "quant_ai")
@@ -102,6 +102,7 @@ with DAG(
     # only embeds that day's articles. Runs after enrichment because the payload carries labels.
     index_news = BashOperator(
         task_id="index_news_qdrant",
+        on_failure_callback=notify_failure,
         bash_command=f"cd {QUANT_AI} && {QUANT_AI}/.venv/bin/python tools/index_news.py",
         env={
             **BASE_ENV,
