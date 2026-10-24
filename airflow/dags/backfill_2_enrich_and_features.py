@@ -32,6 +32,7 @@ from airflow import DAG
 
 from _host_common import BASE_ENV, ROOT, host_task, notify_failure
 from airflow.operators.bash import BashOperator
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 
 QUANT_AI = os.path.join(os.path.dirname(ROOT), "quant_ai")
 
@@ -120,4 +121,12 @@ with DAG(
         execution_timeout=timedelta(hours=2),
     )
 
-    enrich_a >> enrich_b >> merge_ab >> feature_rebuild >> index_news
+    # Next link of the daily chain (see backfill_1): signals start as soon as this run is done.
+    trigger_signals = TriggerDagRunOperator(
+        task_id="trigger_signals",
+        trigger_dag_id="daily_signal_pipeline",
+        wait_for_completion=False,
+        trigger_rule="all_done",
+    )
+
+    enrich_a >> enrich_b >> merge_ab >> feature_rebuild >> index_news >> trigger_signals

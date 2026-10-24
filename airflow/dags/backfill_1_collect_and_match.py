@@ -98,7 +98,11 @@ with DAG(
         task_id="trigger_enrich",
         trigger_dag_id="backfill_2_enrich_and_features",
         wait_for_completion=False,
+        # The daily chain runs each step when the one before it has finished, failed or not:
+        # backfill_1 -> backfill_2 -> daily_signal_pipeline -> job_agent. A failed match still
+        # leaves earlier articles to enrich, and signals on yesterday's news beat no signals.
+        trigger_rule="all_done",
     )
 
     gdelt_collect >> [company_match, gkg_export]
-    company_match >> trigger_enrich
+    [company_match, gkg_export] >> trigger_enrich

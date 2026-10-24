@@ -104,7 +104,7 @@ def _night_chain_busy() -> list[str]:
 
 
 def wait_for_night_chain(on_timeout: str = "proceed"):
-    """First task of a DAG that must run after the nightly chain. Checks every 5 minutes.
+    """First task of a DAG that must run after the nightly chain. Checks every 2 minutes.
     on_timeout="proceed": after NIGHT_CHAIN_MAX_WAIT go ahead anyway with a notification (a day
     without signals is worse than signals on yesterday's news features). on_timeout="skip": skip
     this run (gdelt_batch_verify must not reopen batches while the collector is filling them)."""
@@ -125,7 +125,7 @@ def wait_for_night_chain(on_timeout: str = "proceed"):
         task_id="wait_for_night_chain",
         python_callable=done,
         mode="reschedule",
-        poke_interval=300,
+        poke_interval=120,
         timeout=(NIGHT_CHAIN_MAX_WAIT + timedelta(minutes=30)).total_seconds(),
         soft_fail=on_timeout == "skip",
         retries=0,
