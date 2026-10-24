@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 
-from _host_common import ROOT, PYTHON, BASE_ENV, notify_failure
+from _host_common import ROOT, PYTHON, BASE_ENV, notify_failure, wait_for_night_chain
 
 default_args = {
     "owner": "quant",
@@ -36,7 +36,7 @@ with DAG(
     tags=["quant", "weekly", "model", "training"],
 ) as dag:
 
-    BashOperator(
+    wait_for_night_chain() >> BashOperator(
         task_id="train_baseline_models",
         on_failure_callback=notify_failure,
         bash_command=(

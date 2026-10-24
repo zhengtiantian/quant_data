@@ -78,11 +78,59 @@ def notify_failure(context) -> None:
                                 "try": getattr(ti, "try_number", None), "error": err}) + "\n")
     except OSError:
         pass
-    script = f"display notification {json.dumps(err or 'see the Airflow log')} with title {json.dumps(f'Airflow failed: {dag_id}.{task_id}')}"
+    _notify(f"Airflow failed: {dag_id}.{task_id}", err or "see the Airflow log")
+
+
+def _notify(title: str, message: str) -> None:
+    script = f"display notification {json.dumps(message)} with title {json.dumps(title)}"
     try:
         subprocess.run(["osascript", "-e", script], capture_output=True, timeout=10)
     except Exception:  # noqa: BLE001 - alerting must never raise inside a callback
         pass
+
+
+# The nightly news chain: backfill_1 (02:00 UTC) triggers backfill_2 when company match is done.
+# Whatever reads its output (news features) waits for it to finish instead of racing it: on
+# 2026-10-24 a catch-up ran until 15:00, long past the 07:30 signals.
+NIGHT_CHAIN = ("backfill_1_collect_and_match", "backfill_2_enrich_and_features")
+NIGHT_CHAIN_MAX_WAIT = timedelta(hours=6)
+
+
+def _night_chain_busy() -> list[str]:
+    from airflow.models import DagRun
+    from airflow.utils.state import DagRunState
+    return [f"{r.dag_id} {r.run_id}" for d in NIGHT_CHAIN for st in (DagRunState.RUNNING, DagRunState.QUEUED)
+            for r in DagRun.find(dag_id=d, state=st)]
+
+
+def wait_for_night_chain(on_timeout: str = "proceed"):
+    """First task of a DAG that must run after the nightly chain. Checks every 5 minutes.
+    on_timeout="proceed": after NIGHT_CHAIN_MAX_WAIT go ahead anyway with a notification (a day
+    without signals is worse than signals on yesterday's news features). on_timeout="skip": skip
+    this run (gdelt_batch_verify must not reopen batches while the collector is filling them)."""
+    from airflow.sensors.python import PythonSensor
+
+    def done(dag_run=None, **_):
+        busy = _night_chain_busy()
+        if not busy:
+            return True
+        waited = datetime.now(dag_run.start_date.tzinfo) - dag_run.start_date if dag_run else timedelta(0)
+        print(f"nightly chain still running after {waited}: {busy}")
+        if on_timeout == "proceed" and waited >= NIGHT_CHAIN_MAX_WAIT:
+            _notify(f"Airflow: {dag_run.dag_id} went ahead", f"nightly chain still running after {waited}: {busy[0]}")
+            return True
+        return False
+
+    return PythonSensor(
+        task_id="wait_for_night_chain",
+        python_callable=done,
+        mode="reschedule",
+        poke_interval=300,
+        timeout=(NIGHT_CHAIN_MAX_WAIT + timedelta(minutes=30)).total_seconds(),
+        soft_fail=on_timeout == "skip",
+        retries=0,
+        on_failure_callback=notify_failure,
+    )
 
 
 def lm_command(command: str, model: str, workers_env: tuple = (), ids_env: str | None = None,

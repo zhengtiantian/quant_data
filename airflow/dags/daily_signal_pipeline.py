@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 
 from airflow import DAG
 
-from _host_common import host_task
+from _host_common import host_task, wait_for_night_chain
 
 default_args = {
     "owner": "quant",
@@ -92,4 +92,6 @@ with DAG(
         execution_timeout=timedelta(minutes=10),
     )
 
+    wait = wait_for_night_chain()          # news features come from the nightly chain
+    wait >> [daily_price, premarket, analyst, macro]
     [daily_price, premarket, analyst, macro] >> features >> signals >> [positions, backtest] >> data_quality

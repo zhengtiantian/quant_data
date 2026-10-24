@@ -20,7 +20,7 @@ from datetime import datetime, timedelta
 
 from airflow import DAG
 
-from _host_common import GDELT_ENV, host_task
+from _host_common import GDELT_ENV, host_task, wait_for_night_chain
 
 default_args = {
     "owner": "quant",
@@ -39,7 +39,7 @@ with DAG(
     tags=["quant", "gdelt", "verify"],
 ) as dag:
 
-    host_task(
+    wait_for_night_chain(on_timeout="skip") >> host_task(
         "verify_batches",
         "collectors/news/gdelt/historical_collector.py",
         extra_env={**GDELT_ENV, "VERIFY_MODE": "true"},
