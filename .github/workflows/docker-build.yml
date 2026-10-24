@@ -37,7 +37,9 @@ jobs:
       - name: Clone quant_docker and modify compose file
         id: compose
         run: |
-          git clone https://zhengtiantian:${{ secrets.MAIN_REPO_PAT }}@github.com/zhengtiantian/quant_docker.git
+          # The platform repo was renamed from quant_docker; git follows the redirect, the PR API
+          # below does not (it answered 301 and no PR was ever opened), so use the new name.
+          git clone https://zhengtiantian:${{ secrets.MAIN_REPO_PAT }}@github.com/zhengtiantian/ai-equity-signal-platform.git quant_docker
           cd quant_docker
           sed -i -E "s|(xiz001/quant_data:)[^[:space:]]+|\1${{ env.COMMIT_TAG }}|g" docker-compose.yml
           git config user.name "github-actions"
@@ -59,10 +61,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.MAIN_REPO_PAT }}
         run: |
-          curl -X POST \
+          # --fail-with-body: a refused PR fails the job instead of passing silently.
+          curl -sS --fail-with-body -X POST \
             -H "Authorization: token $GITHUB_TOKEN" \
             -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/zhengtiantian/quant_docker/pulls \
+            https://api.github.com/repos/zhengtiantian/ai-equity-signal-platform/pulls \
             -d '{
               "title": "Update quant_data image to '${{ env.COMMIT_TAG }}'",
               "head": "update-data-image-'${{ env.COMMIT_TAG }}'",
