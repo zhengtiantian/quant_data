@@ -290,10 +290,8 @@ cd quant_data
 
 ---
 
-## Roadmap
+## Project Plan
 
-The roadmap is maintained once, at the platform level, because most items span several repos.
-See the [platform README](https://github.com/zhengtiantian/ai-equity-signal-platform#roadmap)
-for the item list and
+The roadmap is maintained once, at the platform level, because most items span several repos:
 [PROJECT_PLAN.md](https://github.com/zhengtiantian/ai-equity-signal-platform/blob/main/PROJECT_PLAN.md)
-for the detailed spec and effort estimate behind each ID.
+holds the item list with its status and the detailed spec and effort estimate behind each ID.
