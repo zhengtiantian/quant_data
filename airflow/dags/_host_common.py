@@ -85,16 +85,36 @@ def notify_failure(context) -> None:
         pass
 
 
+def lm_command(command: str, model: str, workers_env: tuple = (), ids_env: str | None = None,
+               second_id_env: str | None = None) -> str:
+    """Run `command` through tools/lm_session.py: wait for LM Studio to be free (one LLM task at
+    a time, job_agent included), load `model` with the slots this machine measured for it, set
+    the task's worker variables to match, unload it afterwards."""
+    opts = [f"--model {model}"] + [f"--workers-env {w}" for w in workers_env]
+    if ids_env:
+        opts.append(f"--ids-env {ids_env}")
+    if second_id_env:
+        opts.append(f"--second-id-env {second_id_env}")
+    return f"{PYTHON} {ROOT}/tools/lm_session.py run {' '.join(opts)} -- {command}"
+
+
 def host_task(
     task_id: str,
     script: str,
     extra_env: dict | None = None,
     execution_timeout: timedelta = timedelta(hours=1),
+    lm_model: str | None = None,
+    lm_workers_env: tuple = (),
+    lm_ids_env: str | None = None,
+    lm_second_id_env: str | None = None,
 ) -> BashOperator:
     env = {**BASE_ENV, **(extra_env or {})}
+    command = f"{PYTHON} {ROOT}/{script}"
+    if lm_model:
+        command = lm_command(command, lm_model, lm_workers_env, lm_ids_env, lm_second_id_env)
     return BashOperator(
         task_id=task_id,
-        bash_command=f"cd {ROOT} && {PYTHON} {ROOT}/{script}",
+        bash_command=f"cd {ROOT} && {command}",
         env=env,
         append_env=True,
         execution_timeout=execution_timeout,

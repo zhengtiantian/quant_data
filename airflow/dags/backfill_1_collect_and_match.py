@@ -27,7 +27,7 @@ from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 
-from _host_common import ROOT, PYTHON, BASE_ENV, GDELT_ENV, host_task, notify_failure
+from _host_common import ROOT, PYTHON, BASE_ENV, GDELT_ENV, host_task, lm_command, notify_failure
 
 SLM_API_URL = os.getenv("SLM_API_URL", "http://127.0.0.1:1234/v1")
 
@@ -52,7 +52,11 @@ with DAG(
     gdelt_collect = BashOperator(
         task_id="gdelt_collect",
         on_failure_callback=notify_failure,
-        bash_command=f"cd {ROOT} && {PYTHON} {ROOT}/collectors/news/gdelt/historical_collector.py",
+        # The SLM filter runs in each of GDELT_ENV's BATCH_WORKERS=6 processes, each with its own
+        # SLM_MAX_CONCURRENCY limit, hence the /6.
+        bash_command=f"cd {ROOT} && " + lm_command(
+            f"{PYTHON} {ROOT}/collectors/news/gdelt/historical_collector.py", BASE_ENV["SLM_MODEL"],
+            workers_env=("SLM_MAX_CONCURRENCY/6",), ids_env="SLM_MODELS"),
         env={
             **GDELT_ENV,
             "START_DATE": "{{ dag_run.conf.get('start_date', '2018-01-01') }}",
@@ -71,9 +75,12 @@ with DAG(
             "SLM_API_URL": SLM_API_URL,
             "DST_COLLECTION": "news_articles_company_matched_v2",
             "SLM_MODELS": os.getenv("SLM_MODELS", "qwen3.5-4b-mlx"),  # one loaded instance
-            "V2_WORKERS": "32",
+            "V2_WORKERS": "32",       # article workers; their LLM calls share SLM_MAX_CONCURRENCY
         },
         execution_timeout=timedelta(hours=4),
+        lm_model=os.getenv("SLM_MODELS", "qwen3.5-4b-mlx"),
+        lm_workers_env=("SLM_MAX_CONCURRENCY",),
+        lm_ids_env="SLM_MODELS",
     )
 
     # Refresh the Parquet copy of gkg_index (Stage 6B) for every month touched by this run.

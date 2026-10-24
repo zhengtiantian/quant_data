@@ -67,6 +67,9 @@ with DAG(
             "SLM_MODEL_A2": os.getenv("SLM_MODEL_A2", ""),
         },
         execution_timeout=timedelta(hours=6),
+        lm_model=os.getenv("SLM_MODEL_A", "gemma-4-e4b-it-mlx"),
+        lm_workers_env=("ENRICH_WORKERS",),
+        lm_second_id_env="SLM_MODEL_A2",
     )
 
     enrich_b = host_task(
@@ -79,6 +82,9 @@ with DAG(
             "SLM_MODEL_B2": os.getenv("SLM_MODEL_B2", ""),
         },
         execution_timeout=timedelta(hours=6),
+        lm_model=os.getenv("SLM_MODEL_B", "qwen3.5-9b-mlx"),
+        lm_workers_env=("ENRICH_WORKERS",),
+        lm_second_id_env="SLM_MODEL_B2",
     )
 
     merge_ab = host_task(
