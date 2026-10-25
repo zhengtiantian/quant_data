@@ -1,0 +1,34 @@
+{
+    "symbol": "STX",
+    "name": "Seagate Technology",
+    "primary_keywords": [
+        "Seagate"
+    ],
+    "expansion_keywords": [
+        "IronWolf",
+        "Gianluca Romano",
+        "Dave Mosley",
+        "Lyve Cloud"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "Seagate is also a street name (Seagate Avenue, the Seagate in Dundee), a Florida homebuilder and part of a Yahoo sidebar ad; STX is also a Korean shipbuilder and a film studio",
+            "required_keywords": [
+                "Seagate",
+                "IronWolf",
+                "Gianluca Romano",
+                "Dave Mosley",
+                "Lyve Cloud"
+            ],
+            "min_matches": 1,
+            "domain_kill": [
+                "newegg.com",
+                "amazon.",
+                "ebay.",
+                "bestbuy.com",
+                "boxden.com",
+                "walmart.com"
+            ]
+        }
+    }
+}

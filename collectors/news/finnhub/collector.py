@@ -1,7 +1,9 @@
+import json
 import os
 import sys
+import time
 import requests
-from datetime import datetime, UTC
+from datetime import date, datetime, timedelta, UTC
 from pathlib import Path
 from dotenv import load_dotenv
 from pymongo import MongoClient, errors
@@ -67,7 +69,100 @@ def fetch_finnhub():
 
     return r.json()[:LIMIT]
 
+# ====== Company news, per symbol ======
+# The general feed rarely names a mid-cap such as Seagate, so every symbol of the stock universe and
+# every holding in quant_ai also gets its own company-news call (2026-10-25). Finnhub's free tier
+# allows 60 calls a minute: one call per symbol, 1.05 s apart, about two minutes a run.
+COMPANY_NEWS_URL = "https://finnhub.io/api/v1/company-news"
+CALL_GAP = 1.05
+QUANT_AI_SYMBOLS = os.getenv("QUANT_AI_SYMBOLS_URL", "http://127.0.0.1:18000/api/markets/portfolio/symbols")
+
+
+def tracked_symbols():
+    """{symbol: company name}: the stock universe plus the user's holdings and watchlist in quant_ai
+    (so a stock bought tomorrow is followed from its next run on)."""
+    out = {}
+    try:
+        for d in MongoClient(MONGO_URI)["quant_data"]["stock_universe"].find({}, {"symbol": 1, "name": 1, "_id": 0}):
+            out[d["symbol"]] = d.get("name") or d["symbol"]
+    except Exception as exc:  # noqa: BLE001
+        print("stock_universe unavailable:", exc)
+    try:
+        r = requests.get(QUANT_AI_SYMBOLS, timeout=5).json()
+        for s in (r.get("held") or []) + (r.get("watchlist") or []):
+            out.setdefault(s, s)
+    except Exception as exc:  # noqa: BLE001 - quant_ai not running: the universe still gets its news
+        print("quant_ai holdings unavailable:", exc)
+    return out
+
+
+def fetch_company_news(symbol, start, end):
+    r = requests.get(COMPANY_NEWS_URL, params={"symbol": symbol, "from": start.isoformat(), "to": end.isoformat(),
+                                               "token": FINNHUB_API_KEY}, timeout=20)
+    r.raise_for_status()
+    data = r.json()
+    return data if isinstance(data, list) else []
+
+
+def company_news_docs(symbol, name, articles):
+    """Canonical documents: the keyword matcher may still file an article under another company it
+    is really about; one it cannot place stays with the symbol it was asked for."""
+    docs = []
+    for a in articles:
+        if not a.get("url") or not a.get("headline"):
+            continue
+        doc = canonicalise({
+            "source": {"platform": "finnhub", "name": a.get("source")},
+            "title": a.get("headline"),
+            "description": a.get("summary"),
+            "content": None,
+            "url": a.get("url"),
+            "impact": None,
+            "publishedAt": datetime.fromtimestamp(a["datetime"], UTC).isoformat() if a.get("datetime") else None,
+            "collectedAt": datetime.now(UTC).isoformat(),
+            "language": LANGUAGE,
+            "meta": {"collector": "finnhub_company", "requested_symbol": symbol, "version": "1.0"},
+        })
+        if not doc.get("symbol"):
+            doc["symbol"], doc["name"] = symbol, name
+        docs.append(doc)
+    return docs
+
+
+def collect_company_news(symbols, start, end, window_days=None):
+    """One call per symbol (or per window per symbol for a backfill); returns documents."""
+    docs = []
+    for i, (sym, name) in enumerate(symbols.items(), 1):
+        s = start
+        while s <= end:
+            e = min(end, s + timedelta(days=window_days)) if window_days else end
+            try:
+                docs += company_news_docs(sym, name, fetch_company_news(sym, s, e))
+            except Exception as exc:  # noqa: BLE001 - one symbol failing must not stop the run
+                print(f"  {sym} {s}..{e}: {type(exc).__name__}: {exc}")
+            time.sleep(CALL_GAP)
+            s = e + timedelta(days=1)
+        print(f"PROGRESS company_news {i} {len(symbols)} {sym} docs={len(docs)}", flush=True)
+    return docs
+
+
 # ====== Save (unified schema!) ======
+
+def insert_docs(docs):
+    if not docs:
+        return
+    col = MongoClient(MONGO_URI)["quant_data"]["news_articles"]
+    try:
+        result = col.insert_many(docs, ordered=False)
+        print("Inserted:", len(result.inserted_ids))
+    except errors.BulkWriteError as exc:
+        details = getattr(exc, "details", {}) or {}
+        write_errors = details.get("writeErrors", [])
+        non_dup = [err for err in write_errors if err.get("code") != 11000]
+        print(f"Inserted: {int(details.get('nInserted', 0) or 0)} (duplicates skipped: {len(write_errors) - len(non_dup)})")
+        if non_dup:
+            raise
+
 
 def save_to_mongo(articles):
     client = MongoClient(MONGO_URI)
@@ -130,3 +225,18 @@ if __name__ == "__main__":
         print(f"{i+1}. ({a['impact']}) {a['headline']}")
 
     save_to_mongo(filtered)
+
+    # Per-symbol company news: yesterday and today, or a backfill when FINNHUB_BACKFILL is set to
+    # "SYMBOL:YYYY-MM-DD,..." (two-week windows from that date; the free tier reaches about a year back).
+    backfill = os.getenv("FINNHUB_BACKFILL", "").strip()
+    if backfill:
+        names = tracked_symbols()
+        for item in backfill.split(","):
+            sym, since = item.split(":")
+            sym = sym.strip().upper()
+            docs = collect_company_news({sym: names.get(sym, sym)}, date.fromisoformat(since.strip()),
+                                        date.today(), window_days=13)
+            insert_docs(docs)
+    else:
+        today = date.today()
+        insert_docs(collect_company_news(tracked_symbols(), today - timedelta(days=1), today))

@@ -1,0 +1,34 @@
+{
+    "symbol": "SKHY",
+    "name": "SK hynix",
+    "primary_keywords": [
+        "Hynix",
+        "SKHY"
+    ],
+    "expansion_keywords": [
+        "Solidigm",
+        "Kwak Noh-jung",
+        "M15X"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "Shop pages list memory modules 'with SK Hynix IC'",
+            "required_keywords": [
+                "Hynix",
+                "SKHY",
+                "Solidigm",
+                "Kwak Noh-jung",
+                "M15X"
+            ],
+            "min_matches": 1,
+            "domain_kill": [
+                "newegg.com",
+                "amazon.",
+                "ebay.",
+                "bestbuy.com",
+                "walmart.com",
+                "aliexpress."
+            ]
+        }
+    }
+}

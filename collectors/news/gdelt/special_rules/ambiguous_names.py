@@ -163,8 +163,20 @@ class AmbiguousNameRule(BaseRule):
         "ADI": [r"vincent\s+roche", r"analog\s+devices", r"\blinear\s+technology\b"],
         "NXPI": [r"kurt\s+sievers", r"nxp\s+semiconductors", r"\bnxp\b"],
         "ON": [r"hassane\s+el.khoury", r"\bonsemi\b", r"on\s+semiconductor"],
-        "STX": [r"dave\s+mosley", r"seagate\s+technology", r"\bseagate\b"],
+        # STX (2026-10-25): a bare "Seagate" is no longer enough. GDELT also names streets (Seagate
+        # Avenue, the Seagate in Dundee), a Naples, Florida homebuilder (Seagate Development) and a
+        # Yahoo sidebar ad block; those go to the kill list or the SLM, the company's own words pass.
+        "STX": [r"seagate\s+technology", r"gianluca\s+romano", r"\bironwolf\b", r"lyve\s+cloud", r"nasdaq:\s*stx\b",
+                r"seagate\W{1,3}(?:stock|shares|earnings|results|revenue|guidance|ceo|hdds?|hard\s+drives?|exos|hamr|mozaic|nas|q[1-4]\b|price\s+target)",
+                r"dave\s+mosley.{0,120}seagate|seagate.{0,120}dave\s+mosley",
+                r"seagate\s*\(\s*(?:nasdaq\s*:\s*)?stx\s*\)", r"seagate['\u2019]s\b",
+                r"seagate\s+(?:launch|unveil|announc|report|ship|introduc|nam|appoint|rais|cut|beat|miss|top|post|plan|expand|complet|acquir|sue|settl|pay|fine|warn|forecast)\w*",
+                r"seagate\s+(?:outlook|svp|cfo|cto|executive|chief|president|firecuda|skyhawk|one\s*touch|onetouch|barracuda|game\s+drive|expansion|ultra\s+touch|lacie)",
+                r"seagate\s+to\s+(?:pay|offer|buy|sell|cut|raise|acquire|launch|close|open|invest|build|lay|ship|report)\b",
+                r"seagate\s+(?:hit|finds|offers|penalty|fine|bonds?|notes)\b"],
         "WDC": [r"david\s+goeckeler", r"western\s+digital", r"\bsandisk\b"],
+        # SKHY: "Hynix" is unambiguous; the rule exists only to drop shop pages (RAM sticks "with SK Hynix IC").
+        "SKHY": [r"\bhynix\b", r"\bsolidigm\b", r"kwak\s+noh.jung", r"\bskhy\b", r"\bm15x\b"],
         "SWKS": [r"liam\s+griffin", r"skyworks\s+solutions", r"skyworks\s+semiconductor"],
         "FTNT": [r"ken\s+xie", r"\bfortigate\b", r"fortinet\s+firewall", r"fortinet\s+security"],
         "ABNB": [r"brian\s+chesky", r"airbnb\s+host", r"airbnb\s+listing", r"airbnb\s+revenue"],
@@ -238,6 +250,12 @@ class AmbiguousNameRule(BaseRule):
 
     # 定义静态排除逻辑：秒杀已知的噪音 (Fast-Kill)
     STATIC_KILL_PATTERNS = {
+        "STX": [
+            r"seagate\s+(?:avenue|ave\b|road|rd\b|street|boulevard|blvd|lane|court|beach|condominiums?|towers?|cove|terrace)",
+            r"seagate\s+development", r"seagate\s+(?:genova|santorini|burrata|lee\s+wilson)", r"dundee",
+            r"dave\s+morton",   # the Yahoo sidebar block that lists "Hard Drive ... Seagate Technology" on unrelated stories
+            r"seagate\s+(?:property|convention|centre|center|rotary|hotel|resort|apartments?|homes?|realty|marina|club|food\s+bank)", r"premium\s+seagate",
+        ],
         "MSFT": [
             r"box\s+office", r"post\s+office", r"sheriff\'?s\s+office", 
             r"governor\'?s\s+office", r"mayor\'?s\s+office", r"police\s+office",

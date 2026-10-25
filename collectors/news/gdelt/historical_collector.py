@@ -1461,7 +1461,8 @@ def process_single_file(url, companies, rule_manager, avg_date, gkg_col=None):
                 pattern = "|".join(r"\b" + re.escape(str(k)) + r"\b" for k in keywords if len(str(k)) > 1)
                 combined = f"{row.get('Title','')} {row.get('Raw','')}"
                 if re.search(pattern, combined, re.IGNORECASE):
-                    article_data = {"title": row.get("Title",""), "content": row.get("Raw",""), "date": row["Date"]}
+                    article_data = {"title": row.get("Title",""), "content": row.get("Raw",""), "date": row["Date"],
+                                    "url": row["URL"]}    # domain_kill needs it (the CSV path already passed it)
                     if rule_manager.should_include(symbol, article_data):
                         matches.append({"row": {"URL": row["URL"], "Title": row.get("Title",""), "Date": row["Date"]}, "company": company})
         return matches
