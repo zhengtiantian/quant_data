@@ -2,7 +2,10 @@
 Weekly model training DAG (host-based BashOperator).
 
 Schedule: Sunday 07:00 — Ridge + LightGBM walk-forward CV on
-daily_symbol_features, results saved to MongoDB + MLflow.
+daily_symbol_features, results saved to MongoDB + MLflow. Alongside it, the
+past earnings reactions (research/features/earnings_reactions.py) that the
+holdings advisor replays its order plans on (PROJECT_PLAN Q.5); this
+week's report joins the history the following Sunday.
 
 Runs 1 hour after weekly_inst13f_holdings (06:00, ~30min timeout) so this
 week's 13F refresh is already in the feature set being trained on. Standalone
@@ -36,7 +39,18 @@ with DAG(
     tags=["quant", "weekly", "model", "training"],
 ) as dag:
 
-    wait_for_night_chain() >> BashOperator(
+    gate = wait_for_night_chain()
+
+    gate >> BashOperator(
+        task_id="earnings_reactions",
+        on_failure_callback=notify_failure,
+        bash_command=f"cd {ROOT} && {PYTHON} {ROOT}/research/features/earnings_reactions.py",
+        env=BASE_ENV,
+        append_env=True,
+        execution_timeout=timedelta(hours=1),
+    )
+
+    gate >> BashOperator(
         task_id="train_baseline_models",
         on_failure_callback=notify_failure,
         bash_command=(
