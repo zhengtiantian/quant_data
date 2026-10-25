@@ -5,7 +5,8 @@ The question, for a holding whose report just came out, at the open of the first
 trades on it: sell part into the move and buy it back lower, hold, or (with cash) buy the dip?
 The user wants the system to learn when each pays, not a rule written for one stock.
 
-    python research/models/earnings_policy.py fetch    # hourly bars incl. pre/after-hours, daily bars, EPS
+    python research/models/earnings_policy.py fetch    # daily bars, report dates and EPS (yfinance)
+    python research/models/earnings_policy.py minutes  # 5-minute bars incl. pre/after-hours around each report (Alpaca)
     python research/models/earnings_policy.py build    # one row per (report, action): features + outcome
     python research/models/earnings_policy.py train    # walk-forward LightGBM, the policy's out-of-sample record
 
@@ -38,7 +39,9 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "research" / "features"))
 EP_DIR = Path(os.getenv("EP_DIR", "/Volumes/Data4T/earnings_policy"))
 MARKET = "SPY"
-EARNINGS_LIMIT = 32                       # ~8 years of report dates: the older ones feed the stock's history features
+EARNINGS_LIMIT = 48                       # ~12 years of report dates: the older ones feed the stock's history features
+INTRADAY_FROM = "2016-01-01"              # Alpaca's historical minute data starts in 2016
+ALPACA_BARS = "https://data.alpaca.markets/v2/stocks/{sym}/bars"
 SELL_B = (1, 2, 3, 4, 6, None)            # None: buy back at the close of day H
 SELL_A = (1, 2, 4)
 BUY_B = (0, 2, 4)
@@ -63,27 +66,95 @@ def fetch(symbols):
     import yfinance as yf
     EP_DIR.mkdir(parents=True, exist_ok=True)
     for i, sym in enumerate(symbols, 1):
-        out = EP_DIR / f"{sym}.hourly.parquet"
-        if out.exists() and time.time() - out.stat().st_mtime < 20 * 3600:
+        out = EP_DIR / f"{sym}.daily.parquet"
+        if out.exists() and time.time() - out.stat().st_mtime < 20 * 3600 and not os.getenv("EP_REFRESH"):
             progress("fetch", i, len(symbols), f"{sym} cached")
             continue
         try:
             t = yf.Ticker(sym)
-            h = t.history(period="730d", interval="60m", prepost=True, auto_adjust=False)
-            d = t.history(period="10y", interval="1d", auto_adjust=False)
+            d = t.history(start="2015-06-01", interval="1d", auto_adjust=False)
             e = None if sym == MARKET else t.get_earnings_dates(limit=EARNINGS_LIMIT)
-            if h.empty or d.empty:
+            if d.empty:
                 raise ValueError("no bars")
-            h.to_parquet(out)
-            d.to_parquet(EP_DIR / f"{sym}.daily.parquet")
+            d.to_parquet(out)
             if e is not None and not e.empty:
                 rows = [{"time": ts.isoformat(), "eps_est": _f(r["EPS Estimate"]), "eps": _f(r["Reported EPS"]),
                          "surprise": _f(r["Surprise(%)"])} for ts, r in e.iterrows()]
                 (EP_DIR / f"{sym}.earnings.json").write_text(json.dumps(rows))
-            progress("fetch", i, len(symbols), f"{sym} hourly={len(h)}")
+            progress("fetch", i, len(symbols), f"{sym} daily={len(d)} reports={0 if e is None else len(e)}")
         except Exception as ex:  # noqa: BLE001 - one symbol failing must not stop the rest
             progress("fetch", i, len(symbols), f"{sym} failed {type(ex).__name__}: {ex}")
         time.sleep(0.4)
+
+
+def report_days(sym):
+    """[(report time, reaction date, previous session, session two after)] since INTRADAY_FROM."""
+    dly = pd.read_parquet(EP_DIR / f"{sym}.daily.parquet")
+    days = [d.date() for d in _ny(dly.index)]
+    out = []
+    for e in json.loads((EP_DIR / f"{sym}.earnings.json").read_text()):
+        rep = pd.Timestamp(e["time"])
+        rd = reaction_date(rep, days) if rep < pd.Timestamp.now(tz=rep.tz) else None
+        if rd is None or str(rd) < INTRADAY_FROM:
+            continue
+        k = days.index(rd)
+        if k < 1 or k + 2 >= len(days):
+            continue
+        out.append((rep, rd, days[k - 1], days[k + 2]))
+    return out
+
+
+def minutes(symbols):
+    """5-minute bars incl. pre- and after-hours (SIP, unadjusted, like the daily bars) from the
+    session before each report to two sessions after it, from Alpaca. One file per symbol."""
+    import requests
+    from concurrent.futures import ThreadPoolExecutor
+    from dotenv import load_dotenv
+    load_dotenv(ROOT / ".env", override=False)
+    hdr = {"APCA-API-KEY-ID": os.environ["ALPACA_API_KEY_ID"], "APCA-API-SECRET-KEY": os.environ["ALPACA_API_SECRET_KEY"]}
+    ny = "America/New_York"
+
+    def one(sym, prev_day, last_day):
+        start = pd.Timestamp(f"{prev_day} 04:00", tz=ny).tz_convert("UTC").isoformat()
+        end = pd.Timestamp(f"{last_day} 20:00", tz=ny).tz_convert("UTC").isoformat()
+        bars, token = [], None
+        for attempt in range(8):
+            params = {"timeframe": "5Min", "start": start, "end": end, "limit": 10000, "feed": "sip", "adjustment": "raw"}
+            if token:
+                params["page_token"] = token
+            r = requests.get(ALPACA_BARS.format(sym=sym.replace(".", "/")), headers=hdr, params=params, timeout=30)
+            if r.status_code == 429:
+                time.sleep(3 * (attempt + 1))
+                continue
+            r.raise_for_status()
+            j = r.json()
+            bars += j.get("bars") or []
+            token = j.get("next_page_token")
+            if not token:
+                break
+        return bars
+
+    for n, sym in enumerate(symbols, 1):
+        out = EP_DIR / f"{sym}.m5.parquet"
+        if out.exists():
+            progress("minutes", n, len(symbols), f"{sym} cached")
+            continue
+        try:
+            evs = report_days(sym)
+        except FileNotFoundError:
+            progress("minutes", n, len(symbols), f"{sym} no daily/earnings")
+            continue
+        rows = []
+        with ThreadPoolExecutor(3) as ex:
+            for bars in ex.map(lambda e: one(sym, e[2], e[3]), evs):
+                rows += bars
+                time.sleep(0.35)
+        if rows:
+            df = pd.DataFrame(rows).drop_duplicates("t")
+            df.index = pd.to_datetime(df.pop("t"), utc=True)
+            df = df.rename(columns={"o": "Open", "h": "High", "l": "Low", "c": "Close", "v": "Volume"})[["Open", "High", "Low", "Close", "Volume"]]
+            df.sort_index().to_parquet(out)
+        progress("minutes", n, len(symbols), f"{sym} reports={len(evs)} bars={len(rows)}")
 
 
 def _f(x):
@@ -210,7 +281,8 @@ def build(symbols, sectors):
     events, rows = [], []
     for n, sym in enumerate(symbols, 1):
         try:
-            h = pd.read_parquet(EP_DIR / f"{sym}.hourly.parquet")
+            m5 = EP_DIR / f"{sym}.m5.parquet"            # Alpaca 5-minute bars; the yfinance hourly ones before them
+            h = pd.read_parquet(m5 if m5.exists() else EP_DIR / f"{sym}.hourly.parquet")
             dly = pd.read_parquet(EP_DIR / f"{sym}.daily.parquet")
             earn = json.loads((EP_DIR / f"{sym}.earnings.json").read_text())
         except FileNotFoundError:
@@ -294,15 +366,50 @@ def build(symbols, sectors):
 
 # ---------------------------------------------------------------- train
 
+RELEASE_FEATS = ["rel_found", "rev_vs_guide", "guide_seq", "guide_width", "fy_outlook", "margin_outlook", "tone",
+                 "capital_return", "restructuring"]
+_CODES = {"fy_outlook": {"raised": 1.0, "initiated": 0.5, "maintained": 0.0, "lowered": -1.0, "withdrawn": -1.0},
+          "margin_outlook": {"up": 1.0, "flat": 0.0, "down": -1.0},
+          "capital_return": {"new_or_raised": 1.0, "none": 0.0, "cut_or_suspended": -1.0}}
+
+
+def release_features(ev):
+    """Join what the LLM read in each release (earnings_releases.py) onto the events; numbers from it
+    become ratios here: revenue against the outlook given for the quarter, next quarter's outlook
+    against this quarter's revenue."""
+    path = EP_DIR / "release_features.jsonl"
+    rows = []
+    if path.exists():
+        for r in map(json.loads, path.open()):
+            if r.get("error"):
+                continue
+            num = lambda k: r.get(k) if isinstance(r.get(k), (int, float)) and r.get(k) > 0 else None
+            rev, pl, ph, nl, nh = (num(k) for k in ("revenue", "prior_guide_low", "prior_guide_high", "next_guide_low", "next_guide_high"))
+            pm = (pl + ph) / 2 if pl and ph else None
+            nm = (nl + nh) / 2 if nl and nh else None
+            f = {"symbol": r["symbol"], "date": r["date"], "rel_found": 1.0,
+                 "rev_vs_guide": (rev / pm - 1) * 100 if rev and pm and 0.5 < rev / pm < 2 else np.nan,
+                 "guide_seq": (nm / rev - 1) * 100 if rev and nm and 0.5 < nm / rev < 2 else np.nan,
+                 "guide_width": (nh - nl) / nm * 100 if nm else np.nan,
+                 "tone": float(r["tone"]) if isinstance(r.get("tone"), (int, float)) else np.nan,
+                 "restructuring": 1.0 if r.get("restructuring") is True else 0.0}
+            for k, m in _CODES.items():
+                f[k] = m.get(str(r.get("full_year_outlook" if k == "fy_outlook" else k)), np.nan)
+            rows.append(f)
+    if not rows:
+        return ev.assign(**{k: np.nan for k in RELEASE_FEATS})
+    return ev.merge(pd.DataFrame(rows).drop_duplicates(["symbol", "date"]), on=["symbol", "date"], how="left").fillna({"rel_found": 0.0})
+
+
 FEATS = ["gap", "ext_high", "ext_low", "ext_first", "ext_last", "surprise", "beat", "run5", "run20", "vol20", "gap_vs_vol",
          "gap_vs_typical", "past_fade_mean", "past_fade_same_sign", "past_move_med", "past_n", "mkt_gap", "mkt_run5",
-         "after_close", "sector_code"] + NEWS_FEATS
+         "after_close", "sector_code"] + NEWS_FEATS + RELEASE_FEATS
 ACT_FEATS = ["kind_code", "a", "b", "H"]
 
 
 def train(holdings):
     import lightgbm as lgb
-    ev = pd.read_parquet(EP_DIR / "events.parquet")
+    ev = release_features(pd.read_parquet(EP_DIR / "events.parquet"))
     lab = pd.read_parquet(EP_DIR / "labels.parquet")
     ev["sector_code"] = ev["sector"].astype("category").cat.codes
     df = lab.merge(ev, on=["symbol", "date"])
@@ -314,7 +421,7 @@ def train(holdings):
                   feature_fraction=0.8, bagging_fraction=0.8, bagging_freq=1, lambda_l2=5.0, verbose=-1, seed=7)
     picks = []
     sides = {"sell": ["sell_open", "sell_up"], "all": ["sell_open", "sell_up", "buy"]}
-    test_q = [q for q in quarters if (df["q"] < q).sum() >= 250 * len(ACTIONS)]
+    test_q = [q for q in quarters if (df["q"] < q).sum() >= 800 * len(ACTIONS)]
     for i, q in enumerate(test_q, 1):
         tr, te = df[df["q"] < q], df[df["q"] == q]
         model = lgb.train(params, lgb.Dataset(tr[FEATS + ACT_FEATS], tr["gain"]), num_boost_round=300)
@@ -370,6 +477,8 @@ def main():
     holdings = ["INTC", "STX", "TSM", "SKHY", "WDC"]
     if stage in ("fetch", "all"):
         fetch(symbols + [MARKET])
+    if stage in ("minutes", "all"):
+        minutes(symbols)
     if stage in ("build", "all"):
         build(symbols, uni)
     if stage in ("train", "all"):
