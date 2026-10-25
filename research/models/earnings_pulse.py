@@ -341,7 +341,329 @@ def model():
     print("  importance:", ", ".join(f"{f} {v:.0f}" for f, v in imp[:10]))
 
 
-# ---------------------------------------------------------------- live: the final model and predict
+# ---------------------------------------------------------------- v2: single legs, composed by the algorithm
+
+LEVELS = (0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 12)
+MAX_LEGS = 4
+
+
+def leg_gains(bars, t0_idx, idx, level):
+    """One step at `level` % above the price when placed: the gain against holding for each buy-back
+    rule, or 0 for all when the step never trades (net of COST a side when it does)."""
+    o, h, l, c = bars
+    p0, end = c[t0_idx - 1], idx["next_open"]
+    lim = p0 * (1 + level / 100)
+    hit = np.nonzero(h[t0_idx:end] >= lim * (1 + THROUGH / 100))[0]
+    if not len(hit):
+        return {bb: 0.0 for bb in BUYBACK}
+    i = t0_idx + hit[0]
+    sell = max(lim, o[i])
+    out = {}
+    for bb in BUYBACK:
+        if bb.startswith("lim"):
+            back = sell * (1 - int(bb[3:]) / 100)
+            j = np.nonzero(l[i + 1:end + 1] <= back * (1 - THROUGH / 100))[0]
+            buy = min(back, o[i + 1 + j[0]]) if len(j) else o[end]
+        else:
+            buy = o[min(max(idx[bb], i + 1), end)]
+        out[bb] = (sell - buy) / p0 * 100 - 2 * COST
+    return out
+
+
+def build_legs():
+    """One row per (report, placement, level, buy-back): what that single step made. Any ladder is a
+    weighted sum of these, so the number of steps, their levels and sizes are left to the policy."""
+    ev = events()
+    rows = []
+    for n, r in enumerate(ev.itertuples(), 1):
+        p = M1 / f"{r.symbol}_{r.day}.parquet"
+        if not p.exists():
+            continue
+        m = pd.read_parquet(p)
+        m.index = m.index.tz_convert(NY)
+        nxt = m[m.index.date > pd.Timestamp(r.day).date()]
+        reg_next = nxt[(nxt.index.hour * 60 + nxt.index.minute) >= 570]
+        if len(m[m.index.date == pd.Timestamp(r.day).date()]) < 30 or reg_next.empty:
+            continue
+        t = m.index
+        pos = lambda ts: int(np.searchsorted(t.values, ts.to_datetime64()))
+        close_i = pos(pd.Timestamp(f"{r.day} 16:00", tz=NY))
+        if close_i == 0 or close_i >= len(m):
+            continue
+        vol = m["volume"].values
+        pre_med = float(np.median(vol[max(0, close_i - 30):close_i])) or 1.0
+        cl = m["close"].values
+        jump = [i for i in range(close_i, min(close_i + 90, len(m))) if vol[i] >= 3 * pre_med and abs(cl[i] / cl[close_i - 1] - 1) >= 0.005]
+        rel_i = min(jump[0] if jump else len(m), pos(r.release))
+        release_ts = m.index[rel_i] if rel_i < len(m) else r.release
+        idx = {"c+5": pos(r.call + pd.Timedelta(minutes=5)), "c+30": pos(r.call + pd.Timedelta(minutes=30)),
+               "ah_end": pos(pd.Timestamp(f"{r.day} 19:55", tz=NY)), "next_open": pos(reg_next.index[0])}
+        place = {"pre": close_i, "c-5": pos(r.call - pd.Timedelta(minutes=5))}
+        for k in (1, 3, 5, 10, 20, 30):
+            place[f"r+{k}"] = pos(release_ts + pd.Timedelta(minutes=k))
+        arr = (m["open"].values, m["high"].values, m["low"].values, cl)
+        for pl, i in place.items():
+            if i <= 0 or i >= idx["next_open"]:
+                continue
+            for lev in LEVELS:
+                for bb, g in leg_gains(arr, i, idx, lev).items():
+                    if not bb.startswith("lim") and idx[bb] <= i:
+                        continue
+                    rows.append((r.symbol, r.date, pl, lev, bb, g))
+        if n % 200 == 0 or n == len(ev):
+            progress("legs", n, len(ev), f"rows={len(rows)}")
+    df = pd.DataFrame(rows, columns=["symbol", "date", "place", "level", "buyback", "gain"])
+    df["gain"] = df["gain"].astype("float32")
+    df.to_parquet(D / f"pulse_legs{os.getenv('PULSE_TAG', '')}.parquet")
+    print(f"DONE legs: {df[['symbol', 'date']].drop_duplicates().shape[0]} reports, {len(df)} rows", flush=True)
+
+
+# ---------------------------------------------------------------- v2: the bake-off
+
+ORDER = ("pre", "r+1", "r+3", "r+5", "r+10", "r+20", "r+30", "c-5")        # the placements in time order
+STATE = ["move_at", "maxmove_at", "minmove_at", "release_min", "run5", "run20", "vol20", "past_move_med",
+         "news_pre_mean", "place_code"]
+LEG_FEATS = STATE + ["level", "bb_code", "own_leg", "own_sym"]
+
+
+def leg_frame():
+    tag = os.getenv("PULSE_TAG", "_strict")
+    legs = pd.read_parquet(D / f"pulse_legs{tag}.parquet")
+    pe = pd.read_parquet(D / "pulse_events.parquet")
+    daily = pd.read_parquet(D / "events.parquet")[["symbol", "date", "run5", "run20", "vol20", "past_move_med", "news_pre_mean"]]
+    st = []
+    for p in ORDER:
+        x = pe[["symbol", "date", "release_min", f"move_{p}", f"maxmove_{p}", f"minmove_{p}"]].copy()
+        x.columns = ["symbol", "date", "release_min", "move_at", "maxmove_at", "minmove_at"]
+        x["place"] = p
+        if p == "pre":
+            x["release_min"] = np.nan
+        st.append(x)
+    st = pd.concat(st).merge(daily, on=["symbol", "date"], how="left")
+    st["place_code"] = st["place"].map({p: i for i, p in enumerate(ORDER)})
+    df = legs.merge(st, on=["symbol", "date", "place"], how="inner")
+    df["bb_code"] = df["buyback"].map({b: i for i, b in enumerate(BUYBACK)}).astype(float)
+    df = df.sort_values("date").reset_index(drop=True)
+    # what this stock's earlier reports made on the same step, and on all steps (earlier dates only)
+    df["own_leg"] = df.groupby(["symbol", "place", "level", "buyback"])["gain"].transform(lambda x: x.shift().expanding().mean())
+    per = df.groupby(["symbol", "date"])["gain"].mean().rename("g").reset_index().sort_values("date")
+    per["own_sym"] = per.groupby("symbol")["g"].transform(lambda x: x.shift().expanding().mean())
+    df = df.merge(per[["symbol", "date", "own_sym"]], on=["symbol", "date"], how="left")
+    df["year"] = df["date"].str[:4].astype(int)
+    df["eid"] = df["symbol"] + "|" + df["date"]
+    return df
+
+
+def compose(d, margin, weight="pred"):
+    """d: rows of (eid, place, level, buyback, pred[, q10], gain). For each (eid, place), the plan the
+    algorithm would give: per buy-back rule, the steps predicted above `margin` (at most MAX_LEGS, the
+    best), sized by prediction (or by prediction over downside with weight='risk'); the rule whose
+    plan has the highest predicted value wins. Returns one row per (eid, place)."""
+    c = d[d["pred"] >= margin].copy()
+    if c.empty:
+        return pd.DataFrame(columns=["eid", "place", "value", "realized", "legs", "buyback"])
+    c["rk"] = c.groupby(["eid", "place", "buyback"])["pred"].rank(ascending=False, method="first")
+    c = c[c["rk"] <= MAX_LEGS]
+    c["w"] = c["pred"] if weight == "pred" else c["pred"] / np.maximum(c["pred"] - c["q10"], 0.5)
+    c["wp"], c["wg"] = c["w"] * c["pred"], c["w"] * c["gain"]
+    g = c.groupby(["eid", "place", "buyback"]).agg(w=("w", "sum"), wp=("wp", "sum"), wg=("wg", "sum"), legs=("level", "count")).reset_index()
+    g["value"], g["realized"] = g["wp"] / g["w"], g["wg"] / g["w"]
+    return g.loc[g.groupby(["eid", "place"])["value"].idxmax(), ["eid", "place", "value", "realized", "legs", "buyback"]]
+
+
+def run_policy(plans, events_, margin, cont=None):
+    """Walk each evening's placements in time order. Greedy: act at the first plan worth `margin`.
+    With cont (place -> predicted value of waiting, per eid): act only when the plan beats waiting."""
+    out = []
+    by = {k: g.set_index("place") for k, g in plans.groupby("eid")}
+    for eid in events_:
+        g = by.get(eid)
+        res = {"eid": eid, "acted": False, "gain": 0.0, "place": None, "legs": 0}
+        if g is not None:
+            for p in ORDER:
+                if p not in g.index:
+                    continue
+                r = g.loc[p]
+                wait = cont.get((eid, p), -np.inf) if cont is not None else -np.inf
+                if r["value"] >= margin and r["value"] >= wait:
+                    res.update(acted=True, gain=float(r["realized"]), place=p, legs=int(r["legs"]), buyback=r["buyback"])
+                    break
+        out.append(res)
+    return pd.DataFrame(out)
+
+
+def bakeoff():
+    """Walk-forward by year (2019-2026) of the three policies on single-leg predictions."""
+    import lightgbm as lgb
+    df = leg_frame()
+    margin = float(os.getenv("PULSE_MARGIN", "0.3"))
+    P = dict(objective="huber", alpha=2.0, learning_rate=0.05, num_leaves=31, min_data_in_leaf=500, feature_fraction=0.8,
+             bagging_fraction=0.7, bagging_freq=1, lambda_l2=10.0, verbose=-1, seed=7, num_threads=8)
+    Q = {**P, "objective": "quantile", "alpha": 0.1}
+    R = 250
+    results = {k: [] for k in ("A_greedy", "B_stopping", "C_stopping_risk")}
+    years = [y for y in sorted(df["year"].unique()) if y >= 2019]
+    (D / "bakeoff_preds").mkdir(exist_ok=True)
+    for n, y in enumerate(years, 1):
+        tr, te = df[df["year"] < y], df[df["year"] == y].copy()
+        # out-of-fold predictions on the training years, for the value of waiting
+        half = (pd.util.hash_pandas_object(tr["eid"], index=False) % 2).values
+        oof = np.zeros(len(tr))
+        for k in (0, 1):
+            m = lgb.train(P, lgb.Dataset(tr.loc[half != k, LEG_FEATS], tr.loc[half != k, "gain"]), R)
+            oof[half == k] = m.predict(tr.loc[half == k, LEG_FEATS])
+        trp = tr.assign(pred=oof)
+        m = lgb.train(P, lgb.Dataset(tr[LEG_FEATS], tr["gain"]), R)
+        te["pred"] = m.predict(te[LEG_FEATS])
+        mq = lgb.train(Q, lgb.Dataset(tr[LEG_FEATS], tr["gain"]), R)
+        te["q10"] = mq.predict(te[LEG_FEATS])
+        # B: fitted value iteration over the placements, backwards from the last one
+        tplans = compose(trp, margin)
+        sfeat = tr.drop_duplicates(["eid", "place"]).set_index(["eid", "place"])[STATE]
+        tfeat = te.drop_duplicates(["eid", "place"]).set_index(["eid", "place"])[STATE]
+        tp = tplans.set_index(["eid", "place"])
+        follow = pd.Series(0.0, index=tr["eid"].unique())          # what following the policy from here on made
+        cont_te = {}
+        for i in range(len(ORDER) - 1, -1, -1):
+            p = ORDER[i]
+            ids = follow.index
+            if i < len(ORDER) - 1:
+                X = sfeat.reindex(pd.MultiIndex.from_product([ids, [p]])).values
+                ok = ~np.isnan(X[:, 0])
+                if ok.sum() > 200:
+                    cm = lgb.train({**P, "min_data_in_leaf": 100}, lgb.Dataset(X[ok], follow.values[ok]), 150)
+                    cw = pd.Series(cm.predict(np.nan_to_num(X, nan=np.nan)), index=ids)
+                    Xt = tfeat.reindex(pd.MultiIndex.from_product([te["eid"].unique(), [p]]))
+                    okt = ~Xt.iloc[:, 0].isna()
+                    cont_te.update({(e, p): float(v) for (e, _), v in zip(Xt[okt].index, cm.predict(Xt[okt].values))})
+                else:
+                    cw = pd.Series(0.0, index=ids)
+            else:
+                cw = pd.Series(0.0, index=ids)
+            here = tp.xs(p, level="place") if p in tp.index.get_level_values("place") else pd.DataFrame(columns=["value", "realized"])
+            v = here["value"].reindex(ids)
+            act = (v >= margin) & (v >= cw)
+            follow = pd.Series(np.where(act, here["realized"].reindex(ids).fillna(0.0), follow.values), index=ids)
+        eids = te["eid"].unique()
+        te[["eid", "symbol", "year", "place", "level", "buyback", "gain", "pred", "q10"]].to_parquet(D / "bakeoff_preds" / f"{y}.parquet")
+        (D / "bakeoff_preds" / f"{y}_cont.json").write_text(json.dumps({f"{e}||{p}": v for (e, p), v in cont_te.items()}))
+        plans_te = compose(te, margin)
+        results["A_greedy"].append(run_policy(plans_te, eids, margin).assign(year=y))
+        results["B_stopping"].append(run_policy(plans_te, eids, margin, cont_te).assign(year=y))
+        results["C_stopping_risk"].append(run_policy(compose(te, margin, "risk"), eids, margin, cont_te).assign(year=y))
+        progress("bakeoff", n, len(years), f"{y}")
+    print(f"\nWalk-forward {years[0]}-{years[-1]}, single legs composed by the policy, margin {margin}%, {COST}% a side "
+          f"(labels: {os.getenv('PULSE_TAG', '_strict')}):")
+    for k, parts in results.items():
+        r = pd.concat(parts)
+        r.to_parquet(D / f"pulse_bakeoff_{k}.parquet")
+        a = r[r["acted"]]
+        yr = r.groupby("year")["gain"].mean()
+        intc = a[a["eid"].str.startswith("INTC|")]
+        print(f"  {k:16s} acted {len(a):4d}/{len(r)} ({len(a) / len(r):.0%})  mean {a['gain'].mean():+.2f}% (se {a['gain'].std() / np.sqrt(len(a)):.2f})"
+              f"  win {(a['gain'] > 0).mean():.0%}  p10 {a['gain'].quantile(.1):+.2f}  worst {a['gain'].min():+.1f}  sum {a['gain'].sum():+.0f}%"
+              f"  worst year {yr.min():+.2f}  legs {a['legs'].mean():.1f}  INTC {len(intc)}x {intc['gain'].mean():+.2f}%")
+        print("     placements:", a["place"].value_counts().to_dict())
+
+
+# ---------------------------------------------------------------- the live policy (chosen 2026-10-26)
+
+# Chosen on the 2019-2022 walk-forward among 160 variants (highest total with P10 above -1%), then
+# checked on 2023-2026 untouched: 395 acted, +0.86% per acted report, P10 -0.16%.
+POLICY = {"margin": 0.3, "no_pre": True, "q10_min": -1.5, "weight": "risk", "stopping": False}
+P_LEG = dict(objective="huber", alpha=2.0, learning_rate=0.05, num_leaves=31, min_data_in_leaf=500, feature_fraction=0.8,
+             bagging_fraction=0.7, bagging_freq=1, lambda_l2=10.0, verbose=-1, seed=7, num_threads=8)
+
+
+def policy_walkforward():
+    """The live policy replayed on the bake-off's saved out-of-sample predictions."""
+    out = []
+    for p in sorted((D / "bakeoff_preds").glob("*.parquet")):
+        d = pd.read_parquet(p)
+        k = d[(d["q10"] >= POLICY["q10_min"]) & ((d["place"] != "pre") if POLICY["no_pre"] else True)]
+        r = run_policy(compose(k, POLICY["margin"], POLICY["weight"]), d["eid"].unique(), POLICY["margin"])
+        out.append(r.assign(year=int(p.stem)))
+    return pd.concat(out)
+
+
+def final():
+    """The live models on every report: per-step gain (huber) and its 10th percentile (quantile);
+    each stock's step history; the policy's out-of-sample record, overall and per stock, which
+    gates the live calls. The live models are replaced only while that record stays positive."""
+    import lightgbm as lgb
+    df = leg_frame()
+    wf = policy_walkforward()
+    acted = wf[wf["acted"]]
+    if len(acted) < 100 or acted["gain"].mean() <= 0:
+        raise SystemExit(f"walk-forward no longer positive ({len(acted)} acted, {acted['gain'].mean():+.3f}%): live model kept")
+    m = lgb.train(P_LEG, lgb.Dataset(df[LEG_FEATS], df["gain"]), 250)
+    mq = lgb.train({**P_LEG, "objective": "quantile", "alpha": 0.1}, lgb.Dataset(df[LEG_FEATS], df["gain"]), 250)
+    wf["symbol"] = wf["eid"].str.split("|").str[0]
+    rec = {}
+    for s_, g in wf.groupby("symbol"):
+        a = g[g["acted"]]
+        rec[s_] = {"reports": int(len(g)), "acted": int(len(a)), "mean_when_acting": round(float(a["gain"].mean()), 3) if len(a) else None,
+                   "win": round(float((a["gain"] > 0).mean()), 3) if len(a) else None, "worst": round(float(a["gain"].min()), 2) if len(a) else None}
+    meta = {"trained_at": pd.Timestamp.now(tz="UTC").isoformat(), "version": 2, "policy": POLICY, "levels": list(LEVELS),
+            "buyback": list(BUYBACK), "features": LEG_FEATS, "reports": int(df["eid"].nunique()),
+            "walkforward": {"years": f"{wf['year'].min()}-{wf['year'].max()}", "acted": int(len(acted)),
+                            "mean_when_acting": round(float(acted["gain"].mean()), 3), "p10": round(float(acted["gain"].quantile(.1)), 3),
+                            "worst": round(float(acted["gain"].min()), 2)},
+            "per_symbol": rec}
+    MODEL_DIR.mkdir(exist_ok=True)
+    m.save_model(str(MODEL_DIR / "leg_model.txt"))
+    mq.save_model(str(MODEL_DIR / "leg_q10.txt"))
+    last = df.sort_values("date").groupby(["symbol", "place", "level", "buyback"])["gain"].mean().rename("own_leg").reset_index()
+    last.to_parquet(MODEL_DIR / "own_leg.parquet")
+    df.groupby("symbol")["gain"].mean().rename("own_sym").reset_index().to_parquet(MODEL_DIR / "own_sym.parquet")
+    (MODEL_DIR / "meta.json").write_text(json.dumps(meta, indent=1))
+    print(f"DONE final: {meta['reports']} reports; policy walk-forward {meta['walkforward']}", flush=True)
+
+
+def predict(req):
+    """req: {symbol, place, move_at, maxmove_at, minmove_at, release_min, run5, run20, vol20,
+    past_move_med, news_pre_mean}. Every step (level x buy-back) the policy could put in now, scored
+    for gain and downside; the plan composed from them (steps, levels, weights); whether to act."""
+    import lightgbm as lgb
+    meta = json.loads((MODEL_DIR / "meta.json").read_text())
+    pol = meta["policy"]
+    rec = meta["per_symbol"].get(req["symbol"])
+    gate = bool(rec and rec.get("acted", 0) >= 5 and (rec.get("mean_when_acting") or 0) > 0)
+    base = {"symbol": req["symbol"], "place": req["place"], "stock_record": rec, "stock_gate": gate,
+            "margin": pol["margin"], "model_record": meta["walkforward"]}
+    if pol["no_pre"] and req["place"] == "pre":
+        return {**base, "act": False, "best": None, "reason": "the policy does not place orders before the release"}
+    m, mq = lgb.Booster(model_file=str(MODEL_DIR / "leg_model.txt")), lgb.Booster(model_file=str(MODEL_DIR / "leg_q10.txt"))
+    own = pd.read_parquet(MODEL_DIR / "own_leg.parquet")
+    own = own[(own["symbol"] == req["symbol"]) & (own["place"] == req["place"])].set_index(["level", "buyback"])["own_leg"]
+    osym = pd.read_parquet(MODEL_DIR / "own_sym.parquet").set_index("symbol")["own_sym"].get(req["symbol"], np.nan)
+    rows = [{**{k: req.get(k) for k in STATE if k in req}, "place_code": ORDER.index(req["place"]), "level": float(lev),
+             "bb_code": float(BUYBACK.index(bb)), "own_leg": own.get((lev, bb), np.nan), "own_sym": osym,
+             "eid": "live", "place": req["place"], "buyback": bb, "gain": 0.0} for lev in LEVELS for bb in BUYBACK]
+    X = pd.DataFrame(rows)
+    for k in LEG_FEATS:
+        if k not in X:
+            X[k] = np.nan
+    X["pred"] = m.predict(X[LEG_FEATS].astype(float))
+    X["q10"] = mq.predict(X[LEG_FEATS].astype(float))
+    K = X[X["q10"] >= pol["q10_min"]]
+    plan = compose(K, pol["margin"], pol["weight"])
+    if plan.empty:
+        top = X.sort_values("pred", ascending=False).head(3)
+        return {**base, "act": False, "best": None, "best_step": [{"level": r.level, "buyback": r.buyback, "pred": round(r.pred, 3),
+                                                                     "q10": round(r.q10, 3)} for r in top.itertuples()]}
+    bb = plan.iloc[0]["buyback"]
+    legs = K[(K["buyback"] == bb) & (K["pred"] >= pol["margin"])].sort_values("pred", ascending=False).head(MAX_LEGS)
+    w = legs["pred"] / np.maximum(legs["pred"] - legs["q10"], 0.5)
+    legs = legs.assign(weight=w / w.sum()).sort_values("level")
+    value = float(plan.iloc[0]["value"])
+    return {**base, "act": bool(value >= pol["margin"] and gate), "clears_margin": value >= pol["margin"],
+            "best": {"plan": f"{req['place']} | {'/'.join(f'{v:g}' for v in legs['level'])} | {bb}", "ladder": [float(v) for v in legs["level"]],
+                     "weights": [round(float(v), 3) for v in legs["weight"]], "buyback": bb, "pred_pct": round(value, 3),
+                     "steps": [{"level": float(r.level), "pred": round(float(r.pred), 3), "q10": round(float(r.q10), 3)} for r in legs.itertuples()]}}
+
+
+# ---------------------------------------------------------------- v1 (fixed three-step ladders), kept for the research record
 
 LIVE_FEATS = ["move_at", "maxmove_at", "minmove_at", "release_min", "run5", "run20", "vol20", "past_move_med",
               "news_pre_mean", "place_code", "lad_lo", "bb_code", "own_past"]
@@ -350,8 +672,8 @@ LIVE_MARGIN = float(os.getenv("PULSE_MARGIN", "0.3"))
 LADDER_OF = {"/".join(map(str, lad)): lad for lad in LADDERS}
 
 
-def final():
-    """The live model: price-only features (the walk-forward showed the release and volume features
+def final_v1():
+    """The v1 live model: price-only features (the walk-forward showed the release and volume features
     add nothing: +0.64% vs +0.66% per acted report), trained on every report, on the strict labels
     (0.25% a side, limits traded through). Plus each stock's own mean per plan and its out-of-sample
     record from the walk-forward, which gates the live calls."""
@@ -425,7 +747,7 @@ def daily_context(symbol):
     return out
 
 
-def predict(req):
+def predict_v1(req):
     """req: {symbol, place, move_at, maxmove_at, minmove_at, release_min, run5, run20, vol20,
     past_move_med, news_pre_mean}. Returns the plans placeable now ranked by predicted gain, the
     best, whether it clears the margin, and the stock's out-of-sample record."""
@@ -464,7 +786,8 @@ def main():
         out = daily_context(req["symbol"]) if req.get("context_only") else predict(req)
         print(json.dumps(out, default=float))
         return 0
-    {"fetch": fetch, "build": build, "learn": learn, "model": model, "final": final}.get(stage, lambda: sys.exit(__doc__))()
+    {"fetch": fetch, "build": build, "learn": learn, "model": model, "final": final, "legs": build_legs, "bakeoff": bakeoff}.get(
+        stage, lambda: sys.exit(__doc__))()
     return 0
 
 

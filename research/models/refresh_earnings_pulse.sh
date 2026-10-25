@@ -11,6 +11,7 @@ $PY research/models/earnings_policy.py build                    # events and the
 $PY research/models/earnings_releases.py fetch                  # SEC acceptance times of the new releases
 $PY research/models/earnings_pulse.py fetch                     # 1-minute bars of the new after-the-close evenings
 export PULSE_TAG=_strict PULSE_COST_PCT=0.25 PULSE_FILL_THROUGH_PCT=0.05
-$PY research/models/earnings_pulse.py build
-PULSE_DROP=vol_at,surprise,beat,fy_outlook,margin_outlook,tone,guide_seq,rev_vs_guide $PY research/models/earnings_pulse.py model
-$PY research/models/earnings_pulse.py final
+$PY research/models/earnings_pulse.py build                     # the evenings' features
+$PY research/models/earnings_pulse.py legs                      # every single step's outcome
+$PY research/models/earnings_pulse.py bakeoff                   # walk-forward by year: out-of-sample predictions
+$PY research/models/earnings_pulse.py final                     # the live models, if the policy's record stays positive
