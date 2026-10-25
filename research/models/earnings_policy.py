@@ -136,14 +136,18 @@ def minutes(symbols):
 
     for n, sym in enumerate(symbols, 1):
         out = EP_DIR / f"{sym}.m5.parquet"
-        if out.exists():
-            progress("minutes", n, len(symbols), f"{sym} cached")
-            continue
         try:
             evs = report_days(sym)
         except FileNotFoundError:
             progress("minutes", n, len(symbols), f"{sym} no daily/earnings")
             continue
+        old = pd.read_parquet(out) if out.exists() else None
+        if old is not None:                      # weekly refresh: only the reports after the stored bars
+            last = old.index.max().tz_convert(ny).date()
+            evs = [e for e in evs if e[3] > last]
+            if not evs:
+                progress("minutes", n, len(symbols), f"{sym} up to date")
+                continue
         rows = []
         with ThreadPoolExecutor(3) as ex:
             for bars in ex.map(lambda e: one(sym, e[2], e[3]), evs):
@@ -153,6 +157,8 @@ def minutes(symbols):
             df = pd.DataFrame(rows).drop_duplicates("t")
             df.index = pd.to_datetime(df.pop("t"), utc=True)
             df = df.rename(columns={"o": "Open", "h": "High", "l": "Low", "c": "Close", "v": "Volume"})[["Open", "High", "Low", "Close", "Volume"]]
+            if old is not None:
+                df = pd.concat([old, df[~df.index.isin(old.index)]])
             df.sort_index().to_parquet(out)
         progress("minutes", n, len(symbols), f"{sym} reports={len(evs)} bars={len(rows)}")
 

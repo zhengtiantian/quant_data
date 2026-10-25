@@ -51,6 +51,9 @@ htmlcov/
 # Credentials and secrets — NEVER commit
 .env
 **/.env
+.env.*
+**/.env.*
+!.env.example
 news_collectors/gdelt/gdelt.json
 *_service_account.json
 

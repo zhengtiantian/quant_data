@@ -323,7 +323,8 @@ def model():
             b = g.loc[g["pred"].idxmax()]
             act = b["pred"] >= margin
             picks.append({"year": y, "symbol": sym, "date": d, "plan": b["plan"] if act else "hold", "pred": b["pred"],
-                          "gain": float(b["gain"]) if act else 0.0, "best_possible": float(max(g["gain"].max(), 0))})
+                          "gain": float(b["gain"]) if act else 0.0, "top_gain": float(b["gain"]), "top_plan": b["plan"],
+                          "best_possible": float(max(g["gain"].max(), 0))})
         progress("model", n, len(years), f"{y}")
     pk = pd.DataFrame(picks)
     pk.to_parquet(D / f"pulse_model_walkforward{os.getenv('PULSE_TAG', '')}.parquet")
@@ -375,10 +376,11 @@ def final():
     params = dict(objective="huber", alpha=2.0, learning_rate=0.03, num_leaves=15, min_data_in_leaf=200,
                   feature_fraction=0.8, bagging_fraction=0.8, bagging_freq=1, lambda_l2=10.0, verbose=-1, seed=7)
     m = lgb.train(params, lgb.Dataset(df[LIVE_FEATS], df["gain"]), num_boost_round=400)
-    MODEL_DIR.mkdir(exist_ok=True)
-    m.save_model(str(MODEL_DIR / "model.txt"))
-    df.groupby(["symbol", "plan"])["gain"].mean().rename("own_past").reset_index().to_parquet(MODEL_DIR / "own_past.parquet")
     wf = pd.read_parquet(D / f"pulse_model_walkforward{tag}.parquet")
+    acted = wf[wf["plan"] != "hold"]
+    if len(acted) < 100 or acted["gain"].mean() <= 0:
+        # The live model is only replaced by one whose own walk-forward still makes money.
+        raise SystemExit(f"walk-forward no longer positive ({len(acted)} acted, {acted['gain'].mean():+.3f}%): live model kept")
     rec = {s: {"reports": int(len(g)), "acted": int((g["plan"] != "hold").sum()),
                "mean_when_acting": round(float(g.loc[g["plan"] != "hold", "gain"].mean()), 3) if (g["plan"] != "hold").any() else None,
                "win": round(float((g.loc[g["plan"] != "hold", "gain"] > 0).mean()), 3) if (g["plan"] != "hold").any() else None}
@@ -390,6 +392,9 @@ def final():
                                                       "mean_when_acting": round(float(a["gain"].mean()), 3),
                                                       "win": round(float((a["gain"] > 0).mean()), 3)},
             "per_symbol": rec}
+    MODEL_DIR.mkdir(exist_ok=True)
+    m.save_model(str(MODEL_DIR / "model.txt"))
+    df.groupby(["symbol", "plan"])["gain"].mean().rename("own_past").reset_index().to_parquet(MODEL_DIR / "own_past.parquet")
     (MODEL_DIR / "meta.json").write_text(json.dumps(meta, indent=1))
     print(f"DONE final: {meta['reports']} reports; walk-forward {meta['walkforward']}", flush=True)
 

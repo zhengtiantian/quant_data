@@ -5,7 +5,9 @@ Schedule: Sunday 07:00 — Ridge + LightGBM walk-forward CV on
 daily_symbol_features, results saved to MongoDB + MLflow. Alongside it, the
 past earnings reactions (research/features/earnings_reactions.py) that the
 holdings advisor replays its order plans on (PROJECT_PLAN Q.5); this
-week's report joins the history the following Sunday.
+week's report joins the history the following Sunday. And the earnings-pulse
+model behind quant_ai's live report-evening watch (refresh_earnings_pulse.sh),
+replaced only while its walk-forward record stays positive.
 
 Runs 1 hour after weekly_inst13f_holdings (06:00, ~30min timeout) so this
 week's 13F refresh is already in the feature set being trained on. Standalone
@@ -48,6 +50,15 @@ with DAG(
         env=BASE_ENV,
         append_env=True,
         execution_timeout=timedelta(hours=1),
+    )
+
+    gate >> BashOperator(
+        task_id="earnings_pulse_refresh",
+        on_failure_callback=notify_failure,
+        bash_command=f"bash {ROOT}/research/models/refresh_earnings_pulse.sh",
+        env=BASE_ENV,
+        append_env=True,
+        execution_timeout=timedelta(hours=2),
     )
 
     gate >> BashOperator(
