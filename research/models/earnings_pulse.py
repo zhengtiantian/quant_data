@@ -304,6 +304,7 @@ def model():
     F = ["move_at", "maxmove_at", "minmove_at", "vol_at", "release_min", "surprise", "beat", "run5", "run20", "vol20",
          "past_move_med", "fy_outlook", "margin_outlook", "tone", "guide_seq", "rev_vs_guide", "news_pre_mean",
          "place_code", "lad_lo", "bb_code", "own_past"]
+    F = [f for f in F if f not in set(filter(None, os.getenv("PULSE_DROP", "").split(",")))]
     params = dict(objective="huber", alpha=2.0, learning_rate=0.03, num_leaves=15, min_data_in_leaf=200,
                   feature_fraction=0.8, bagging_fraction=0.8, bagging_freq=1, lambda_l2=10.0, verbose=-1, seed=7)
     margin = float(os.getenv("PULSE_MARGIN", "0.3"))
@@ -339,9 +340,126 @@ def model():
     print("  importance:", ", ".join(f"{f} {v:.0f}" for f, v in imp[:10]))
 
 
+# ---------------------------------------------------------------- live: the final model and predict
+
+LIVE_FEATS = ["move_at", "maxmove_at", "minmove_at", "release_min", "run5", "run20", "vol20", "past_move_med",
+              "news_pre_mean", "place_code", "lad_lo", "bb_code", "own_past"]
+MODEL_DIR = D / "pulse_model"
+LIVE_MARGIN = float(os.getenv("PULSE_MARGIN", "0.3"))
+LADDER_OF = {"/".join(map(str, lad)): lad for lad in LADDERS}
+
+
+def final():
+    """The live model: price-only features (the walk-forward showed the release and volume features
+    add nothing: +0.64% vs +0.66% per acted report), trained on every report, on the strict labels
+    (0.25% a side, limits traded through). Plus each stock's own mean per plan and its out-of-sample
+    record from the walk-forward, which gates the live calls."""
+    import lightgbm as lgb
+    tag = os.getenv("PULSE_TAG", "_strict")
+    lab = pd.read_parquet(D / f"pulse_labels{tag}.parquet")
+    pe = pd.read_parquet(D / "pulse_events.parquet")
+    sys.path.insert(0, str(ROOT / "research" / "models"))
+    import earnings_policy as ep
+    base = pd.read_parquet(D / "events.parquet")[["symbol", "date", "run5", "run20", "vol20", "past_move_med", "news_pre_mean"]]
+    df = lab.merge(pe, on=["symbol", "date"]).merge(base, on=["symbol", "date"], how="left")
+    pidx = df["place"].map({p: i for i, p in enumerate(PLACE)}).values
+    for k in ("move", "maxmove", "minmove"):
+        mat = df[[f"{k}_{p}" for p in PLACE]].values.astype(float)
+        df[f"{k}_at"] = mat[np.arange(len(df)), pidx]
+    df["place_code"], df["lad_lo"] = pidx, df["ladder"].str.split("/").str[0].astype(float)
+    df["bb_code"] = df["buyback"].map({b: i for i, b in enumerate(BUYBACK)})
+    df.loc[df["place"] == "pre", "release_min"] = np.nan
+    df["plan"] = df["place"] + " | " + df["ladder"] + " | " + df["buyback"]
+    df = df.sort_values("date")
+    df["own_past"] = df.groupby(["symbol", "plan"])["gain"].transform(lambda x: x.shift().expanding().mean())
+    params = dict(objective="huber", alpha=2.0, learning_rate=0.03, num_leaves=15, min_data_in_leaf=200,
+                  feature_fraction=0.8, bagging_fraction=0.8, bagging_freq=1, lambda_l2=10.0, verbose=-1, seed=7)
+    m = lgb.train(params, lgb.Dataset(df[LIVE_FEATS], df["gain"]), num_boost_round=400)
+    MODEL_DIR.mkdir(exist_ok=True)
+    m.save_model(str(MODEL_DIR / "model.txt"))
+    df.groupby(["symbol", "plan"])["gain"].mean().rename("own_past").reset_index().to_parquet(MODEL_DIR / "own_past.parquet")
+    wf = pd.read_parquet(D / f"pulse_model_walkforward{tag}.parquet")
+    rec = {s: {"reports": int(len(g)), "acted": int((g["plan"] != "hold").sum()),
+               "mean_when_acting": round(float(g.loc[g["plan"] != "hold", "gain"].mean()), 3) if (g["plan"] != "hold").any() else None,
+               "win": round(float((g.loc[g["plan"] != "hold", "gain"] > 0).mean()), 3) if (g["plan"] != "hold").any() else None}
+           for s, g in wf.groupby("symbol")}
+    a = wf[wf["plan"] != "hold"]
+    meta = {"trained_at": pd.Timestamp.now(tz="UTC").isoformat(), "reports": int(df[["symbol", "date"]].drop_duplicates().shape[0]),
+            "features": LIVE_FEATS, "place": list(PLACE), "ladders": list(LADDER_OF), "buyback": list(BUYBACK), "margin": LIVE_MARGIN,
+            "cost_pct_per_side": 0.25, "walkforward": {"years": f"{wf['year'].min()}-{wf['year'].max()}", "acted": int(len(a)),
+                                                      "mean_when_acting": round(float(a["gain"].mean()), 3),
+                                                      "win": round(float((a["gain"] > 0).mean()), 3)},
+            "per_symbol": rec}
+    (MODEL_DIR / "meta.json").write_text(json.dumps(meta, indent=1))
+    print(f"DONE final: {meta['reports']} reports; walk-forward {meta['walkforward']}", flush=True)
+
+
+def daily_context(symbol):
+    """The pre-release features: run-up and volatility from daily bars, the stock's typical report
+    move, and the news sentiment of the last three days (all known before the close)."""
+    import yfinance as yf
+    d = yf.Ticker(symbol).history(period="3mo", interval="1d", auto_adjust=False)
+    c = d["Close"].dropna()
+    rets = np.log(c).diff().dropna()
+    out = {"run5": float((c.iloc[-1] / c.iloc[-6] - 1) * 100), "run20": float((c.iloc[-1] / c.iloc[-21] - 1) * 100),
+           "vol20": float(rets.iloc[-20:].std() * 100), "close": float(c.iloc[-1])}
+    ev = pd.read_parquet(D / "events.parquet")
+    past = ev[ev["symbol"] == symbol].sort_values("date")
+    out["past_move_med"] = float(past["past_move_med"].dropna().iloc[-1]) if past["past_move_med"].notna().any() else None
+    try:
+        from dotenv import load_dotenv
+        from pymongo import MongoClient
+        load_dotenv(ROOT / ".env", override=False)
+        col = MongoClient(os.getenv("HOST_LOCAL_MONGO_URI"))["quant_data"]["news_articles_company_matched_v2"]
+        since = (pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=3)).strftime("%Y%m%d")
+        s = [float(x["llm_sentiment_final"]) for x in col.find({"symbol": symbol, "date": {"$gte": since}}, {"llm_sentiment_final": 1})
+             if x.get("llm_sentiment_final") not in (None, "")]
+        out["news_pre_mean"] = float(np.mean(s)) if s else None
+    except Exception:  # noqa: BLE001 - no news store: the model treats it as missing
+        out["news_pre_mean"] = None
+    return out
+
+
+def predict(req):
+    """req: {symbol, place, move_at, maxmove_at, minmove_at, release_min, run5, run20, vol20,
+    past_move_med, news_pre_mean}. Returns the plans placeable now ranked by predicted gain, the
+    best, whether it clears the margin, and the stock's out-of-sample record."""
+    import lightgbm as lgb
+    m = lgb.Booster(model_file=str(MODEL_DIR / "model.txt"))
+    meta = json.loads((MODEL_DIR / "meta.json").read_text())
+    own = pd.read_parquet(MODEL_DIR / "own_past.parquet")
+    own = own[own["symbol"] == req["symbol"]].set_index("plan")["own_past"]
+    rows = []
+    for lad in LADDERS:
+        for bb in BUYBACK:
+            plan = f"{req['place']} | {'/'.join(map(str, lad))} | {bb}"
+            rows.append({**{k: req.get(k) for k in LIVE_FEATS if k in req}, "place_code": PLACE.index(req["place"]),
+                         "lad_lo": float(lad[0]), "bb_code": BUYBACK.index(bb), "own_past": own.get(plan, np.nan),
+                         "plan": plan, "ladder": list(lad), "buyback": bb})
+    X = pd.DataFrame(rows)
+    for k in LIVE_FEATS:
+        if k not in X:
+            X[k] = np.nan
+    X["pred"] = m.predict(X[LIVE_FEATS].astype(float))
+    X = X.sort_values("pred", ascending=False)
+    best = X.iloc[0]
+    rec = meta["per_symbol"].get(req["symbol"])
+    gate = bool(rec and rec.get("acted", 0) >= 5 and (rec.get("mean_when_acting") or 0) > 0)
+    return {"symbol": req["symbol"], "place": req["place"], "best": {"plan": best["plan"], "ladder": best["ladder"],
+            "buyback": best["buyback"], "pred_pct": round(float(best["pred"]), 3)},
+            "act": bool(best["pred"] >= meta["margin"] and gate), "clears_margin": bool(best["pred"] >= meta["margin"]),
+            "stock_gate": gate, "stock_record": rec, "margin": meta["margin"], "model_record": meta["walkforward"],
+            "top": [{"plan": r.plan, "pred_pct": round(float(r.pred), 3)} for r in X.head(5).itertuples()]}
+
+
 def main():
     stage = sys.argv[1] if len(sys.argv) > 1 else ""
-    {"fetch": fetch, "build": build, "learn": learn, "model": model}.get(stage, lambda: sys.exit(__doc__))()
+    if stage == "predict":                # JSON request on stdin, JSON answer on stdout (quant_ai's live watcher)
+        req = json.load(sys.stdin)
+        out = daily_context(req["symbol"]) if req.get("context_only") else predict(req)
+        print(json.dumps(out, default=float))
+        return 0
+    {"fetch": fetch, "build": build, "learn": learn, "model": model, "final": final}.get(stage, lambda: sys.exit(__doc__))()
     return 0
 
 
