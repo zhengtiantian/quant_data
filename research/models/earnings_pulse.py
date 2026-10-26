@@ -50,7 +50,7 @@ TZ = {"et": 0, "edt": 0, "est": 0, "eastern": 0, "ct": 1, "cdt": 1, "cst": 1, "c
 TIME = re.compile(r"(\d{1,2})(?::(\d{2}))?\s*(a\.?m\.?|p\.?m\.?)\s*\(?\s*(eastern|pacific|central|e[sd]?t|p[sd]?t|c[sd]?t|m[sd]?t)\b", re.I)
 
 
-def call_minutes(sym, date):
+def call_minutes(sym, date, session="amc"):
     """Minutes after midnight ET of the conference call, from the release text; None if not found."""
     p = D / "releases" / f"{sym}_{date}.txt"
     if not p.exists():
@@ -62,27 +62,47 @@ def call_minutes(sym, date):
             h, mi = int(mm.group(1)), int(mm.group(2) or 0)
             h = h % 12 + (12 if mm.group(3).lower().startswith("p") else 0)
             v = h * 60 + mi + 60 * TZ.get(mm.group(4).lower().replace(".", ""), 0)
-            return v if 16 * 60 <= v <= 19 * 60 else None
+            lo, hi = (16 * 60, 19 * 60) if session == "amc" else (6 * 60, 11 * 60)
+            return v if lo <= v <= hi else None
     return None
 
 
 def events():
+    """After-the-close reports ("amc": the evening of the report day) and, since 2026-10-26,
+    before-the-open ones ("bmo": released in the reaction day's pre-market). Both windows run from
+    the previous close (day 16:00) to the reaction day's 10:30; `day` is the session of that close."""
     ev = pd.read_parquet(D / "events.parquet")
-    ev = ev[ev["after_close"] == 1.0]
     rel = {(r["symbol"], r["date"]): r for r in map(json.loads, open(D / "releases.jsonl")) if r.get("found")}
+    sessions = {}
     out = []
     for r in ev.itertuples():
-        rr = rel.get((r.symbol, r.date))
         rep = pd.Timestamp(r.report).tz_convert(NY)
+        mins = rep.hour * 60 + rep.minute
+        session = "amc" if r.after_close == 1.0 else "bmo" if mins < 570 else None
+        if session is None:
+            continue
+        if session == "amc":
+            day, react = rep.date(), pd.Timestamp(r.date).date()
+            lo, hi, dflt, call_d = 15 * 60 + 55, 18 * 60, "16:02", 17 * 60
+        else:
+            if r.symbol not in sessions:
+                sessions[r.symbol] = sorted(d.date() for d in pd.read_parquet(D / f"{r.symbol}.daily.parquet").index)
+            react = pd.Timestamp(r.date).date()
+            prev = [d for d in sessions[r.symbol] if d < react]
+            if not prev:
+                continue
+            day = prev[-1]
+            lo, hi, dflt, call_d = 4 * 60, 9 * 60 + 25, "07:00", 8 * 60 + 30
+        rr = rel.get((r.symbol, r.date))
         acc = pd.Timestamp(rr["accepted"]).tz_localize(NY) if rr and rr.get("accepted") else None
-        if acc is None or acc.date() != rep.date() or not (15 * 60 + 55 <= acc.hour * 60 + acc.minute <= 18 * 60):
-            acc = pd.Timestamp(f"{rep.date()} 16:02", tz=NY)          # no usable SEC time: the usual minute
-            src = "default"
+        anchor = day if session == "amc" else react
+        if acc is None or acc.date() != anchor or not (lo <= acc.hour * 60 + acc.minute <= hi):
+            acc, src = pd.Timestamp(f"{anchor} {dflt}", tz=NY), "default"       # no usable SEC time: the usual minute
         else:
             src = "sec"
-        call = call_minutes(r.symbol, r.date) or 17 * 60
-        out.append({"symbol": r.symbol, "date": r.date, "day": str(rep.date()), "release": acc, "release_src": src,
-                    "call": pd.Timestamp(f"{rep.date()} 00:00", tz=NY) + pd.Timedelta(minutes=call)})
+        call = call_minutes(r.symbol, r.date, session) or call_d
+        out.append({"symbol": r.symbol, "date": r.date, "day": str(day), "session": session, "release": acc, "release_src": src,
+                    "call": pd.Timestamp(f"{anchor} 00:00", tz=NY) + pd.Timedelta(minutes=call)})
     return pd.DataFrame(out)
 
 
@@ -137,6 +157,35 @@ def fetch():
 
 # ---------------------------------------------------------------- build
 
+def _release(m, close_i, r, pos):
+    """The release minute: the first bar after the close (amc) or after 04:00 on the reaction day
+    (bmo) with 3x the last half hour's volume and a 0.5% move from the close, else the SEC time.
+    The wire beats the SEC acceptance by minutes (INTC moved at 16:00-16:01, accepted 16:09)."""
+    vol, cl = m["volume"].values, m["close"].values
+    if getattr(r, "session", "amc") == "amc":
+        pre_med = float(np.median(vol[max(0, close_i - 30):close_i])) or 1.0
+        start, span = close_i, 90
+    else:
+        # Pre-market volume is thin: compare with the pre-market's own bars before the release, and
+        # look only around the SEC time, where the wire story lands (20 minutes before to 10 after).
+        p4, sec = pos(pd.Timestamp(f"{pd.Timestamp(r.date).date()} 04:00", tz=NY)), pos(r.release)
+        start = max(p4, pos(r.release - pd.Timedelta(minutes=20)))
+        pre = vol[p4:start]
+        pre_med = float(np.median(pre)) if len(pre) >= 5 else 1.0
+        pre_med = pre_med or 1.0
+        span = max(1, pos(r.release + pd.Timedelta(minutes=10)) - start)
+    jump = [i for i in range(start, min(start + span, len(m))) if vol[i] >= 3 * pre_med and abs(cl[i] / cl[close_i - 1] - 1) >= 0.005]
+    rel_i = min(jump[0] if jump else len(m), pos(r.release))
+    return rel_i, (m.index[rel_i] if rel_i < len(m) else r.release)
+
+
+def _session_end(r):
+    """End of the extended session the pulse trades in: after-hours (19:55) or the pre-market (09:25)."""
+    if getattr(r, "session", "amc") == "amc":
+        return pd.Timestamp(f"{r.day} 19:55", tz=NY)
+    return pd.Timestamp(f"{pd.Timestamp(r.date).date()} 09:25", tz=NY)
+
+
 def _plan_ids():
     return [(p, lad, b) for p in PLACE for lad in LADDERS for b in BUYBACK]
 
@@ -190,13 +239,9 @@ def build():
         # The release reaches the wires minutes before the SEC accepts the 8-K (INTC: price jumped at
         # 16:00-16:01, SEC 16:09): the release minute is the first after the close where volume is 3x
         # the last half hour's and the price has moved 0.5%, else the SEC time.
-        pre_med = float(np.median(m["volume"].values[max(0, close_i - 30):close_i])) or 1.0
-        jump = [i for i in range(close_i, min(close_i + 90, len(m)))
-                if m["volume"].values[i] >= 3 * pre_med and abs(m["close"].values[i] / m["close"].values[close_i - 1] - 1) >= 0.005]
-        rel_i = min(jump[0] if jump else len(m), pos(r.release))
-        release_ts = m.index[rel_i] if rel_i < len(m) else r.release
+        rel_i, release_ts = _release(m, close_i, r, pos)
         idx = {"c+5": pos(r.call + pd.Timedelta(minutes=5)), "c+30": pos(r.call + pd.Timedelta(minutes=30)),
-               "ah_end": pos(pd.Timestamp(f"{r.day} 19:55", tz=NY)), "next_open": pos(reg_next.index[0])}
+               "ah_end": pos(_session_end(r)), "next_open": pos(reg_next.index[0])}
         place = {"pre": close_i, "c-5": pos(r.call - pd.Timedelta(minutes=5))}
         for k in (1, 3, 5, 10, 20, 30):
             place[f"r+{k}"] = pos(release_ts + pd.Timedelta(minutes=k))
@@ -204,8 +249,9 @@ def build():
         close16 = arr[3][close_i - 1]
         vol = m["volume"].values
         pre_vol = vol[max(0, close_i - 30):close_i].mean() or 1.0
-        f = {"symbol": r.symbol, "date": r.date, "day": r.day, "release_min": release_ts.hour * 60 + release_ts.minute,
-             "release_from_price": bool(jump) and jump[0] < pos(r.release)}
+        f = {"symbol": r.symbol, "date": r.date, "day": r.day, "bmo": 1.0 if getattr(r, "session", "amc") == "bmo" else 0.0,
+             "release_min": release_ts.hour * 60 + release_ts.minute,
+             "release_from_price": rel_i < pos(r.release)}
         for name, i in place.items():
             if i <= 0 or i >= idx["next_open"]:
                 continue
@@ -390,14 +436,10 @@ def build_legs():
         close_i = pos(pd.Timestamp(f"{r.day} 16:00", tz=NY))
         if close_i == 0 or close_i >= len(m):
             continue
-        vol = m["volume"].values
-        pre_med = float(np.median(vol[max(0, close_i - 30):close_i])) or 1.0
         cl = m["close"].values
-        jump = [i for i in range(close_i, min(close_i + 90, len(m))) if vol[i] >= 3 * pre_med and abs(cl[i] / cl[close_i - 1] - 1) >= 0.005]
-        rel_i = min(jump[0] if jump else len(m), pos(r.release))
-        release_ts = m.index[rel_i] if rel_i < len(m) else r.release
+        rel_i, release_ts = _release(m, close_i, r, pos)
         idx = {"c+5": pos(r.call + pd.Timedelta(minutes=5)), "c+30": pos(r.call + pd.Timedelta(minutes=30)),
-               "ah_end": pos(pd.Timestamp(f"{r.day} 19:55", tz=NY)), "next_open": pos(reg_next.index[0])}
+               "ah_end": pos(_session_end(r)), "next_open": pos(reg_next.index[0])}
         place = {"pre": close_i, "c-5": pos(r.call - pd.Timedelta(minutes=5))}
         for k in (1, 3, 5, 10, 20, 30):
             place[f"r+{k}"] = pos(release_ts + pd.Timedelta(minutes=k))
@@ -422,7 +464,7 @@ def build_legs():
 
 ORDER = ("pre", "r+1", "r+3", "r+5", "r+10", "r+20", "r+30", "c-5")        # the placements in time order
 STATE = ["move_at", "maxmove_at", "minmove_at", "release_min", "run5", "run20", "vol20", "past_move_med",
-         "news_pre_mean", "place_code"]
+         "news_pre_mean", "place_code", "bmo"]
 LEG_FEATS = STATE + ["level", "bb_code", "own_leg", "own_sym"]
 
 
@@ -433,8 +475,8 @@ def leg_frame():
     daily = pd.read_parquet(D / "events.parquet")[["symbol", "date", "run5", "run20", "vol20", "past_move_med", "news_pre_mean"]]
     st = []
     for p in ORDER:
-        x = pe[["symbol", "date", "release_min", f"move_{p}", f"maxmove_{p}", f"minmove_{p}"]].copy()
-        x.columns = ["symbol", "date", "release_min", "move_at", "maxmove_at", "minmove_at"]
+        x = pe[["symbol", "date", "release_min", "bmo", f"move_{p}", f"maxmove_{p}", f"minmove_{p}"]].copy()
+        x.columns = ["symbol", "date", "release_min", "bmo", "move_at", "maxmove_at", "minmove_at"]
         x["place"] = p
         if p == "pre":
             x["release_min"] = np.nan
@@ -568,9 +610,12 @@ def bakeoff():
 
 # ---------------------------------------------------------------- the live policy (chosen 2026-10-26)
 
-# Chosen on the 2019-2022 walk-forward among 160 variants (highest total with P10 above -1%), then
-# checked on 2023-2026 untouched: 395 acted, +0.86% per acted report, P10 -0.16%.
-POLICY = {"margin": 0.3, "no_pre": True, "q10_min": -1.5, "weight": "risk", "stopping": False}
+# Chosen on the 2019-2022 walk-forward (highest total with worst > -10% and P10 > -2%) among 160
+# variants, then checked on 2023-2026 untouched. After-the-close reports only (2026-10-26 01:00):
+# margin 0.3 / P10 -1.5, 395 acted, +0.86%. With the before-the-open reports added (2026-10-26
+# 06:00): margin 0.5 / P10 -2.0, 407 acted, +1.40% per acted report, P10 -0.09%, every year
+# positive; the 1D-CNN challenger passed no risk limit and made +0.40% under the same policy.
+POLICY = {"margin": 0.5, "no_pre": True, "q10_min": -2.0, "weight": "risk", "stopping": False}
 P_LEG = dict(objective="huber", alpha=2.0, learning_rate=0.05, num_leaves=31, min_data_in_leaf=500, feature_fraction=0.8,
              bagging_fraction=0.7, bagging_freq=1, lambda_l2=10.0, verbose=-1, seed=7, num_threads=8)
 
