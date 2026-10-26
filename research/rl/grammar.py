@@ -55,3 +55,30 @@ def actions() -> pd.DataFrame:
                   + df.apply(lambda r: {"limit": f" y{r.y:g}", "trail": f" z{r.z:g}", "bracket": f" y{r.y:g}/s{r.s:g}",
                                         "time": ""}[r.exit], axis=1) + " " + df["horizon"])
     return df
+
+
+# ---------------------------------------------------------------- the daily grammar (advisor, Q.7 phase 2)
+
+DAILY_ENTRY_K = (0.0, 0.5, 1.0, 2.0)
+DAILY_LIMIT_Y = (0.5, 1.0, 2.0)
+DAILY_TRAIL_Z = (1.0, 2.0)
+DAILY_BRACKET_YS = ((1.0, 1.0), (2.0, 1.0))
+DAILY_HORIZONS = ("d1", "d5", "d10", "d20")
+
+
+def daily_actions() -> pd.DataFrame:
+    """The grammar for a decision taken after a close: an entry at the next open or a limit k sigma
+    from the close, working through the next session; exits as above; horizons in trading days."""
+    ex = [("limit", y, 0.0, 0.0) for y in DAILY_LIMIT_Y] + [("trail", 0.0, z, 0.0) for z in DAILY_TRAIL_Z]
+    ex += [("bracket", y, 0.0, s) for y, s in DAILY_BRACKET_YS] + [("time", 0.0, 0.0, 0.0)]
+    rows = [{"side": sd, "entry_k": k, "exit": e, "y": y, "z": z, "s": s, "horizon": hz}
+            for sd, k, (e, y, z, s), hz in itertools.product(SIDES, DAILY_ENTRY_K, ex, DAILY_HORIZONS)]
+    df = pd.DataFrame(rows)
+    df["action_id"] = np.arange(len(df), dtype=np.int32)
+    df["side_code"] = (df["side"] == "add").astype(np.int8)
+    df["exit_code"] = df["exit"].map(EXIT_CODES).astype(np.int8)
+    df["horizon_code"] = df["horizon"].map({h: i for i, h in enumerate(DAILY_HORIZONS)}).astype(np.int8)
+    df["name"] = (df["side"] + " k" + df["entry_k"].map("{:g}".format) + " " + df["exit"]
+                  + df.apply(lambda r: {"limit": f" y{r.y:g}", "trail": f" z{r.z:g}", "bracket": f" y{r.y:g}/s{r.s:g}",
+                                        "time": ""}[r.exit], axis=1) + " " + df["horizon"])
+    return df

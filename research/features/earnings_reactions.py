@@ -30,7 +30,7 @@ from pymongo import MongoClient, UpdateOne
 
 ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(ROOT / ".env", override=False)
-MONGO_URI = os.getenv("MONGO_URI") or os.getenv("HOST_LOCAL_MONGO_URI")
+MONGO_URI = os.getenv("HOST_LOCAL_MONGO_URI") or os.getenv("MONGO_URI")   # .env's MONGO_URI is the containers' address
 COLLECTION = "earnings_reactions"
 HISTORY_SOURCE = {"SKHY": "000660.KS"}       # where a young listing's earnings history lives
 QUANT_AI_SYMBOLS = os.getenv("QUANT_AI_SYMBOLS_URL", "http://127.0.0.1:18000/api/markets/portfolio/symbols")

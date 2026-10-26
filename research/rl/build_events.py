@@ -133,7 +133,7 @@ def build():
                 continue
             p0 = float(c[i - 1])
             hz_rel = np.where(hz > i, hz - i, -1).astype(np.int64)
-            g, f, cd = simulator.simulate(o[i:], h[i:], l[i:], c[i:], p0, float(sigma), int(hz_rel[1]), hz_rel,
+            g, f, cd = simulator.simulate(o[i:], h[i:], l[i:], c[i:], p0, p0, float(sigma), int(hz_rel[1]), hz_rel,
                                           A["side_code"], A["entry_k"], A["exit_code"], A["y"], A["z"], A["s"], A["horizon_code"])
             eid = f"{r.symbol}|{r.date}"
             rows.append(pd.DataFrame({"eid": eid, "place": pl, "action_id": acts["action_id"].values, "gain": g, "filled": f, "code": cd}))

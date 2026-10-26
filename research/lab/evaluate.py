@@ -62,7 +62,8 @@ def summary(r: pd.DataFrame) -> Dict[str, float]:
     g = a["gain"]
     return {"acted": int(len(a)), "share_acted": len(a) / len(r), "mean": float(g.mean()), "se": float(g.std() / math.sqrt(len(g))),
             "win": float((g > 0).mean()), "p10": float(g.quantile(0.1)), "worst": float(g.min()), "sum": float(g.sum()),
-            "sharpe_trade": float(g.mean() / g.std()) if g.std() > 0 else 0.0, "worst_year": float(r.groupby("year")["gain"].mean().min())}
+            "sharpe_trade": float(g.mean() / g.std()) if g.std() > 0 else 0.0, "worst_year": float(r.groupby("year")["gain"].mean().min()),
+            "cvar5": float(g[g <= g.quantile(0.05)].mean())}
 
 
 def verdict(r: pd.DataFrame, sess: Dict[str, float]) -> Dict[str, Any]:

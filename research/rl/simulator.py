@@ -12,7 +12,9 @@ Fills, conservatively (our orders are too small to move the price):
   - a bar that reaches both a bracket's limit and its stop counts as the stop
   - a trailing stop is checked against the best price before the bar, then the best price moves
   - the exit starts on the bar after the entry fill; anything still open closes at the horizon close
-  - COST (0.25%) per side covers spread and slippage outside the regular session
+  - cost per side covers spread and slippage: COST (0.25%) outside the regular session (the report
+    evenings and pre-markets), REGULAR_COST (0.05%) for regular-session trades in these large caps
+    (INTC's spread is about 0.01%)
 Gain = what the leg made per share in % of the price at the decision, net of costs, against not
 doing it (for a reduce: against holding the shares; for an add: against keeping the cash).
 """
@@ -22,18 +24,21 @@ import numpy as np
 from numba import njit
 
 COST = 0.25
+REGULAR_COST = 0.05
 THROUGH = 0.05
 
 
 @njit(cache=True)
-def _leg(o, h, l, c, p0, sigma, side, k, ex, y, z, s, entry_end, hz_end):
+def _leg(o, h, l, c, p0, mkt, sigma, side, k, ex, y, z, s, entry_end, hz_end, cost=COST):
     """One action on one path: (gain %, entry filled 0/1, exit code 0 limit 1 trail 2 bracket-limit
-    3 bracket-stop 4 horizon). sigma in % of p0."""
+    3 bracket-stop 4 horizon). p0: the reference price limits are set from (the price at the
+    decision); mkt: where an entry at the price now fills (p0 on a report evening; the next open for
+    a decision taken after the close). sigma in % of p0."""
     n = len(o)
     th = THROUGH / 100.0
     # ---- entry
     if k == 0.0:
-        fill, i0 = p0, -1                                  # at the price now; the exit starts on bar 0
+        fill, i0 = mkt, -1                                 # at the price now; the exit starts on bar 0
     else:
         fill, i0 = 0.0, -2
         if side == 0:
@@ -98,11 +103,11 @@ def _leg(o, h, l, c, p0, sigma, side, k, ex, y, z, s, entry_end, hz_end):
                     exit_px, code = max(tgt, o[i]), 2
                     break
     g = (fill - exit_px) if side == 0 else (exit_px - fill)
-    return g / p0 * 100.0 - 2.0 * COST, 1, code
+    return g / p0 * 100.0 - 2.0 * cost, 1, code
 
 
 @njit(cache=True)
-def simulate(o, h, l, c, p0, sigma, entry_end, hz_ends, side, k, ex, y, z, s, hz):
+def simulate(o, h, l, c, p0, mkt, sigma, entry_end, hz_ends, side, k, ex, y, z, s, hz, cost=COST):
     """All actions on one path. hz_ends: bar index of each horizon; the action arrays are
     parallel. Returns gains (%), filled flags and exit codes."""
     m = len(side)
@@ -114,6 +119,6 @@ def simulate(o, h, l, c, p0, sigma, entry_end, hz_ends, side, k, ex, y, z, s, hz
         if e < 0:
             gains[a], filled[a], codes[a] = np.nan, 0, 4
             continue
-        g, f, cd = _leg(o, h, l, c, p0, sigma, side[a], k[a], ex[a], y[a], z[a], s[a], min(entry_end, e), e)
+        g, f, cd = _leg(o, h, l, c, p0, mkt, sigma, side[a], k[a], ex[a], y[a], z[a], s[a], min(entry_end, e), e, cost)
         gains[a], filled[a], codes[a] = g, f, cd
     return gains, filled, codes
