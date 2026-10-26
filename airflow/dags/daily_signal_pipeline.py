@@ -13,7 +13,6 @@ from datetime import datetime, timedelta
 from airflow import DAG
 
 from _host_common import host_task, notify_failure, wait_for_night_chain
-from airflow.operators.bash import BashOperator
 
 default_args = {
     "owner": "quant",
@@ -24,9 +23,9 @@ default_args = {
 with DAG(
     dag_id="daily_signal_pipeline",
     default_args=default_args,
-    description="Daily, after the nightly news chain: price → premarket → analyst → macro → features → signals → positions → DQ → job_agent",
+    description="Daily, after the nightly news chain: price → premarket → analyst → macro → features → signals → positions → DQ",
     # No clock of its own since 2026-10-24: backfill_2 triggers it when the nightly chain is done
-    # (02:00 UTC backfill_1 -> backfill_2 -> here), and it starts job_agent when it is done. It
+    # (02:00 UTC backfill_1 -> backfill_2 -> here). It
     # used to run at 07:30 UTC; nothing it collects is fresher at 07:30 than at 03:00 (US
     # pre-market opens at 08:00 UTC; the pre-market collector reads the past 7 days).
     schedule=None,
@@ -101,11 +100,5 @@ with DAG(
     wait >> [daily_price, premarket, analyst, macro]
     [daily_price, premarket, analyst, macro] >> features >> signals >> [positions, backtest] >> data_quality
 
-    # Last link: job_agent's daily scrape (its own launchd job, which keeps a 16:00 run of its own).
-    # kickstart returns at once; job_agent queues for LM Studio through its own lock.
-    data_quality >> BashOperator(
-        task_id="start_job_agent",
-        bash_command='launchctl kickstart "gui/$(id -u)/com.xiangyu.jobagent"',
-        trigger_rule="all_done",
-        on_failure_callback=notify_failure,
-    )
+    # job_agent's daily scrape is not part of this chain: it runs on its own launchd schedule, 11:00
+    # and 16:00 (2026-10-26: started after this chain at ~05:00 it found almost nothing new).
