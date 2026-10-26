@@ -58,7 +58,7 @@ with DAG(
         bash_command=f"bash {ROOT}/research/models/refresh_earnings_pulse.sh",
         env=BASE_ENV,
         append_env=True,
-        execution_timeout=timedelta(hours=2),
+        execution_timeout=timedelta(hours=4),   # CatBoost's walk-forward takes about an hour
     )
 
     gate >> BashOperator(

@@ -13,5 +13,6 @@ $PY research/models/earnings_pulse.py fetch                     # 1-minute bars 
 export PULSE_TAG=_strict PULSE_COST_PCT=0.25 PULSE_FILL_THROUGH_PCT=0.05
 $PY research/models/earnings_pulse.py build                     # the evenings' features
 $PY research/models/earnings_pulse.py legs                      # every single step's outcome
-$PY research/models/earnings_pulse.py bakeoff                   # walk-forward by year: out-of-sample predictions
-$PY research/models/earnings_pulse.py final                     # the live models, if the policy's record stays positive
+$PY research/lab/models.py catboost                             # the champion, walk-forward by year (research/lab)
+$PY research/lab/models.py lgbm_seeds                           # the shadow
+$PY research/models/earnings_pulse.py final                     # both live models, if their records stay positive

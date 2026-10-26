@@ -620,65 +620,144 @@ P_LEG = dict(objective="huber", alpha=2.0, learning_rate=0.05, num_leaves=31, mi
              bagging_fraction=0.7, bagging_freq=1, lambda_l2=10.0, verbose=-1, seed=7, num_threads=8)
 
 
-def policy_walkforward():
-    """The live policy replayed on the bake-off's saved out-of-sample predictions."""
+# The live models (2026-10-26, research/lab): the champion acts, the shadow is logged and scored
+# beside it. Chosen by the lab's rule: deflated Sharpe ratio >= 0.95 over every trial so far
+# (640), highest wins; each with the policy its own 2019-2022 walk-forward chose. Both chose
+# margin 0.7 with pre-release orders allowed, which they used once in 371 reports: the live watch
+# places nothing before the release (no_pre), at no cost (+665% vs +667%).
+LIVE_MODELS = {
+    "catboost": {"role": "champion", "policy": {"margin": 0.7, "no_pre": True, "q10_min": -1.0, "weight": "risk"},
+                 "dsr": 0.992, "preds": "lab_preds/catboost"},
+    "lgbm_seeds": {"role": "shadow", "policy": {"margin": 0.7, "no_pre": True, "q10_min": -1.5, "weight": "risk"},
+                   "dsr": 0.979, "preds": "lab_preds/lgbm_seeds"},
+}
+
+
+def policy_walkforward(preds_dir: str = "bakeoff_preds", pol: dict = POLICY) -> pd.DataFrame:
+    """A live policy replayed on a model's saved out-of-sample predictions."""
     out = []
-    for p in sorted((D / "bakeoff_preds").glob("*.parquet")):
+    for p in sorted((D / preds_dir).glob("*.parquet")):
         d = pd.read_parquet(p)
-        k = d[(d["q10"] >= POLICY["q10_min"]) & ((d["place"] != "pre") if POLICY["no_pre"] else True)]
-        r = run_policy(compose(k, POLICY["margin"], POLICY["weight"]), d["eid"].unique(), POLICY["margin"])
+        k = d[(d["q10"] >= pol["q10_min"]) & ((d["place"] != "pre") if pol["no_pre"] else True)]
+        r = run_policy(compose(k, pol["margin"], pol["weight"]), d["eid"].unique(), pol["margin"])
         out.append(r.assign(year=int(p.stem)))
     return pd.concat(out)
 
 
+class _Model:
+    """The mean and the 10th percentile of a step's gain, fitted as in research/lab/models.py."""
+
+    def __init__(self, name):
+        self.name = name
+
+    def fit(self, X, y):
+        if self.name == "catboost":
+            from catboost import CatBoostRegressor
+            kw = dict(iterations=400, depth=6, learning_rate=0.08, thread_count=8, verbose=False, random_seed=7)
+            self.m = [CatBoostRegressor(loss_function="Huber:delta=2.0", **kw).fit(X, y)]
+            self.q = [CatBoostRegressor(loss_function="Quantile:alpha=0.1", **kw).fit(X, y)]
+        else:
+            import lightgbm as lgb
+            self.m, self.q = [], []
+            for seed in (11, 23, 37, 51, 73):
+                P = {**P_LEG, "seed": seed, "feature_fraction": 0.7, "bagging_fraction": 0.7}
+                self.m.append(lgb.train(P, lgb.Dataset(X, y), 250))
+                self.q.append(lgb.train({**P, "objective": "quantile", "alpha": 0.1}, lgb.Dataset(X, y), 250))
+        return self
+
+    def save(self, d: Path):
+        d.mkdir(parents=True, exist_ok=True)
+        ext = "cbm" if self.name == "catboost" else "txt"
+        for kind, ms in (("m", self.m), ("q", self.q)):
+            for i, m in enumerate(ms):
+                m.save_model(str(d / f"{kind}{i}.{ext}"))
+
+    @classmethod
+    def load(cls, name, d: Path):
+        self = cls(name)
+        if name == "catboost":
+            from catboost import CatBoostRegressor
+            self.m = [CatBoostRegressor().load_model(str(p)) for p in sorted(d.glob("m*.cbm"))]
+            self.q = [CatBoostRegressor().load_model(str(p)) for p in sorted(d.glob("q*.cbm"))]
+        else:
+            import lightgbm as lgb
+            self.m = [lgb.Booster(model_file=str(p)) for p in sorted(d.glob("m*.txt"))]
+            self.q = [lgb.Booster(model_file=str(p)) for p in sorted(d.glob("q*.txt"))]
+        return self
+
+    def predict(self, X):
+        return np.mean([m.predict(X) for m in self.m], 0), np.mean([q.predict(X) for q in self.q], 0)
+
+
 def final():
-    """The live models on every report: per-step gain (huber) and its 10th percentile (quantile);
-    each stock's step history; the policy's out-of-sample record, overall and per stock, which
-    gates the live calls. The live models are replaced only while that record stays positive."""
-    import lightgbm as lgb
+    """Each live model trained on every report and saved under pulse_model/<name>/, with each
+    stock's step history and the model's out-of-sample record (overall and per stock) under its
+    policy. Nothing is replaced unless every model's record is still positive."""
     df = leg_frame()
-    wf = policy_walkforward()
-    acted = wf[wf["acted"]]
-    if len(acted) < 100 or acted["gain"].mean() <= 0:
-        raise SystemExit(f"walk-forward no longer positive ({len(acted)} acted, {acted['gain'].mean():+.3f}%): live model kept")
-    m = lgb.train(P_LEG, lgb.Dataset(df[LEG_FEATS], df["gain"]), 250)
-    mq = lgb.train({**P_LEG, "objective": "quantile", "alpha": 0.1}, lgb.Dataset(df[LEG_FEATS], df["gain"]), 250)
-    wf["symbol"] = wf["eid"].str.split("|").str[0]
-    rec = {}
-    for s_, g in wf.groupby("symbol"):
-        a = g[g["acted"]]
-        rec[s_] = {"reports": int(len(g)), "acted": int(len(a)), "mean_when_acting": round(float(a["gain"].mean()), 3) if len(a) else None,
-                   "win": round(float((a["gain"] > 0).mean()), 3) if len(a) else None, "worst": round(float(a["gain"].min()), 2) if len(a) else None}
-    meta = {"trained_at": pd.Timestamp.now(tz="UTC").isoformat(), "version": 2, "policy": POLICY, "levels": list(LEVELS),
-            "buyback": list(BUYBACK), "features": LEG_FEATS, "reports": int(df["eid"].nunique()),
-            "walkforward": {"years": f"{wf['year'].min()}-{wf['year'].max()}", "acted": int(len(acted)),
-                            "mean_when_acting": round(float(acted["gain"].mean()), 3), "p10": round(float(acted["gain"].quantile(.1)), 3),
-                            "worst": round(float(acted["gain"].min()), 2)},
-            "per_symbol": rec}
-    MODEL_DIR.mkdir(exist_ok=True)
-    m.save_model(str(MODEL_DIR / "leg_model.txt"))
-    mq.save_model(str(MODEL_DIR / "leg_q10.txt"))
+    meta = {"trained_at": pd.Timestamp.now(tz="UTC").isoformat(), "version": 3, "levels": list(LEVELS), "buyback": list(BUYBACK),
+            "features": LEG_FEATS, "reports": int(df["eid"].nunique()), "models": {}}
+    fitted = {}
+    for n, (name, spec) in enumerate(LIVE_MODELS.items(), 1):
+        wf = policy_walkforward(spec["preds"], spec["policy"])
+        acted = wf[wf["acted"]]
+        if len(acted) < 100 or acted["gain"].mean() <= 0:
+            raise SystemExit(f"{name}: walk-forward no longer positive ({len(acted)} acted): live models kept")
+        wf["symbol"] = wf["eid"].str.split("|").str[0]
+        rec = {}
+        for s_, g in wf.groupby("symbol"):
+            a = g[g["acted"]]
+            rec[s_] = {"reports": int(len(g)), "acted": int(len(a)), "mean_when_acting": round(float(a["gain"].mean()), 3) if len(a) else None,
+                       "win": round(float((a["gain"] > 0).mean()), 3) if len(a) else None}
+        fitted[name] = _Model(name).fit(df[LEG_FEATS].astype(float), df["gain"].astype(float))
+        meta["models"][name] = {**spec, "walkforward": {"years": f"{wf['year'].min()}-{wf['year'].max()}", "acted": int(len(acted)),
+                                                        "mean_when_acting": round(float(acted["gain"].mean()), 3),
+                                                        "p10": round(float(acted["gain"].quantile(.1)), 3),
+                                                        "worst": round(float(acted["gain"].min()), 2)},
+                                "per_symbol": rec}
+        progress("final", n, len(LIVE_MODELS), name)
+    for name, model in fitted.items():
+        model.save(MODEL_DIR / name)
     last = df.sort_values("date").groupby(["symbol", "place", "level", "buyback"])["gain"].mean().rename("own_leg").reset_index()
     last.to_parquet(MODEL_DIR / "own_leg.parquet")
     df.groupby("symbol")["gain"].mean().rename("own_sym").reset_index().to_parquet(MODEL_DIR / "own_sym.parquet")
     (MODEL_DIR / "meta.json").write_text(json.dumps(meta, indent=1))
-    print(f"DONE final: {meta['reports']} reports; policy walk-forward {meta['walkforward']}", flush=True)
+    print(f"DONE final: {meta['reports']} reports; " + "; ".join(f"{n} ({m['role']}) {m['walkforward']}" for n, m in meta["models"].items()),
+          flush=True)
+
+
+def _plan_for(name, spec, X, req):
+    """One model's plan at this placement: its steps scored for gain and downside, composed under
+    its policy, and whether it acts (the margin, and the stock's out-of-sample record)."""
+    pol = spec["policy"]
+    rec = spec["per_symbol"].get(req["symbol"])
+    gate = bool(rec and rec.get("acted", 0) >= 5 and (rec.get("mean_when_acting") or 0) > 0)
+    base = {"model": name, "role": spec["role"], "stock_record": rec, "stock_gate": gate, "margin": pol["margin"],
+            "model_record": spec["walkforward"], "dsr": spec.get("dsr")}
+    if pol["no_pre"] and req["place"] == "pre":
+        return {**base, "act": False, "best": None}
+    model = _Model.load(name, MODEL_DIR / name)
+    X = X.copy()
+    X["pred"], X["q10"] = model.predict(X[LEG_FEATS].astype(float))
+    K = X[X["q10"] >= pol["q10_min"]]
+    plan = compose(K, pol["margin"], pol["weight"])
+    if plan.empty:
+        return {**base, "act": False, "best": None}
+    bb = plan.iloc[0]["buyback"]
+    legs = K[(K["buyback"] == bb) & (K["pred"] >= pol["margin"])].sort_values("pred", ascending=False).head(MAX_LEGS)
+    w = legs["pred"] / np.maximum(legs["pred"] - legs["q10"], 0.5)
+    legs = legs.assign(weight=w / w.sum()).sort_values("level")
+    value = float(plan.iloc[0]["value"])
+    return {**base, "act": bool(value >= pol["margin"] and gate), "clears_margin": value >= pol["margin"],
+            "best": {"plan": f"{req['place']} | {'/'.join(f'{v:g}' for v in legs['level'])} | {bb}", "ladder": [float(v) for v in legs["level"]],
+                     "weights": [round(float(v), 3) for v in legs["weight"]], "buyback": bb, "pred_pct": round(value, 3),
+                     "steps": [{"level": float(r.level), "pred": round(float(r.pred), 3), "q10": round(float(r.q10), 3)} for r in legs.itertuples()]}}
 
 
 def predict(req):
-    """req: {symbol, place, move_at, maxmove_at, minmove_at, release_min, run5, run20, vol20,
-    past_move_med, news_pre_mean}. Every step (level x buy-back) the policy could put in now, scored
-    for gain and downside; the plan composed from them (steps, levels, weights); whether to act."""
-    import lightgbm as lgb
+    """req: {symbol, place, move_at, maxmove_at, minmove_at, release_min, bmo, run5, run20, vol20,
+    past_move_med, news_pre_mean}. The champion's plan at the top level (what the live watch acts
+    on) and the shadow's under "shadow"."""
     meta = json.loads((MODEL_DIR / "meta.json").read_text())
-    pol = meta["policy"]
-    rec = meta["per_symbol"].get(req["symbol"])
-    gate = bool(rec and rec.get("acted", 0) >= 5 and (rec.get("mean_when_acting") or 0) > 0)
-    base = {"symbol": req["symbol"], "place": req["place"], "stock_record": rec, "stock_gate": gate,
-            "margin": pol["margin"], "model_record": meta["walkforward"]}
-    if pol["no_pre"] and req["place"] == "pre":
-        return {**base, "act": False, "best": None, "reason": "the policy does not place orders before the release"}
-    m, mq = lgb.Booster(model_file=str(MODEL_DIR / "leg_model.txt")), lgb.Booster(model_file=str(MODEL_DIR / "leg_q10.txt"))
     own = pd.read_parquet(MODEL_DIR / "own_leg.parquet")
     own = own[(own["symbol"] == req["symbol"]) & (own["place"] == req["place"])].set_index(["level", "buyback"])["own_leg"]
     osym = pd.read_parquet(MODEL_DIR / "own_sym.parquet").set_index("symbol")["own_sym"].get(req["symbol"], np.nan)
@@ -689,23 +768,10 @@ def predict(req):
     for k in LEG_FEATS:
         if k not in X:
             X[k] = np.nan
-    X["pred"] = m.predict(X[LEG_FEATS].astype(float))
-    X["q10"] = mq.predict(X[LEG_FEATS].astype(float))
-    K = X[X["q10"] >= pol["q10_min"]]
-    plan = compose(K, pol["margin"], pol["weight"])
-    if plan.empty:
-        top = X.sort_values("pred", ascending=False).head(3)
-        return {**base, "act": False, "best": None, "best_step": [{"level": r.level, "buyback": r.buyback, "pred": round(r.pred, 3),
-                                                                     "q10": round(r.q10, 3)} for r in top.itertuples()]}
-    bb = plan.iloc[0]["buyback"]
-    legs = K[(K["buyback"] == bb) & (K["pred"] >= pol["margin"])].sort_values("pred", ascending=False).head(MAX_LEGS)
-    w = legs["pred"] / np.maximum(legs["pred"] - legs["q10"], 0.5)
-    legs = legs.assign(weight=w / w.sum()).sort_values("level")
-    value = float(plan.iloc[0]["value"])
-    return {**base, "act": bool(value >= pol["margin"] and gate), "clears_margin": value >= pol["margin"],
-            "best": {"plan": f"{req['place']} | {'/'.join(f'{v:g}' for v in legs['level'])} | {bb}", "ladder": [float(v) for v in legs["level"]],
-                     "weights": [round(float(v), 3) for v in legs["weight"]], "buyback": bb, "pred_pct": round(value, 3),
-                     "steps": [{"level": float(r.level), "pred": round(float(r.pred), 3), "q10": round(float(r.q10), 3)} for r in legs.itertuples()]}}
+    plans = {name: _plan_for(name, spec, X, req) for name, spec in meta["models"].items()}
+    champ = next(p for p in plans.values() if p["role"] == "champion")
+    shadow = next((p for p in plans.values() if p["role"] == "shadow"), None)
+    return {"symbol": req["symbol"], "place": req["place"], **champ, "shadow": shadow}
 
 
 # ---------------------------------------------------------------- v1 (fixed three-step ladders), kept for the research record
