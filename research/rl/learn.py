@@ -95,6 +95,109 @@ def walkforward():
     print("DONE rl walk-forward", flush=True)
 
 
+def walkforward_ensemble():
+    """Q from an ensemble: CatBoost and three LightGBMs (seeds, feature subsets) for the mean, their
+    spread as the uncertainty, CatBoost and LightGBM quantile heads averaged for P10."""
+    import lightgbm as lgb
+    from catboost import CatBoostRegressor
+    df = frame()
+    P = dict(objective="huber", alpha=2.0, learning_rate=0.05, num_leaves=63, min_data_in_leaf=1000, feature_fraction=0.7,
+             bagging_fraction=0.5, bagging_freq=1, lambda_l2=10.0, verbose=-1, num_threads=8)
+    out_dir = D / "preds_ens"
+    out_dir.mkdir(exist_ok=True)
+    years = [y for y in sorted(df["year"].unique()) if y >= 2019]
+    for n, y in enumerate(years, 1):
+        if (out_dir / f"{y}.parquet").exists():
+            continue
+        tr, te = df[df["year"] < y], df[df["year"] == y].copy()
+        X, yv, Xt = tr[FEATS], tr["gain"], te[FEATS]
+        kw = dict(iterations=300, depth=6, learning_rate=0.1, thread_count=8, verbose=False, random_seed=7)
+        means = [CatBoostRegressor(loss_function="Huber:delta=2.0", **kw).fit(X, yv).predict(Xt)]
+        for seed in (11, 23, 37):
+            means.append(lgb.train({**P, "seed": seed}, lgb.Dataset(X, yv), 300).predict(Xt))
+        q_cb = CatBoostRegressor(loss_function="Quantile:alpha=0.1", **kw).fit(X, yv).predict(Xt)
+        q_lg = lgb.train({**P, "seed": 11, "objective": "quantile", "alpha": 0.1}, lgb.Dataset(X, yv), 300).predict(Xt)
+        M = np.vstack(means)
+        te["pred"], te["pred_std"], te["q10"] = M.mean(0), M.std(0), (q_cb + q_lg) / 2
+        te[["eid", "symbol", "year", "place", "action_id", "side_code", "horizon_code", "gain", "pred", "pred_std", "q10"]].to_parquet(
+            out_dir / f"{y}.parquet")
+        ep.progress("rl-ens", n, len(years), f"{y} train={len(tr):,}")
+    print("DONE rl ensemble walk-forward", flush=True)
+
+
+def compose_policy(preds, acts, margin, q10_min, cash, lcb=1.0, max_legs=4):
+    """In time order, the first decision point where a plan clears the margin. A plan: within one
+    family (side, exit kind and distances, horizon), the entry levels whose conservative score
+    (mean - lcb x ensemble spread) clears the margin and whose P10 clears the floor, at most
+    max_legs, weighted by score over downside; the family with the best weighted score wins."""
+    k = preds if cash else preds[preds["side_code"] == 0]
+    k = k.assign(score=k["pred"] - lcb * k.get("pred_std", 0.0))
+    if q10_min is not None:
+        k = k[k["q10"] >= q10_min]
+    k = k[k["score"] >= margin]
+    if not len(k):
+        out = pd.DataFrame({"eid": preds["eid"].unique(), "acted": False, "gain": 0.0})
+        out["year"] = out["eid"].str.split("|").str[1].str[:4].astype(int)
+        return out
+    fam_cols = ["side", "exit", "y", "z", "s", "horizon"]
+    k = k.join(acts[fam_cols], on="action_id")
+    k["family"] = k[fam_cols].astype(str).agg("|".join, axis=1)
+    k["rk"] = k.groupby(["eid", "place", "family"])["score"].rank(ascending=False, method="first")
+    k = k[k["rk"] <= max_legs]
+    k["w"] = k["score"] / np.maximum(k["pred"] - k["q10"], 0.5)
+    k["ws"], k["wg"] = k["w"] * k["score"], k["w"] * k["gain"]
+    g = k.groupby(["eid", "place", "family"]).agg(w=("w", "sum"), ws=("ws", "sum"), wg=("wg", "sum"), legs=("action_id", "count")).reset_index()
+    g["value"], g["realized"] = g["ws"] / g["w"], g["wg"] / g["w"]
+    best = g.loc[g.groupby(["eid", "place"])["value"].idxmax()]
+    best = best.assign(pc=best["place"].map({p: i for i, p in enumerate(ORDER)})).sort_values("pc").drop_duplicates("eid")
+    out = pd.DataFrame({"eid": preds["eid"].unique()}).merge(best[["eid", "place", "family", "legs", "realized"]], on="eid", how="left")
+    out["acted"] = out["family"].notna()
+    out["gain"] = out["realized"].fillna(0.0)
+    out["year"] = out["eid"].str.split("|").str[1].str[:4].astype(int)
+    return out
+
+
+def judge_ensemble():
+    """Variants of the composed, uncertainty-aware policy. Chosen on 2019-2022 by the per-trade Sharpe
+    within the risk limits (the total favours loose margins, Q.6), reported on 2023-2026."""
+    import evaluate as ev
+    os.environ.setdefault("LAB_EXPERIMENT", "action_rl")
+    import tracking as tr
+    import mlflow
+    preds = pd.concat(pd.read_parquet(p) for p in sorted((D / "preds_ens").glob("*.parquet")))
+    acts = pd.read_parquet(D / "actions.parquet").set_index("action_id")
+    sess = ev.sessions()
+    pid = tr.parent("ensemble_grammar", {"actions": len(acts), "rows": len(preds)}, tags={"kind": "model", "model": "ensemble_grammar"})
+    best = {}
+    for margin, q, cash, lcb in itertools.product((0.3, 0.5, 0.7, 1.0), (None, -2.0, -1.5, -1.0), (False, True), (0.0, 1.0, 2.0)):
+        r = compose_policy(preds, acts, margin, q, cash, lcb)
+        vd = ev.verdict(r, sess)
+        ok = ev.passes(vd["select"])
+        v = {"margin": margin, "q10_min": q, "cash": cash, "lcb": lcb}
+        rid = tr.log_run(f"ensemble_grammar {v}", {**v, "model": "ensemble_grammar"}, vd,
+                         tags={"kind": "variant", "model": "ensemble_grammar", "passes_risk": str(ok)}, parent_id=pid)
+        key = "cash" if cash else "no_cash"
+        sh = vd["select"].get("sharpe_trade", -9)
+        if ok and (key not in best or sh > best[key][1]["select"]["sharpe_trade"]):
+            best[key] = (v, vd, rid, r)
+        ep.progress("rl-judge", len(best), 2, f"{v}")
+    runs = mlflow.search_runs(experiment_names=[tr.EXPERIMENT], filter_string="tags.kind = 'variant'")
+    trials = runs.get("metrics.all_sharpe_trade", pd.Series(dtype=float)).dropna().tolist()
+    for key, (v, vd, rid, r) in best.items():
+        dsr = ev.deflated_sharpe(r.loc[r["acted"], "gain"].values, trials)
+        a = r[r["acted"]]
+        print(f"\n{key}: chosen {v} | 2019-2022 {vd['select']['acted']} acted {vd['select']['mean']:+.2f}% SR {vd['select']['sharpe_trade']:.2f} | "
+              f"2023-2026 {vd['report']['acted']} acted {vd['report']['mean']:+.2f}% (se {vd['report']['se']:.2f}) p10 {vd['report']['p10']:+.2f} "
+              f"worst {vd['report']['worst']:+.1f} sum {vd['report']['sum']:+.0f}% | all {vd['all']['acted']} {vd['all']['mean']:+.2f}% | "
+              f"DSR {dsr['dsr']:.3f} ({dsr['trials']} trials)")
+        print("   families:", a["family"].str.replace("|", " ").value_counts().head(6).to_dict(), "| legs", round(a["legs"].mean(), 1))
+        for s_ in ("INTC", "STX", "TSM", "MU"):
+            g = r[r["eid"].str.startswith(s_ + "|")]; ga = g[g["acted"]]
+            print(f"   {s_}: acted {len(ga)}/{len(g)} mean {ga['gain'].mean() if len(ga) else 0:+.2f}%")
+    if not best:
+        print("no variant passes the 2019-2022 risk limits")
+
+
 def policy(preds, margin, q10_min, cash):
     k = preds if cash else preds[preds["side_code"] == 0]
     if q10_min is not None:
@@ -151,4 +254,5 @@ def judge():
 
 
 if __name__ == "__main__":
-    {"walkforward": walkforward, "judge": judge}[sys.argv[1]]()
+    {"walkforward": walkforward, "judge": judge, "walkforward_ensemble": walkforward_ensemble,
+     "judge_ensemble": judge_ensemble}[sys.argv[1]]()
