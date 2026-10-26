@@ -61,3 +61,6 @@ news_collectors/gdelt/gdelt.json
 # connection string; the real metadata DB is the airflow-postgres container.
 airflow/airflow.db
 airflow_task_failures.log
+
+# CatBoost training logs (research/lab)
+catboost_info/
