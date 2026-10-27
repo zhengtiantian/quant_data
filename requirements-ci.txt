@@ -2,6 +2,7 @@
 # Heavy packages (lightgbm, mlflow, newspaper3k, crowd-kit, etc.) are excluded to keep CI fast.
 pandas>=2.2.2
 numpy>=1.26.4
+numba>=0.60          # research/rl/simulator.py (tests/test_rl_simulator.py)
 pymongo>=4.7.0
 python-dotenv>=1.0.1
 pytest>=8.0.0
