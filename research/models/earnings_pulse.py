@@ -157,6 +157,75 @@ def fetch():
 
 # ---------------------------------------------------------------- build
 
+def scrub_extended_bars(m: pd.DataFrame, close_i: int) -> tuple[pd.DataFrame, int]:
+    """Scrub off-exchange TRF / late-closing-cross phantom needles in extended-hours 1-min SIP bars.
+
+    Outside regular trading (09:30-16:00 ET) and past the 16:00-16:01 closing-cross transition,
+    late benchmark/Form-T prints periodically report at `close16` (e.g. INTC 2026-10-29 16:15/16:16
+    printing h=92.07 while trading at 75, or AAPL 2024-05-02 16:53 printing l=173.03 while at 185)
+    or as isolated single-bar off-market needles without moving open/close of surrounding bars.
+    """
+    n = len(m)
+    if n == 0:
+        return m, 0
+    close16 = float(m["close"].values[close_i - 1]) if 0 < close_i <= n else 0.0
+    o = m["open"].values.astype(float).copy()
+    h = m["high"].values.astype(float).copy()
+    l = m["low"].values.astype(float).copy()
+    c = m["close"].values.astype(float).copy()
+    idx_ns = m.index.asi8
+    mins = (m.index.hour * 60 + m.index.minute).values
+    is_report_day = (m.index.date == m.index[min(max(close_i - 1, 0), n - 1)].date()) if close_i > 0 else np.zeros(n, dtype=bool)
+    body_hi = np.maximum(o, c)
+    body_lo = np.minimum(o, c)
+    scrubbed = 0
+    five_min_ns = 300 * 1_000_000_000
+
+    for i in range(n):
+        if 570 <= mins[i] < 960:
+            continue
+        if is_report_day[i] and mins[i] in (960, 961):
+            continue
+        loc_hi = body_hi[i]
+        loc_lo = body_lo[i]
+        if i > 0 and not (570 <= mins[i - 1] < 960) and (idx_ns[i] - idx_ns[i - 1]) <= five_min_ns:
+            if body_hi[i - 1] > loc_hi:
+                loc_hi = body_hi[i - 1]
+            if body_lo[i - 1] < loc_lo:
+                loc_lo = body_lo[i - 1]
+        if i + 1 < n and not (570 <= mins[i + 1] < 960) and (idx_ns[i + 1] - idx_ns[i]) <= five_min_ns:
+            if body_hi[i + 1] > loc_hi:
+                loc_hi = body_hi[i + 1]
+            if body_lo[i + 1] < loc_lo:
+                loc_lo = body_lo[i + 1]
+        loc_span_pct = (loc_hi - loc_lo) / max(loc_lo, 1e-6) * 100.0
+        changed = False
+
+        up_wick_pct = (h[i] / max(loc_hi, 1e-6) - 1.0) * 100.0
+        near_c16_hi = close16 > 0 and loc_hi < close16 * 0.98 and abs(h[i] - close16) / close16 <= 0.008 and up_wick_pct >= 1.5
+        isolated_hi = up_wick_pct >= 2.5 and loc_span_pct < 3.0 and up_wick_pct >= 5.0 * max(loc_span_pct, 0.20)
+        if near_c16_hi or isolated_hi:
+            h[i] = body_hi[i]
+            changed = True
+
+        dn_wick_pct = (1.0 - l[i] / max(loc_lo, 1e-6)) * 100.0
+        near_c16_lo = close16 > 0 and loc_lo > close16 * 1.02 and abs(l[i] - close16) / close16 <= 0.008 and dn_wick_pct >= 1.5
+        isolated_lo = dn_wick_pct >= 2.5 and loc_span_pct < 3.0 and dn_wick_pct >= 5.0 * max(loc_span_pct, 0.20)
+        if near_c16_lo or isolated_lo:
+            l[i] = body_lo[i]
+            changed = True
+
+        if changed:
+            scrubbed += 1
+
+    if scrubbed == 0:
+        return m, 0
+    out = m.copy()
+    out["high"] = h
+    out["low"] = l
+    return out, scrubbed
+
+
 def _release(m, close_i, r, pos):
     """The release minute: the first bar after the close (amc) or after 04:00 on the reaction day
     (bmo) with 3x the last half hour's volume and a 0.5% move from the close, else the SEC time.
@@ -236,6 +305,8 @@ def build():
         close_i = pos(pd.Timestamp(f"{r.day} 16:00", tz=NY))
         if close_i == 0 or close_i >= len(m):
             continue
+        if os.getenv("PULSE_NOSCRUB") != "1":
+            m, _ = scrub_extended_bars(m, close_i)
         # The release reaches the wires minutes before the SEC accepts the 8-K (INTC: price jumped at
         # 16:00-16:01, SEC 16:09): the release minute is the first after the close where volume is 3x
         # the last half hour's and the price has moved 0.5%, else the SEC time.
@@ -393,15 +464,14 @@ LEVELS = (0.5, 1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10, 12)
 MAX_LEGS = 4
 
 
-def leg_gains(bars, t0_idx, idx, level):
-    """One step at `level` % above the price when placed: the gain against holding for each buy-back
-    rule, or 0 for all when the step never trades (net of COST a side when it does)."""
+def leg_gains_with_fill(bars, t0_idx, idx, level):
+    """One step at `level` % above the price when placed: returns (dict of gain per buy-back rule, filled 0/1)."""
     o, h, l, c = bars
     p0, end = c[t0_idx - 1], idx["next_open"]
     lim = p0 * (1 + level / 100)
     hit = np.nonzero(h[t0_idx:end] >= lim * (1 + THROUGH / 100))[0]
     if not len(hit):
-        return {bb: 0.0 for bb in BUYBACK}
+        return {bb: 0.0 for bb in BUYBACK}, 0
     i = t0_idx + hit[0]
     sell = max(lim, o[i])
     out = {}
@@ -413,14 +483,19 @@ def leg_gains(bars, t0_idx, idx, level):
         else:
             buy = o[min(max(idx[bb], i + 1), end)]
         out[bb] = (sell - buy) / p0 * 100 - 2 * COST
-    return out
+    return out, 1
+
+
+def leg_gains(bars, t0_idx, idx, level):
+    """Backward-compatible wrapper returning only the gain map per buy-back rule."""
+    return leg_gains_with_fill(bars, t0_idx, idx, level)[0]
 
 
 def build_legs():
-    """One row per (report, placement, level, buy-back): what that single step made. Any ladder is a
-    weighted sum of these, so the number of steps, their levels and sizes are left to the policy."""
+    """One row per (report, placement, level, buy-back): what that single step made and whether it filled."""
     ev = events()
     rows = []
+    scrubbed_reports, scrubbed_bars = 0, 0
     for n, r in enumerate(ev.itertuples(), 1):
         p = M1 / f"{r.symbol}_{r.day}.parquet"
         if not p.exists():
@@ -436,6 +511,11 @@ def build_legs():
         close_i = pos(pd.Timestamp(f"{r.day} 16:00", tz=NY))
         if close_i == 0 or close_i >= len(m):
             continue
+        if os.getenv("PULSE_NOSCRUB") != "1":
+            m, nb = scrub_extended_bars(m, close_i)
+            if nb:
+                scrubbed_reports += 1
+                scrubbed_bars += nb
         cl = m["close"].values
         rel_i, release_ts = _release(m, close_i, r, pos)
         idx = {"c+5": pos(r.call + pd.Timedelta(minutes=5)), "c+30": pos(r.call + pd.Timedelta(minutes=30)),
@@ -448,16 +528,19 @@ def build_legs():
             if i <= 0 or i >= idx["next_open"]:
                 continue
             for lev in LEVELS:
-                for bb, g in leg_gains(arr, i, idx, lev).items():
+                gains_map, filled = leg_gains_with_fill(arr, i, idx, lev)
+                for bb, g in gains_map.items():
                     if not bb.startswith("lim") and idx[bb] <= i:
                         continue
-                    rows.append((r.symbol, r.date, pl, lev, bb, g))
+                    rows.append((r.symbol, r.date, pl, lev, bb, g, filled))
         if n % 200 == 0 or n == len(ev):
-            progress("legs", n, len(ev), f"rows={len(rows)}")
-    df = pd.DataFrame(rows, columns=["symbol", "date", "place", "level", "buyback", "gain"])
+            progress("legs", n, len(ev), f"rows={len(rows)} scrubbed={scrubbed_reports}/{scrubbed_bars}")
+    df = pd.DataFrame(rows, columns=["symbol", "date", "place", "level", "buyback", "gain", "filled"])
     df["gain"] = df["gain"].astype("float32")
+    df["filled"] = df["filled"].astype("int8")
     df.to_parquet(D / f"pulse_legs{os.getenv('PULSE_TAG', '')}.parquet")
-    print(f"DONE legs: {df[['symbol', 'date']].drop_duplicates().shape[0]} reports, {len(df)} rows", flush=True)
+    print(f"DONE legs: {df[['symbol', 'date']].drop_duplicates().shape[0]} reports, {len(df)} rows "
+          f"(scrubbed {scrubbed_bars} phantom bars across {scrubbed_reports} reports)", flush=True)
 
 
 # ---------------------------------------------------------------- v2: the bake-off
@@ -466,6 +549,7 @@ ORDER = ("pre", "r+1", "r+3", "r+5", "r+10", "r+20", "r+30", "c-5")        # the
 STATE = ["move_at", "maxmove_at", "minmove_at", "release_min", "run5", "run20", "vol20", "past_move_med",
          "news_pre_mean", "place_code", "bmo"]
 LEG_FEATS = STATE + ["level", "bb_code", "own_leg", "own_sym"]
+FILL_FEATS = STATE + ["level", "own_fill"]
 
 
 def leg_frame():
@@ -487,7 +571,12 @@ def leg_frame():
     df["bb_code"] = df["buyback"].map({b: i for i, b in enumerate(BUYBACK)}).astype(float)
     df = df.sort_values("date").reset_index(drop=True)
     # what this stock's earlier reports made on the same step, and on all steps (earlier dates only)
+    if "filled" not in df.columns:
+        df["filled"] = (df["gain"] != 0.0).astype("int8")
     df["own_leg"] = df.groupby(["symbol", "place", "level", "buyback"])["gain"].transform(lambda x: x.shift().expanding().mean())
+    f_step = df.drop_duplicates(["symbol", "date", "place", "level"]).sort_values("date").copy()
+    f_step["own_fill"] = f_step.groupby(["symbol", "place", "level"])["filled"].transform(lambda x: x.shift().expanding().mean())
+    df = df.merge(f_step[["symbol", "date", "place", "level", "own_fill"]], on=["symbol", "date", "place", "level"], how="left")
     per = df.groupby(["symbol", "date"])["gain"].mean().rename("g").reset_index().sort_values("date")
     per["own_sym"] = per.groupby("symbol")["g"].transform(lambda x: x.shift().expanding().mean())
     df = df.merge(per[["symbol", "date", "own_sym"]], on=["symbol", "date"], how="left")
@@ -625,11 +714,16 @@ P_LEG = dict(objective="huber", alpha=2.0, learning_rate=0.05, num_leaves=31, mi
 # (640), highest wins; each with the policy its own 2019-2022 walk-forward chose. Both chose
 # margin 0.7 with pre-release orders allowed, which they used once in 371 reports: the live watch
 # places nothing before the release (no_pre), at no cost (+665% vs +667%).
+# Updated 2026-10-30 after scrubbing 1,319 late-reported SIP regular-close phantom bars across 844 reports:
+# CatBoost failed 2019-2022 risk limits (-12.0% worst) once phantom fills were removed; 5-seed LightGBM
+# passed 26/80 variants (OOS 2023-2026: 116 acted, +1.40% mean, P10 0.00%, worst -3.18%, SR/trade 0.454)
+# and promotes to champion, with two-stage Hurdle LightGBM (P(fill)*E[gain|fill], conditional Q10|fill gate;
+# OOS 163 acted, +1.06% mean, worst -5.08%) in shadow.
 LIVE_MODELS = {
-    "catboost": {"role": "champion", "policy": {"margin": 0.7, "no_pre": True, "q10_min": -1.0, "weight": "risk"},
-                 "dsr": 0.992, "preds": "lab_preds/catboost"},
-    "lgbm_seeds": {"role": "shadow", "policy": {"margin": 0.7, "no_pre": True, "q10_min": -1.5, "weight": "risk"},
-                   "dsr": 0.979, "preds": "lab_preds/lgbm_seeds"},
+    "lgbm_seeds": {"role": "champion", "policy": {"margin": 0.5, "no_pre": True, "q10_min": -1.5, "weight": "risk"},
+                   "dsr": 0.712, "preds": "lab_preds/lgbm_seeds"},
+    "hurdle_lgbm": {"role": "shadow", "policy": {"margin": 0.5, "no_pre": True, "q10_min": -1.0, "weight": "risk"},
+                    "dsr": 0.961, "preds": "lab_preds/hurdle_lgbm"},
 }
 
 
@@ -645,12 +739,37 @@ def policy_walkforward(preds_dir: str = "bakeoff_preds", pol: dict = POLICY) -> 
 
 
 class _Model:
-    """The mean and the 10th percentile of a step's gain, fitted as in research/lab/models.py."""
+    """The mean and the 10th percentile of a step's gain (direct or two-stage P(fill) * E[gain|fill])."""
 
     def __init__(self, name):
         self.name = name
+        self.f = []
 
-    def fit(self, X, y):
+    def fit(self, df_or_X, y=None):
+        if self.name.startswith("hurdle_"):
+            df = df_or_X
+            dedup = df.drop_duplicates(["eid", "place", "level"])
+            Xf, yf = dedup[FILL_FEATS].astype(float), dedup["filled"].astype(int)
+            hit = df[df["filled"] == 1]
+            Xc, yc = hit[LEG_FEATS].astype(float), hit["gain"].astype(float)
+            if self.name == "hurdle_catboost":
+                from catboost import CatBoostClassifier, CatBoostRegressor
+                self.f = [CatBoostClassifier(iterations=350, depth=6, learning_rate=0.08, thread_count=8, verbose=False, random_seed=7).fit(Xf, yf)]
+                kw = dict(iterations=400, depth=6, learning_rate=0.08, thread_count=8, verbose=False, random_seed=7)
+                self.m = [CatBoostRegressor(loss_function="Huber:delta=2.0", **kw).fit(Xc, yc)]
+                self.q = [CatBoostRegressor(loss_function="Quantile:alpha=0.1", **kw).fit(Xc, yc)]
+            else:
+                import lightgbm as lgb
+                self.f, self.m, self.q = [], [], []
+                for seed in (11, 23, 37):
+                    Pf = {**P_LEG, "objective": "binary", "seed": seed, "feature_fraction": 0.8, "min_data_in_leaf": 200}
+                    Pm = {**P_LEG, "seed": seed, "feature_fraction": 0.7, "min_data_in_leaf": 150}
+                    self.f.append(lgb.train(Pf, lgb.Dataset(Xf, yf), 250))
+                    self.m.append(lgb.train(Pm, lgb.Dataset(Xc, yc), 250))
+                    self.q.append(lgb.train({**Pm, "objective": "quantile", "alpha": 0.1}, lgb.Dataset(Xc, yc), 250))
+            return self
+        X = df_or_X[LEG_FEATS].astype(float) if y is None else df_or_X
+        y = df_or_X["gain"].astype(float) if y is None else y
         if self.name == "catboost":
             from catboost import CatBoostRegressor
             kw = dict(iterations=400, depth=6, learning_rate=0.08, thread_count=8, verbose=False, random_seed=7)
@@ -667,26 +786,43 @@ class _Model:
 
     def save(self, d: Path):
         d.mkdir(parents=True, exist_ok=True)
-        ext = "cbm" if self.name == "catboost" else "txt"
-        for kind, ms in (("m", self.m), ("q", self.q)):
+        for old in d.glob("*"):
+            if old.is_file():
+                old.unlink()
+        is_cb = "catboost" in self.name
+        ext = "cbm" if is_cb else "txt"
+        for kind, ms in (("f", self.f), ("m", self.m), ("q", self.q)):
             for i, m in enumerate(ms):
                 m.save_model(str(d / f"{kind}{i}.{ext}"))
 
     @classmethod
     def load(cls, name, d: Path):
         self = cls(name)
-        if name == "catboost":
-            from catboost import CatBoostRegressor
+        if "catboost" in name:
+            from catboost import CatBoostClassifier, CatBoostRegressor
+            self.f = [CatBoostClassifier().load_model(str(p)) for p in sorted(d.glob("f*.cbm"))]
             self.m = [CatBoostRegressor().load_model(str(p)) for p in sorted(d.glob("m*.cbm"))]
             self.q = [CatBoostRegressor().load_model(str(p)) for p in sorted(d.glob("q*.cbm"))]
         else:
             import lightgbm as lgb
+            self.f = [lgb.Booster(model_file=str(p)) for p in sorted(d.glob("f*.txt"))]
             self.m = [lgb.Booster(model_file=str(p)) for p in sorted(d.glob("m*.txt"))]
             self.q = [lgb.Booster(model_file=str(p)) for p in sorted(d.glob("q*.txt"))]
         return self
 
     def predict(self, X):
-        return np.mean([m.predict(X) for m in self.m], 0), np.mean([q.predict(X) for q in self.q], 0)
+        if self.name.startswith("hurdle_"):
+            Xf = X[FILL_FEATS].astype(float)
+            Xc = X[LEG_FEATS].astype(float)
+            if "catboost" in self.name:
+                pf = np.mean([f.predict_proba(Xf)[:, 1] for f in self.f], 0)
+            else:
+                pf = np.mean([f.predict(Xf) for f in self.f], 0)
+            mc = np.mean([m.predict(Xc) for m in self.m], 0)
+            qc = np.mean([q.predict(Xc) for q in self.q], 0)
+            return pf * mc, qc
+        Xc = X[LEG_FEATS].astype(float) if isinstance(X, pd.DataFrame) and set(LEG_FEATS).issubset(X.columns) else X
+        return np.mean([m.predict(Xc) for m in self.m], 0), np.mean([q.predict(Xc) for q in self.q], 0)
 
 
 def final():
@@ -708,7 +844,7 @@ def final():
             a = g[g["acted"]]
             rec[s_] = {"reports": int(len(g)), "acted": int(len(a)), "mean_when_acting": round(float(a["gain"].mean()), 3) if len(a) else None,
                        "win": round(float((a["gain"] > 0).mean()), 3) if len(a) else None}
-        fitted[name] = _Model(name).fit(df[LEG_FEATS].astype(float), df["gain"].astype(float))
+        fitted[name] = _Model(name).fit(df) if name.startswith("hurdle_") else _Model(name).fit(df[LEG_FEATS].astype(float), df["gain"].astype(float))
         meta["models"][name] = {**spec, "walkforward": {"years": f"{wf['year'].min()}-{wf['year'].max()}", "acted": int(len(acted)),
                                                         "mean_when_acting": round(float(acted["gain"].mean()), 3),
                                                         "p10": round(float(acted["gain"].quantile(.1)), 3),
@@ -719,6 +855,7 @@ def final():
         model.save(MODEL_DIR / name)
     last = df.sort_values("date").groupby(["symbol", "place", "level", "buyback"])["gain"].mean().rename("own_leg").reset_index()
     last.to_parquet(MODEL_DIR / "own_leg.parquet")
+    df.drop_duplicates(["symbol", "date", "place", "level"]).groupby(["symbol", "place", "level"])["filled"].mean().rename("own_fill").reset_index().to_parquet(MODEL_DIR / "own_fill.parquet")
     df.groupby("symbol")["gain"].mean().rename("own_sym").reset_index().to_parquet(MODEL_DIR / "own_sym.parquet")
     (MODEL_DIR / "meta.json").write_text(json.dumps(meta, indent=1))
     print(f"DONE final: {meta['reports']} reports; " + "; ".join(f"{n} ({m['role']}) {m['walkforward']}" for n, m in meta["models"].items()),
@@ -737,7 +874,7 @@ def _plan_for(name, spec, X, req):
         return {**base, "act": False, "best": None}
     model = _Model.load(name, MODEL_DIR / name)
     X = X.copy()
-    X["pred"], X["q10"] = model.predict(X[LEG_FEATS].astype(float))
+    X["pred"], X["q10"] = model.predict(X if name.startswith("hurdle_") else X[LEG_FEATS].astype(float))
     K = X[X["q10"] >= pol["q10_min"]]
     plan = compose(K, pol["margin"], pol["weight"])
     if plan.empty:
@@ -760,9 +897,14 @@ def predict(req):
     meta = json.loads((MODEL_DIR / "meta.json").read_text())
     own = pd.read_parquet(MODEL_DIR / "own_leg.parquet")
     own = own[(own["symbol"] == req["symbol"]) & (own["place"] == req["place"])].set_index(["level", "buyback"])["own_leg"]
+    ofill_p = MODEL_DIR / "own_fill.parquet"
+    ofill = pd.Series(dtype=float)
+    if ofill_p.exists():
+        of_df = pd.read_parquet(ofill_p)
+        ofill = of_df[(of_df["symbol"] == req["symbol"]) & (of_df["place"] == req["place"])].set_index("level")["own_fill"]
     osym = pd.read_parquet(MODEL_DIR / "own_sym.parquet").set_index("symbol")["own_sym"].get(req["symbol"], np.nan)
     rows = [{**{k: req.get(k) for k in STATE if k in req}, "place_code": ORDER.index(req["place"]), "level": float(lev),
-             "bb_code": float(BUYBACK.index(bb)), "own_leg": own.get((lev, bb), np.nan), "own_sym": osym,
+             "bb_code": float(BUYBACK.index(bb)), "own_leg": own.get((lev, bb), np.nan), "own_fill": ofill.get(lev, np.nan), "own_sym": osym,
              "eid": "live", "place": req["place"], "buyback": bb, "gain": 0.0} for lev in LEVELS for bb in BUYBACK]
     X = pd.DataFrame(rows)
     for k in LEG_FEATS:

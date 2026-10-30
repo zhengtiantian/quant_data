@@ -58,7 +58,7 @@ def judge(model: str, spec: str, note: str = "") -> None:
                          "passes_risk": str(ok)}, parent_id=pid)
         rows.append({**v, "run_id": rid, "passes": ok, **{f"select_{k}": x for k, x in sel.items()},
                      **{f"report_{k}": x for k, x in vd["report"].items()}})
-        if ok and (best is None or sel["sum"] > best[1]["select"]["sum"]):
+        if ok and (best is None or sel["sharpe_trade"] > best[1]["select"]["sharpe_trade"]):
             best = (v, vd, rid, r)
         print(f"PROGRESS judge {i} {len(ev.variants())} {model}", flush=True)
     table = pd.DataFrame(rows)

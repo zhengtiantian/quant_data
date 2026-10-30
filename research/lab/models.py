@@ -49,6 +49,9 @@ def fit_predict(name, tr, te):
             ps.append(lgb.train(P, lgb.Dataset(X, y), 250).predict(Xt))
             qs.append(lgb.train({**P, "objective": "quantile", "alpha": 0.1}, lgb.Dataset(X, y), 250).predict(Xt))
         return np.mean(ps, 0), np.mean(qs, 0)
+    if name in ("hurdle_catboost", "hurdle_lgbm"):
+        m = ep._Model(name).fit(tr)
+        return m.predict(te)
     raise SystemExit(f"unknown model {name}")
 
 

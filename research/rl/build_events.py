@@ -111,6 +111,9 @@ def build():
             m5_cache[r.symbol] = m
         m1 = pd.read_parquet(p1)
         m1.index = m1.index.tz_convert(NY)
+        c16_pos = int(np.searchsorted(m1.index.values, pd.Timestamp(f"{r.day} 16:00", tz=NY).to_datetime64()))
+        if 0 < c16_pos < len(m1):
+            m1, _ = ep.scrub_extended_bars(m1, c16_pos)
         frame, days = stitched(r, m1, m5_cache[r.symbol], daily_cache[r.symbol])
         if frame is None:
             continue
