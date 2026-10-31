@@ -64,3 +64,6 @@ airflow_task_failures.log
 
 # CatBoost training logs (research/lab)
 catboost_info/
+
+# Local backups made before edits (*.YYYY-MM-DD-before-*.bak)
+*.bak
