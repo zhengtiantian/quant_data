@@ -15,7 +15,9 @@ import multiprocessing
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from concurrent.futures.process import BrokenProcessPool
 import threading
-import mysql.connector
+import psycopg2
+import psycopg2.errors
+from psycopg2.extras import RealDictCursor
 import builtins
 import signal
 import traceback
@@ -163,7 +165,9 @@ STUCK_URLS_FILE = os.path.join(CACHE_DIR, "stuck_urls.txt")
 
 # Debug switch: controls logging only, does not affect business logic
 DEBUG_TASK_TRACE = os.getenv("DEBUG_TASK_TRACE", "false").lower() == "true"
-USE_MYSQL_BATCH_QUEUE = os.getenv("USE_MYSQL_BATCH_QUEUE", "false").lower() == "true"
+# The batch queue lives in PostgreSQL since 2026-10-31 (was MySQL); the USE_MYSQL_* / MYSQL_* names
+# are still read so older launchers keep working.
+USE_MYSQL_BATCH_QUEUE = os.getenv("USE_DB_BATCH_QUEUE", os.getenv("USE_MYSQL_BATCH_QUEUE", "false")).lower() == "true"
 BATCH_WORKERS = int(os.getenv("BATCH_WORKERS", "2"))
 RUNNING_RECLAIM_MINUTES = int(os.getenv("RUNNING_RECLAIM_MINUTES", "720"))
 RESET_ALL_RUNNING_ON_START = os.getenv("RESET_ALL_RUNNING_ON_START", "true").lower() == "true"
@@ -172,13 +176,13 @@ STARTUP_PREDOWNLOAD_RECENT_FILES = int(os.getenv("STARTUP_PREDOWNLOAD_RECENT_FIL
 QUEUE_INSTANCE_ID = os.getenv("QUEUE_INSTANCE_ID", HOST_ID)
 QUEUE_HEARTBEAT_SECONDS = int(os.getenv("QUEUE_HEARTBEAT_SECONDS", "30"))
 
-MYSQL_HOST = os.getenv("MYSQL_HOST", "127.0.0.1")
-MYSQL_PORT = int(os.getenv("MYSQL_PORT", "23306"))
-MYSQL_USER = os.getenv("MYSQL_USER", "root")
-MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
-MYSQL_DATABASE = os.getenv("MYSQL_DATABASE", "workflow")
-MYSQL_TASK_TABLE = os.getenv("MYSQL_TASK_TABLE", "gdelt_batch_tasks")
-BATCH_SIZE = 100  # Process 100 GKG files per batch, one-to-one correspondence with MySQL batch_id
+TASKDB_HOST = os.getenv("TASKDB_HOST", "127.0.0.1")
+TASKDB_PORT = int(os.getenv("TASKDB_PORT", "25432"))
+TASKDB_USER = os.getenv("TASKDB_USER", "workflow")
+TASKDB_PASSWORD = os.getenv("TASKDB_PASSWORD", "")
+TASKDB_NAME = os.getenv("TASKDB_NAME", "workflow")
+MYSQL_TASK_TABLE = os.getenv("TASK_TABLE", os.getenv("MYSQL_TASK_TABLE", "gdelt_batch_tasks"))
+BATCH_SIZE = 100  # Process 100 GKG files per batch, one-to-one correspondence with the queue's batch_id
 
 # ── GKG MongoDB index ─────────────────────────────────────────────────────────
 # New files are downloaded to Data4T temp dir, parsed, imported to MongoDB,
@@ -358,13 +362,13 @@ def enqueue_retry_urls(timed_out_matches, dst_collection):
 
 
 def get_mysql_conn():
-    return mysql.connector.connect(
-        host=MYSQL_HOST,
-        port=MYSQL_PORT,
-        user=MYSQL_USER,
-        password=MYSQL_PASSWORD,
-        database=MYSQL_DATABASE,
-        autocommit=False,
+    """The batch-queue database (PostgreSQL workflow DB since 2026-10-31; the name is kept for callers)."""
+    return psycopg2.connect(
+        host=TASKDB_HOST,
+        port=TASKDB_PORT,
+        user=TASKDB_USER,
+        password=TASKDB_PASSWORD,
+        dbname=TASKDB_NAME,
     )
 
 
@@ -648,25 +652,23 @@ def ensure_task_table():
         cur.execute(
             f"""
             CREATE TABLE IF NOT EXISTS {MYSQL_TASK_TABLE} (
-              batch_id INT PRIMARY KEY,
-              status ENUM('pending','running','done','failed') NOT NULL DEFAULT 'pending',
-              owner VARCHAR(64) DEFAULT NULL,
-              owner_host VARCHAR(128) DEFAULT NULL,
-              retries INT NOT NULL DEFAULT 0,
-              last_error TEXT,
-              started_at DATETIME NULL,
-              finished_at DATETIME NULL,
-              updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-              INDEX idx_status_batch (status, batch_id)
+              batch_id integer PRIMARY KEY,
+              batch_sig varchar(64),
+              status varchar(16) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','running','done','failed')),
+              owner varchar(64),
+              owner_host varchar(128),
+              retries integer NOT NULL DEFAULT 0,
+              last_error text,
+              started_at timestamp,
+              finished_at timestamp,
+              completed_by_host varchar(128),
+              updated_at timestamp NOT NULL DEFAULT now()
             )
             """
         )
-        cur.execute(f"SHOW COLUMNS FROM {MYSQL_TASK_TABLE} LIKE 'owner_host'")
-        if cur.fetchone() is None:
-            cur.execute(f"ALTER TABLE {MYSQL_TASK_TABLE} ADD COLUMN owner_host VARCHAR(128) DEFAULT NULL AFTER owner")
-        cur.execute(f"SHOW COLUMNS FROM {MYSQL_TASK_TABLE} LIKE 'batch_sig'")
-        if cur.fetchone() is None:
-            cur.execute(f"ALTER TABLE {MYSQL_TASK_TABLE} ADD COLUMN batch_sig VARCHAR(64) DEFAULT NULL AFTER batch_id")
+        cur.execute(f"CREATE INDEX IF NOT EXISTS {MYSQL_TASK_TABLE}_status_batch ON {MYSQL_TASK_TABLE} (status, batch_id)")
+        for col, ddl in (("owner_host", "varchar(128)"), ("batch_sig", "varchar(64)"), ("completed_by_host", "varchar(128)")):
+            cur.execute(f"ALTER TABLE {MYSQL_TASK_TABLE} ADD COLUMN IF NOT EXISTS {col} {ddl}")
         conn.commit()
     finally:
         conn.close()
@@ -720,7 +722,7 @@ def seed_tasks(total_batches, resume_batch, batch_signatures):
         for i in range(0, total_batches, chunk_size):
             chunk = [(b_id, 'pending') for b_id in range(i + 1, min(i + chunk_size + 1, total_batches + 1))]
             cur.executemany(
-                f"INSERT IGNORE INTO {MYSQL_TASK_TABLE} (batch_id, status) VALUES (%s, %s)",
+                f"INSERT INTO {MYSQL_TASK_TABLE} (batch_id, status) VALUES (%s, %s) ON CONFLICT (batch_id) DO NOTHING",
                 chunk
             )
         
@@ -762,8 +764,7 @@ def claim_next_batch(owner):
     for attempt in range(1, max_attempts + 1):
         conn = get_mysql_conn()
         try:
-            cur = conn.cursor(dictionary=True)
-            cur.execute("START TRANSACTION")
+            cur = conn.cursor(cursor_factory=RealDictCursor)
             
             # Find next available task: supports claiming pending, failed, or stale running batches
             cur.execute(
@@ -771,7 +772,7 @@ def claim_next_batch(owner):
                 SELECT batch_id
                 FROM {MYSQL_TASK_TABLE}
                 WHERE status IN ('pending', 'failed')
-                   OR (status='running' AND updated_at < (NOW() - INTERVAL %s MINUTE))
+                   OR (status='running' AND updated_at < (NOW() - make_interval(mins => %s)))
                 ORDER BY batch_id ASC
                 LIMIT 1
                 FOR UPDATE SKIP LOCKED
@@ -795,11 +796,13 @@ def claim_next_batch(owner):
             )
             conn.commit()
             return batch_id
-        except mysql.connector.Error as err:
+        except (psycopg2.errors.DeadlockDetected, psycopg2.errors.LockNotAvailable,
+                psycopg2.errors.SerializationFailure):
             conn.rollback()
-            if getattr(err, "errno", None) in {1205, 1213}:
-                time.sleep(0.5 * attempt)
-                continue
+            time.sleep(0.5 * attempt)
+            continue
+        except Exception:
+            conn.rollback()
             raise
         finally:
             conn.close()
@@ -1147,7 +1150,7 @@ def verify_and_reopen_incomplete_batches(urls):
     gkg_col = get_gkg_col()
     conn = get_mysql_conn()
     try:
-        cur = conn.cursor(dictionary=True)
+        cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute(f"SELECT batch_id FROM {MYSQL_TASK_TABLE} WHERE status='done' ORDER BY batch_id")
         done_batch_ids = [row["batch_id"] for row in cur.fetchall()]
     finally:

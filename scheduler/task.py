@@ -258,7 +258,7 @@ def configure_schedule() -> None:
             "collectors/news/gdelt/historical_collector.py",
             {
                 "RESET_ALL_RUNNING_ON_START": "false",
-                "USE_MYSQL_BATCH_QUEUE": os.getenv("USE_MYSQL_BATCH_QUEUE", "true"),
+                "USE_DB_BATCH_QUEUE": os.getenv("USE_DB_BATCH_QUEUE", os.getenv("USE_MYSQL_BATCH_QUEUE", "true")),
             },
         )
 
@@ -356,7 +356,7 @@ def configure_schedule() -> None:
             "collectors/news/gdelt/historical_collector.py",
             {
                 "RESET_ALL_RUNNING_ON_START": "false",
-                "USE_MYSQL_BATCH_QUEUE": os.getenv("USE_MYSQL_BATCH_QUEUE", "true"),
+                "USE_DB_BATCH_QUEUE": os.getenv("USE_DB_BATCH_QUEUE", os.getenv("USE_MYSQL_BATCH_QUEUE", "true")),
             },
         )
 
@@ -387,7 +387,7 @@ def run_startup_jobs() -> None:
             "collectors/news/gdelt/historical_collector.py",
             {
                 "RESET_ALL_RUNNING_ON_START": "false",
-                "USE_MYSQL_BATCH_QUEUE": os.getenv("USE_MYSQL_BATCH_QUEUE", "true"),
+                "USE_DB_BATCH_QUEUE": os.getenv("USE_DB_BATCH_QUEUE", os.getenv("USE_MYSQL_BATCH_QUEUE", "true")),
             },
         )
 

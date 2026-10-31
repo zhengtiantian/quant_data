@@ -1,5 +1,5 @@
 # === Core database connectors ===
-mysql-connector-python>=9.0.0
+psycopg2-binary>=2.9
 pymongo>=4.7.0
 
 # === Data analysis ===

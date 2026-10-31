@@ -36,11 +36,12 @@ if not LOCAL_MONGO:
 BASE_ENV = {
     "MONGO_URI": LOCAL_MONGO,
     "LOCAL_MONGO_URI": LOCAL_MONGO,
-    "MYSQL_HOST": "127.0.0.1",
-    "MYSQL_PORT": "23306",
-    "MYSQL_USER": "root",
-    "MYSQL_PASSWORD": os.environ.get("HOST_MYSQL_PASSWORD") or _load_dotenv_value("HOST_MYSQL_PASSWORD") or "",
-    "MYSQL_DATABASE": "workflow",
+    # GDELT batch queue: PostgreSQL workflow DB in airflow-postgres (was MySQL 8 until 2026-10-31)
+    "TASKDB_HOST": "127.0.0.1",
+    "TASKDB_PORT": "25432",
+    "TASKDB_USER": "workflow",
+    "TASKDB_PASSWORD": os.environ.get("HOST_WORKFLOW_PG_PASSWORD") or _load_dotenv_value("HOST_WORKFLOW_PG_PASSWORD") or "",
+    "TASKDB_NAME": "workflow",
     "PYTHONUNBUFFERED": "1",
     # LM Studio model id for the SLM news filter / company match. On the M5 Max the model
     # loads as "qwen3.5-4b-mlx" (one instance); the old "qwen3.5-4b" alias no longer exists.
@@ -52,7 +53,7 @@ GDELT_ENV = {
     **BASE_ENV,
     "GDELT_CACHE_DIR": "/Volumes/Data4T/docker-volumes/gdelt_cache",
     "GKG_TMP_DIR": "/Volumes/Data4T/gdelt_tmp",
-    "USE_MYSQL_BATCH_QUEUE": "true",
+    "USE_DB_BATCH_QUEUE": "true",
     "RESET_ALL_RUNNING_ON_START": "false",
     # M5 Pro/48G local LM Studio measured ~8-12 concurrent request ceiling
     # after raising LM Studio's max-concurrency setting (was ~2 before).
