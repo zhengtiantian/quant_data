@@ -90,7 +90,7 @@ def _notify(title: str, message: str) -> None:
         pass
 
 
-# The nightly news chain: backfill_1 (02:00 UTC) triggers backfill_2 when company match is done.
+# The nightly news chain: backfill_1 (04:00 UTC) triggers backfill_2 when company match is done.
 # Whatever reads its output (news features) waits for it to finish instead of racing it: on
 # 2026-10-24 a catch-up ran until 15:00, long past the 07:30 signals.
 NIGHT_CHAIN = ("backfill_1_collect_and_match", "backfill_2_enrich_and_features")

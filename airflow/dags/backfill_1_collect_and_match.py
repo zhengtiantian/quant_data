@@ -1,7 +1,8 @@
 """
 Backfill step 1/2: GDELT collection + SLM company match (host-based, merged).
 
-Schedule: daily 02:00 UTC (03:00 Irish summer time), since 2026-10-08. Before that it was
+Schedule: daily 04:00 UTC (05:00 Irish summer time), since 2026-11-01 (02:00 UTC from
+2026-10-08; moved later at the user's request). Before 2026-10-08 it was
 manual-only and silently fell 2.5 months behind (last run 2026-07-21). Tasks:
     gdelt_collect >> [company_match >> trigger_enrich, gkg_export]
 trigger_enrich starts backfill_2_enrich_and_features, so one daily run goes
@@ -41,7 +42,7 @@ with DAG(
     dag_id="backfill_1_collect_and_match",
     default_args=default_args,
     description="Daily step 1/2: GDELT collection + SLM company match + Parquet export, then triggers step 2",
-    schedule="0 2 * * *",
+    schedule="0 4 * * *",
     start_date=datetime(2024, 1, 1),
     catchup=False,
     max_active_runs=1,

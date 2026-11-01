@@ -25,7 +25,7 @@ with DAG(
     default_args=default_args,
     description="Daily, after the nightly news chain: price → premarket → analyst → macro → features → signals → positions → DQ",
     # No clock of its own since 2026-10-24: backfill_2 triggers it when the nightly chain is done
-    # (02:00 UTC backfill_1 -> backfill_2 -> here). It
+    # (04:00 UTC backfill_1 -> backfill_2 -> here). It
     # used to run at 07:30 UTC; nothing it collects is fresher at 07:30 than at 03:00 (US
     # pre-market opens at 08:00 UTC; the pre-market collector reads the past 7 days).
     schedule=None,
