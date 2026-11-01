@@ -55,10 +55,12 @@ with DAG(
     gate >> BashOperator(
         task_id="earnings_pulse_refresh",
         on_failure_callback=notify_failure,
-        bash_command=f"bash {ROOT}/research/models/refresh_earnings_pulse.sh",
+        # The trailing space matters: a bash_command ending in ".sh" is taken for a Jinja template
+        # file, and the task fails with TemplateNotFound (2026-11-01).
+        bash_command=f"bash {ROOT}/research/models/refresh_earnings_pulse.sh ",
         env=BASE_ENV,
         append_env=True,
-        execution_timeout=timedelta(hours=4),   # CatBoost's walk-forward takes about an hour
+        execution_timeout=timedelta(hours=4),   # two walk-forwards of about an hour each at most
     )
 
     gate >> BashOperator(
