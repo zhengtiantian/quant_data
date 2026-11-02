@@ -1,0 +1,39 @@
+{
+ "fitted_through": "2026-10-02",
+ "method": "ridge(alpha=10.0) of the 20-session return rank on rank-normalised features, pooled",
+ "evidence": {
+  "selection_ic": {
+   "mean_ic": 0.0485,
+   "t": 2.62,
+   "n": 86
+  },
+  "hand_regime_ic": {
+   "mean_ic": -0.007,
+   "t": -0.45,
+   "n": 86
+  },
+  "excess_over_universe": {
+   "periods": 86,
+   "ann_return": 0.0781,
+   "sharpe": 0.311,
+   "max_drawdown": -0.1732,
+   "win_rate": 0.5,
+   "mean_period": 0.0068,
+   "t_mean": 1.52
+  }
+ },
+ "weights": {
+  "quality_score": 0.003717,
+  "news_burst_20d": -0.001294,
+  "full_ratio": -0.041354,
+  "avg_sentiment_5d": 0.027618,
+  "sentiment_shift_5d": 0.002015,
+  "earnings_beat_signal": -0.002612,
+  "high_signal_count_3d": -0.020954,
+  "past_ret_20d": -0.008891,
+  "ah_gap": 0.0,
+  "analyst_buy_ratio_chg_1m": 0.0,
+  "analyst_buy_ratio": 0.0,
+  "retail_sent_score": 0.0
+ }
+}

@@ -171,10 +171,26 @@ def classify_regime(df: pd.DataFrame) -> str:
     return "NEUTRAL"
 
 
+# Q.14 item 2 (2026-11-02): the hand weights above ranked the universe no better than chance over
+# 2019-2025 (mean 20-day rank IC -0.007, t -0.45, research/backtest/factor_lab.py); weights fitted
+# walk-forward by ridge reached IC 0.049 (t 2.62). The live score uses the fitted weights
+# (research/signals/fitted_weights.json, refitted by factor_lab.py); SIGNAL_WEIGHTS=hand restores
+# the hand weights. The regime still sets the conviction scalar, which does not change the ranking.
+WEIGHT_SOURCE = os.getenv("SIGNAL_WEIGHTS", "fitted").lower()
+FITTED_WEIGHTS_PATH = Path(__file__).resolve().parent / "fitted_weights.json"
+
+
+def live_weights(regime: str) -> dict[str, float]:
+    if WEIGHT_SOURCE == "fitted" and FITTED_WEIGHTS_PATH.exists():
+        import json
+        return json.loads(FITTED_WEIGHTS_PATH.read_text())["weights"]
+    return _WEIGHTS_BY_REGIME[regime]
+
+
 def compute_score(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     regime = classify_regime(df)
-    weights = _WEIGHTS_BY_REGIME[regime]
+    weights = live_weights(regime)
     conviction = _REGIME_CONVICTION[regime]
 
     score = pd.Series(0.0, index=df.index)

@@ -151,3 +151,30 @@ class TestSafeFloat:
     def test_numeric_string(self):
         result = sds._safe_float("2.5")
         assert result == pytest.approx(2.5)
+
+
+# ── Q.14 item 2: fitted weights ───────────────────────────────────────────────
+
+class TestWeightSource:
+
+    def test_fitted_weights_from_the_file(self, monkeypatch, tmp_path):
+        p = tmp_path / "w.json"
+        p.write_text('{"weights": {"avg_sentiment_5d": -1.0}}')
+        monkeypatch.setattr(sds, "FITTED_WEIGHTS_PATH", p)
+        monkeypatch.setattr(sds, "WEIGHT_SOURCE", "fitted")
+        df = sds.compute_score(_feature_df())
+        top = df.sort_values("signal_rank").iloc[0]
+        assert top["avg_sentiment_5d"] == df["avg_sentiment_5d"].min()   # a negative weight ranks the lowest first
+
+    def test_hand_weights_on_request_or_without_a_file(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(sds, "WEIGHT_SOURCE", "hand")
+        assert sds.live_weights("RISK_ON") is sds._WEIGHTS_BY_REGIME["RISK_ON"]
+        monkeypatch.setattr(sds, "WEIGHT_SOURCE", "fitted")
+        monkeypatch.setattr(sds, "FITTED_WEIGHTS_PATH", tmp_path / "missing.json")
+        assert sds.live_weights("NEUTRAL") is sds._WEIGHTS_BY_REGIME["NEUTRAL"]
+
+    def test_shipped_file_weights_only_long_history_features(self):
+        import json
+        w = json.loads(sds.FITTED_WEIGHTS_PATH.read_text())["weights"]
+        for short in ("retail_sent_score", "analyst_buy_ratio", "ah_gap"):
+            assert w[short] == 0.0
