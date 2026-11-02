@@ -470,6 +470,29 @@ def _summarise(sym: str, day: pd.Timestamp, ret: float, heads: list) -> dict:
     return {"cause_en": heads[0]["title"], "cause_zh": heads[0]["title"], "by": "headline"}
 
 
+def _news_study() -> dict:
+    """The event study's lines the action quotes (news_events.py study)."""
+    try:
+        rep = json.loads((OUT / "news_study.json").read_text())
+    except (OSError, ValueError):
+        return {}
+    keep = ("guidance cut", "bad earnings news", "upgrade", "fell 5%+ without bad news", "bad news + fell 5%+ that day")
+    return {k: {h: rep[k].get(h) for h in ("days", "5d_vs_all", "20d_vs_all", "60d_vs_all")} for k in keep if k in rep}
+
+
+def _calendar_study() -> dict:
+    """The scheduled-event effects the action quotes (calendar_events.py study)."""
+    try:
+        rep = json.loads((OUT / "calendar_study.json").read_text())
+    except (OSError, ValueError):
+        return {}
+    s, a, k = rep.get("spy_session_return", {}), rep.get("spy_next5_when_ahead", {}), rep.get("stock_excess_by_days_to_report", {})
+    return {"fomc_ahead_5d": a.get("FOMC within 5 sessions"), "no_fomc_5d": a.get("no FOMC within 5"),
+            "opex_week": (s.get("options-expiration week") or {}).get("vs_other_days"),
+            "pre_holiday": (s.get("eve of a holiday") or {}).get("vs_other_days"),
+            "day_before_report": k.get("1 days before the report")}
+
+
 def predict(syms: list) -> dict:
     import joblib
     bundle = joblib.load(OUT / "models.joblib")
@@ -489,7 +512,8 @@ def predict(syms: list) -> dict:
            "direction_reliable": bool(bundle.get("direction_reliable")),
            "model_quality": {str(h): {k: rep["horizons"][str(h)].get(k) for k in ("ic", "ic_t", "q10_breached_pct", "base_up_pct")}
                              for h in HORIZONS},
-           "decision_test": rep.get("decision"), "symbols": {}}
+           "decision_test": rep.get("decision"), "symbols": {},
+           "news_study": _news_study(), "calendar_study": _calendar_study()}
     for s in syms:
         d = peers.get(s) if s in peers else _fresh(s)
         past, future = report_days(s)
@@ -509,6 +533,11 @@ def predict(syms: list) -> dict:
         res["call"] = model_call if bundle.get("direction_reliable") else "hold"
         res["direction_reliable"] = bool(bundle.get("direction_reliable"))
         res["events"] = recent_events(s, d)
+        try:                                             # Q.16.7: the barriers, aimed at getting out of a losing holding
+            import barrier_model
+            res["barrier"] = barrier_model.live(s, d, f)
+        except Exception as e:  # noqa: BLE001 - the rest of the advice stands without it
+            res["barrier_error"] = f"{type(e).__name__}: {e}"
         out["symbols"][s] = res
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "latest.json").write_text(json.dumps(out, indent=1, default=str))
