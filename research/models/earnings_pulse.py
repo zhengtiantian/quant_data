@@ -719,11 +719,13 @@ P_LEG = dict(objective="huber", alpha=2.0, learning_rate=0.05, num_leaves=31, mi
 # passed 26/80 variants (OOS 2023-2026: 116 acted, +1.40% mean, P10 0.00%, worst -3.18%, SR/trade 0.454)
 # and promotes to champion, with two-stage Hurdle LightGBM (P(fill)*E[gain|fill], conditional Q10|fill gate;
 # OOS 163 acted, +1.06% mean, worst -5.08%) in shadow.
+# Swapped 2026-11-02 by the rule above: lgbm_seeds' deflated Sharpe ratio is 0.712, below 0.95, and
+# hurdle_lgbm's 0.961 passes, so the hurdle model acts and the 5-seed LightGBM is the shadow.
 LIVE_MODELS = {
-    "lgbm_seeds": {"role": "champion", "policy": {"margin": 0.5, "no_pre": True, "q10_min": -1.5, "weight": "risk"},
-                   "dsr": 0.712, "preds": "lab_preds/lgbm_seeds"},
-    "hurdle_lgbm": {"role": "shadow", "policy": {"margin": 0.5, "no_pre": True, "q10_min": -1.0, "weight": "risk"},
+    "hurdle_lgbm": {"role": "champion", "policy": {"margin": 0.5, "no_pre": True, "q10_min": -1.0, "weight": "risk"},
                     "dsr": 0.961, "preds": "lab_preds/hurdle_lgbm"},
+    "lgbm_seeds": {"role": "shadow", "policy": {"margin": 0.5, "no_pre": True, "q10_min": -1.5, "weight": "risk"},
+                   "dsr": 0.712, "preds": "lab_preds/lgbm_seeds"},
 }
 
 
