@@ -52,7 +52,7 @@ with DAG(
         execution_timeout=timedelta(hours=1),
     )
 
-    gate >> BashOperator(
+    pulse = BashOperator(
         task_id="earnings_pulse_refresh",
         on_failure_callback=notify_failure,
         # The trailing space matters: a bash_command ending in ".sh" is taken for a Jinja template
@@ -61,6 +61,16 @@ with DAG(
         env=BASE_ENV,
         append_env=True,
         execution_timeout=timedelta(hours=4),   # two walk-forwards of about an hour each at most
+    )
+    # The daily advice models (Q.16) learn from the same daily bars, which the pulse refresh has just
+    # extended with the week; daily_advice.py build + train, then the daily_advice DAG predicts with them.
+    gate >> pulse >> BashOperator(
+        task_id="daily_advice_train",
+        on_failure_callback=notify_failure,
+        bash_command=f"cd {ROOT} && {PYTHON} {ROOT}/research/models/daily_advice.py build && {PYTHON} {ROOT}/research/models/daily_advice.py train",
+        env=BASE_ENV,
+        append_env=True,
+        execution_timeout=timedelta(hours=2),
     )
 
     gate >> BashOperator(
