@@ -50,7 +50,10 @@ UTC = timezone.utc
 
 MONGO_URI = os.getenv("LOCAL_MONGO_URI", "mongodb://root:root@127.0.0.1:37018/")
 DB_NAME = "quant_data"
-COLLECTION = "news_articles_company_matched_v2"
+COLLECTION = os.getenv("ENRICH_COLLECTION", "news_articles_company_matched_v2")
+# The wider universe's backfill (2026-11-02) is labelled from titles alone by one model, to fit the time
+# before a bigger machine runs both passes on full text.
+TITLE_ONLY = os.getenv("ENRICH_TITLE_ONLY", "").lower() in ("1", "true", "yes")
 
 API_URL = os.getenv("SLM_API_URL", "http://192.168.31.226:1234/v1").rstrip("/")
 MODEL_A  = os.getenv("SLM_MODEL_A",  "google/gemma-4-e4b")
@@ -296,7 +299,7 @@ def enrich_one(doc: dict, next_model_fn) -> tuple[UpdateOne | None, str, float]:
     title = doc.get("title", "")
     model = next_model_fn()
     t0 = time.time()
-    result = call_llm(title, doc.get("content", ""),
+    result = call_llm(title, "" if TITLE_ONLY else doc.get("content", ""),
                       doc.get("symbol", ""), doc.get("name", ""), model)
     latency = time.time() - t0
 

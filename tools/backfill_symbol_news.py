@@ -40,6 +40,10 @@ sys.path.insert(0, str(ROOT / "collectors" / "news" / "gdelt"))
 
 PARQUET_DIR = os.getenv("GKG_PARQUET_DIR", "/Volumes/Data4T/gkg_parquet")
 WORK_DIR = os.getenv("BACKFILL_WORK_DIR", "/Volumes/Data4T/news_backfill")
+# The wider universe (2026-11-02) is backfilled with its own rules into its own collection, so the nightly
+# company match and two-model enrichment do not take on hundreds of new companies unasked.
+RULES_DIR = os.getenv("BACKFILL_RULES_DIR") or None          # None: collectors/news/gdelt/company_rules
+NEWS_COLLECTION = os.getenv("BACKFILL_COLLECTION", "news_articles")
 
 
 def progress(stage: str, done: int, total: int, extra: str = "") -> None:
@@ -73,9 +77,45 @@ def scan(symbol: str, since: str, keywords: list[str], out: Path) -> None:
         progress("scan", i, len(months), f"{month} candidates+{len(rows)}")
 
 
+def scan_many(symbols_keywords: dict, since: str) -> None:
+    """scan() for many symbols at once: each month's Parquet is read once and every symbol's keyword
+    regex run over it (one read of the index instead of one per company). Writes each symbol's
+    candidates.jsonl and .months like scan()."""
+    import pyarrow.compute as pc
+    import pyarrow.dataset as ds
+    months = [m for m in sorted(glob.glob(f"{PARQUET_DIR}/month=*")) if m.split("=")[1] >= since[:7]]
+    since_ts = since.replace("-", "") + "000000"
+    rx = {s: "(?i)\\b(" + "|".join(re.escape(k) for k in kw if len(k) > 1) + ")\\b" for s, kw in symbols_keywords.items()}
+    union = "(?i)\\b(" + "|".join(sorted({re.escape(k) for kw in symbols_keywords.values() for k in kw if len(k) > 1})) + ")\\b"
+    paths = {}
+    for s in rx:
+        (Path(WORK_DIR) / s).mkdir(parents=True, exist_ok=True)
+        paths[s] = Path(WORK_DIR) / s / "candidates.jsonl"
+    for i, m in enumerate(months, 1):
+        month = m.split("=")[1]
+        todo = [s for s in rx if month not in (set(paths[s].with_suffix(".months").read_text().split()) if paths[s].with_suffix(".months").exists() else set())]
+        if not todo:
+            continue
+        t = ds.dataset(m, format="parquet").to_table(columns=["ts", "url", "raw"])
+        t = t.filter(pc.greater_equal(t["ts"], since_ts))
+        # one pass with every keyword first (RE2 handles the large alternation as one automaton), then
+        # each symbol's own regex only over the rows that matched any
+        t = t.filter(pc.match_substring_regex(t["raw"], union))
+        n = 0
+        for s in todo:
+            hit = t.filter(pc.match_substring_regex(t["raw"], rx[s]))
+            with paths[s].open("a") as f:
+                for r in hit.to_pylist():
+                    f.write(json.dumps(r) + "\n")
+            n += hit.num_rows
+            with paths[s].with_suffix(".months").open("a") as f:
+                f.write(month + "\n")
+        progress("scan_many", i, len(months), f"{month} symbols={len(todo)} candidates+{n}")
+
+
 def existing_urls(urls: list[str]) -> set[str]:
     import pymongo
-    col = pymongo.MongoClient(os.getenv("MONGO_URI"))["quant_data"]["news_articles"]
+    col = pymongo.MongoClient(os.getenv("MONGO_URI"))["quant_data"][NEWS_COLLECTION]
     have = set()
     for i in range(0, len(urls), 1000):
         have.update(d["url"] for d in col.find({"url": {"$in": urls[i:i + 1000]}}, {"url": 1, "_id": 0}))
@@ -84,7 +124,7 @@ def existing_urls(urls: list[str]) -> set[str]:
 
 def filter_stage(symbol: str, cand: Path, out: Path, workers: int) -> None:
     from special_rules import RuleManager
-    rm = RuleManager()
+    rm = RuleManager(RULES_DIR)
     rows: dict[str, dict] = {}
     for line in cand.open():
         r = json.loads(line)
@@ -132,7 +172,10 @@ def fetch_stage(symbol: str, name: str, kept: Path, workers: int) -> None:
     import historical_collector as hc
     import pymongo
     from pymongo import UpdateOne
-    col = pymongo.MongoClient(os.getenv("MONGO_URI"))["quant_data"]["news_articles"]
+    if RULES_DIR:                                   # the collector re-checks the full text with its own rules
+        from special_rules import RuleManager
+        hc._rule_manager = RuleManager(RULES_DIR)
+    col = pymongo.MongoClient(os.getenv("MONGO_URI"))["quant_data"][NEWS_COLLECTION]
     done_file = kept.with_suffix(".fetched")
     done = set(done_file.read_text().split("\n")) if done_file.exists() else set()
     rows = [json.loads(l) for l in kept.open()]
@@ -188,7 +231,7 @@ def main() -> int:
     a = ap.parse_args()
     sym = a.symbol.upper()
     from special_rules import RuleManager
-    rm = RuleManager()
+    rm = RuleManager(RULES_DIR)
     if sym not in rm.company_configs:
         raise SystemExit(f"no rule file for {sym} in company_rules/")
     cfg = rm.company_configs[sym]

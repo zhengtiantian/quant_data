@@ -178,6 +178,32 @@ def labels(d: pd.DataFrame) -> pd.DataFrame:
     return lab
 
 
+def point_in_time(df: pd.DataFrame) -> pd.DataFrame:
+    """With UNIVERSE_MEMBERSHIP set (research/universe/build_universe.py), keep a stock's day only while
+    it was in the index then: the universe the user faced on that day, not today's survivors."""
+    path = os.getenv("UNIVERSE_MEMBERSHIP")
+    if not path:
+        return df
+    m = pd.read_parquet(path)
+    # renamed tickers: the old name's membership belongs to the bars stored under the new one
+    renames = {"FB": "META", "ANTM": "ELV", "ABC": "COR", "BLL": "BALL", "CDAY": "DAY", "COG": "CTRA", "PEAK": "DOC", "HCP": "DOC",
+               "FLT": "CPAY", "WLTW": "WTW", "RE": "EG", "FISV": "FI", "DISCA": "WBD", "CBS": "PARA", "VIAC": "PARA", "PKI": "RVTY",
+               "SYMC": "GEN", "NLOK": "GEN", "GPS": "GAP", "ADS": "BFH", "KORS": "CPRI", "TSO": "ANDV", "HRS": "LHX", "UTX": "RTX"}
+    m["symbol"] = m.ticker.replace(renames).str.replace(".", "-", regex=False)
+    keep = np.zeros(len(df), bool)
+    for sym, iv in m.groupby("symbol"):
+        rows = (df.symbol == sym).values
+        if not rows.any():
+            continue
+        d = df.date.values
+        inside = np.zeros(len(df), bool)
+        for st, en in zip(iv.start, iv.end):
+            inside |= (d >= np.datetime64(st)) & ((d < np.datetime64(en)) if pd.notna(en) else True)
+        keep |= rows & inside
+    print(f"point in time: {keep.sum():,} of {len(df):,} stock-days were index members on the day")
+    return df[keep].reset_index(drop=True)
+
+
 def news_frame() -> dict:
     f = pd.read_parquet(FEATURES_PARQUET, columns=["trade_date", "symbol"] + NEWS_COLS + ["macro_vix", "macro_vix_pctile_252d"])
     f = f[f.trade_date.str.match(r"^\d{4}-\d{2}-\d{2}$", na=False)].copy()
@@ -210,6 +236,7 @@ def build() -> pd.DataFrame:
         x["symbol"], x["date"] = s, x.index
         parts.append(x[x.index >= "2016-01-01"])
     df = pd.concat(parts, ignore_index=True)
+    df = point_in_time(df)
     OUT.mkdir(parents=True, exist_ok=True)
     df.to_parquet(OUT / "dataset.parquet")
     print(f"dataset: {len(df):,} stock-days, {df.symbol.nunique()} stocks, {df.date.min().date()}..{df.date.max().date()}")
@@ -240,6 +267,7 @@ def advice_from(p_up20: float, q50_20: float, q10_20: float, p_up5: float, thr: 
 def train() -> dict:
     from scipy.stats import spearmanr
     df = pd.read_parquet(OUT / "dataset.parquet")
+    df[FEATS] = df[FEATS].replace([np.inf, -np.inf], np.nan)          # a zero-volume stretch divides by zero
     df["year"] = df.date.dt.year
     preds = []
     for y in range(FIRST_TEST_YEAR, int(df.year.max()) + 1):
