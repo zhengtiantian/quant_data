@@ -28,6 +28,10 @@ UNI = Path(os.getenv("UNIVERSE_DIR", "/Volumes/Data4T/universe"))
 BARS = UNI / "bars"
 SINCE = "2016-01-01"
 OLD_EP = Path("/Volumes/Data4T/earnings_policy")
+# Tickers whose yfinance bars belong to another listing: kept out of the studies (moved to bars/excluded),
+# counted as members without bars like the delisted ones. Found 2026-11-03 by the >50% daily-move scan.
+BAD_BARS = {"PARA": "yfinance's PARA is Parabolic (prices ~100,000 from 2021-02), not Paramount; Paramount's "
+                    "history (CBS / VIAC / PARA, merged into PSKY 2025-08) is not available there"}
 
 
 def members() -> pd.DataFrame:
@@ -74,9 +78,19 @@ def fetch() -> None:
     import earnings_policy as ep
     ep.EP_DIR = BARS
     m = pd.read_parquet(UNI / "membership.parquet")
-    syms = sorted({yf_symbol(t) for t in m.ticker} | {"SPY"})
+    syms = sorted(({yf_symbol(t) for t in m.ticker} | {"SPY"}) - set(BAD_BARS))
     ep.fetch(syms)
+    exclude()
     status()
+
+
+def exclude() -> None:
+    """Move the bars of BAD_BARS out of the folder the studies read (they glob bars/*.daily.parquet)."""
+    (BARS / "excluded").mkdir(exist_ok=True)
+    for sym, why in BAD_BARS.items():
+        for p in BARS.glob(f"{sym}.*"):
+            p.rename(BARS / "excluded" / p.name)
+            print(f"excluded {p.name}: {why}")
 
 
 def status() -> dict:
@@ -91,4 +105,4 @@ def status() -> dict:
 
 
 if __name__ == "__main__":
-    {"members": members, "fetch": fetch, "status": status}[sys.argv[1] if len(sys.argv) > 1 else "status"]()
+    {"members": members, "fetch": fetch, "exclude": exclude, "status": status}[sys.argv[1] if len(sys.argv) > 1 else "status"]()

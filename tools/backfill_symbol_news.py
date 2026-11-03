@@ -44,6 +44,48 @@ WORK_DIR = os.getenv("BACKFILL_WORK_DIR", "/Volumes/Data4T/news_backfill")
 # company match and two-model enrichment do not take on hundreds of new companies unasked.
 RULES_DIR = os.getenv("BACKFILL_RULES_DIR") or None          # None: collectors/news/gdelt/company_rules
 NEWS_COLLECTION = os.getenv("BACKFILL_COLLECTION", "news_articles")
+# Universe only: keep a GKG row only when the company is named in its headline (or the URL slug). GKG lists
+# every organisation an article mentions, and on 120 hand-checked universe rows (2026-11-03) 39% were about
+# something else: market wraps naming it once, other companies' news, research-report spam. Requiring the
+# name in the headline kept 95% of the right rows and raised precision from 0.61 to 0.85, before the venue
+# and spam fixes below. The labels are made from titles only, so a row whose title does not name the
+# company would add little.
+TITLE_GATE = os.getenv("BACKFILL_TITLE_GATE", "0") == "1"
+SPAM_RE = re.compile(r"\bMarket\b.{0,40}\b(20\d\d|Size|Share|Report|Analysis|Trends?|Outlook|Forecast|Research|Growth|Worth|"
+                     r"Insights|Overview|Segmentation|Study|Demand|Landscape|Consumption|Business Strategy|Development Plans|"
+                     r"Key Factors)\b|Key Players|Players Include|Top Companies|Major Manufacturers|\bFeaturing\b|"
+                     r"Industry (to|by) 20\d\d|Forecast (to|till|by) 20\d\d|MarketsandMarkets|\bCAGR\b|SIDE EFFECTS|\bReviews? \(|【", re.I)
+# a venue or event named after a sponsor ("Jones AT&T Stadium", "Globe Life Field") is not news of it: a
+# name directly followed by one of these words does not count
+VENUE_AFTER = (r"(?! (?:Stadium|Field|Arena|Center|Centre|Park|Dome|Superdome|Speedway|Forum|Amphitheat(?:er|re)|Pavilion|Bowl|"
+               r"Championship|Classic|Invitational|Foundation|Literacy Foundation|Series|600|500|400)\b)")
+_ALLNAMES_TAIL = re.compile(r"^[^,;]{1,80},\d+\s+")
+_TS14 = re.compile(r"\b\d{14}\b")
+
+
+def gkg_title(raw: str) -> str:
+    """The headline at the end of a GKG raw row: after the last entity / amount entry (each ends with ";"),
+    a last AllNames entry without one ("Synopsys Inc,329 ..."), and the author and 14-digit timestamp."""
+    import html
+    t = html.unescape(raw or "").rsplit(";", 1)[-1]
+    t = _ALLNAMES_TAIL.sub("", t.strip())
+    m = None
+    for m in _TS14.finditer(t):
+        pass
+    return (t[m.end():] if m else t).strip()
+
+
+def url_slug(url: str) -> str:
+    last = (url or "").split("?")[0].rstrip("/").rsplit("/", 1)[-1]
+    return re.sub(r"[-_+]+", " ", re.sub(r"\.\w{2,5}$", "", last))
+
+
+def title_gate(terms: list, raw: str, url: str) -> bool:
+    title = gkg_title(raw)
+    if SPAM_RE.search(title):
+        return False
+    text = title + " | " + url_slug(url)
+    return any(re.search(r"(?<!\w)" + re.escape(k) + r"(?!\w)" + VENUE_AFTER, text, re.I) for k in terms if len(k) > 1)
 
 
 def progress(stage: str, done: int, total: int, extra: str = "") -> None:
@@ -77,13 +119,15 @@ def scan(symbol: str, since: str, keywords: list[str], out: Path) -> None:
         progress("scan", i, len(months), f"{month} candidates+{len(rows)}")
 
 
-def scan_many(symbols_keywords: dict, since: str) -> None:
+def scan_many(symbols_keywords: dict, since: str, deadline: float | None = None, before_month: str = "9999-99") -> bool:
     """scan() for many symbols at once: each month's Parquet is read once and every symbol's keyword
     regex run over it (one read of the index instead of one per company). Writes each symbol's
-    candidates.jsonl and .months like scan()."""
+    candidates.jsonl and .months like scan(). With `deadline` (epoch seconds) it stops between months
+    once that time has passed and returns False; True when every month is done. Months from
+    `before_month` (YYYY-MM) on are left out: a month still being filled would be marked done."""
     import pyarrow.compute as pc
     import pyarrow.dataset as ds
-    months = [m for m in sorted(glob.glob(f"{PARQUET_DIR}/month=*")) if m.split("=")[1] >= since[:7]]
+    months = [m for m in sorted(glob.glob(f"{PARQUET_DIR}/month=*")) if since[:7] <= m.split("=")[1] < before_month]
     since_ts = since.replace("-", "") + "000000"
     rx = {s: "(?i)\\b(" + "|".join(re.escape(k) for k in kw if len(k) > 1) + ")\\b" for s, kw in symbols_keywords.items()}
     union = "(?i)\\b(" + "|".join(sorted({re.escape(k) for kw in symbols_keywords.values() for k in kw if len(k) > 1})) + ")\\b"
@@ -96,6 +140,8 @@ def scan_many(symbols_keywords: dict, since: str) -> None:
         todo = [s for s in rx if month not in (set(paths[s].with_suffix(".months").read_text().split()) if paths[s].with_suffix(".months").exists() else set())]
         if not todo:
             continue
+        if deadline and time.time() >= deadline:
+            return False
         t = ds.dataset(m, format="parquet").to_table(columns=["ts", "url", "raw"])
         t = t.filter(pc.greater_equal(t["ts"], since_ts))
         # one pass with every keyword first (RE2 handles the large alternation as one automaton), then
@@ -111,6 +157,7 @@ def scan_many(symbols_keywords: dict, since: str) -> None:
             with paths[s].with_suffix(".months").open("a") as f:
                 f.write(month + "\n")
         progress("scan_many", i, len(months), f"{month} symbols={len(todo)} candidates+{n}")
+    return True
 
 
 def existing_urls(urls: list[str]) -> set[str]:
@@ -141,6 +188,8 @@ def filter_stage(symbol: str, cand: Path, out: Path, workers: int) -> None:
     progress("filter", 0, len(todo), f"unique={len(rows)} already_stored={len(stored)}")
 
     def judge(r):
+        if TITLE_GATE and not title_gate(rm.get_keywords(symbol, datetime.strptime(str(r["ts"])[:8], "%Y%m%d")), r["raw"], r["url"]):
+            return r, False
         ok = rm.should_include(symbol, {"title": "", "content": r["raw"], "url": r["url"], "date": str(r["ts"])[:8]})
         return r, ok
     kept = 0
