@@ -44,48 +44,15 @@ WORK_DIR = os.getenv("BACKFILL_WORK_DIR", "/Volumes/Data4T/news_backfill")
 # company match and two-model enrichment do not take on hundreds of new companies unasked.
 RULES_DIR = os.getenv("BACKFILL_RULES_DIR") or None          # None: collectors/news/gdelt/company_rules
 NEWS_COLLECTION = os.getenv("BACKFILL_COLLECTION", "news_articles")
-# Universe only: keep a GKG row only when the company is named in its headline (or the URL slug). GKG lists
+# Keep a GKG row only when the company is named in its headline (or the URL slug). GKG lists
 # every organisation an article mentions, and on 120 hand-checked universe rows (2026-11-03) 39% were about
 # something else: market wraps naming it once, other companies' news, research-report spam. Requiring the
 # name in the headline kept 95% of the right rows and raised precision from 0.61 to 0.85, before the venue
 # and spam fixes below. The labels are made from titles only, so a row whose title does not name the
-# company would add little.
-TITLE_GATE = os.getenv("BACKFILL_TITLE_GATE", "0") == "1"
-SPAM_RE = re.compile(r"\bMarket\b.{0,40}\b(20\d\d|Size|Share|Report|Analysis|Trends?|Outlook|Forecast|Research|Growth|Worth|"
-                     r"Insights|Overview|Segmentation|Study|Demand|Landscape|Consumption|Business Strategy|Development Plans|"
-                     r"Key Factors)\b|Key Players|Players Include|Top Companies|Major Manufacturers|\bFeaturing\b|"
-                     r"Industry (to|by) 20\d\d|Forecast (to|till|by) 20\d\d|MarketsandMarkets|\bCAGR\b|SIDE EFFECTS|\bReviews? \(|【", re.I)
-# a venue or event named after a sponsor ("Jones AT&T Stadium", "Globe Life Field") is not news of it: a
-# name directly followed by one of these words does not count
-VENUE_AFTER = (r"(?! (?:Stadium|Field|Arena|Center|Centre|Park|Dome|Superdome|Speedway|Forum|Amphitheat(?:er|re)|Pavilion|Bowl|"
-               r"Championship|Classic|Invitational|Foundation|Literacy Foundation|Series|600|500|400)\b)")
-_ALLNAMES_TAIL = re.compile(r"^[^,;]{1,80},\d+\s+")
-_TS14 = re.compile(r"\b\d{14}\b")
-
-
-def gkg_title(raw: str) -> str:
-    """The headline at the end of a GKG raw row: after the last entity / amount entry (each ends with ";"),
-    a last AllNames entry without one ("Synopsys Inc,329 ..."), and the author and 14-digit timestamp."""
-    import html
-    t = html.unescape(raw or "").rsplit(";", 1)[-1]
-    t = _ALLNAMES_TAIL.sub("", t.strip())
-    m = None
-    for m in _TS14.finditer(t):
-        pass
-    return (t[m.end():] if m else t).strip()
-
-
-def url_slug(url: str) -> str:
-    last = (url or "").split("?")[0].rstrip("/").rsplit("/", 1)[-1]
-    return re.sub(r"[-_+]+", " ", re.sub(r"\.\w{2,5}$", "", last))
-
-
-def title_gate(terms: list, raw: str, url: str) -> bool:
-    title = gkg_title(raw)
-    if SPAM_RE.search(title):
-        return False
-    text = title + " | " + url_slug(url)
-    return any(re.search(r"(?<!\w)" + re.escape(k) + r"(?!\w)" + VENUE_AFTER, text, re.I) for k in terms if len(k) > 1)
+# company would add little. On by default since 2026-11-04 for the core rules too (core rule check: 0.82 -> 0.96
+# precision); BACKFILL_TITLE_GATE=0 turns it off.
+TITLE_GATE = os.getenv("BACKFILL_TITLE_GATE", "1") == "1"
+from special_rules.headline import SPAM_RE, VENUE_AFTER, gate_terms, gkg_title, title_gate, url_slug  # noqa: E402,F401
 
 
 def progress(stage: str, done: int, total: int, extra: str = "") -> None:
@@ -188,7 +155,7 @@ def filter_stage(symbol: str, cand: Path, out: Path, workers: int) -> None:
     progress("filter", 0, len(todo), f"unique={len(rows)} already_stored={len(stored)}")
 
     def judge(r):
-        if TITLE_GATE and not title_gate(rm.get_keywords(symbol, datetime.strptime(str(r["ts"])[:8], "%Y%m%d")), r["raw"], r["url"]):
+        if TITLE_GATE and not title_gate(gate_terms(rm, symbol, datetime.strptime(str(r["ts"])[:8], "%Y%m%d")), r["raw"], r["url"]):
             return r, False
         ok = rm.should_include(symbol, {"title": "", "content": r["raw"], "url": r["url"], "date": str(r["ts"])[:8]})
         return r, ok

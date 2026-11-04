@@ -47,5 +47,8 @@
         "NYSE:VEEV"
       ]
     }
-  }
+  },
+  "headline_names": [
+    "Veeva"
+  ]
 }

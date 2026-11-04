@@ -36,5 +36,8 @@
         "Cisco Systems",
         "Chuck Robbins"
     ],
-    "company_name": "Cisco Systems"
+    "company_name": "Cisco Systems",
+    "headline_names": [
+        "Cisco"
+    ]
 }

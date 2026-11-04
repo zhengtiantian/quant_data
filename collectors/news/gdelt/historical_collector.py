@@ -1523,6 +1523,16 @@ def process_single_file(url, companies, rule_manager, avg_date, gkg_col=None):
         pass
     return matches
 
+# Headline check (2026-11-04): a company is matched only when one of its own keywords is in the headline or the
+# URL slug (special_rules/headline.py, the same check the universe backfill uses: sponsor venues and
+# research-report spam do not count), not only somewhere in GDELT's organisation/name lists. Without it, Oracle Park, Schwab-sponsored golf and
+# market wraps that list Morgan Stanley were stored as company news (rule check: 0.82 -> 0.96 precision, ~18% of
+# relevant rows lost - those naming the company only in the body). CORE_TITLE_GATE=0 turns it off.
+CORE_TITLE_GATE = os.getenv("CORE_TITLE_GATE", "1") == "1"
+
+from special_rules.headline import short_names as _short_names, title_gate as _title_gate
+
+
 def process_file_task(url, rule_manager, ac, all_keywords_map, symbol_to_company, progress_lock, progress, worker_name=None, gkg_col=None):
     filename = os.path.basename(url)
     ts = _gkg_ts(filename)
@@ -1599,12 +1609,17 @@ def process_file_task(url, rule_manager, ac, all_keywords_map, symbol_to_company
         for idx, row in matched_df.iterrows():
             _t0 = time.time()
             row_text = combined_text.loc[idx]
-            hit_symbols = set()
+            hit_terms = {}
             for _, kw in ac.iter(row_text):
-                hit_symbols.update(all_keywords_map.get(kw, []))
+                for s in all_keywords_map.get(kw, []):
+                    hit_terms.setdefault(s, set()).add(kw)
+            hit_symbols = set(hit_terms)
             t_iter += time.time() - _t0
 
             for sym in hit_symbols:
+                if CORE_TITLE_GATE and not _title_gate(list(hit_terms[sym]) + _short_names(rule_manager.company_configs.get(sym, {})),
+                                                     row["Raw"], row["URL"], title=row["Title"]):
+                    continue
                 time_info = parse_gdelt_timestamp(filename)
                 article_data = {
                     "title": row["Title"], "content": row["Raw"],

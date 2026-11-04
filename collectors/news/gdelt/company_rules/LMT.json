@@ -67,5 +67,8 @@
         "NYSE:LMT"
       ]
     }
-  }
+  },
+  "headline_names": [
+    "Lockheed"
+  ]
 }

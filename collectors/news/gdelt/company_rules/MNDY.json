@@ -57,5 +57,8 @@
         "NASDAQ:MNDY"
       ]
     }
-  }
+  },
+  "headline_names": [
+    "monday.com"
+  ]
 }

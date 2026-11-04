@@ -50,5 +50,9 @@
     "strict_validation_keywords": [
         "Taiwan Semiconductor",
         "TSMC"
+    ],
+    "headline_names": [
+        "TSMC",
+        "Taiwan Semiconductor"
     ]
 }

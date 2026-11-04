@@ -65,5 +65,10 @@
         "NYSE:DIS"
       ]
     }
-  }
+  },
+  "headline_names": [
+    "Disney",
+    "Disneyland",
+    "Disney World"
+  ]
 }

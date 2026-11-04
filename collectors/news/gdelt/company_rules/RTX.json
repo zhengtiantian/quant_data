@@ -71,5 +71,11 @@
         "NYSE:RTX"
       ]
     }
-  }
+  },
+  "headline_names": [
+    "RTX",
+    "Raytheon",
+    "Collins Aerospace",
+    "Pratt & Whitney"
+  ]
 }

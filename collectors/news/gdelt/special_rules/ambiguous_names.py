@@ -550,8 +550,15 @@ class AmbiguousNameRule(BaseRule):
         self.strict_validation_keywords = full_config.get('strict_validation_keywords', []) # 🆕 从JSON加载强校验词
 
         self.min_matches = config.get('min_matches', 1)
+        # exclude_patterns (anywhere in the text) and case_sensitive (the required keywords) were read but never
+        # applied until 2026-11-04; exclude_title_patterns only look at the headline (shop deals, reviews).
         self.exclude_patterns = config.get('exclude_patterns', [])
+        self.exclude_title_patterns = config.get('exclude_title_patterns', [])
         self.case_sensitive = config.get('case_sensitive', False)
+        # a rule whose exclusions do the work: one required keyword is enough, no SLM call (2026-11-04)
+        self.trust_single_match = config.get('trust_single_match', False)
+        self._compiled_exclude = [re.compile(p, re.IGNORECASE) for p in self.exclude_patterns]
+        self._compiled_exclude_title = [re.compile(p, re.IGNORECASE) for p in self.exclude_title_patterns]
         self.domain_kill = config.get('domain_kill', [])
         base_use_slm = config.get('use_slm', True)
         enabled_symbols_raw = os.getenv("SLM_ENABLED_SYMBOLS", "*")
@@ -592,7 +599,7 @@ class AmbiguousNameRule(BaseRule):
             for p in self._ABSOLUTE_BYPASS_RAW.get(symbol, [])
         ]
         self._compiled_required_patterns = [
-            (kw, re.compile(r'(?<!\w)' + re.escape(kw) + r'(?!\w)', re.IGNORECASE))
+            (kw, re.compile(r'(?<!\w)' + re.escape(kw) + r'(?!\w)', 0 if self.case_sensitive else re.IGNORECASE))
             for kw in self.required_keywords
         ]
         too_common = self._TOO_COMMON_TO_BYPASS
@@ -611,8 +618,11 @@ class AmbiguousNameRule(BaseRule):
             self._compiled_strong_pattern = None
     
     def get_keywords(self, article_date):
-        """返回必需的关键词"""
-        return self.required_keywords
+        """No extra match terms (2026-11-04). required_keywords only confirm a row that already matched the
+        company's own keywords (should_include); returned here they became match terms on their own, so any
+        headline with "Chip" went to INTC, "Retail"/"Cloud" to AMZN, "Twitter" to TSLA (INTC 0/8 relevant in
+        the rule check, AMZN/META/MU 1/8)."""
+        return []
 
     @staticmethod
     def _keyword_matches(full_text, keyword):
@@ -639,6 +649,17 @@ class AmbiguousNameRule(BaseRule):
                 if domain in article_url:
                     track_filter_step("killed_by_static")
                     return False
+
+        # 1.5 the rule's own exclusions: anywhere in the text, or in the headline only
+        if any(_pat.search(full_text) for _pat in self._compiled_exclude):
+            track_filter_step("killed_by_static")
+            return False
+        if self._compiled_exclude_title:
+            from .headline import gkg_title
+            headline = title or gkg_title(content)
+            if any(_pat.search(headline) for _pat in self._compiled_exclude_title):
+                track_filter_step("killed_by_static")
+                return False
 
         # 2. 静态黑名单 (Static Kill)
         for _pat in self._compiled_static_kill:
@@ -731,6 +752,10 @@ class AmbiguousNameRule(BaseRule):
         # 5.5 Multiple identity hits are strong enough to pass without SLM.
         if len(matches) >= 2:
             track_filter_step("passed_by_multi_match")
+            return True
+
+        if len(matches) == 1 and self.trust_single_match:
+            track_filter_step("passed_by_trusted_single")
             return True
 
         # 6. SLM 智能判断

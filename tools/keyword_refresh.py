@@ -614,7 +614,8 @@ def rescan(deadline: float | None = None) -> bool:
         print(f"rescan {rs}: {sum(map(len, kws.values()))} terms of {len(kws)} companies since {since} -> {work}", flush=True)
         uni = rs == "universe"
         settings = dict(WORK_DIR=str(work), RULES_DIR=str(RULE_SETS[rs]) if uni else None,
-                        NEWS_COLLECTION="news_articles_universe" if uni else "news_articles", TITLE_GATE=uni)
+                        NEWS_COLLECTION="news_articles_universe" if uni else "news_articles",
+                        TITLE_GATE=True)                # the core collector checks headlines too since 2026-11-04
         with _bf_settings(**settings) as bf:
             if not bf.scan_many(dict(kws), since, deadline, before_month=datetime.now().strftime("%Y-%m") if uni else "9999-99"):
                 return False

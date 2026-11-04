@@ -13,9 +13,9 @@ that their keywords pick out the right company. This measures it on a sample of 
   report  per company: kept per sample month, judged precision; flagged when precision < 0.8 or
           nothing kept -> <out>/report.json, plus the estimated article count for the backfill
 
-The 102 core rules (2026-11-04): BACKFILL_RULES_DIR=collectors/news/gdelt/company_rules RULE_CHECK_TITLE_GATE=0
-RULE_CHECK_DIR=<dir>: the nightly collector does not apply the headline check, so it is off; names come from
-the rule files.
+The 102 core rules (2026-11-04): BACKFILL_RULES_DIR=collectors/news/gdelt/company_rules RULE_CHECK_DIR=<dir>;
+names come from the rule files. The nightly collector checks headlines as well since 2026-11-04
+(CORE_TITLE_GATE); RULE_CHECK_TITLE_GATE=0 reproduces the collector before that.
 
 Usage: .venv311/bin/python tools/validate_universe_rules.py match|judge|report
        (judge under tools/lm_session.py run --model qwen/qwen3.8-27b --workers-env LM_WORKERS -- ...)
@@ -38,7 +38,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "collectors" / "news" / "gdelt"))
 os.environ.setdefault("USE_SLM_FILTER", "false")
 sys.path.insert(0, str(ROOT / "tools"))
-from backfill_symbol_news import title_gate  # noqa: E402  (the same headline check the universe backfill applies)
+from special_rules.headline import short_names, title_gate  # noqa: E402  (the headline check the backfill and collector apply)
 
 RULES_DIR = os.getenv("BACKFILL_RULES_DIR", "/Volumes/Data4T/universe/company_rules")
 PARQUET_DIR = os.getenv("GKG_PARQUET_DIR", "/Volumes/Data4T/gkg_parquet")
@@ -91,7 +91,7 @@ def match() -> None:
                 rows.setdefault(r["url"], r)
             ruled = [r for r in rows.values()
                      if rm.should_include(s, {"title": "", "content": r["raw"], "url": r["url"], "date": str(r["ts"])[:8]})]
-            kept = [r for r in ruled if not TITLE_GATE or title_gate(kw[s], r["raw"], r["url"])]
+            kept = [r for r in ruled if not TITLE_GATE or title_gate(kw[s] + short_names(rm.company_configs.get(s, {})), r["raw"], r["url"])]
             out[s]["hits"] += len(rows)
             out[s]["ruled"] = out[s].get("ruled", 0) + len(ruled)
             out[s]["kept"] += len(kept)

@@ -61,5 +61,9 @@
         "NYSE:DE"
       ]
     }
-  }
+  },
+  "headline_names": [
+    "Deere",
+    "John Deere"
+  ]
 }

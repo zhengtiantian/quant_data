@@ -72,5 +72,10 @@
         "NYSE:GE"
       ]
     }
-  }
+  },
+  "headline_names": [
+    "GE",
+    "General Electric",
+    "GE Aerospace"
+  ]
 }
