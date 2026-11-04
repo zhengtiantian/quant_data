@@ -42,16 +42,13 @@
         }
     },
     "strict_validation_keywords": [
-        "MU",
         "Micron",
-        "Technology",
-        "Memory",
         "DRAM",
         "NAND",
-        "Semiconductor",
-        "Nasdaq",
-        "Intel",
-        "Samsung",
-        "SK Hynix"
+        "HBM",
+        "memory chip",
+        "memory chips",
+        "Sanjay Mehrotra",
+        "Crucial"
     ]
 }

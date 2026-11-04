@@ -204,6 +204,7 @@ COMPANY_UNIVERSE: dict[str, tuple[str, list[str]]] = {
     "GE":    ("GE Aerospace",               ["GE Aerospace", "GE Aviation", "General Electric", "Larry Culp", "LEAP engine", "GE9X"]),
     "DE":    ("Deere & Company",            ["John Deere", "Deere", "John May", "Deere & Co"]),
     "BA":    ("Boeing",                     ["Boeing", "Kelly Ortberg", "737 MAX", "787 Dreamliner", "777X", "Starliner"]),
+    "SKHY":  ("SK hynix",                   ["SK hynix", "SK Hynix", "Hynix"]),
 }
 
 _SCAN_PATTERNS: dict[str, re.Pattern] = {
@@ -287,6 +288,12 @@ def _is_thin_body(content: str) -> bool:
     return len(stripped) < 400 and any(m in lower for m in _THIN_BODY_MARKERS)
 
 
+# 2026-11-04: the SLM said "relevant" to rows that never name the company (GDELT rows matched on a generic
+# word): on 600 judged rows those were 17% relevant against 84% for rows that name it. A match now needs a
+# direct mention first, which also saves the SLM call. V2_REQUIRE_DIRECT_MENTION=0 restores the old behaviour.
+REQUIRE_DIRECT_MENTION = os.getenv("V2_REQUIRE_DIRECT_MENTION", "1") == "1"
+
+
 def process_doc(doc: dict[str, Any]) -> dict[str, Any]:
     symbol = (doc.get("symbol") or "").strip().upper()
     title = (doc.get("title") or "").strip()
@@ -301,7 +308,9 @@ def process_doc(doc: dict[str, Any]) -> dict[str, Any]:
     slm = get_slm()
 
     # Step 1: verify current symbol with full content
-    if slm.is_relevant(symbol, company_name, title, content):
+    # a symbol without keywords here (ETFs such as SPY / QQQ) keeps the SLM-only check
+    named = not REQUIRE_DIRECT_MENTION or symbol not in _SCAN_PATTERNS or _has_direct_mention(symbol, title, content)
+    if named and slm.is_relevant(symbol, company_name, title, content):
         # Step 1b: if another company appears in the title, it may be the primary subject.
         # SLM-confirm each title candidate; first confirmed one wins (reassign).
         if SCAN_OTHER:
@@ -331,7 +340,8 @@ def process_doc(doc: dict[str, Any]) -> dict[str, Any]:
 
     # Step 3: body is thin/empty — retry with title only
     if thin_body:
-        if slm.is_relevant(symbol, company_name, title, ""):
+        if (not REQUIRE_DIRECT_MENTION or symbol not in _SCAN_PATTERNS or _has_direct_mention(symbol, title, "")) \
+                and slm.is_relevant(symbol, company_name, title, ""):
             return {"_id": doc["_id"], "status": "match", "symbol": symbol,
                     "reassigned": False, "title_only": True,
                     "direct_mention": _has_direct_mention(symbol, title, ""),

@@ -147,10 +147,17 @@ def judge() -> None:
 
 def report() -> dict:
     m = json.loads((OUT / "matches.json").read_text())
+    # only this sample's rows: judged.jsonl may carry answers from an earlier match (copied in to save model
+    # time), and those rows may no longer be kept (2026-11-04: they made the fixed rules look worse)
+    sample = {(s, r["url"]) for s, v in m.items() for r in v["sample"]}
     judged: dict = {}
     if (OUT / "judged.jsonl").exists():
+        seen = set()
         for j in map(json.loads, (OUT / "judged.jsonl").open()):
-            judged.setdefault(j["symbol"], []).append(j["answer"])
+            k = (j["symbol"], j["url"])
+            if k in sample and k not in seen:
+                seen.add(k)
+                judged.setdefault(j["symbol"], []).append(j["answer"])
     months_total = len(glob.glob(f"{PARQUET_DIR}/month=*"))
     since_months = len([p for p in glob.glob(f"{PARQUET_DIR}/month=*") if p.split("=")[1] >= SINCE])
     rows, flagged = {}, []

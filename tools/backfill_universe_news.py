@@ -9,6 +9,7 @@ the GKG headline by one model. Steps, each resumable:
           the headline check (BACKFILL_TITLE_GATE): the company named in the headline or URL
           -> <work>/<SYM>/kept.jsonl. The SLM reviews single weak hits (BBY, PSA, WM only).
   index   every company's kept rows regrouped by month, headline extracted -> <labels>/todo/<YYYY-MM>.jsonl
+  extend  each month that has ended since the scan: scanned, filtered and merged into the above (2026-11-04)
   label   newest month first. Rows of one company with the same headline (syndicated copies, ~20% in
           2021-06 and 2025-09) are labelled once. llm_enrich_articles.call_llm with today's prompt, title
           only, one headline per request: on 500 headlines (2026-11-03) a short prompt ran 1.7x faster but
@@ -25,7 +26,7 @@ the GKG headline by one model. Steps, each resumable:
           runs whatever is unfinished in the order above and stops before HH:MM, between months
           (scan), companies (filter) or chunks of headlines (label).
 
-Usage: .venv311/bin/python tools/backfill_universe_news.py scan|filter|index|label|fetch|status [SYMBOLS...]
+Usage: .venv311/bin/python tools/backfill_universe_news.py scan|filter|index|extend|label|fetch|status [SYMBOLS...]
        .venv311/bin/python tools/backfill_universe_news.py window --until 15:00
        (under tools/lm_session.py run --model qwen3.5-9b-mlx --workers-env LM_WORKERS -- ...)
 """
@@ -91,6 +92,51 @@ def scan(rm, syms: list, deadline: float | None = None) -> bool:
     if ok:
         done.write_text(this_month())
     return ok
+
+
+def _next_month(m: str) -> str:
+    y, mo = int(m[:4]), int(m[5:7])
+    return f"{y + (mo == 12)}-{mo % 12 + 1:02d}"
+
+
+def extend(rm, syms: list, deadline: float | None = None) -> bool:
+    """Months that ended after the scan (2026-11-04: the scan leaves out the month it runs in and scan.done is
+    permanent, so nothing after 2026-10 was ever read). scan.done holds the first month not scanned; each month
+    from there that has ended is scanned, filtered and merged into kept.jsonl / the label todo list (as a keyword
+    rescan is), then scan.done moves on. State per month in <work>/_months/<YYYY-MM>/, resumable."""
+    import keyword_refresh as kr
+    done = WORK / "scan.done"
+    if not done.exists():
+        return True
+    month = done.read_text().strip()[:7]
+    while month < this_month():
+        mdir = WORK / "_months" / month
+        mdir.mkdir(parents=True, exist_ok=True)
+        print(f"extend {month}: {len(syms)} companies -> {mdir}", flush=True)
+        with kr._bf_settings(WORK_DIR=str(mdir)):
+            if not bf.scan_many({s: all_keywords(rm, s) for s in syms}, f"{month}-01", deadline,
+                                before_month=_next_month(month)):
+                return False
+            for s in syms:
+                cand, kept, mark = mdir / s / "candidates.jsonl", mdir / s / "kept.jsonl", mdir / s / "filter.done"
+                if mark.exists() or not cand.exists():
+                    continue
+                if deadline and time.time() >= deadline:
+                    return False
+                bf.filter_stage(s, cand, kept, WORKERS)
+                kept.touch()
+                mark.write_text(datetime.now().isoformat(timespec="seconds"))
+        if not (mdir / "merged.done").exists():
+            added = 0
+            for s in syms:
+                kept = mdir / s / "kept.jsonl"
+                if kept.exists():
+                    added += kr._universe_merge(bf, s, [json.loads(l) for l in kept.open()])
+            (mdir / "merged.done").write_text(f"{added}\n")
+            print(f"extend {month}: {added} new rows merged", flush=True)
+        month = _next_month(month)
+        done.write_text(month)
+    return True
 
 
 def filter_all(rm, syms: list, deadline: float | None = None) -> bool:
@@ -221,6 +267,9 @@ def window(until: str) -> None:
     print(f"window until {until}: {len(syms)} companies, model {LABEL_MODEL}, {WORKERS} workers", flush=True)
     if scan(rm, syms, end) and filter_all(rm, syms, end):
         index(syms)
+        if not extend(rm, syms, end):               # months that ended since (2026-11-04)
+            status()
+            return
         # keywords the user added in the weekly review: their past months first (core and universe), so the
         # new universe headlines join this run's labels (tools/keyword_refresh.py rescan, 2026-11-04)
         import keyword_refresh
@@ -249,6 +298,8 @@ def main(stage: str, args: list) -> None:
         filter_all(rm, syms)
     elif stage == "index":
         index(syms)
+    elif stage == "extend":
+        extend(rm, syms)
     elif stage == "label":
         label()
     elif stage == "fetch":

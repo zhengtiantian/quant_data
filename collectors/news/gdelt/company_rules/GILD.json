@@ -74,6 +74,11 @@
         "GILD earnings",
         "NASDAQ:GILD",
         "Daniel O'Day"
+      ],
+      "exclude_patterns": [
+        "Mount Gilead",
+        "\\bGilead,? (Ohio|OH|Maine|ME)\\b",
+        "Balm (in|of) Gilead"
       ]
     }
   },

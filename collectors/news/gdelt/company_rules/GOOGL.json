@@ -74,7 +74,12 @@
                 "YouTube",
                 "Sundar Pichai"
             ],
-            "min_matches": 1
+            "min_matches": 1,
+            "exclude_title_patterns": [
+                "\\b(on|to|via) YouTube\\b",
+                "\\bon Android\\b",
+                "\\bYouTube (channels?|videos?|stars?|creators?|livestreams?|streams?)\\b"
+            ]
         }
     },
     "strict_validation_keywords": [

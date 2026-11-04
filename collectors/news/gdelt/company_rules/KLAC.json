@@ -25,6 +25,11 @@
             "min_matches": 1,
             "strict_validation_keywords": [
                 "KLA"
+            ],
+            "exclude_patterns": [
+                "Kosovo",
+                "\\bKLA Schools?\\b",
+                "Liberation Army"
             ]
         }
     },

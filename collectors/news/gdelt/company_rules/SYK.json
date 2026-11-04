@@ -9,7 +9,6 @@
     "Mako robot",
     "Mako robotic",
     "LIFEPAK",
-    "Trevo",
     "Wright Medical",
     "Vocera",
     "Spine Division",
@@ -35,7 +34,6 @@
         "Mako robot",
         "Mako robotic",
         "LIFEPAK",
-        "Trevo",
         "Wright Medical",
         "Vocera",
         "SYK stock",
@@ -55,7 +53,6 @@
         "Mako robot",
         "Mako robotic",
         "LIFEPAK",
-        "Trevo",
         "Wright Medical",
         "Vocera",
         "SYK stock",
@@ -63,7 +60,15 @@
         "SYK earnings",
         "NYSE:SYK",
         "Kevin Lobo"
+      ],
+      "exclude_title_patterns": [
+        "Stryker (vehicles?|armou?red|brigade|combat|infantry|ICV|Internet|MiFi|Watch)\\b",
+        "[\\\"“]Stryker[\\\"”]",
+        "\\bStryker wins\\b"
       ]
     }
-  }
+  },
+  "weak_names_not_counted": [
+    "Trevo"
+  ]
 }

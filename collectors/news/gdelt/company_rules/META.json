@@ -53,7 +53,12 @@
                 "Zuckerberg",
                 "Oculus"
             ],
-            "min_matches": 1
+            "min_matches": 1,
+            "exclude_title_patterns": [
+                "\\b(Instagram|Facebook|WhatsApp) (posts?|bios?|ID|profile|account|story|stories|handle|followers|live|page|reels?)\\b",
+                "(Image|Photo|Picture|Video)\\s*(Source|Credit)\\s*:?\\s*(Instagram|Facebook)",
+                "\\b(on|via|from) (Instagram|Facebook)\\b"
+            ]
         }
     },
     "strict_validation_keywords": [

@@ -16,7 +16,7 @@ SPAM_RE = re.compile(r"\bMarket\b.{0,40}\b(20\d\d|Size|Report|Analysis|Trends?|O
 # a venue or event named after a sponsor ("Jones AT&T Stadium", "Globe Life Field") is not news of it: a
 # name directly followed by one of these words does not count
 VENUE_AFTER = (r"(?! (?:Stadium|Field|Arena|Center|Centre|Park|Dome|Superdome|Speedway|Forum|Amphitheat(?:er|re)|Pavilion|Bowl|"
-               r"Championship|Classic|Invitational|Foundation|Literacy Foundation|Series|600|500|400)\b)")
+               r"Championship|Classic|Invitational|Foundation|Literacy Foundation|Series|Cup|600|500|400)\b)")
 _ALLNAMES_TAIL = re.compile(r"^[^,;]{1,80},\d+\s+")
 _TS14 = re.compile(r"\b\d{14}\b")
 
@@ -55,6 +55,13 @@ _SUFFIX = re.compile(r"(?:,?\s+(?:and\s+Company|Inc\.?|Incorporated|Corp\.?|Corp
                      r"N\.?V\.?|S\.?A\.?|AG|SE|Holdings?|Group|Platforms|Technologies|Technology|Class [A-C])|\.com)$", re.I)
 
 
+# derived short names that are ordinary words or other things in a headline ("reinsurance pool", "the Dow");
+# a company that needs one lists it in headline_names
+ORDINARY_SHORT = {"ball", "booking", "carnival", "dover", "dow", "flex", "fox", "match", "nasdaq", "news", "progressive",
+                  "pool", "southern", "strategy", "waters", "zebra", "block", "align", "coherent", "mosaic", "lumen",
+                  "corning", "state street", "tapestry", "target", "principal financial", "global payments"}
+
+
 def short_names(cfg: dict) -> list:
     """`headline_names` from the rule file when it has them (MNDY: "monday" alone is a weekday), else the
     company's own name without "The" and legal / generic suffixes."""
@@ -66,7 +73,7 @@ def short_names(cfg: dict) -> list:
         prev = None
         while n and n != prev:
             prev, n = n, _SUFFIX.sub("", n).strip(" ,")
-        if len(n) > 2 and n not in out:
+        if len(n) > 2 and n not in out and n.lower() not in ORDINARY_SHORT:
             out.append(n)
     return out
 
