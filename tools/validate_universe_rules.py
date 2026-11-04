@@ -13,6 +13,10 @@ that their keywords pick out the right company. This measures it on a sample of 
   report  per company: kept per sample month, judged precision; flagged when precision < 0.8 or
           nothing kept -> <out>/report.json, plus the estimated article count for the backfill
 
+The 102 core rules (2026-11-04): BACKFILL_RULES_DIR=collectors/news/gdelt/company_rules RULE_CHECK_TITLE_GATE=0
+RULE_CHECK_DIR=<dir>: the nightly collector does not apply the headline check, so it is off; names come from
+the rule files.
+
 Usage: .venv311/bin/python tools/validate_universe_rules.py match|judge|report
        (judge under tools/lm_session.py run --model qwen/qwen3.8-27b --workers-env LM_WORKERS -- ...)
 """
@@ -45,6 +49,19 @@ SAMPLE = int(os.getenv("RULE_CHECK_SAMPLE", "8"))
 LM = os.getenv("LM_STUDIO_URL", "http://localhost:1234/v1").rstrip("/")
 MODEL = os.getenv("RULE_CHECK_LLM", "qwen/qwen3.8-27b")
 SINCE = "2021-01"
+TITLE_GATE = os.getenv("RULE_CHECK_TITLE_GATE", "1") == "1"
+
+
+def _names() -> dict:
+    """names.json (universe), else each rule file's own name (core)."""
+    names = json.loads(NAMES.read_text()) if NAMES.exists() and "universe" in RULES_DIR else {}
+    for p in Path(RULES_DIR).glob("*.json"):
+        try:
+            d = json.loads(p.read_text())
+        except ValueError:
+            continue
+        names.setdefault(d.get("symbol") or p.stem, {"name": d.get("name") or d.get("company_name") or p.stem})
+    return names
 
 
 def match() -> None:
@@ -74,7 +91,7 @@ def match() -> None:
                 rows.setdefault(r["url"], r)
             ruled = [r for r in rows.values()
                      if rm.should_include(s, {"title": "", "content": r["raw"], "url": r["url"], "date": str(r["ts"])[:8]})]
-            kept = [r for r in ruled if title_gate(kw[s], r["raw"], r["url"])]
+            kept = [r for r in ruled if not TITLE_GATE or title_gate(kw[s], r["raw"], r["url"])]
             out[s]["hits"] += len(rows)
             out[s]["ruled"] = out[s].get("ruled", 0) + len(ruled)
             out[s]["kept"] += len(kept)
@@ -105,7 +122,7 @@ def _ask(company: str, sym: str, info: dict, row: dict) -> str:
 
 def judge() -> None:
     m = json.loads((OUT / "matches.json").read_text())
-    names = json.loads(NAMES.read_text()) if NAMES.exists() else {}
+    names = _names()
     path = OUT / "judged.jsonl"
     done = {(j["symbol"], j["url"]) for j in map(json.loads, path.open())} if path.exists() else set()
     todo = [(s, r) for s, v in m.items() for r in v["sample"] if (s, r["url"]) not in done]

@@ -17,6 +17,8 @@ the GKG headline by one model. Steps, each resumable:
           -> <labels>/<YYYY-MM>.jsonl, one row per kept URL; <labels>/<YYYY-MM>.keys.jsonl while a
           month is under way
   fetch   (not scheduled) download and store in news_articles_universe
+  (rescan) before the labels, each window runs tools/keyword_refresh.py rescan: past months for keywords
+          added in the weekly review (2026-11-04)
 
   window --until HH:MM   the scheduled form (airflow/dags/universe_news_backfill.py: 11:30-15:45 and
           16:30-23:00, the hours the user gave, clear of job_agent at 11:00 / 16:00 and the 04:00 chain):
@@ -219,7 +221,16 @@ def window(until: str) -> None:
     print(f"window until {until}: {len(syms)} companies, model {LABEL_MODEL}, {WORKERS} workers", flush=True)
     if scan(rm, syms, end) and filter_all(rm, syms, end):
         index(syms)
-        label(end)
+        # keywords the user added in the weekly review: their past months first (core and universe), so the
+        # new universe headlines join this run's labels (tools/keyword_refresh.py rescan, 2026-11-04)
+        import keyword_refresh
+        try:
+            go_on = keyword_refresh.rescan(end)
+        except Exception as e:  # noqa: BLE001 - a failed rescan must not cost the window its labels
+            print(f"rescan failed, labels go on: {type(e).__name__}: {e}", flush=True)
+            go_on = True
+        if go_on:
+            label(end)
     status()
 
 

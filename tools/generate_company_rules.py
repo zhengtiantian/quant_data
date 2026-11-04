@@ -240,6 +240,13 @@ def tighten_rule(sym: str, rule: dict, name: str) -> dict:
                                               "required_keywords": ids, "min_matches": 1}}
     else:
         out["special_rules"] = {}
+    # terms the user approved in the weekly keyword review (tools/keyword_refresh.py) survive a re-tighten
+    auto = rule.get("auto_keywords") or []
+    if auto:
+        out["auto_keywords"] = auto
+        out["expansion_keywords"] = [a["term"] for a in auto if a.get("as") == "keyword"]
+        out["weak_names_not_counted"] = out["weak_names_not_counted"] + [a["term"] for a in auto if a.get("as") == "weak"
+                                                                         and a["term"] not in out["weak_names_not_counted"]]
     return out
 
 
