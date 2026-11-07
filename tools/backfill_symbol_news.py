@@ -179,16 +179,19 @@ MIRROR_KEY = re.compile(r"^https?://[^/]+/news/(\d{6,})/")
 MAX_MIRRORS = 3
 
 
-def story_key(url: str) -> str:
+def story_key(url: str, raw: str = "") -> str:
     m = MIRROR_KEY.match(url)
-    return f"bnn:{m.group(1)}" if m else url
+    if m:
+        return f"bnn:{m.group(1)}"
+    t = re.sub(r"\W+", " ", gkg_title(raw).lower()).strip() if raw else ""
+    return f"t:{t[:120]}" if len(t) >= 15 else url
 
 
 def fetch_stage(symbol: str, name: str, kept: Path, workers: int) -> None:
     import historical_collector as hc
     import pymongo
     from pymongo import UpdateOne
-    if RULES_DIR:                                   # the collector re-checks the full text with its own rules
+    if RULES_DIR and getattr(hc, "_rule_manager", None) is None:
         from special_rules import RuleManager
         hc._rule_manager = RuleManager(RULES_DIR)
     col = pymongo.MongoClient(os.getenv("MONGO_URI"))["quant_data"][NEWS_COLLECTION]
@@ -198,9 +201,14 @@ def fetch_stage(symbol: str, name: str, kept: Path, workers: int) -> None:
     stored = existing_urls([r["url"] for r in rows if r["url"] not in done])
     groups: dict[str, list[dict]] = {}
     for r in rows:
-        groups.setdefault(story_key(r["url"]), []).append(r)
+        groups.setdefault(story_key(r["url"], r.get("raw", "")), []).append(r)
     # A story is done when any of its URLs was stored or tried.
     todo = [g for g in groups.values() if not any(r["url"] in done or r["url"] in stored for r in g)]
+    import random as _rnd
+    _rnd.Random(42).shuffle(todo)
+    _lim = int(os.getenv("FETCH_LIMIT_PER_SYM", "0"))
+    if _lim > 0:
+        todo = todo[:_lim]
     company = {"symbol": symbol, "name": name}
     progress("fetch", 0, len(todo), f"stories={len(groups)} urls={len(rows)} already_stored={len(stored)}")
 

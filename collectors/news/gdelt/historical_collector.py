@@ -570,13 +570,25 @@ def _should_keep_english_only(html="", title="", content=""):
 
 
 def _fetch_html_with_requests(url):
-    resp = requests.get(
+    with requests.get(
         url,
         headers={"User-Agent": user_agent},
-        timeout=ARTICLE_REQUEST_TIMEOUT,
-    )
-    resp.raise_for_status()
-    return resp.text
+        timeout=(5, ARTICLE_REQUEST_TIMEOUT),
+        stream=True,
+    ) as resp:
+        resp.raise_for_status()
+        ctype = (resp.headers.get("Content-Type") or "").lower()
+        if ctype and not any(k in ctype for k in ("html", "xml", "text", "json")):
+            return ""
+        chunks, size, t0 = [], 0, time.time()
+        for chunk in resp.iter_content(chunk_size=32768):
+            if chunk:
+                chunks.append(chunk)
+                size += len(chunk)
+            if size > 1_500_000 or time.time() - t0 > ARTICLE_REQUEST_TIMEOUT:
+                break
+        raw = b"".join(chunks)
+        return raw.decode(resp.encoding or "utf-8", errors="replace")
 
 
 def _extract_article_payload(row, company, debug_trace=False):

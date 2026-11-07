@@ -502,7 +502,7 @@ def apply(dry_run: bool = False) -> list:
 
 
 # ---------------------------------------------------------------- past months for added terms
-RESCAN_SINCE = os.getenv("KEYWORD_RESCAN_SINCE", "2021-01-01")
+RESCAN_SINCE = os.getenv("KEYWORD_RESCAN_SINCE", "2018-01-01")  # all news from 2018 (2026-11-05)
 FETCH_CHUNK = 200
 RESCAN_FETCH = os.getenv("KEYWORD_RESCAN_FETCH", "1") == "1"      # 0: core rows kept, not downloaded (tests)
 
