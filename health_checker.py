@@ -1,15 +1,12 @@
 import time
 import threading
-from test_db_connection import test_mysql, test_mongo
+from test_db_connection import test_mongo
 
 def run_health_check():
     print("=== Quant Data System Started ===")
     print("Performing initial database connectivity test...\n")
 
-    mysql_result = test_mysql()
-    mongo_result = test_mongo()
-
-    for name, result in {**mysql_result, **mongo_result}.items():
+    for name, result in test_mongo().items():
         print(f"{name}: {result}")
 
     print("\nHealth check complete.")
