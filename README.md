@@ -16,14 +16,14 @@ system and the cross-repo roadmap.
 | Metric | Value |
 |--------|-------|
 | News articles processed | 845K+ (from 13TB raw GDELT data) |
-| Stock universe | 100 US equities |
+| Stock universe | ~100-stock core universe (signals) + 490 point-in-time S&P 500 / Nasdaq-100 companies (news from 2018, backfill in progress) |
 | LLM agreement rate | 77.3% (Gemma + Qwen) |
 | Portfolio backtest Sharpe (20d, net of cost) | **0.77** (gross 0.92) vs SPY 0.54 |
 | Portfolio backtest Sharpe (60d, net of cost) | **0.73** (gross 0.77) vs SPY 0.47 |
 | Best single-factor cross-sectional IC | **+0.227** (`ah_gap`, 5d, after-hours price gap) |
 | Strongest 60d-horizon factor | **+0.198** (`inst_holding_pct_chg`, institutional 13F QoQ change) |
 | 2026 holdout model IC (LightGBM, all features) | **0.73** vs ~0.05 historical baseline |
-| Feature store | 189K+ rows · 100 symbols × 7 return horizons |
+| Feature store | 189K+ rows · core universe × 7 return horizons |
 | Airflow DAGs owned by this repo | 10 (7 scheduled + 3 manual) |
 
 *Net Sharpe includes a transaction cost model: 5bps commission + 10–30bps liquidity-tiered slippage round-trip, and excludes symbols with <$5M 20d avg dollar volume. See `research/backtest/backtest_portfolio.py`.*
@@ -42,9 +42,9 @@ system and the cross-repo roadmap.
 ┌─────────────────────────────────────────────────────────────────────┐
 │                      NLP / LLM LABELING LAYER                        │
 │                                                                       │
-│  company_match (SLM)  ──▶  Pass A: Gemma 3B                         │
+│  company_match (SLM)  ──▶  Pass A: Gemma-4-E4B                      │
 │        │                        │                                    │
-│        │                   Pass B: Qwen 4B                           │
+│        │                   Pass B: Qwen3.5-9B                        │
 │        │                        │                                    │
 │        └──────────────▶  dual-LLM merge                             │
 │                          (label aggregation)                          │
@@ -72,7 +72,7 @@ system and the cross-repo roadmap.
 │  inst_holding_* SEC EDGAR 13F QoQ change          (D.7, edgartools) │
 │  ah_gap/pm_gap  yfinance 1m extended-hours gap    (D.8, yfinance)   │
 │                                                                       │
-│  → daily_symbol_features (189K+ rows, 100 symbols × 7 horizons)     │
+│  → daily_symbol_features (189K+ rows, core universe × 7 horizons)     │
 └──────────────────────────┬──────────────────────────────────────────┘
                            │
                            ▼
@@ -100,29 +100,31 @@ system and the cross-repo roadmap.
                            ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │                       ORCHESTRATION LAYER                            │
-│                                                                       │
-│  Apache Airflow, host-based scheduler (launchd-managed) — 10 DAGs   │
-│                                                                       │
-│  Scheduled (7):                                                      │
-│  ┌─────────────────────────────────────────────────────────┐        │
-│  │ */30 min   quant_intraday_news    (Finnhub+NewsAPI+Yahoo)│        │
-│  │ 06:30 d.   price_history_backfill                        │        │
-│  │ 07:30 d.   daily_signal_pipeline  (price→feat→signal→DQ) │        │
-│  │ 20:30 d.   quant_retail_sentiment (StockTwits)            │        │
-│  │ 04:00 Sun  gdelt_batch_verify     (batch self-heal check)│        │
-│  │ 06:00 Sun  weekly_inst13f_holdings                        │        │
-│  │ 07:00 Sun  weekly_model_training  (Ridge+LightGBM CV)     │        │
-│  └─────────────────────────────────────────────────────────┘        │
-│                                                                       │
-│  Manual / on-demand (3) — full-history news backfill in two         │
-│  chained stages + a quality-audit tool:                             │
-│  ┌─────────────────────────────────────────────────────────┐        │
-│  │ backfill_1_collect_and_match                              │        │
-│  │   GDELT collect ⟶ SLM company match                       │        │
-│  │ backfill_2_enrich_and_features                            │        │
-│  │   LLM pass A ⟶ pass B ⟶ label merge ⟶ feature rebuild     │        │
-│  │ quant_news_validation (relevance/quality audit report)   │        │
-│  └─────────────────────────────────────────────────────────┘        │
+│                                                                      │
+│  Apache Airflow, host-based scheduler (launchd-managed) — 14 DAGs    │
+│                                                                      │
+│  Scheduled (11), UTC; keyword DAGs on Irish time:                    │
+│  ┌───────────────────────────────────────────────────────────┐       │
+│  │ */30 min   quant_intraday_news    (Finnhub+NewsAPI+Yahoo) │       │
+│  │ 04:00 d.   backfill_1_collect_and_match (nightly chain)   │       │
+│  │ 06:30 d.   price_history_backfill                         │       │
+│  │ wkdy ×3    daily_advice           (13:30/17:30/21:30)     │       │
+│  │ 21:15 wkdy market_snapshots       (options, analysts)     │       │
+│  │ 20:30 d.   quant_retail_sentiment (StockTwits)            │       │
+│  │ 04:00 Sun  gdelt_batch_verify     (batch self-heal check) │       │
+│  │ 06:00 Sun  weekly_inst13f_holdings                        │       │
+│  │ 07:00 Sun  weekly_model_training  (Ridge+LightGBM CV)     │       │
+│  │ 08:00 Sat  keyword_refresh_weekly (proposals for review)  │       │
+│  │ :55 hrly   keyword_refresh_apply  (approved -> rules)     │       │
+│  └───────────────────────────────────────────────────────────┘       │
+│                                                                      │
+│  Triggered by the nightly chain (2) and manual (1):                  │
+│  ┌──────────────────────────────────────────────────────┐            │
+│  │ backfill_1 -> backfill_2_enrich_and_features         │            │
+│  │   LLM pass A -> pass B -> label merge -> features    │            │
+│  │   -> daily_signal_pipeline (price, feat, signal, DQ) │            │
+│  │ quant_news_validation  (quality audit, manual)       │            │
+│  └──────────────────────────────────────────────────────┘            │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -134,19 +136,19 @@ system and the cross-repo roadmap.
 | Component | Technology |
 |-----------|-----------|
 | News collection | GDELT, Finnhub, NewsAPI, Yahoo Finance, FMP |
-| LLM labeling | Gemma 3B + Qwen 4B (via LM Studio) |
+| LLM labeling | Gemma-4-E4B (pass A) + Qwen3.5-9B (pass B), company match on Qwen3.5-4B — all local via LM Studio |
 | Label aggregation | Dual-LLM merge (`merge_ab_labels.py`) |
 | ML models | LightGBM, Ridge Regression, Ensemble |
-| Feature store | MongoDB (189K rows, 100 symbols) |
+| Feature store | MongoDB (189K+ rows, core universe) |
 | Experiment tracking | MLflow |
 
 ### Infrastructure
 | Component | Technology |
 |-----------|-----------|
-| Orchestration | Apache Airflow 2.10, host-based scheduler (launchd-managed) — 10 production DAGs |
-| Database | MongoDB 6.0 (articles, features, signals), MySQL 8.0 (GDELT batch queue) |
-| Distributed work | MySQL-backed task queue — multi-machine GDELT workers, crash-safe retry, idempotent upserts |
-| Containerization | Docker |
+| Orchestration | Apache Airflow 2.10, host-based scheduler (launchd-managed) — 14 DAGs (11 scheduled, 2 triggered by the nightly chain, 1 manual) |
+| Database | MongoDB 6.0 (articles, features, signals), PostgreSQL (GDELT batch queue, in airflow-postgres; MySQL retired 2026-10-31) |
+| Distributed work | PostgreSQL-backed task queue — multi-machine GDELT workers, crash-safe retry, idempotent upserts |
+| Runtime | Host processes under launchd (no container of its own); MongoDB and PostgreSQL run in Docker from the platform repo |
 
 > Serving-side technology (Spring Boot API, React dashboard, Keycloak, Kafka, quant_ai, MCP)
 > belongs to the sibling repos — see the
@@ -189,10 +191,9 @@ quant_data/
 │   ├── test_positions.py     # H.3: _stop_pct, compute_daily_vols, _spearman_ic, stop-loss trigger
 │   └── test_earnings_regime.py # Earnings features, macro regime (D-series)
 │
-├── airflow/dags/             # Airflow orchestration — 14 production DAGs (7 scheduled, 7 manual)
+├── airflow/dags/             # Airflow orchestration — 14 DAGs (11 scheduled, 2 chained, 1 manual)
 ├── collectors/stock/          # Stock price & universe management
-├── tools/                    # GDELT import, index building utilities
-├── scheduler/                # task.py — legacy launchd scheduler (superseded by Airflow, kept disabled)
+├── tools/                    # Backfills, rule tools, keyword refresh, the LM Studio lock
 └── pytest.ini                # Test config + coverage settings
 ```
 
@@ -247,7 +248,7 @@ LightGBM trained on 2016–2025, evaluated on 2026 holdout (all features incl. D
 
 ### Prerequisites
 - Python 3.11+
-- MongoDB and MySQL reachable — start them from the platform repo (`cd quant_docker && docker compose up -d mongodb mysql`)
+- MongoDB and PostgreSQL reachable — start the core from the platform repo (`cd quant_docker && ./scripts/core.sh`)
 - [LM Studio](https://lmstudio.ai/) with the labeling models loaded:
   - `gemma-4-e4b-it-mlx` — news labeling pass A
   - `qwen3.5-9b-mlx` — news labeling pass B
