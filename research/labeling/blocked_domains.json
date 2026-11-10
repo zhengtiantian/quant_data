@@ -1,0 +1,164 @@
+{
+ "generated": "2026-11-10",
+ "min_rows": 100,
+ "max_keep": 0.02,
+ "domains": [
+  "instagram.com",
+  "whatech.com",
+  "hulu.com",
+  "investorsobserver.com",
+  "charter97.org",
+  "nesn.com",
+  "english.nv.ua",
+  "indiedb.com",
+  "seacoastcurrent.com",
+  "stratfordbeaconherald.com",
+  "caughtoffside.com",
+  "tellychakkar.com",
+  "bloodyelbow.com",
+  "saq.com",
+  "thehardtackle.com",
+  "flapship.com",
+  "alextimes.com",
+  "mmajunkie.usatoday.com",
+  "empireofthekop.com",
+  "vouxmagazine.com",
+  "technavio.com",
+  "pravda.com.ua",
+  "gofundme.com",
+  "fdiintelligence.com",
+  "echopress.com",
+  "wisdomsave.com",
+  "americansongwriter.com",
+  "marketresearchfuture.com",
+  "thunderousintentions.com",
+  "mmanews.com",
+  "thisisanfield.com"
+ ],
+ "stats": {
+  "instagram.com": [
+   4104,
+   19
+  ],
+  "whatech.com": [
+   770,
+   15
+  ],
+  "hulu.com": [
+   740,
+   6
+  ],
+  "investorsobserver.com": [
+   606,
+   11
+  ],
+  "charter97.org": [
+   487,
+   3
+  ],
+  "nesn.com": [
+   465,
+   5
+  ],
+  "english.nv.ua": [
+   372,
+   2
+  ],
+  "indiedb.com": [
+   261,
+   2
+  ],
+  "seacoastcurrent.com": [
+   224,
+   0
+  ],
+  "stratfordbeaconherald.com": [
+   220,
+   4
+  ],
+  "caughtoffside.com": [
+   220,
+   0
+  ],
+  "tellychakkar.com": [
+   217,
+   3
+  ],
+  "bloodyelbow.com": [
+   211,
+   2
+  ],
+  "saq.com": [
+   204,
+   1
+  ],
+  "thehardtackle.com": [
+   203,
+   0
+  ],
+  "flapship.com": [
+   199,
+   0
+  ],
+  "alextimes.com": [
+   181,
+   0
+  ],
+  "mmajunkie.usatoday.com": [
+   177,
+   2
+  ],
+  "empireofthekop.com": [
+   169,
+   0
+  ],
+  "vouxmagazine.com": [
+   168,
+   0
+  ],
+  "technavio.com": [
+   163,
+   2
+  ],
+  "pravda.com.ua": [
+   157,
+   2
+  ],
+  "gofundme.com": [
+   146,
+   1
+  ],
+  "fdiintelligence.com": [
+   135,
+   2
+  ],
+  "echopress.com": [
+   119,
+   1
+  ],
+  "wisdomsave.com": [
+   117,
+   0
+  ],
+  "americansongwriter.com": [
+   113,
+   2
+  ],
+  "marketresearchfuture.com": [
+   112,
+   1
+  ],
+  "thunderousintentions.com": [
+   111,
+   0
+  ],
+  "mmanews.com": [
+   104,
+   2
+  ],
+  "thisisanfield.com": [
+   101,
+   0
+  ]
+ }
+}

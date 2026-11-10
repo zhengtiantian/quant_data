@@ -44,6 +44,10 @@ load_dotenv(ROOT / ".env", override=False)
 
 from collectors.news.gdelt.special_rules.slm_filter import SLMFilter
 
+if str(CURRENT.parent) not in sys.path:
+    sys.path.insert(0, str(CURRENT.parent))
+import prefilter  # noqa: E402 - rules that reject non-news pages before a model is asked
+
 MONGO_URI = os.getenv("LOCAL_MONGO_URI", "mongodb://root:root@127.0.0.1:37018/")
 DB_NAME = os.getenv("FEATURE_DB_NAME", "quant_data")
 SOURCE_COLLECTION = os.getenv("V2_SOURCE_COLLECTION", "news_articles")
@@ -91,6 +95,21 @@ ENGINE = os.getenv("V2_ENGINE", "slm").lower()
 # labels that a ReplaceOne from the source row would drop.
 ANNOTATE = os.getenv("V2_ANNOTATE", "0") == "1"
 CONTENT_CHARS = int(os.getenv("V2_CONTENT_CHARS", "1500"))
+# 2026-11-10: quote / profile / catalogue pages, titles that are a site name or a placeholder, and
+# blocked sites are rejected by rule before either engine is asked (prefilter.py); the student had
+# kept about half of the quote and profile pages. The reject records the rule as its model
+# ("prefilter:non_news_page"). V2_PREFILTER=0 switches the rules off.
+PREFILTER = os.getenv("V2_PREFILTER", "1") == "1"
+
+
+def prefilter_reject(doc: dict[str, Any], symbol: str, engine: str) -> dict[str, Any] | None:
+    name, keywords = COMPANY_UNIVERSE.get(symbol, (symbol, []))
+    names = [name, *(k for k in keywords if isinstance(k, str))]
+    reason = prefilter.junk_reason(doc.get("title") or "", doc.get("url") or "", names, symbol,
+                                  doc.get("content") or "") if PREFILTER else None
+    if reason is None:
+        return None
+    return {"_id": doc["_id"], "status": "reject", "symbol": symbol, "model": f"prefilter:{reason}", "engine": engine}
 
 # Multi-endpoint support: SLM_ENDPOINTS="url1|model1|workers1,url2|model2|workers2"
 # e.g. "http://192.168.31.226:1234/v1|qwen3.5-4b|15,http://127.0.0.1:1234/v1|qwen3-4b|5"
@@ -348,6 +367,9 @@ def process_doc(doc: dict[str, Any]) -> dict[str, Any]:
 
     if not symbol or not title:
         return {"_id": doc["_id"], "status": "skip", "symbol": symbol}
+    junk = prefilter_reject(doc, symbol, "slm")
+    if junk:
+        return junk
 
     company_name = COMPANY_UNIVERSE.get(symbol, (symbol, []))[0]
     slm = get_slm()
@@ -421,7 +443,6 @@ def process_batch_student(docs: list[dict[str, Any]]) -> list[dict[str, Any]]:
     Same gate as the SLM path (a symbol, a title, the company named when it has keywords); a thin or
     missing body is judged on the title alone. An answer that is neither YES nor NO is a reject."""
     import mlx_students as ms
-    student = get_student()
     rows: list[dict[str, Any] | None] = [None] * len(docs)
     ask = []
     for i, doc in enumerate(docs):
@@ -431,6 +452,9 @@ def process_batch_student(docs: list[dict[str, Any]]) -> list[dict[str, Any]]:
         if not symbol or not title:
             rows[i] = {"_id": doc["_id"], "status": "skip", "symbol": symbol}
             continue
+        rows[i] = prefilter_reject(doc, symbol, "student")
+        if rows[i]:
+            continue
         thin = doc.get("data_quality") == "title_only" or _is_thin_body(content)
         body = "" if thin else content
         mention = _has_direct_mention(symbol, title, body)
@@ -439,7 +463,10 @@ def process_batch_student(docs: list[dict[str, Any]]) -> list[dict[str, Any]]:
             continue
         name = COMPANY_UNIVERSE.get(symbol, (symbol, []))[0]
         ask.append((i, symbol, thin, mention, ms.relevance_input(symbol, name, title, body)))
-    answers = student.generate([a[4] for a in ask]) if ask else []
+    if not ask:                      # everything settled by rule: the model is not loaded for it
+        return rows  # type: ignore[return-value]
+    student = get_student()
+    answers = student.generate([a[4] for a in ask])
     for (i, symbol, thin, mention, _), text in zip(ask, answers):
         if ms.parse_relevance(text):
             rows[i] = {"_id": docs[i]["_id"], "status": "match", "symbol": symbol, "reassigned": False,

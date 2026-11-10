@@ -23,7 +23,11 @@ STUDENTS_DIR = Path(os.getenv("QUANT_STUDENTS_DIR", "/Volumes/Data4T/models/stud
 MODELS_DIR = Path(os.getenv("MLX_MODELS_DIR", str(Path.home() / ".lmstudio" / "models" / "mlx-community")))
 
 SPECS = {
-    "relevance": {"dir": "relevance_q17_20k", "base": "Qwen3-1.7B-bf16", "chat": "qwen", "max_tokens": 2, "batch": 32},
+    # relevance_q17_v4_22k (2026-11-10 evening): taught by the 9B teacher with prompt v4 (a single flight or
+    # store incident is not about the company; a lawsuit, a fine, a large disruption is) on 22,660 rows.
+    # Against the blind gold 82.3% where relevance_q17_20k (prompt v2, the first student) had 78.2%, wrong YES
+    # 70 -> 58 and wrong NO 31 -> 24, same speed. The earlier adapter stays in its directory.
+    "relevance": {"dir": "relevance_q17_v4_22k", "base": "Qwen3-1.7B-bf16", "chat": "qwen", "max_tokens": 2, "batch": 32},
     "label_a": {"dir": "label_a_e2b_50k", "base": "gemma-4-e2b-it-bf16", "chat": "gemma", "max_tokens": 16, "batch": 16},
     "label_b": {"dir": "label_b_q17_50k", "base": "Qwen3-1.7B-bf16", "chat": "qwen", "max_tokens": 16, "batch": 16},
 }
