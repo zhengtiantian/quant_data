@@ -10,7 +10,7 @@ CURRENT_FILE = Path(__file__).resolve()
 
 # Run as a script, not imported as a package, so the shared canonicaliser needs a path.
 sys.path.insert(0, str(CURRENT_FILE.parents[1]))
-from _canonical import canonicalise  # noqa: E402
+from _canonical import canonicalise_all  # noqa: E402
 PROJECT_ROOT = CURRENT_FILE.parents[3]
 GLOBAL_ENV = PROJECT_ROOT / ".env"
 MODULE_ENV = CURRENT_FILE.parent / ".env"
@@ -125,17 +125,17 @@ def save_to_mongo(articles):
             "collectedAt": datetime.now(UTC).isoformat(),
             "language": LANGUAGE,
             "impact": a.get("impact", "B"),
-            "meta": {"collector": "newsapi.collector", "version": "1.1"},
+            "meta": {"collector": "newsapi.collector", "version": "1.2"},
         }
         # `date` and a candidate `symbol`: without them slm_company_match_v2 never sees
         # the article, since its query requires a symbol to exist.
-        doc = canonicalise(doc)
-
-        try:
-            col.insert_one(doc)
-            inserted += 1
-        except errors.DuplicateKeyError:
-            continue
+        # One copy per company the article names (plan B, (url, symbol) unique).
+        for d in canonicalise_all(doc):
+            try:
+                col.insert_one(d)
+                inserted += 1
+            except errors.DuplicateKeyError:
+                continue
 
     print(f"Inserted {inserted} NewsAPI articles into MongoDB")
 

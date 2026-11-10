@@ -6,7 +6,7 @@ from pathlib import Path
 
 # Run as a script, not imported as a package, so the shared canonicaliser needs a path.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from _canonical import canonicalise  # noqa: E402
+from _canonical import canonicalise_all  # noqa: E402
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from pymongo import MongoClient, errors
@@ -142,7 +142,7 @@ def save_to_mongo(articles):
     for a in articles:
         # `date` and a candidate `symbol` — see _canonical for why their absence
         # stranded everything this collector wrote.
-        docs.append(canonicalise({
+        docs += canonicalise_all({
             "source": "yahoo",
             "title": a["title"],
             "url": a["url"],
@@ -150,8 +150,8 @@ def save_to_mongo(articles):
             "publishedAt": a["publishedAt"],
             "collectedAt": datetime.now(UTC).isoformat(),
             "language": "en",
-            "meta": {"collector": "yahoo.html", "version": "2.1"}
-        }))
+            "meta": {"collector": "yahoo.html", "version": "2.2"}
+        })
 
     if docs:
         try:

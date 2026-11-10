@@ -58,11 +58,17 @@ def load_company_rules() -> list[dict]:
         symbol = data.get("symbol")
         if not symbol:
             continue
+        amb = ((data.get("special_rules") or {}).get("ambiguous")) or {}
         rules.append({
             "symbol": symbol,
             "name": data.get("name", symbol),
             "primary": _compile(data.get("primary_keywords") or []),
             "expansion": _compile(data.get("expansion_keywords") or []),
+            # An ambiguous name (Target, Arm, NET) counts only with min_matches of its required
+            # keywords present, matched case-sensitively; used by match_symbols.
+            "required": [re.compile(rf"\b{re.escape(k.strip())}\b") for k in (amb.get("required_keywords") or [])
+                         if isinstance(k, str) and k.strip()],
+            "min_required": int(amb.get("min_matches") or 1) if amb else 0,
         })
     return rules
 
@@ -107,6 +113,31 @@ def match_symbol(*texts: str | None) -> tuple[str, str] | None:
     return (best[1], best[2]) if best else None
 
 
+def match_symbols(*texts: str | None, expansion_fallback: bool = True) -> list[tuple[str, str]]:
+    """Every company the article names by a primary keyword, best first; when none is named that
+    way, match_symbol's single expansion-keyword candidate. Since 2026-11-10 news_articles is unique
+    on (url, symbol), so a collector may store one copy per company: "Morgan Stanley cuts SK hynix
+    target" belongs to SKHY as well, while match_symbol's tie-break files it under MS alone."""
+    haystack = " ".join(t for t in texts if t)
+    if not haystack.strip():
+        return []
+    scored, any_primary = [], False
+    for rule in load_company_rules():
+        primary = sum(1 for p in rule["primary"] if p.search(haystack))
+        if not primary:
+            continue
+        any_primary = True
+        if rule["min_required"] and sum(1 for p in rule["required"] if p.search(haystack)) < rule["min_required"]:
+            continue
+        score = 3 * primary + sum(1 for p in rule["expansion"] if p.search(haystack))
+        scored.append((-score, rule["symbol"], rule["name"]))
+    if not scored:
+        # match_symbol's expansion-only candidate, unless a name was seen and rejected as ambiguous
+        one = None if any_primary or not expansion_fallback else match_symbol(*texts)
+        return [one] if one else []
+    return [(s, n) for _, s, n in sorted(scored)]
+
+
 def canonical_date(published_at: str | None) -> str:
     """`publishedAt` (ISO 8601) rendered as the YYYYMMDDHHMMSS string GDELT writes.
 
@@ -122,6 +153,20 @@ def canonical_date(published_at: str | None) -> str:
             except (ValueError, TypeError):
                 pass
     return datetime.now(UTC).strftime("%Y%m%d%H%M%S")
+
+
+def canonicalise_all(doc: dict, fallback: tuple[str, str] | None = None) -> list[dict]:
+    """canonicalise for plan B (2026-11-10, news_articles unique on (url, symbol)): one copy of the
+    document per company it names (match_symbols), so an analyst note on SK hynix is not filed
+    under the bank alone. A document naming none comes back once, with `fallback` (symbol, name)
+    when given, else without a symbol, as before."""
+    doc["date"] = canonical_date(doc.get("publishedAt"))
+    matched = match_symbols(doc.get("title"), doc.get("description"), doc.get("content"))
+    if not matched:
+        if fallback:
+            doc["symbol"], doc["name"] = fallback
+        return [doc]
+    return [{**doc, "symbol": s, "name": n} for s, n in matched]
 
 
 def canonicalise(doc: dict) -> dict:

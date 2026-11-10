@@ -1,7 +1,7 @@
 """
 Intraday news collection DAG (host-based BashOperator).
 
-Schedule: every 30 minutes (all three collectors run in parallel)
+Schedule: every 30 minutes (the four collectors run in parallel)
 Replaces: ENABLE_FINNHUB_JOB / ENABLE_NEWSAPI_JOB / ENABLE_YAHOO_JOB in task.py
 """
 
@@ -21,7 +21,7 @@ default_args = {
 with DAG(
     dag_id="quant_intraday_news",
     default_args=default_args,
-    description="Every 30 min: Finnhub + NewsAPI + Yahoo news collection",
+    description="Every 30 min: Finnhub + NewsAPI + Yahoo + Asia RSS news collection",
     schedule="*/30 * * * *",
     start_date=datetime(2024, 1, 1),
     catchup=False,
@@ -47,4 +47,12 @@ with DAG(
         execution_timeout=timedelta(minutes=10),
     )
 
-    [finnhub, newsapi, yahoo]
+    # Korean / Taiwanese / Japanese English-language outlets (2026-11-10): news on SK hynix, TSMC and
+    # the like often never reaches the US-centric feeds above.
+    asia_rss = host_task(
+        "asia_rss_news",
+        "collectors/news/asia_rss/collector.py",
+        execution_timeout=timedelta(minutes=10),
+    )
+
+    [finnhub, newsapi, yahoo, asia_rss]

@@ -965,7 +965,50 @@ def _masterfilelist_latest_ts(path):
     return None
 
 
+# Hourly runs (gdelt_hourly DAG, 2026-11-10) fetch only what GDELT appended to masterfilelist.txt since
+# the cached copy, by HTTP Range: ~10 KB an hour instead of the whole ~130 MB file. The file is
+# append-only; anything unexpected (no 206, a shorter remote file, a tail that does not parse) falls
+# back to the full download below.
+MASTER_INCREMENTAL = os.getenv("GDELT_MASTER_INCREMENTAL", "false").lower() == "true"
+_MASTER_LINE = re.compile(rb"^\d+ [0-9a-f]{32} https?://\S+$")
+
+
+def _append_masterfilelist_tail():
+    if not os.path.exists(MASTER_FILE):
+        return False
+    size = os.path.getsize(MASTER_FILE)
+    with open(MASTER_FILE, "rb") as f:
+        f.seek(max(0, size - 1))
+        if f.read(1) != b"\n":
+            return False
+    try:
+        r = requests.get(f"{BASE_URL}/masterfilelist.txt", headers={"Range": f"bytes={size}-"}, timeout=120)
+    except Exception as e:
+        print(f"⚠️ masterfilelist tail request failed: {e}")
+        return False
+    if r.status_code == 416:
+        print("📄 masterfilelist: nothing new since the cached copy")
+        return True
+    if r.status_code != 206:
+        return False
+    total = r.headers.get("Content-Range", "").rsplit("/", 1)[-1]
+    if not total.isdigit() or int(total) < size:
+        return False
+    tail = r.content[: r.content.rfind(b"\n") + 1]   # a half-written last line waits for the next run
+    lines = [l for l in tail.split(b"\n") if l.strip()]
+    if any(not _MASTER_LINE.match(l.strip()) for l in lines):
+        print("⚠️ masterfilelist tail does not parse; downloading the whole file")
+        return False
+    with open(MASTER_FILE, "ab") as f:
+        f.write(tail)
+    print(f"📄 masterfilelist: appended {len(lines)} new entries ({len(tail)} bytes)")
+    return True
+
+
 def load_masterfilelist(max_attempts=3, max_stale_days=7):
+    if MASTER_INCREMENTAL and _append_masterfilelist_tail():
+        with open(MASTER_FILE, "r") as f:
+            return f.readlines()
     # Download to a temp file and atomically replace: a mid-transfer connection
     # reset must never leave a truncated masterfilelist as the cache.
     tmp_file = MASTER_FILE + ".tmp"

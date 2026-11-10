@@ -14,7 +14,7 @@ ROOT = CURRENT.parents[3]
 # The collectors are run as scripts rather than imported as a package, so the shared
 # canonicaliser has to be reachable by path.
 sys.path.insert(0, str(CURRENT.parents[1]))
-from _canonical import canonicalise  # noqa: E402
+from _canonical import canonicalise_all  # noqa: E402
 GLOBAL_ENV = ROOT / ".env"
 
 if GLOBAL_ENV.exists():
@@ -111,7 +111,7 @@ def company_news_docs(symbol, name, articles):
     for a in articles:
         if not a.get("url") or not a.get("headline"):
             continue
-        doc = canonicalise({
+        docs += canonicalise_all({
             "source": {"platform": "finnhub", "name": a.get("source")},
             "title": a.get("headline"),
             "description": a.get("summary"),
@@ -121,11 +121,8 @@ def company_news_docs(symbol, name, articles):
             "publishedAt": datetime.fromtimestamp(a["datetime"], UTC).isoformat() if a.get("datetime") else None,
             "collectedAt": datetime.now(UTC).isoformat(),
             "language": LANGUAGE,
-            "meta": {"collector": "finnhub_company", "requested_symbol": symbol, "version": "1.0"},
-        })
-        if not doc.get("symbol"):
-            doc["symbol"], doc["name"] = symbol, name
-        docs.append(doc)
+            "meta": {"collector": "finnhub_company", "requested_symbol": symbol, "version": "1.1"},
+        }, fallback=(symbol, name))
     return docs
 
 
@@ -180,7 +177,7 @@ def save_to_mongo(articles):
         # Without those two fields slm_company_match_v2 cannot see the article at all —
         # its query requires a symbol — so everything collected here used to stop dead
         # in news_articles.
-        docs.append(canonicalise({
+        docs += canonicalise_all({
             "source": {"platform": "finnhub"},
             "title": a.get("headline"),
             "description": a.get("summary"),
@@ -190,8 +187,8 @@ def save_to_mongo(articles):
             "publishedAt": published,
             "collectedAt": datetime.now(UTC).isoformat(),
             "language": LANGUAGE,
-            "meta": {"collector": "finnhub", "version": "1.3"}
-        }))
+            "meta": {"collector": "finnhub", "version": "1.4"}
+        })
 
     if docs:
         try:
