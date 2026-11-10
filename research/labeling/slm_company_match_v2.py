@@ -34,7 +34,7 @@ from typing import Any
 
 from bson import ObjectId
 from dotenv import load_dotenv
-from pymongo import MongoClient, ReplaceOne
+from pymongo import MongoClient, ReplaceOne, UpdateOne
 
 CURRENT = Path(__file__).resolve()
 ROOT = CURRENT.parents[2]
@@ -82,6 +82,14 @@ SLM_MODELS = [m.strip() for m in os.getenv("SLM_MODELS", "").split(",") if m.str
 # and an article could belong to one company only. Since plan B (2026-11-10) the collectors store one row
 # per company the article names, each judged for its own company here, so it is off by default.
 SCAN_OTHER = os.getenv("V2_SCAN_OTHER", "false").lower() == "true"
+# 2026-11-10: V2_ENGINE=student answers with the distilled relevance student (mlx_students.py, the
+# plan-B question "is the article materially about this company?") instead of LM Studio: a fetched
+# batch goes through the model together, ~21 articles/s against ~4. No reassignment in that mode.
+ENGINE = os.getenv("V2_ENGINE", "slm").lower()
+# V2_ANNOTATE=1 writes the verdict onto rows already in the target (matched true / false) instead
+# of copying matches in: for the universe rows, which were promoted there on rules alone and carry
+# labels that a ReplaceOne from the source row would drop.
+ANNOTATE = os.getenv("V2_ANNOTATE", "0") == "1"
 CONTENT_CHARS = int(os.getenv("V2_CONTENT_CHARS", "1500"))
 
 # Multi-endpoint support: SLM_ENDPOINTS="url1|model1|workers1,url2|model2|workers2"
@@ -396,6 +404,69 @@ def process_doc(doc: dict[str, Any]) -> dict[str, Any]:
     return {"_id": doc["_id"], "status": "reject", "symbol": symbol}
 
 
+_student = None
+
+
+def get_student():
+    global _student
+    if _student is None:
+        sys.path.insert(0, str(CURRENT.parent))
+        import mlx_students
+        _student = mlx_students.Student("relevance")
+    return _student
+
+
+def process_batch_student(docs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The student's verdict for a fetched batch, one row per doc in the same shape as process_doc.
+    Same gate as the SLM path (a symbol, a title, the company named when it has keywords); a thin or
+    missing body is judged on the title alone. An answer that is neither YES nor NO is a reject."""
+    import mlx_students as ms
+    student = get_student()
+    rows: list[dict[str, Any] | None] = [None] * len(docs)
+    ask = []
+    for i, doc in enumerate(docs):
+        symbol = (doc.get("symbol") or "").strip().upper()
+        title = (doc.get("title") or "").strip()
+        content = (doc.get("content") or "")[:CONTENT_CHARS]
+        if not symbol or not title:
+            rows[i] = {"_id": doc["_id"], "status": "skip", "symbol": symbol}
+            continue
+        thin = doc.get("data_quality") == "title_only" or _is_thin_body(content)
+        body = "" if thin else content
+        mention = _has_direct_mention(symbol, title, body)
+        if REQUIRE_DIRECT_MENTION and symbol in _SCAN_PATTERNS and not mention:
+            rows[i] = {"_id": doc["_id"], "status": "reject", "symbol": symbol, "model": "direct_mention_gate", "engine": "student"}
+            continue
+        name = COMPANY_UNIVERSE.get(symbol, (symbol, []))[0]
+        ask.append((i, symbol, thin, mention, ms.relevance_input(symbol, name, title, body)))
+    answers = student.generate([a[4] for a in ask]) if ask else []
+    for (i, symbol, thin, mention, _), text in zip(ask, answers):
+        if ms.parse_relevance(text):
+            rows[i] = {"_id": docs[i]["_id"], "status": "match", "symbol": symbol, "reassigned": False,
+                       "title_only": thin, "direct_mention": mention, "model": student.id, "engine": "student",
+                       "doc": docs[i]}
+        else:
+            rows[i] = {"_id": docs[i]["_id"], "status": "reject", "symbol": symbol, "model": student.id, "engine": "student"}
+    return rows  # type: ignore[return-value]
+
+
+def match_field(row: dict[str, Any]) -> dict[str, Any]:
+    if row["status"] not in ("match", "reassigned"):
+        return {"matched": False, "version": MATCH_VERSION, "engine": row.get("engine", "slm"),
+                "model": row.get("model", ""), "scoredAt": now_iso()}
+    return {
+        "matched": True,
+        "reassigned": row.get("reassigned", False),
+        "original_symbol": row.get("original_symbol"),
+        "title_only": row.get("title_only", False),
+        "direct_mention": row.get("direct_mention", False),
+        "version": MATCH_VERSION,
+        "engine": row.get("engine", "slm"),
+        "model": row.get("model", ""),
+        "scoredAt": now_iso(),
+    }
+
+
 def build_target_doc(row: dict[str, Any]) -> dict[str, Any]:
     src = dict(row["doc"])
     src["_id"] = row["_id"]
@@ -404,17 +475,7 @@ def build_target_doc(row: dict[str, Any]) -> dict[str, Any]:
         src["symbol"] = row["symbol"]
         src["original_symbol"] = row.get("original_symbol")
         src["name"] = COMPANY_UNIVERSE.get(row["symbol"], (row["symbol"], []))[0]
-    src[MATCH_FIELD] = {
-        "matched": True,
-        "reassigned": row.get("reassigned", False),
-        "original_symbol": row.get("original_symbol"),
-        "title_only": row.get("title_only", False),
-        "direct_mention": row.get("direct_mention", False),
-        "version": MATCH_VERSION,
-        "engine": "slm",
-        "model": row.get("model", ""),
-        "scoredAt": now_iso(),
-    }
+    src[MATCH_FIELD] = match_field(row)
     return src
 
 
@@ -442,6 +503,10 @@ def fetch_batch(col, last_id: ObjectId | None) -> list[dict[str, Any]]:
 
 
 def save_batch(target_col, results: list[dict[str, Any]]) -> int:
+    if ANNOTATE:
+        ops = [UpdateOne({"_id": row["_id"]}, {"$set": {MATCH_FIELD: match_field(row)}})
+               for row in results if row["status"] != "skip"]
+        return target_col.bulk_write(ops, ordered=False).modified_count if ops else 0
     ops = [
         ReplaceOne({"_id": row["_id"]}, build_target_doc(row), upsert=True)
         for row in results if row["status"] in ("match", "reassigned")
@@ -504,8 +569,8 @@ def run() -> None:
 
     print("=== SLM Company Match v2 ===")
     print(f"source={SOURCE_COLLECTION}  target={TARGET_COLLECTION}")
-    print(f"workers={WORKERS}  batch={BATCH_SIZE}  scan_other={SCAN_OTHER}")
-    print(f"models={models_info}")
+    print(f"workers={WORKERS}  batch={BATCH_SIZE}  scan_other={SCAN_OTHER}  engine={ENGINE}  annotate={ANNOTATE}")
+    print(f"models={get_student().id if ENGINE == 'student' else models_info}")
     print(f"pending={total_pending:,}  prior_processed={processed:,}")
     if progress_doc:
         print(f"resuming from last_id={last_id}")
@@ -517,52 +582,61 @@ def run() -> None:
 
     t_start = time.time()
 
+    def tally(row: dict[str, Any]) -> None:
+        nonlocal processed, matched, reassigned, rejected, title_only
+        processed += 1
+        if row["status"] == "match":
+            matched += 1
+            if row.get("title_only"):
+                title_only += 1
+        elif row["status"] == "reassigned":
+            matched += 1
+            reassigned += 1
+            if row.get("title_only"):
+                title_only += 1
+        else:
+            rejected += 1
+
+        if processed % PROGRESS_EVERY == 0:
+            elapsed = time.time() - t_start
+            session_done = processed - prior_processed
+            rate = session_done / elapsed if elapsed > 0 else 0
+            remaining = total_pending - session_done
+            eta_s = int(remaining / rate) if rate > 0 else 0
+            eta_str = f"{eta_s//3600}h{eta_s%3600//60}m" if eta_s >= 60 else f"{eta_s}s"
+            el_s = int(elapsed)
+            el_str = f"{el_s//3600}h{el_s%3600//60}m{el_s%60}s" if el_s >= 3600 else f"{el_s//60}m{el_s%60}s"
+            print(
+                f"[{processed:,}/{total_all:,}] "
+                f"match={matched:,} reassign={reassigned:,} title_only={title_only:,} reject={rejected:,} "
+                f"rate={rate:.1f}/s  elapsed={el_str}  ETA={eta_str}",
+                flush=True,
+            )
+
     with ThreadPoolExecutor(max_workers=WORKERS, thread_name_prefix="slm-v2") as executor:
         while True:
             batch = fetch_batch(source_col, last_id)
             if not batch:
                 break
-
-            futures = {executor.submit(process_doc, doc): doc["_id"] for doc in batch}
-            batch_results: list[dict[str, Any]] = []
-
-            while futures:
-                done, _ = wait(futures.keys(), return_when=FIRST_COMPLETED)
-                for fut in done:
-                    futures.pop(fut, None)
-                    row = fut.result()
-                    batch_results.append(row)
-                    processed += 1
-                    if row["status"] == "match":
-                        matched += 1
-                        if row.get("title_only"):
-                            title_only += 1
-                    elif row["status"] == "reassigned":
-                        matched += 1
-                        reassigned += 1
-                        if row.get("title_only"):
-                            title_only += 1
-                    else:
-                        rejected += 1
-
-                    if processed % PROGRESS_EVERY == 0:
-                        elapsed = time.time() - t_start
-                        rate = processed / elapsed if elapsed > 0 else 0
-                        session_done = processed - prior_processed
-                        rate = session_done / elapsed if elapsed > 0 else 0
-                        remaining = total_pending - session_done
-                        eta_s = int(remaining / rate) if rate > 0 else 0
-                        eta_str = f"{eta_s//3600}h{eta_s%3600//60}m" if eta_s >= 60 else f"{eta_s}s"
-                        el_s = int(elapsed)
-                        el_str = f"{el_s//3600}h{el_s%3600//60}m{el_s%60}s" if el_s >= 3600 else f"{el_s//60}m{el_s%60}s"
-                        print(
-                            f"[{processed:,}/{total_all:,}] "
-                            f"match={matched:,} reassign={reassigned:,} title_only={title_only:,} reject={rejected:,} "
-                            f"rate={rate:.1f}/s  elapsed={el_str}  ETA={eta_str}"
-                        )
-
-                if LIMIT and processed >= LIMIT:
+            if LIMIT:
+                batch = batch[:max(0, LIMIT - (processed - prior_processed))]
+                if not batch:
                     break
+
+            if ENGINE == "student":
+                batch_results = process_batch_student(batch)
+                for row in batch_results:
+                    tally(row)
+            else:
+                futures = {executor.submit(process_doc, doc): doc["_id"] for doc in batch}
+                batch_results = []
+                while futures:
+                    done, _ = wait(futures.keys(), return_when=FIRST_COMPLETED)
+                    for fut in done:
+                        futures.pop(fut, None)
+                        row = fut.result()
+                        batch_results.append(row)
+                        tally(row)
 
             save_batch(target_col, batch_results)
             last_id = batch[-1]["_id"]
@@ -570,7 +644,7 @@ def run() -> None:
                           matched=matched, reassigned=reassigned, rejected=rejected,
                           title_only=title_only, last_id=last_id)
 
-            if LIMIT and processed >= LIMIT:
+            if LIMIT and processed - prior_processed >= LIMIT:
                 break
 
     save_progress(progress_col, status="completed", processed=processed,

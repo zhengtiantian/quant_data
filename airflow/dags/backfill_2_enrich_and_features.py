@@ -30,7 +30,7 @@ from datetime import datetime, timedelta
 
 from airflow import DAG
 
-from _host_common import BASE_ENV, ROOT, host_task, notify_failure
+from _host_common import BASE_ENV, ROOT, host_task, notify_failure, student_task
 from airflow.operators.bash import BashOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 
@@ -55,37 +55,23 @@ with DAG(
     tags=["quant", "backfill", "news", "step2"],
 ) as dag:
 
-    enrich_a = host_task(
+    # 2026-11-10: both passes are labelled by the distilled students (student_enrich_articles.py):
+    # A = Gemma-4-E2B taught by gemma-4-e4b, B = Qwen3-1.7B taught by qwen3.5-9b, ~20 articles/s each.
+    # The teacher script llm_enrich_articles.py stays for relabelling and for training new students.
+    enrich_a = student_task(
         "llm_enrich_pass_a",
-        "research/labeling/llm_enrich_articles.py",
-        # model ids must match what LM Studio actually serves (see /v1/models)
-        extra_env={
-            "SLM_API_URL": SLM_API_URL,
-            "ENRICH_PASS": "A",
-            "SLM_MODEL_A": os.getenv("SLM_MODEL_A", "gemma-4-e4b-it-mlx"),
-            # One loaded instance. The script's default second instance "google/gemma-4-e4b:2"
-            # does not exist on the M5 Max and gets HTTP 400, so blank it (empty = not used).
-            "SLM_MODEL_A2": os.getenv("SLM_MODEL_A2", ""),
-        },
+        "research/labeling/student_enrich_articles.py",
+        name="label-a-student",
+        extra_env={"ENRICH_PASS": "A"},
         execution_timeout=timedelta(hours=6),
-        lm_model=os.getenv("SLM_MODEL_A", "gemma-4-e4b-it-mlx"),
-        lm_workers_env=("ENRICH_WORKERS",),
-        lm_second_id_env="SLM_MODEL_A2",
     )
 
-    enrich_b = host_task(
+    enrich_b = student_task(
         "llm_enrich_pass_b",
-        "research/labeling/llm_enrich_articles.py",
-        extra_env={
-            "SLM_API_URL": SLM_API_URL,
-            "ENRICH_PASS": "B",
-            "SLM_MODEL_B": os.getenv("SLM_MODEL_B", "qwen3.5-9b-mlx"),
-            "SLM_MODEL_B2": os.getenv("SLM_MODEL_B2", ""),
-        },
+        "research/labeling/student_enrich_articles.py",
+        name="label-b-student",
+        extra_env={"ENRICH_PASS": "B"},
         execution_timeout=timedelta(hours=6),
-        lm_model=os.getenv("SLM_MODEL_B", "qwen3.5-9b-mlx"),
-        lm_workers_env=("ENRICH_WORKERS",),
-        lm_second_id_env="SLM_MODEL_B2",
     )
 
     merge_ab = host_task(

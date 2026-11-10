@@ -147,6 +147,25 @@ def lm_command(command: str, model: str, workers_env: tuple = (), ids_env: str |
     return f"{PYTHON} {ROOT}/tools/lm_session.py run {' '.join(opts)} -- {command}"
 
 
+# The distilled MLX students (research/labeling/mlx_students.py, 2026-11-10) run in-process with
+# mlx_lm, which the pipeline's own Python does not have: their tasks use this interpreter, under
+# lm_session's `local` mode (same lock as the LM Studio tasks, nothing loaded into LM Studio).
+STUDENT_PYTHON = os.getenv("STUDENT_PYTHON", os.path.expanduser("~/.venvs/vllm-mlx/bin/python"))
+
+
+def student_task(task_id: str, script: str, name: str, extra_env: dict | None = None,
+                 execution_timeout: timedelta = timedelta(hours=1)) -> BashOperator:
+    command = f"{PYTHON} {ROOT}/tools/lm_session.py local --name {name} -- {STUDENT_PYTHON} {ROOT}/{script}"
+    return BashOperator(
+        task_id=task_id,
+        bash_command=f"cd {ROOT} && {command}",
+        env={**BASE_ENV, **(extra_env or {})},
+        append_env=True,
+        execution_timeout=execution_timeout,
+        on_failure_callback=notify_failure,
+    )
+
+
 def host_task(
     task_id: str,
     script: str,

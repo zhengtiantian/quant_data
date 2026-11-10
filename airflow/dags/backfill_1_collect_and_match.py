@@ -28,7 +28,7 @@ from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 
-from _host_common import ROOT, PYTHON, BASE_ENV, GDELT_ENV, host_task, lm_command, notify_failure
+from _host_common import ROOT, PYTHON, BASE_ENV, GDELT_ENV, host_task, lm_command, notify_failure, student_task
 
 SLM_API_URL = os.getenv("SLM_API_URL", "http://127.0.0.1:1234/v1")
 
@@ -69,19 +69,15 @@ with DAG(
         execution_timeout=timedelta(hours=48),
     )
 
-    company_match = host_task(
+    # 2026-11-10: the distilled relevance student (Qwen3-1.7B, plan-B question) replaces qwen3.5-4b
+    # in LM Studio: more accurate on the judged sample and ~5x faster. V2_ENGINE=slm with the old
+    # host_task(lm_model=...) arguments (git history) brings the LM Studio path back.
+    company_match = student_task(
         "company_match",
         "research/labeling/slm_company_match_v2.py",
-        extra_env={
-            "SLM_API_URL": SLM_API_URL,
-            "DST_COLLECTION": "news_articles_company_matched_v2",
-            "SLM_MODELS": os.getenv("SLM_MODELS", "qwen3.5-4b-mlx"),  # one loaded instance
-            "V2_WORKERS": "32",       # article workers; their LLM calls share SLM_MAX_CONCURRENCY
-        },
+        name="relevance-student",
+        extra_env={"DST_COLLECTION": "news_articles_company_matched_v2", "V2_ENGINE": "student"},
         execution_timeout=timedelta(hours=4),
-        lm_model=os.getenv("SLM_MODELS", "qwen3.5-4b-mlx"),
-        lm_workers_env=("SLM_MAX_CONCURRENCY",),
-        lm_ids_env="SLM_MODELS",
     )
 
     # Refresh the Parquet copy of gkg_index (Stage 6B) for every month touched by this run.

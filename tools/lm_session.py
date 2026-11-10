@@ -4,6 +4,8 @@
     lm_session.py run --model qwen3.5-9b-mlx --workers-env ENRICH_WORKERS -- python script.py
     lm_session.py calibrate --model qwen3.5-9b-mlx [--force]
     lm_session.py plan --model qwen3.5-9b-mlx          # what run would load, without loading
+    lm_session.py local --name relevance-student -- python script.py
+                                                       # a model the command runs itself (MLX students)
 
 Why (2026-10-24): two scheduled tasks used LM Studio at once - company match on qwen3.5-4b and
 llm_enrich on gemma, the day before job_agent on gemma against GDELT on qwen - and LM Studio
@@ -420,6 +422,21 @@ def run(args) -> int:
                 log(f"could not unload {p['model']}: {e}")
 
 
+def run_local(args) -> int:
+    """A command that runs its own model in-process (the distilled MLX students, 2026-11-10): it takes
+    the same lock, so it and the LM Studio tasks never share the GPU, and the idle LM Studio LLMs are
+    unloaded first to give it the memory. Nothing is loaded into LM Studio."""
+    with exclusive(f"local:{args.name} {' '.join(args.command)}", f"local:{args.name}"):
+        try:
+            for m in loaded():
+                if m["type"] == "llm" and not busy(m):
+                    unload(m["identifier"])
+        except Exception as e:  # noqa: BLE001 - LM Studio not running: nothing to unload
+            log(f"could not look at LM Studio ({e}); continuing")
+        log(f"local model session: {args.name}")
+        return subprocess.call(args.command)
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -429,6 +446,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     r.add_argument("--ids-env", help="variable to receive the comma-separated instance ids")
     r.add_argument("--second-id-env", help="variable to receive the second instance id, or ''")
     r.add_argument("command", nargs=argparse.REMAINDER)
+    lo = sub.add_parser("local")
+    lo.add_argument("--name", required=True)
+    lo.add_argument("command", nargs=argparse.REMAINDER)
     c = sub.add_parser("calibrate")
     c.add_argument("--model", required=True)
     pl = sub.add_parser("plan")
@@ -440,6 +460,12 @@ def main(argv: Optional[List[str]] = None) -> int:
         if not args.command:
             ap.error("run needs a command after --")
         return run(args)
+    if args.cmd == "local":
+        if args.command[:1] == ["--"]:
+            args.command = args.command[1:]
+        if not args.command:
+            ap.error("local needs a command after --")
+        return run_local(args)
     ensure_server()
     if args.cmd == "calibrate":
         with exclusive(f"calibrate {args.model}"):

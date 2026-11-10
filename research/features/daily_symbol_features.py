@@ -67,6 +67,9 @@ MIN_VALID_NEWS_DATE = pd.Timestamp(os.getenv("FEATURE_MIN_VALID_DATE", "1990-01-
 # and models keep the stocks they were built on until the user brings the 490 in.
 _UNIVERSE_FILTER = ({} if os.getenv("FEATURE_INCLUDE_UNIVERSE", "0") == "1"
                     else {"origin": {"$ne": "universe_backfill"}})
+# Universe rows the relevance student judged not about the company stay in the matched collection
+# marked company_match_v2.matched = false (2026-11-10); they never count.
+_UNIVERSE_FILTER = {**_UNIVERSE_FILTER, "company_match_v2.matched": {"$ne": False}}
 MAX_VALID_NEWS_DATE = pd.Timestamp(datetime.now(UTC).date()) + pd.Timedelta(days=1)
 
 
