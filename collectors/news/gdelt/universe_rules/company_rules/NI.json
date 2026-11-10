@@ -1,0 +1,23 @@
+{
+ "symbol": "NI",
+ "name": "NiSource Inc.",
+ "primary_keywords": [
+  "NiSource"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "NIPSCO",
+  "Northern Indiana Public Service Company",
+  "NiSource Energy",
+  "NiSource Gas",
+  "NiSource Renewables",
+  "NiSource Storage",
+  "NiSource Utility",
+  "NiSource Gas Distribution",
+  "NiSource Gas Supply",
+  "NiSource Renewables & Storage"
+ ],
+ "special_rules": {}
+}

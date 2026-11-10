@@ -1,0 +1,23 @@
+{
+ "symbol": "PFG",
+ "name": "Principal Financial Group, Inc.",
+ "primary_keywords": [
+  "Principal Financial Group"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Principal Financial"
+ ],
+ "dropped_expansion": [
+  "Tim Buckley",
+  "Principal Life",
+  "Principal Asset Management",
+  "Principal Global Investors",
+  "Principal Re",
+  "Principal Health",
+  "Principal Advisors",
+  "Principal Exchange"
+ ],
+ "special_rules": {}
+}

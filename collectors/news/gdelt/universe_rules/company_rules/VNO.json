@@ -1,0 +1,20 @@
+{
+ "symbol": "VNO",
+ "name": "Vornado Realty Trust",
+ "primary_keywords": [
+  "Vornado"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Jeff Ubben",
+  "Michael Ubben",
+  "One Vanderbilt",
+  "555 Madison Avenue",
+  "Vornado New York",
+  "Vornado Realty",
+  "VNO"
+ ],
+ "special_rules": {}
+}

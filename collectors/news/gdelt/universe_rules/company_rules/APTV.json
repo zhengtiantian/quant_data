@@ -1,0 +1,22 @@
+{
+ "symbol": "APTV",
+ "name": "Aptiv PLC",
+ "primary_keywords": [
+  "Aptiv"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Karl-Friedrich Strack",
+  "John Stankey",
+  "Delphi",
+  "Delphi Technologies",
+  "Delphi Automotive",
+  "Autoneum",
+  "Lear Corporation",
+  "Visteon",
+  "Delphi Automotive Holdings"
+ ],
+ "special_rules": {}
+}

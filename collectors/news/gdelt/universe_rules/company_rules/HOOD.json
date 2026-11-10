@@ -1,0 +1,31 @@
+{
+ "symbol": "HOOD",
+ "name": "Robinhood Markets, Inc.",
+ "primary_keywords": [
+  "Robinhood Card",
+  "Robinhood Crypto",
+  "Robinhood Earn",
+  "Robinhood Gold",
+  "Robinhood Max",
+  "Robinhood Stock",
+  "Robinhood Markets"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Robinhood"
+ ],
+ "dropped_expansion": [
+  "Vlad Tenev",
+  "Juho Kim",
+  "Robinhood Crypto",
+  "Robinhood Gold",
+  "Robinhood Card",
+  "Robinhood Gold Card",
+  "Robinhood Max",
+  "Robinhood Earn",
+  "Robinhood Stock",
+  "Robinhood ETFs"
+ ],
+ "special_rules": {}
+}

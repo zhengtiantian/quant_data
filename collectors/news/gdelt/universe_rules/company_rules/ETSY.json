@@ -1,0 +1,20 @@
+{
+ "symbol": "ETSY",
+ "name": "Etsy, Inc.",
+ "primary_keywords": [
+  "Etsy"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Josh Silbermann",
+  "Hanah Massie",
+  "Made by Hand",
+  "Etsy Payments",
+  "Etsy Ads",
+  "Etsy Plus",
+  "Etsy Wholesale"
+ ],
+ "special_rules": {}
+}

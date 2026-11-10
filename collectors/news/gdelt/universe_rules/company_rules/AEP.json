@@ -1,0 +1,23 @@
+{
+ "symbol": "AEP",
+ "name": "American Electric Power Company, Inc.",
+ "primary_keywords": [
+  "American Electric Power"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "John Ketchum",
+  "Jim Rogers",
+  "American Electric Power Service Corporation",
+  "AEP Texas",
+  "AEP Ohio",
+  "AEP Indiana",
+  "AEP Michigan",
+  "AEP Missouri",
+  "AEP Kentucky",
+  "AEP Illinois"
+ ],
+ "special_rules": {}
+}

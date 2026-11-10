@@ -1,0 +1,19 @@
+{
+ "symbol": "DPZ",
+ "name": "Domino's Pizza, Inc.",
+ "primary_keywords": [
+  "Domino's"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Rich Allison",
+  "Monica Fink",
+  "Domino's Tracker",
+  "OvenFresh",
+  "Domino's Pizza, Inc.",
+  "Pizza Tracker"
+ ],
+ "special_rules": {}
+}

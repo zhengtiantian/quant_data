@@ -1,0 +1,20 @@
+{
+ "symbol": "AOS",
+ "name": "A. O. Smith Corporation",
+ "primary_keywords": [
+  "A. O. Smith",
+  "A O Smith"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Hartmut Schick",
+  "Eliot L. Lutz",
+  "Fleck",
+  "Honeywell",
+  "WaterHeater.com",
+  "A. O. Smith Water Heaters"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,19 @@
+{
+ "symbol": "MPWR",
+ "name": "Monolithic Power Systems, Inc.",
+ "primary_keywords": [
+  "Monolithic Power Systems"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Huaqiang Yuan",
+  "Jianjun Chen",
+  "PowerSoC",
+  "Power Management IC",
+  "PMIC",
+  "Monolithic Power"
+ ],
+ "special_rules": {}
+}

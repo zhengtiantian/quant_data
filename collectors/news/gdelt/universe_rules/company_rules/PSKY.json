@@ -1,0 +1,21 @@
+{
+ "symbol": "PSKY",
+ "name": "Paramount Skydance Corp",
+ "primary_keywords": [
+  "Paramount Skydance"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "David Ellison",
+  "Skydance Media",
+  "Skydance Productions",
+  "Paramount Pictures",
+  "Nick Bontano",
+  "CBS Studios",
+  "MTV Networks",
+  "Showtime"
+ ],
+ "special_rules": {}
+}

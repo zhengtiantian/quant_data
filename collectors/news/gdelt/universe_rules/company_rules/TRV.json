@@ -1,0 +1,34 @@
+{
+ "symbol": "TRV",
+ "name": "The Travelers Companies, Inc.",
+ "primary_keywords": [
+  "The Travelers Companies, Inc.",
+  "Travelers Casualty",
+  "Travelers Claims",
+  "Travelers Health",
+  "Travelers Indemnity",
+  "Travelers Insurance",
+  "Travelers Property",
+  "Travelers Re",
+  "Travelers Specialty",
+  "The Travelers Companies Inc"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Travelers"
+ ],
+ "dropped_expansion": [
+  "Alan Schnitzer",
+  "Brian Olsowski",
+  "Travelers Insurance",
+  "Travelers Casualty",
+  "Travelers Property",
+  "Travelers Re",
+  "Travelers Specialty",
+  "Travelers Health",
+  "Travelers Indemnity",
+  "Travelers Claims"
+ ],
+ "special_rules": {}
+}

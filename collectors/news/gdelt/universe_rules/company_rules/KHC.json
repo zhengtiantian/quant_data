@@ -1,0 +1,22 @@
+{
+ "symbol": "KHC",
+ "name": "The Kraft Heinz Company",
+ "primary_keywords": [
+  "Kraft Heinz"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Brian C. Dunn",
+  "Steve Cahillane",
+  "Heinz Ketchup",
+  "Oscar Mayer",
+  "Classico",
+  "Philadelphia Cream Cheese",
+  "Pringles",
+  "Maxwell House",
+  "Jell-O"
+ ],
+ "special_rules": {}
+}

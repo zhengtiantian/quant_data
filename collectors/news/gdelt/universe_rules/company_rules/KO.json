@@ -1,0 +1,25 @@
+{
+ "symbol": "KO",
+ "name": "The Coca-Cola Company",
+ "primary_keywords": [
+  "Coca-Cola"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Coke"
+ ],
+ "dropped_expansion": [
+  "James Quincey",
+  "James Robinson",
+  "Costco",
+  "Dasani",
+  "Powerade",
+  "Fanta",
+  "Sprite",
+  "Minute Maid",
+  "Smartwater",
+  "Coca-Cola HBC"
+ ],
+ "special_rules": {}
+}

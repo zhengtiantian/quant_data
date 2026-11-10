@@ -1,0 +1,26 @@
+{
+ "symbol": "FLEX",
+ "name": "Flex Ltd.",
+ "primary_keywords": [
+  "Flextronics",
+  "Flex Ltd"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Flex"
+ ],
+ "dropped_expansion": [
+  "Michael Dell",
+  "Mihir Desai",
+  "Flextronics",
+  "Jabil",
+  "Foxconn",
+  "Hewlett Packard Enterprise",
+  "Dell Technologies",
+  "Apple",
+  "Samsung",
+  "Google"
+ ],
+ "special_rules": {}
+}

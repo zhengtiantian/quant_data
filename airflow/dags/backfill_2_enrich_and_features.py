@@ -129,4 +129,12 @@ with DAG(
         trigger_rule="all_done",
     )
 
+    # 2026-11-10, the user: labelling paused while the distilled students replace the teachers. While the
+    # flag file exists both passes exit at once (before lm_session loads a model) and the rest of the chain
+    # runs as usual; the articles they skip are picked up by the first run after the file is removed.
+    pause_file = os.getenv("LABELING_PAUSE_FILE", os.path.expanduser("~/Library/Application Support/quant/labeling.paused"))
+    for t in (enrich_a, enrich_b):
+        t.bash_command = (f'if [ -e "{pause_file}" ]; then echo "labelling paused: {pause_file}"; exit 0; fi; '
+                          + t.bash_command)
+
     enrich_a >> enrich_b >> merge_ab >> feature_rebuild >> index_news >> trigger_signals

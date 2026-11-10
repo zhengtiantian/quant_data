@@ -1,0 +1,22 @@
+{
+ "symbol": "CF",
+ "name": "CF Industries Holdings, Inc.",
+ "primary_keywords": [
+  "CF Industries"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Mark Galvin",
+  "Nate Rich",
+  "Corteva",
+  "Mosaic",
+  "Nutrien",
+  "fertilizer",
+  "ammonia",
+  "urea",
+  "Pampa"
+ ],
+ "special_rules": {}
+}

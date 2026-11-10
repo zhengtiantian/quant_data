@@ -1,0 +1,19 @@
+{
+ "symbol": "AVB",
+ "name": "AvalonBay Communities Inc",
+ "primary_keywords": [
+  "AvalonBay",
+  "Avalon Bay"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Avalon",
+  "AvalonBay Communities",
+  "Avalon Bay Communities",
+  "AVB",
+  "AvalonBay Communities Inc"
+ ],
+ "special_rules": {}
+}

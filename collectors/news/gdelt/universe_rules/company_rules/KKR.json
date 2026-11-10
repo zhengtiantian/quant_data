@@ -1,0 +1,21 @@
+{
+ "symbol": "KKR",
+ "name": "KKR & Co. Inc.",
+ "primary_keywords": [
+  "KKR & Co"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "KKR"
+ ],
+ "dropped_expansion": [
+  "Joe Bae",
+  "Jason Hirschhorn",
+  "KKR Credit",
+  "KKR Real Estate",
+  "KKR Technology",
+  "KKR Growth"
+ ],
+ "special_rules": {}
+}

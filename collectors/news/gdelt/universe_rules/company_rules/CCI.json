@@ -1,0 +1,23 @@
+{
+ "symbol": "CCI",
+ "name": "Crown Castle Inc.",
+ "primary_keywords": [
+  "Crown Castle"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Mike Loukas",
+  "Crown Castle Fiber",
+  "Crown Castle Digital",
+  "Crown Castle USA",
+  "Crown Castle International",
+  "Crown Castle Europe",
+  "Crown Castle Asia Pacific",
+  "Crown Castle Latin America",
+  "Crown Castle Africa",
+  "Crown Castle Middle East"
+ ],
+ "special_rules": {}
+}

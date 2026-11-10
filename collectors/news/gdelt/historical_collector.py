@@ -326,7 +326,7 @@ def enqueue_retry_urls(timed_out_matches, dst_collection):
     try:
         db = get_db()
         col = db["url_retry_queue"]
-        col.create_index("url", unique=True)
+        col.create_index([("url", 1), ("symbol", 1)], unique=True, name="url_1_symbol_1")
         now = datetime.now(timezone.utc).isoformat()
         ops = []
         for m in timed_out_matches:
@@ -336,7 +336,7 @@ def enqueue_retry_urls(timed_out_matches, dst_collection):
             if not url:
                 continue
             ops.append(UpdateOne(
-                {"url": url},
+                {"url": url, "symbol": company.get("symbol", "")},
                 {"$setOnInsert": {
                     "url": url,
                     "symbol": company.get("symbol", ""),
@@ -934,14 +934,16 @@ def load_companies():
 
 
 def ensure_index():
-    """Create a unique index on URL."""
+    """One row per (URL, company): an article about two companies is stored for each (2026-11-10, the user's
+    plan B; before, url alone was unique and the second company lost the article)."""
     db = get_db()
     col = db[DST_COLLECTION]
     try:
-        col.create_index("url", unique=True)
-        print("✅ MongoDB index created on 'url'")
-    except errors.OperationFailure:
-        print("ℹ️ Index already exists on 'url'")
+        col.create_index([("url", 1), ("symbol", 1)], unique=True, name="url_1_symbol_1")
+        col.create_index("url", name="url_1")
+        print("✅ MongoDB indexes on (url, symbol) unique and url")
+    except errors.OperationFailure as e:
+        print(f"ℹ️ Index setup skipped: {e}")
 
 
 # ============================
@@ -1868,10 +1870,12 @@ def process_one_batch(
 
     # C. DB-level deduplication: check if URLs already exist before fetching
     all_batch_urls = list(set(m["row"]["URL"] for m in matches))
-    existing_urls_cursor = dst_col.find({"url": {"$in": all_batch_urls}}, {"url": 1})
-    existing_urls = set(doc["url"] for doc in existing_urls_cursor)
+    # per (url, company) since 2026-11-10: another company's copy of the URL does not make this one stored
+    existing_urls_cursor = dst_col.find({"url": {"$in": all_batch_urls}}, {"url": 1, "symbol": 1})
+    existing_urls = set((doc["url"], doc.get("symbol")) for doc in existing_urls_cursor)
 
-    filtered_matches = [m for m in matches if m["row"]["URL"] not in existing_urls]
+    filtered_matches = [m for m in matches
+                        if (m["row"]["URL"], (m.get("company") or {}).get("symbol")) not in existing_urls]
     skipped_db = len(matches) - len(filtered_matches)
     if skipped_db > 0:
         wlog(f"⏭️ Database Deduplication: Skipped {skipped_db} articles already in {DST_COLLECTION}")
@@ -2076,19 +2080,20 @@ def process_one_batch(
             url = art.get("url")
             if not url:
                 continue
-            existing = deduped_results.get(url)
+            key = (url, art.get("symbol"))             # one row per company named (plan B, 2026-11-10)
+            existing = deduped_results.get(key)
             if existing is None:
-                deduped_results[url] = art
+                deduped_results[key] = art
                 continue
             existing_rank = quality_rank.get(existing.get("data_quality", "url_only"), 0)
             current_rank = quality_rank.get(art.get("data_quality", "url_only"), 0)
             if current_rank > existing_rank:
-                deduped_results[url] = art
+                deduped_results[key] = art
 
         bulk_start = time.time()
         ops = [
             UpdateOne(
-                {"url": art["url"]},
+                {"url": art["url"], "symbol": art.get("symbol")},
                 {"$setOnInsert": art},
                 upsert=True,
             )

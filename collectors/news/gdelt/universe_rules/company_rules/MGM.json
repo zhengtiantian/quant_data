@@ -1,0 +1,25 @@
+{
+ "symbol": "MGM",
+ "name": "MGM Resorts International",
+ "primary_keywords": [
+  "MGM Resorts"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "MGM"
+ ],
+ "dropped_expansion": [
+  "Bill Hornbaker",
+  "MGM Grand",
+  "MGM Las Vegas",
+  "MGM National Harbor",
+  "MGM Springfield",
+  "MGM Detroit",
+  "MGM Cotai",
+  "MGM Macau",
+  "MGM Grand Sanya",
+  "MGM Growth Management"
+ ],
+ "special_rules": {}
+}

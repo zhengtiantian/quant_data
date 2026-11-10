@@ -1,0 +1,25 @@
+{
+ "symbol": "CME",
+ "name": "CME Group Inc.",
+ "primary_keywords": [
+  "CME Group"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "CME"
+ ],
+ "dropped_expansion": [
+  "TeraWulf",
+  "Dow Jones",
+  "S&P",
+  "ICE",
+  "Terri Duffy",
+  "Jin-Hyung Kim",
+  "CME ClearPort",
+  "CME Mosaic",
+  "CME Micro",
+  "CME Globex"
+ ],
+ "special_rules": {}
+}

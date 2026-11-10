@@ -1,0 +1,23 @@
+{
+ "symbol": "KMI",
+ "name": "Kinder Morgan, Inc.",
+ "primary_keywords": [
+  "Kinder Morgan"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Richard Kinder",
+  "Sam Vines",
+  "Gregori Stillman",
+  "Cameron",
+  "Magellan Midstream",
+  "Equitrans",
+  "Sunoco Logistics",
+  "Covia",
+  "Cactus 2",
+  "Permian Basin"
+ ],
+ "special_rules": {}
+}

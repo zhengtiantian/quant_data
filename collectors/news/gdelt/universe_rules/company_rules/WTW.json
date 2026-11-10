@@ -1,0 +1,26 @@
+{
+ "symbol": "WTW",
+ "name": "Willis Towers Watson Public Limited Company",
+ "primary_keywords": [
+  "Willis Towers Watson",
+  "WTW"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-05",
+ "weak_names_not_counted": [],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "Insurance Journal job ads for Willis Towers Watson posts (2026-11-05)",
+   "required_keywords": [
+    "Willis Towers Watson",
+    "WTW"
+   ],
+   "min_matches": 1,
+   "trust_single_match": true,
+   "exclude_title_patterns": [
+    "/ Insurance Journal Jobs",
+    "\\bInsurance Journal Jobs\\b"
+   ]
+  }
+ }
+}

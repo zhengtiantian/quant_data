@@ -1,0 +1,23 @@
+{
+ "symbol": "IP",
+ "name": "International Paper Company",
+ "primary_keywords": [
+  "International Paper"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Kathryn McLouth",
+  "Sara Nelson",
+  "Quaker State",
+  "Crown",
+  "Georgia-Pacific",
+  "Pride",
+  "Sappi",
+  "Containerboard",
+  "Pulp",
+  "Paperboard"
+ ],
+ "special_rules": {}
+}

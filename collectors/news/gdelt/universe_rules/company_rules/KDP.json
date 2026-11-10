@@ -1,0 +1,23 @@
+{
+ "symbol": "KDP",
+ "name": "Keurig Dr Pepper Inc.",
+ "primary_keywords": [
+  "Keurig Dr Pepper"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Joe Bizley",
+  "Mark Vartan",
+  "Dr Pepper",
+  "Keurig",
+  "Arizona Iced Tea",
+  "Sunkist",
+  "Mello Yogo",
+  "Nestea",
+  "Gatorade",
+  "Frost"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,33 @@
+{
+ "symbol": "DVA",
+ "name": "DaVita Inc.",
+ "primary_keywords": [
+  "DaVita"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-05",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Rick Dalzell",
+  "Diane Cullinane",
+  "DaVita Medical",
+  "DaVita Home",
+  "DaVita Labs",
+  "DaVita Care"
+ ],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "Davita is also a personal name (Zlatan Ibile's fiancee) (rule check 2026-11-05: 5 of 16 noise)",
+   "required_keywords": [
+    "DaVita"
+   ],
+   "min_matches": 1,
+   "trust_single_match": true,
+   "exclude_patterns": [
+    "Zlatan",
+    "Davita Lamai",
+    "Fianc[ée]e,? Davita"
+   ]
+  }
+ }
+}

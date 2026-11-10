@@ -1,0 +1,21 @@
+{
+ "symbol": "BRO",
+ "name": "Brown & Brown, Inc.",
+ "primary_keywords": [
+  "Brown & Brown"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Michael J. Hannon",
+  "Brown & Brown Insurance",
+  "Brown & Brown Financial",
+  "Brown & Brown Risk Management",
+  "Brown & Brown Claims",
+  "Brown & Brown Wealth",
+  "Brown & Brown International",
+  "Brown & Brown Canada"
+ ],
+ "special_rules": {}
+}

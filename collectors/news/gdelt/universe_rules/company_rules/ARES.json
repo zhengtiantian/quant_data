@@ -1,0 +1,31 @@
+{
+ "symbol": "ARES",
+ "name": "Ares Management Corporation",
+ "primary_keywords": [
+  "Ares Management",
+  "Ares Capital",
+  "Ares Credit",
+  "Ares Global Credit",
+  "Ares Infrastructure",
+  "Ares Private Equity",
+  "Ares Real Estate",
+  "Ares Technology"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Ares"
+ ],
+ "dropped_expansion": [
+  "Scott Sandell",
+  "Jeff Smith",
+  "Ares Capital",
+  "Ares Private Equity",
+  "Ares Real Estate",
+  "Ares Credit",
+  "Ares Technology",
+  "Ares Global Credit",
+  "Ares Infrastructure"
+ ],
+ "special_rules": {}
+}

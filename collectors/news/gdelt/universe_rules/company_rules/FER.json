@@ -1,0 +1,23 @@
+{
+ "symbol": "FER",
+ "name": "Ferrovial N.V.",
+ "primary_keywords": [
+  "Ferrovial"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Ferrovial Agroman",
+  "Ferrovial Servicios",
+  "Ferrovial Concesiones",
+  "Ferrovial Inmobiliario",
+  "Ferrovial Construction",
+  "Ferrovial AG",
+  "Ferrovial USA",
+  "Ferrovial España",
+  "Ferrovial México",
+  "Ferrovial Chile"
+ ],
+ "special_rules": {}
+}

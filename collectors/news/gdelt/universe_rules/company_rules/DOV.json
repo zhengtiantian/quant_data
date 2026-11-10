@@ -1,0 +1,25 @@
+{
+ "symbol": "DOV",
+ "name": "Dover Corporation",
+ "primary_keywords": [
+  "Dover Corporation"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Dover"
+ ],
+ "dropped_expansion": [
+  "Mike DePrisco",
+  "Deere & Company",
+  "EagleBurgmann",
+  "Gorman-Rupp",
+  "Ingersoll Rand",
+  "Pentair",
+  "Avery Dennison",
+  "CPI Aero",
+  "Dover Process Solutions",
+  "Dover Building Solutions"
+ ],
+ "special_rules": {}
+}

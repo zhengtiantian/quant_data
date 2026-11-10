@@ -1,0 +1,21 @@
+{
+ "symbol": "KEYS",
+ "name": "Keysight Technologies, Inc.",
+ "primary_keywords": [
+  "Keysight"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Infiium",
+  "PicoConnect",
+  "N5182B",
+  "UXR",
+  "Duke Markel",
+  "Sachin Katti",
+  "PathWave",
+  "Keysight X-Series"
+ ],
+ "special_rules": {}
+}

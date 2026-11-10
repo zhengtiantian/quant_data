@@ -1,0 +1,19 @@
+{
+ "symbol": "BSX",
+ "name": "Boston Scientific Corporation",
+ "primary_keywords": [
+  "Boston Scientific"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Michael Rhodin",
+  "Atrius",
+  "CardioMEMS",
+  "Endologix",
+  "Lifecore Biomedical",
+  "J&J Medical"
+ ],
+ "special_rules": {}
+}

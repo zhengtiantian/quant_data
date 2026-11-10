@@ -1,0 +1,23 @@
+{
+ "symbol": "LKQ",
+ "name": "LKQ Corporation",
+ "primary_keywords": [
+  "LKQ"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "LKQ Corporation",
+  "LKQ Corp",
+  "LKQ Inc",
+  "LKQ Corp.",
+  "LKQ Inc.",
+  "LKQ Group",
+  "LKQ Corp of America",
+  "LKQ Corp. of America",
+  "LKQ Inc. of America",
+  "LKQ Group of Companies"
+ ],
+ "special_rules": {}
+}

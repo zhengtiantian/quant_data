@@ -1,0 +1,19 @@
+{
+ "symbol": "LUV",
+ "name": "Southwest Airlines Co.",
+ "primary_keywords": [
+  "Southwest Airlines"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Bob Jordan",
+  "Heather Lord",
+  "Southwest Rapid Rewards",
+  "Southwest Airlines Co.",
+  "Heartland Airlines",
+  "JetBlue"
+ ],
+ "special_rules": {}
+}

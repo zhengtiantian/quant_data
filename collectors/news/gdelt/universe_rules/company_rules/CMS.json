@@ -1,0 +1,22 @@
+{
+ "symbol": "CMS",
+ "name": "CMS Energy Corporation",
+ "primary_keywords": [
+  "CMS Energy",
+  "Consumers Power"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "D. Michael Loeffler",
+  "Consumers Energy",
+  "Michigan",
+  "DTE Energy",
+  "nuclear",
+  "gas-fired",
+  "renewable energy",
+  "power generation"
+ ],
+ "special_rules": {}
+}

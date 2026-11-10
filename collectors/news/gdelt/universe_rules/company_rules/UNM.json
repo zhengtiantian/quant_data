@@ -1,0 +1,21 @@
+{
+ "symbol": "UNM",
+ "name": "Unum Group",
+ "primary_keywords": [
+  "Unum"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Tim Corbin",
+  "John K. Gorman",
+  "Principal Financial Group",
+  "Unum Health",
+  "Unum Life",
+  "Unum Retirement",
+  "Unum Disability",
+  "Unum Group"
+ ],
+ "special_rules": {}
+}

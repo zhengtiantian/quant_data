@@ -1,0 +1,21 @@
+{
+ "symbol": "COP",
+ "name": "ConocoPhillips",
+ "primary_keywords": [
+  "ConocoPhillips"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Ryan Lance",
+  "Cameron Grindstaff",
+  "Conoco",
+  "Phillips",
+  "Rice Energy",
+  "Denbury",
+  "Pionyr",
+  "COP Energy"
+ ],
+ "special_rules": {}
+}

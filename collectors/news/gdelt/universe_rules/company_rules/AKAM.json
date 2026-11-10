@@ -1,0 +1,19 @@
+{
+ "symbol": "AKAM",
+ "name": "Akamai Technologies, Inc.",
+ "primary_keywords": [
+  "Akamai"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Jaspreet Singh",
+  "J. R. Bittick",
+  "Lincoln",
+  "mPulse",
+  "App Delivery",
+  "Compute Edge"
+ ],
+ "special_rules": {}
+}

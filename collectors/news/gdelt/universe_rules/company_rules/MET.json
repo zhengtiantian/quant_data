@@ -1,0 +1,25 @@
+{
+ "symbol": "MET",
+ "name": "MetLife, Inc.",
+ "primary_keywords": [
+  "MetLife"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "MetLife Insurance",
+  "MetLife Group",
+  "MetLife Insurance Company of New York",
+  "MetLife Insurance Company of America",
+  "MetLife Insurance Company of the West",
+  "MetLife Insurance Company of the Southwest",
+  "MetLife Insurance Company of the Midwest",
+  "MetLife Insurance Company of the Northeast",
+  "MetLife Insurance Company of the Southeast",
+  "MetLife Insurance Company of the Northwest",
+  "MetLife Insurance Company of the Southwest",
+  "MetLife Insurance Company of the Midwest"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,21 @@
+{
+ "symbol": "SRE",
+ "name": "Sempra",
+ "primary_keywords": [
+  "Sempra"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "San Diego Gas & Electric",
+  "SDG&E",
+  "Onesource",
+  "Sempra Infrastructure",
+  "Sempra Energy",
+  "Michael J. Morris",
+  "Luis A. de la Torre",
+  "Sempra Mexico"
+ ],
+ "special_rules": {}
+}

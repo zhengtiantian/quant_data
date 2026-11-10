@@ -1,0 +1,21 @@
+{
+ "symbol": "OXY",
+ "name": "Occidental Petroleum Corporation",
+ "primary_keywords": [
+  "Occidental Petroleum"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Occidental"
+ ],
+ "dropped_expansion": [
+  "Vicky Horobetz",
+  "Anadarko",
+  "Permian",
+  "Cimarex",
+  "Oxy Low Carbon Ventures",
+  "Carbon Capture"
+ ],
+ "special_rules": {}
+}

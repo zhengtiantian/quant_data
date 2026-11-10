@@ -1,0 +1,25 @@
+{
+ "symbol": "CB",
+ "name": "Chubb Limited",
+ "primary_keywords": [
+  "Chubb Limited"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Chubb"
+ ],
+ "dropped_expansion": [
+  "Evan Greenberg",
+  "Chubb Europe",
+  "Chubb Bermuda",
+  "Chubb Specialty Insurance",
+  "Chubb Life",
+  "Chubb Property & Casualty",
+  "Chubb Global Corporate Solutions",
+  "Chubb Re",
+  "Chubb North America",
+  "Chubb Asia"
+ ],
+ "special_rules": {}
+}

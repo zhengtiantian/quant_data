@@ -1,0 +1,24 @@
+{
+ "symbol": "TJX",
+ "name": "The TJX Companies, Inc.",
+ "primary_keywords": [
+  "TJX",
+  "T.J. Maxx",
+  "TJ Maxx"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Burlington",
+  "Marshalls",
+  "HomeGoods",
+  "Winners",
+  "Savers",
+  "T.J. Maxx",
+  "Eric Friedman",
+  "Michael Kress",
+  "TJX Companies"
+ ],
+ "special_rules": {}
+}

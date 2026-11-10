@@ -1,0 +1,23 @@
+{
+ "symbol": "STE",
+ "name": "STERIS plc",
+ "primary_keywords": [
+  "STERIS"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Vasculature",
+  "Vasculature Solutions",
+  "Vasculature Technologies",
+  "Vasculature Products",
+  "Vasculature Group",
+  "Vasculature Division",
+  "Vasculature Business",
+  "Vasculature Segment",
+  "Vasculature Unit",
+  "Vasculature Line"
+ ],
+ "special_rules": {}
+}

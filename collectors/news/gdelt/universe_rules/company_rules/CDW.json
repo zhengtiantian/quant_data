@@ -1,0 +1,21 @@
+{
+ "symbol": "CDW",
+ "name": "CDW Corporation",
+ "primary_keywords": [
+  "CDW"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Tim Collier",
+  "CDW-G",
+  "CDW-C",
+  "CDW-Government",
+  "CDW Consumer",
+  "CDW-Gov",
+  "CDW-Corp",
+  "CDW-Govt"
+ ],
+ "special_rules": {}
+}

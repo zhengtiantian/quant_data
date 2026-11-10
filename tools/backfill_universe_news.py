@@ -46,8 +46,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 LABEL_MODEL = os.getenv("UNIVERSE_LABEL_MODEL", "qwen3.5-9b-mlx")
-os.environ.setdefault("BACKFILL_RULES_DIR", "/Volumes/Data4T/universe/company_rules")
-os.environ.setdefault("BACKFILL_COLLECTION", "news_articles_universe")
+# The 490 companies' rules live in the repo next to the core 102 since 2026-11-10 (they were on Data4T only).
+UNIVERSE_RULES = ROOT / "collectors" / "news" / "gdelt" / "universe_rules"
+os.environ.setdefault("BACKFILL_RULES_DIR", str(UNIVERSE_RULES / "company_rules"))
+# Since 2026-11-10 the 490 companies' articles go into news_articles like the core 102's, marked
+# origin=universe_backfill (BACKFILL_ORIGIN), and are copied on into news_articles_company_matched_v2 by
+# `promote` without the SLM company match. Jobs that run models over those two collections leave marked
+# rows out unless told otherwise. news_articles_universe is the old store, kept until the move is checked.
+os.environ.setdefault("BACKFILL_COLLECTION", "news_articles")
+os.environ.setdefault("BACKFILL_ORIGIN", "universe_backfill")
 os.environ.setdefault("BACKFILL_WORK_DIR", "/Volumes/Data4T/universe/news_backfill")
 os.environ.setdefault("BACKFILL_TITLE_GATE", "1")
 os.environ.setdefault("MONGO_URI", "mongodb://root:root@127.0.0.1:37018/")
@@ -60,7 +67,7 @@ os.environ.setdefault("ENRICH_LLM_TIMEOUT", "120")
 SINCE = os.getenv("UNIVERSE_NEWS_SINCE", "2018-01-01")
 LABELS = Path(os.getenv("UNIVERSE_LABELS_DIR", "/Volumes/Data4T/universe/news_labels"))
 WORK = Path(os.environ["BACKFILL_WORK_DIR"])
-NAMES = Path("/Volumes/Data4T/universe/names.json")
+NAMES = UNIVERSE_RULES / "names.json"
 WORKERS = int(os.getenv("LM_WORKERS", "8"))
 MAX_TRIES = 2
 sys.path.insert(0, str(ROOT / "tools"))
@@ -362,6 +369,141 @@ def status() -> dict:
     return out
 
 
+UNIVERSE_ORIGIN = os.environ["BACKFILL_ORIGIN"]
+OLD_COLLECTION = "news_articles_universe"
+MATCHED_COLLECTION = "news_articles_company_matched_v2"
+# the matched collection's shape (what slm_company_match_v2 writes), plus the origin mark
+V2_FIELDS = ("symbol", "name", "date", "title", "content", "data_quality", "source", "url")
+PROMOTE_STATE = WORK / "promote.json"
+
+
+def _db():
+    import pymongo
+    return pymongo.MongoClient(os.environ["MONGO_URI"])["quant_data"]
+
+
+def _v2_doc(doc: dict, labels: dict | None = None) -> dict:
+    """A matched-collection row for a universe article. Not SLM-checked: it passed the collector rules and
+    the headline gate (the company named in the headline or URL), which is what engine=backfill_rules says;
+    slm_company_match_v2 with V2_INCLUDE_UNIVERSE=1 can check them later."""
+    out = {k: doc[k] for k in V2_FIELDS if k in doc}
+    out.update(_id=doc["_id"], raw_id=doc["_id"], origin=UNIVERSE_ORIGIN, company_match_v2={
+        "matched": True, "reassigned": False, "original_symbol": None,
+        "title_only": doc.get("data_quality") != "full", "direct_mention": None,
+        "version": "v2", "engine": "backfill_rules", "model": "", "scoredAt": datetime.now().astimezone().isoformat()})
+    out.update(labels or {})
+    return out
+
+
+def migrate(dry_run: bool = False) -> None:
+    """2026-11-10, the user: news_articles holds every company's first version and the matched collection
+    the filtered one, so the 490 companies' articles move out of news_articles_universe into both. The
+    teacher labels already on them (llm_*) go to the matched row only, as for the core 102. The first run
+    left out 25,948 articles whose URL news_articles held for another company (url was unique there); since
+    plan B the key is (url, symbol) and a rerun moves them. Resumable: rows already moved are skipped."""
+    from pymongo.errors import BulkWriteError
+    db = _db()
+    old, raw, v2 = db[OLD_COLLECTION], db["news_articles"], db[MATCHED_COLLECTION]
+    total = old.estimated_document_count()
+    stats = {"seen": 0, "raw_inserted": 0, "v2_inserted": 0, "already_moved": 0, "conflict": 0, "no_title": 0}
+    conflicts = (WORK / "migrate_conflicts.jsonl").open("w") if not dry_run else None
+    t0 = time.time()
+
+    def flush(batch: list) -> None:
+        urls = [d["url"] for d in batch]
+        # keyed by (url, company) since plan B (2026-11-10): another company's copy is no conflict
+        owner = {(d["url"], d.get("symbol")): d
+                 for d in raw.find({"url": {"$in": urls}}, {"url": 1, "symbol": 1, "origin": 1})}
+        in_v2 = {d["_id"] for d in v2.find({"_id": {"$in": [d["_id"] for d in batch]}}, {"_id": 1})}
+        raw_rows, v2_rows = [], []
+        for d in batch:
+            o = owner.get((d["url"], d.get("symbol")))
+            if o is not None and o["_id"] != d["_id"]:
+                stats["conflict"] += 1
+                if conflicts:
+                    conflicts.write(json.dumps({"_id": str(d["_id"]), "url": d["url"], "symbol": d.get("symbol"),
+                                                "news_articles_symbol": o.get("symbol")}) + "\n")
+                continue
+            if o is None:
+                raw_rows.append({**{k: v for k, v in d.items() if not k.startswith("llm_")}, "origin": UNIVERSE_ORIGIN})
+            else:
+                stats["already_moved"] += 1
+            if d["_id"] in in_v2:
+                continue
+            if not (d.get("title") or "").strip():           # the matched collection keeps titled rows only
+                stats["no_title"] += 1
+                continue
+            v2_rows.append(_v2_doc(d, {k: v for k, v in d.items() if k.startswith("llm_")}))
+        if dry_run:
+            stats["raw_inserted"] += len(raw_rows)
+            stats["v2_inserted"] += len(v2_rows)
+            return
+        for col, rows, key in ((raw, raw_rows, "raw_inserted"), (v2, v2_rows, "v2_inserted")):
+            if not rows:
+                continue
+            try:
+                stats[key] += len(col.insert_many(rows, ordered=False).inserted_ids)
+            except BulkWriteError as e:                     # a rerun over rows already there
+                stats[key] += e.details.get("nInserted", 0)
+                bad = [w for w in e.details.get("writeErrors", []) if w.get("code") != 11000]
+                if bad:
+                    raise
+
+    batch = []
+    for d in old.find({}).sort("_id", 1).batch_size(2000):
+        batch.append(d)
+        stats["seen"] += 1
+        if len(batch) == 2000:
+            flush(batch)
+            batch = []
+            if stats["seen"] % 50000 == 0:
+                print(f"PROGRESS migrate {stats['seen']} {total} {json.dumps(stats)} {time.time() - t0:.0f}s", flush=True)
+    if batch:
+        flush(batch)
+    if conflicts:
+        conflicts.close()
+    print(f"migrate{' (dry run)' if dry_run else ''} done: {json.dumps(stats)} {time.time() - t0:.0f}s", flush=True)
+    if not dry_run:
+        last = raw.find_one({"origin": UNIVERSE_ORIGIN}, {"_id": 1}, sort=[("_id", -1)])
+        if last:
+            PROMOTE_STATE.write_text(json.dumps({"last_id": str(last["_id"]), "at": datetime.now().isoformat()}))
+
+
+def promote() -> int:
+    """Universe articles stored in news_articles since the last promote (fetch, keyword rescans) copied on
+    into the matched collection, as the nightly company match does for the core 102's but without the SLM."""
+    from bson import ObjectId
+    from pymongo.errors import BulkWriteError
+    db = _db()
+    raw, v2 = db["news_articles"], db[MATCHED_COLLECTION]
+    state = json.loads(PROMOTE_STATE.read_text()) if PROMOTE_STATE.exists() else {}
+    q = {"origin": UNIVERSE_ORIGIN, "title": {"$nin": [None, ""]}}
+    if state.get("last_id"):
+        q["_id"] = {"$gt": ObjectId(state["last_id"])}
+    n, last, rows = 0, None, []
+    for d in raw.find(q).sort("_id", 1).batch_size(1000):
+        rows.append(_v2_doc(d))
+        last = d["_id"]
+        if len(rows) == 1000:
+            n += _insert_new(v2, rows, BulkWriteError)
+            rows = []
+    if rows:
+        n += _insert_new(v2, rows, BulkWriteError)
+    if last is not None:
+        PROMOTE_STATE.write_text(json.dumps({"last_id": str(last), "at": datetime.now().isoformat()}))
+    print(f"promote: {n} rows into {MATCHED_COLLECTION}", flush=True)
+    return n
+
+
+def _insert_new(col, rows: list, err) -> int:
+    try:
+        return len(col.insert_many(rows, ordered=False).inserted_ids)
+    except err as e:                                    # rows promoted before
+        if [w for w in e.details.get("writeErrors", []) if w.get("code") != 11000]:
+            raise
+        return e.details.get("nInserted", 0)
+
+
 def window(until: str) -> None:
     h, m = map(int, until.split(":"))
     end = datetime.now().replace(hour=h, minute=m, second=0, microsecond=0).timestamp()
@@ -389,6 +531,7 @@ def window(until: str) -> None:
             go_on = True
         if go_on:
             label(end)
+    promote()                                       # what the rescan stored, into the matched collection
     status()
 
 
@@ -398,6 +541,12 @@ def main(stage: str, args: list) -> None:
         return
     if stage == "status":
         status()
+        return
+    if stage == "migrate":                          # migrate [--dry-run]: the one-off move of 2026-11-10
+        migrate(dry_run="--dry-run" in args)
+        return
+    if stage == "promote":
+        promote()
         return
     rm = rules()
     syms = args or sorted(rm.company_configs)
@@ -431,6 +580,7 @@ def main(stage: str, args: list) -> None:
             if kept.exists():
                 print(f"PROGRESS [shard {shard_idx}/{shard_total}] fetch_pass2 {i} {len(my_syms)} {s} {time.time() - t0:.0f}s", flush=True)
                 bf.fetch_stage(s, rm.company_configs[s].get("name") or s, kept, fw)
+        promote()
 
 
 if __name__ == "__main__":

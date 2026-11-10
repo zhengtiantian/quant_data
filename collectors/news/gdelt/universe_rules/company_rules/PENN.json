@@ -1,0 +1,24 @@
+{
+ "symbol": "PENN",
+ "name": "PENN Entertainment, Inc.",
+ "primary_keywords": [
+  "PENN Entertainment",
+  "Penn National Gaming"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "PENN"
+ ],
+ "dropped_expansion": [
+  "Bally's",
+  "Caesars Palace",
+  "Light & Wonder",
+  "Comstock",
+  "Jeff Gorman",
+  "MGM National Harbor",
+  "Harrah's",
+  "Twin River"
+ ],
+ "special_rules": {}
+}

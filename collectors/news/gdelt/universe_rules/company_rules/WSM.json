@@ -1,0 +1,32 @@
+{
+ "symbol": "WSM",
+ "name": "Williams-Sonoma, Inc.",
+ "primary_keywords": [
+  "Williams-Sonoma",
+  "Pottery Barn",
+  "West Elm"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-05",
+ "weak_names_not_counted": [],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "West Elm streets, a literal pottery barn and shop sales (rule check 2026-11-05: 6 of 25 noise)",
+   "required_keywords": [
+    "Williams-Sonoma",
+    "Pottery Barn",
+    "West Elm"
+   ],
+   "min_matches": 1,
+   "trust_single_match": true,
+   "exclude_patterns": [
+    "West Elm (Street|St\\b|Avenue|Ave\\b|Road|Rd\\b|Drive|Dr\\b)",
+    "\\bwith (a )?pottery barn\\b"
+   ],
+   "exclude_title_patterns": [
+    "Pottery Barn.{0,40}\\b(Sale|Deals?|Save up to|% Off|Coupon|Promo)\\b",
+    "\\bBest\\b.{0,60}\\b(From|at)\\b.{0,60}Pottery Barn"
+   ]
+  }
+ }
+}

@@ -1,0 +1,21 @@
+{
+ "symbol": "FITB",
+ "name": "Fifth Third Bancorp",
+ "primary_keywords": [
+  "Fifth Third"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Gregory Crosby",
+  "Fifth Third Bank",
+  "Fifth Third Mortgage",
+  "Fifth Third Asset Management",
+  "Fifth Third Securities",
+  "Fifth Third Wealth",
+  "Fifth Third Bank Center",
+  "Fifth Third Bank Stadium"
+ ],
+ "special_rules": {}
+}

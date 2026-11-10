@@ -1,0 +1,21 @@
+{
+ "symbol": "MRSH",
+ "name": "Marsh & McLennan Companies, Inc.",
+ "primary_keywords": [
+  "Marsh McLennan",
+  "Marsh & McLennan"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Guy Chapman",
+  "Marsh",
+  "Guy Carpenter",
+  "Mercer",
+  "Oliver Wyman",
+  "Marsh Risk",
+  "Mercer Consulting"
+ ],
+ "special_rules": {}
+}

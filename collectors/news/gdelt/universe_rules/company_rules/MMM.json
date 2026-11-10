@@ -1,0 +1,16 @@
+{
+ "symbol": "MMM",
+ "name": "3M Company",
+ "primary_keywords": [
+  "3M Company",
+  "3M Co",
+  "Scotch-Brite"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "special_rules": {},
+ "dropped_expansion": [
+  "Post-it"
+ ]
+}

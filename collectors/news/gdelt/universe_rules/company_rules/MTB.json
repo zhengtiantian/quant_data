@@ -1,0 +1,21 @@
+{
+ "symbol": "MTB",
+ "name": "M&T Bank Corporation",
+ "primary_keywords": [
+  "M&T Bank"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Anthony Noto",
+  "M&T Bank Center",
+  "M&T Bank Stadium",
+  "M&T Plaza",
+  "Buffalo Sabres",
+  "New York State Comptroller",
+  "M&T Bank Tower",
+  "M&T Bank Arena"
+ ],
+ "special_rules": {}
+}

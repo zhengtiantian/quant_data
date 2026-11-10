@@ -1,0 +1,21 @@
+{
+ "symbol": "ALAB",
+ "name": "Astera Labs, Inc.",
+ "primary_keywords": [
+  "Astera Labs"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Aries",
+  "Leo",
+  "Pico",
+  "JIT AI",
+  "Sung Choi",
+  "PCIe 5.0",
+  "CXL",
+  "UPLI"
+ ],
+ "special_rules": {}
+}

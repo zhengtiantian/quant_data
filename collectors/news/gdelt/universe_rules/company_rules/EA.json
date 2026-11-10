@@ -1,0 +1,23 @@
+{
+ "symbol": "EA",
+ "name": "Electronic Arts Inc",
+ "primary_keywords": [
+  "Electronic Arts"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Andrew Wilson",
+  "FIFA",
+  "Madden NFL",
+  "Battlefield",
+  "Apex Legends",
+  "The Sims",
+  "Maxis",
+  "DICE",
+  "Respawn Entertainment",
+  "PlayDemic"
+ ],
+ "special_rules": {}
+}

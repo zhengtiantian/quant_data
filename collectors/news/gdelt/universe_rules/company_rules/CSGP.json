@@ -1,0 +1,22 @@
+{
+ "symbol": "CSGP",
+ "name": "CoStar Group, Inc.",
+ "primary_keywords": [
+  "CoStar Group"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "CoStar"
+ ],
+ "dropped_expansion": [
+  "Michael S. Saylor",
+  "LoopNet",
+  "Crexi",
+  "DataOne",
+  "CoStar Index",
+  "OfficeSpace.com",
+  "CommercialCafe"
+ ],
+ "special_rules": {}
+}

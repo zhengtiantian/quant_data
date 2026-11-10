@@ -1,0 +1,19 @@
+{
+ "symbol": "URI",
+ "name": "United Rentals, Inc.",
+ "primary_keywords": [
+  "United Rentals"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Tim Hortin",
+  "Mike Kitz",
+  "United Rentals Inc",
+  "URI",
+  "equipment rental",
+  "construction equipment"
+ ],
+ "special_rules": {}
+}

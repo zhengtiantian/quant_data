@@ -1,0 +1,29 @@
+{
+ "symbol": "PWR",
+ "name": "Quanta Services, Inc.",
+ "primary_keywords": [
+  "Quanta Services",
+  "Quanta Communications",
+  "Quanta Defense",
+  "Quanta Energy",
+  "Quanta Infrastructure",
+  "Quanta Power",
+  "Quanta Water"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Quanta"
+ ],
+ "dropped_expansion": [
+  "Randy Falco",
+  "Mike D'Adamo",
+  "Quanta Infrastructure",
+  "Quanta Power",
+  "Quanta Water",
+  "Quanta Communications",
+  "Quanta Defense",
+  "Quanta Energy"
+ ],
+ "special_rules": {}
+}

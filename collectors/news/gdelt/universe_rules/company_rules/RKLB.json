@@ -1,0 +1,20 @@
+{
+ "symbol": "RKLB",
+ "name": "Rocket Lab Corporation",
+ "primary_keywords": [
+  "Rocket Lab"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Peter Beck",
+  "Electron",
+  "Neutron",
+  "Photon",
+  "Archer",
+  "Electron launch",
+  "Rocket Lab USA"
+ ],
+ "special_rules": {}
+}

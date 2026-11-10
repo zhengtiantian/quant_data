@@ -1,0 +1,26 @@
+{
+ "symbol": "PSA",
+ "name": "Public Storage",
+ "primary_keywords": [
+  "Public Storage"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Self Storage",
+  "Industrial REIT",
+  "Self Storage REIT",
+  "Storage Facilities",
+  "Self Storage Properties"
+ ],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "Public Storage: also an ordinary word, a surname, a place or another organisation",
+   "required_keywords": [
+    "Public Storage"
+   ],
+   "min_matches": 1
+  }
+ }
+}

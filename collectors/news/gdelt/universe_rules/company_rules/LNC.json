@@ -1,0 +1,28 @@
+{
+ "symbol": "LNC",
+ "name": "Lincoln National Corporation",
+ "primary_keywords": [
+  "Lincoln National Corporation",
+  "Lincoln Financial",
+  "Lincoln National Corp",
+  "Lincoln National Life Insurance"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Lincoln National"
+ ],
+ "dropped_expansion": [
+  "Lincoln Benefits",
+  "Lincoln Financial Group",
+  "Lincoln Life",
+  "Lincoln Annuities",
+  "Lincoln Retirement",
+  "Lincoln Investment Management",
+  "Lincoln International",
+  "Lincoln Life Insurance Company",
+  "Lincoln Life and Annuity Company",
+  "Lincoln National Life Insurance Company"
+ ],
+ "special_rules": {}
+}

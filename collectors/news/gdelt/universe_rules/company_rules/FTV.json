@@ -1,0 +1,23 @@
+{
+ "symbol": "FTV",
+ "name": "Fortive Corporation",
+ "primary_keywords": [
+  "Fortive"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Dan Durnank",
+  "Fluke",
+  "Amphenol",
+  "Honeywell Process Solutions",
+  "Cobham",
+  "MKS Instruments",
+  "Vaisala",
+  "Aeroflex",
+  "CPI Aero",
+  "Gore-Tex"
+ ],
+ "special_rules": {}
+}

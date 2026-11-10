@@ -1,0 +1,44 @@
+{
+ "symbol": "SATS",
+ "name": "Strive, Inc.",
+ "primary_keywords": [
+  "Strive",
+  "SATS"
+ ],
+ "expansion_keywords": [],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "Strive is a common verb and name for other financial products and companies (e.g., Strive Financial, Strive Health, Strive Inc. in other sectors); SATS is also the ticker for EchoStar Satellite Holdings.",
+   "required_keywords": [
+    "Strive Asset Management",
+    "Strive Developed Markets",
+    "Strive Dividend",
+    "Strive ETFs",
+    "Strive Emerging Markets",
+    "Strive High Yield",
+    "Strive Investment Grade",
+    "Strive MSCI",
+    "Strive Quality",
+    "Strive Select",
+    "Strive U.S. Small Cap",
+    "Strive Value",
+    "Strive, Inc."
+   ],
+   "min_matches": 1
+  }
+ },
+ "dropped_expansion": [
+  "Strive Asset Management",
+  "Strive ETFs",
+  "Strive MSCI",
+  "Strive Select",
+  "Strive U.S. Small Cap",
+  "Strive Developed Markets",
+  "Strive Emerging Markets",
+  "Strive High Yield",
+  "Strive Investment Grade",
+  "Strive Dividend",
+  "Strive Quality",
+  "Strive Value"
+ ]
+}

@@ -1,0 +1,26 @@
+{
+ "symbol": "SO",
+ "name": "The Southern Company",
+ "primary_keywords": [
+  "The Southern Company",
+  "Southern Company Gas",
+  "Georgia Power"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Southern Company",
+  "Southern Co"
+ ],
+ "dropped_expansion": [
+  "Georgia Power",
+  "Alabama Power",
+  "Mississippi Power",
+  "Southern Nuclear",
+  "Tom Fanning",
+  "Vogtle",
+  "Plant Vogtle",
+  "Southern Power"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,27 @@
+{
+ "symbol": "ANET",
+ "name": "Arista Networks, Inc.",
+ "primary_keywords": [
+  "Arista Networks"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Arista"
+ ],
+ "dropped_expansion": [
+  "Arista 7000",
+  "EOS",
+  "Arista CloudVision",
+  "Arista Application Assurance",
+  "Arista Cloud Aggregation",
+  "Arista Cloud Access",
+  "Arista Cloud Fabric",
+  "Arista Cloud Services",
+  "Arista Cloud Security",
+  "Arista Cloud Management",
+  "Arista Cloud Analytics",
+  "Arista Cloud Operations"
+ ],
+ "special_rules": {}
+}

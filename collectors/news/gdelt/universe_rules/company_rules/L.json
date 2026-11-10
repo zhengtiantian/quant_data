@@ -1,0 +1,21 @@
+{
+ "symbol": "L",
+ "name": "Loews Corporation",
+ "primary_keywords": [
+  "Loews"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Richard F. Kogon",
+  "Loews Office",
+  "Loews Hotels",
+  "Loews Cineplex",
+  "Loews Insurance",
+  "Loews Cleveland",
+  "Loews Miami Beach",
+  "Loews New York"
+ ],
+ "special_rules": {}
+}

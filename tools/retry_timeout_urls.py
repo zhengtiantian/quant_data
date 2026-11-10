@@ -84,7 +84,7 @@ def main():
                 # Write to target collection
                 dst_col = db[dst_col_name]
                 dst_col.update_one(
-                    {"url": result["url"]},
+                    {"url": result["url"], "symbol": result.get("symbol")},   # (url, symbol) unique, 2026-11-10
                     {"$setOnInsert": result},
                     upsert=True,
                 )

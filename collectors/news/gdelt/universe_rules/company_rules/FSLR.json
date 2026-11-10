@@ -1,0 +1,24 @@
+{
+ "symbol": "FSLR",
+ "name": "First Solar, Inc.",
+ "primary_keywords": [
+  "First Solar Inc",
+  "First Solar, Inc."
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "First Solar"
+ ],
+ "dropped_expansion": [
+  "Cadmium Telluride",
+  "CdTe",
+  "Modul",
+  "Mark Widmar",
+  "Sethog",
+  "Thin Film",
+  "Solar Module",
+  "First Solar Inc"
+ ],
+ "special_rules": {}
+}

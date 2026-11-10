@@ -1,0 +1,19 @@
+{
+ "symbol": "MLM",
+ "name": "Martin Marietta Materials, Inc.",
+ "primary_keywords": [
+  "Martin Marietta"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "aggregates",
+  "ready-mix concrete",
+  "asphalt",
+  "cement",
+  "aggregate processing",
+  "construction materials"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,23 @@
+{
+ "symbol": "HST",
+ "name": "Host Hotels & Resorts, Inc.",
+ "primary_keywords": [
+  "Host Hotels"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Hilton",
+  "Marriott",
+  "Hyatt",
+  "InterContinental",
+  "Westin",
+  "DoubleTree",
+  "Embassy Suites",
+  "Candlewood Suites",
+  "Hampton Inn",
+  "Courtyard by Marriott"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,20 @@
+{
+ "symbol": "RF",
+ "name": "Regions Financial Corporation",
+ "primary_keywords": [
+  "Regions Financial",
+  "Regions Bank"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Bill Hurley",
+  "John H. Dolezal",
+  "Regions Financial Corporation",
+  "Regions Bank",
+  "Nashville, Tennessee",
+  "Regions Financial Services"
+ ],
+ "special_rules": {}
+}

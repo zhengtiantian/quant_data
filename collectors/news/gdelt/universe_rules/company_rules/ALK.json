@@ -1,0 +1,22 @@
+{
+ "symbol": "ALK",
+ "name": "Alaska Air Group, Inc.",
+ "primary_keywords": [
+  "Alaska Air",
+  "Alaska Airlines"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Horizon Air",
+  "Envoy Air",
+  "Frontier Group",
+  "David Barrett",
+  "Bobby Ray",
+  "Miles Air",
+  "Mango Livery",
+  "A220"
+ ],
+ "special_rules": {}
+}

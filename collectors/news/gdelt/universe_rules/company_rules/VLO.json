@@ -1,0 +1,23 @@
+{
+ "symbol": "VLO",
+ "name": "Valero Energy Corporation",
+ "primary_keywords": [
+  "Valero"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Michael F. Morris",
+  "Brian J. O'Keefe",
+  "Hilltop",
+  "Port Arthur",
+  "Chicopee",
+  "Deer Park",
+  "Benicia",
+  "Gulf Coast",
+  "Port Isabel",
+  "San Antonio"
+ ],
+ "special_rules": {}
+}

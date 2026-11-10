@@ -1,0 +1,24 @@
+{
+ "symbol": "COR",
+ "name": "Cencora, Inc.",
+ "primary_keywords": [
+  "Cencora",
+  "AmerisourceBergen"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Amneal",
+  "McKesson",
+  "Cardinal Health",
+  "Rite Aid",
+  "Cencora Pharmacy",
+  "Cencora Specialty",
+  "Cencora Global",
+  "Cencora Health",
+  "Cencora Technology",
+  "Cencora Analytics"
+ ],
+ "special_rules": {}
+}

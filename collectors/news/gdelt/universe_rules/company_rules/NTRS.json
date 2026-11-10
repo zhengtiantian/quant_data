@@ -1,0 +1,23 @@
+{
+ "symbol": "NTRS",
+ "name": "Northern Trust Corporation",
+ "primary_keywords": [
+  "Northern Trust"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Robert E. Wadsworth",
+  "Michael J. Hannon",
+  "Northern Trust University",
+  "NTRS Asset Management",
+  "NTRS Private Client",
+  "NTRS Wealth Management",
+  "NTRS Trust",
+  "NTRS Bank",
+  "NTRS Capital Markets",
+  "NTRS Global Markets"
+ ],
+ "special_rules": {}
+}

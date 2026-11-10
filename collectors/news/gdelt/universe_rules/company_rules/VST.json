@@ -1,0 +1,23 @@
+{
+ "symbol": "VST",
+ "name": "Vistra Corp.",
+ "primary_keywords": [
+  "Vistra"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Abby Cram",
+  "Vistra Energy",
+  "Vistra Corp",
+  "Vistra Generation",
+  "Vistra Retail",
+  "Vistra Nuclear",
+  "Comanche Peak",
+  "Comanche Peak Power Station",
+  "Vistra Texas",
+  "Vistra Midwest"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,23 @@
+{
+ "symbol": "PAYX",
+ "name": "Paychex, Inc.",
+ "primary_keywords": [
+  "Paychex"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "John Cerny",
+  "Paychex Flex",
+  "Paychex Payroll",
+  "Paychex Time & Attendance",
+  "Paychex HR",
+  "Paychex Payroll Plus",
+  "Paychex Payroll Online",
+  "Paychex Payroll Direct",
+  "Paychex Payroll Service",
+  "Paychex Payroll Solutions"
+ ],
+ "special_rules": {}
+}

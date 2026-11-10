@@ -1,0 +1,19 @@
+{
+ "symbol": "GNRC",
+ "name": "Generac Holdings Inc.",
+ "primary_keywords": [
+  "Generac"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Mark Goldstein",
+  "PowerPact",
+  "PWRview",
+  "Home Standby",
+  "Portable Power Stations",
+  "Generac Mobile Link"
+ ],
+ "special_rules": {}
+}

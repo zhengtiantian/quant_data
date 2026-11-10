@@ -1,0 +1,24 @@
+{
+ "symbol": "CVX",
+ "name": "Chevron Corporation",
+ "primary_keywords": [
+  "Chevron Corporation",
+  "Chevron Phillips Chemical"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Chevron"
+ ],
+ "dropped_expansion": [
+  "Mike Wirth",
+  "John Watson",
+  "Chevron Phillips Chemical",
+  "ChevronTexaco",
+  "Texaco",
+  "Chevron Energy",
+  "Chevron Marketing",
+  "Chevron Logistics"
+ ],
+ "special_rules": {}
+}

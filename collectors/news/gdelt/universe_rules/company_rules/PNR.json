@@ -1,0 +1,21 @@
+{
+ "symbol": "PNR",
+ "name": "Pentair plc",
+ "primary_keywords": [
+  "Pentair"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Michael Doherty",
+  "Sandy Weill",
+  "Pentair Pool Products",
+  "Pentair Water",
+  "Pentair Aquatic Eco-Systems",
+  "Pentair Commercial & Industrial",
+  "Pentair Thermal",
+  "Pentair Health & Wellness"
+ ],
+ "special_rules": {}
+}

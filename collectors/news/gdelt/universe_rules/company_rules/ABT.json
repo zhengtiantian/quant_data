@@ -1,0 +1,25 @@
+{
+ "symbol": "ABT",
+ "name": "Abbott Laboratories",
+ "primary_keywords": [
+  "Abbott Diabetes Care",
+  "Abbott Laboratories",
+  "Abbott Vascular"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Abbott"
+ ],
+ "dropped_expansion": [
+  "Robert B. Ford",
+  "Abbott Diabetes Care",
+  "FreeStyle Libre",
+  "Abbott Vascular",
+  "Abbott Nutrition",
+  "Similac",
+  "PediaSure",
+  "Abbott Imaging"
+ ],
+ "special_rules": {}
+}

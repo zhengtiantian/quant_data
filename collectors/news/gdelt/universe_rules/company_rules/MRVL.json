@@ -1,0 +1,23 @@
+{
+ "symbol": "MRVL",
+ "name": "Marvell Technology, Inc.",
+ "primary_keywords": [
+  "Marvell"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Matt Murphy",
+  "Chad Cherian",
+  "Prestera",
+  "Avera",
+  "Inphi",
+  "Innovium",
+  "Aquantia",
+  "Cavium",
+  "Pentek",
+  "Xelerated"
+ ],
+ "special_rules": {}
+}

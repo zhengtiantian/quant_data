@@ -1,0 +1,21 @@
+{
+ "symbol": "TT",
+ "name": "Trane Technologies plc",
+ "primary_keywords": [
+  "Trane"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Mitsubishi Electric",
+  "Ingersoll Rand",
+  "Trane Residential",
+  "Trane Commercial",
+  "Trane Building Technologies",
+  "Trane Heat Pumps",
+  "Trane VRF",
+  "Trane Centrifugal Chillers"
+ ],
+ "special_rules": {}
+}

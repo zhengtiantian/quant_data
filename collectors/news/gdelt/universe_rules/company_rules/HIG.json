@@ -1,0 +1,35 @@
+{
+ "symbol": "HIG",
+ "name": "The Hartford Insurance Group, Inc.",
+ "primary_keywords": [
+  "Hartford Casualty",
+  "Hartford Financial",
+  "Hartford General",
+  "Hartford Insurance",
+  "Hartford Life",
+  "Hartford National",
+  "Hartford Steam Boiler",
+  "Hartford Underwriters"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "The Hartford",
+  "Hartford"
+ ],
+ "dropped_expansion": [
+  "Chris Swift",
+  "Brian Burch",
+  "Hartford Financial",
+  "Hartford Insurance",
+  "Hartford Life",
+  "Hartford Accident and Indemnity",
+  "Hartford Steam Boiler",
+  "Hartford Casualty",
+  "Hartford Fire",
+  "Hartford General",
+  "Hartford National",
+  "Hartford Underwriters"
+ ],
+ "special_rules": {}
+}

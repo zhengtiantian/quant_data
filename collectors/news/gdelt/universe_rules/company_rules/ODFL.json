@@ -1,0 +1,25 @@
+{
+ "symbol": "ODFL",
+ "name": "Old Dominion Freight Line, Inc.",
+ "primary_keywords": [
+  "Old Dominion Freight Line"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Old Dominion"
+ ],
+ "dropped_expansion": [
+  "L. Scott Crump",
+  "Lori L. Hutton",
+  "Lori Hutton",
+  "Scott Crump",
+  "Lori L. Hutton",
+  "L. Scott Crump",
+  "Lori Hutton",
+  "Scott Crump",
+  "Lori L. Hutton",
+  "L. Scott Crump"
+ ],
+ "special_rules": {}
+}

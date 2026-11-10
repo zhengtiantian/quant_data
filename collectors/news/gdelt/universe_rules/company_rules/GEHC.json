@@ -1,0 +1,23 @@
+{
+ "symbol": "GEHC",
+ "name": "GE HealthCare Technologies Inc.",
+ "primary_keywords": [
+  "GE HealthCare"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Richard Albrecht",
+  "Philipp Roesch",
+  "Signa",
+  "Amulet",
+  "Biograph",
+  "Versana",
+  "Carescape",
+  "Logiq",
+  "Vscan",
+  "Machina"
+ ],
+ "special_rules": {}
+}

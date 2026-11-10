@@ -1,0 +1,23 @@
+{
+ "symbol": "DASH",
+ "name": "DoorDash, Inc.",
+ "primary_keywords": [
+  "DoorDash"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Tony Xu",
+  "Stanley Tang",
+  "DashPass",
+  "DashMart",
+  "DashPass",
+  "DoorDash Drive",
+  "DoorDash for Business",
+  "Wing",
+  "Caviar",
+  "Grubhub"
+ ],
+ "special_rules": {}
+}

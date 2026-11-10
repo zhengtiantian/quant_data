@@ -1,0 +1,22 @@
+{
+ "symbol": "DTE",
+ "name": "DTE Energy Company",
+ "primary_keywords": [
+  "DTE Energy"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "DTE"
+ ],
+ "dropped_expansion": [
+  "Consumers Energy",
+  "Detroit Edison",
+  "Tom Koenig",
+  "DTE Electric",
+  "DTE Gas",
+  "DTE Michigan",
+  "DTE Ohio"
+ ],
+ "special_rules": {}
+}

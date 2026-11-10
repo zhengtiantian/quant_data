@@ -1,0 +1,21 @@
+{
+ "symbol": "UNP",
+ "name": "Union Pacific Corporation",
+ "primary_keywords": [
+  "Union Pacific"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Jim Vena",
+  "Alan Shaw",
+  "BNSF",
+  "Norfolk Southern",
+  "Cheyenne",
+  "Omaha",
+  "Rocky Mountain",
+  "Gulf Coast"
+ ],
+ "special_rules": {}
+}

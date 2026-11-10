@@ -1,0 +1,23 @@
+{
+ "symbol": "NOV",
+ "name": "NOV Inc.",
+ "primary_keywords": [
+  "National Oilwell Varco",
+  "NOV Inc"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "NOV"
+ ],
+ "dropped_expansion": [
+  "John W. Neff",
+  "Baker Hughes",
+  "National Oilwell Varco",
+  "Cameron",
+  "Baker Oil Tools",
+  "Varco",
+  "National Oilwell"
+ ],
+ "special_rules": {}
+}

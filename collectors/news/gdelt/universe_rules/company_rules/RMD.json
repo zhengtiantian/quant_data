@@ -1,0 +1,20 @@
+{
+ "symbol": "RMD",
+ "name": "ResMed Inc.",
+ "primary_keywords": [
+  "ResMed"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "AirSense",
+  "AirCurve",
+  "Liam",
+  "Mike Kays",
+  "Philipp Tacke",
+  "Sleep Apnea",
+  "CPAP"
+ ],
+ "special_rules": {}
+}

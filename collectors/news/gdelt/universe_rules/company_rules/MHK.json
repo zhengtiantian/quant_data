@@ -1,0 +1,23 @@
+{
+ "symbol": "MHK",
+ "name": "Mohawk Industries, Inc.",
+ "primary_keywords": [
+  "Mohawk Industries"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Shaw Contract",
+  "Interface",
+  "Mohawk Group",
+  "Carl Bell",
+  "Milliken & Company",
+  "Beaulieu",
+  "Pergo",
+  "Tarkett",
+  "Johansen",
+  "DuraSupreme"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,23 @@
+{
+ "symbol": "GRMN",
+ "name": "Garmin Ltd.",
+ "primary_keywords": [
+  "Garmin"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Garmin Fenix",
+  "Garmin Forerunner",
+  "Garmin Edge",
+  "Garmin Venu",
+  "Garmin inReach",
+  "Garmin Descent",
+  "Garmin Tactix",
+  "Garmin MARQ",
+  "Garmin Alpha",
+  "Garmin ECHOMAP"
+ ],
+ "special_rules": {}
+}

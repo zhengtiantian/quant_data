@@ -1,0 +1,19 @@
+{
+ "symbol": "ULTA",
+ "name": "Ulta Beauty, Inc.",
+ "primary_keywords": [
+  "Ulta"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Nicole Williams",
+  "Michael Tait",
+  "Salon Services",
+  "Ulta Pro",
+  "Beauty Insider",
+  "Ulta Rewards"
+ ],
+ "special_rules": {}
+}

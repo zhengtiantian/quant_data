@@ -1,0 +1,24 @@
+{
+ "symbol": "ADP",
+ "name": "Automatic Data Processing, Inc.",
+ "primary_keywords": [
+  "ADP",
+  "Automatic Data Processing"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Marcello Sule",
+  "ADP Workforce Now",
+  "ADP TotalSource",
+  "ADP Vantage",
+  "ADP Reimburse",
+  "ADP Global View",
+  "ADP Payroll",
+  "ADP Tax",
+  "ADP Benefits",
+  "ADP Financial"
+ ],
+ "special_rules": {}
+}

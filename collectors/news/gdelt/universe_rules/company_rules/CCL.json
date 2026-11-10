@@ -1,0 +1,24 @@
+{
+ "symbol": "CCL",
+ "name": "Carnival Corporation Ltd.",
+ "primary_keywords": [
+  "Carnival Corporation"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Carnival Cruise Line",
+  "Princess Cruises",
+  "Holland America Line",
+  "Costa Cruises",
+  "AIDA Cruises",
+  "Seabourn",
+  "P&O Cruises",
+  "Cunard",
+  "Viking Cruises",
+  "Arno Matos",
+  "Michael Fayard"
+ ],
+ "special_rules": {}
+}

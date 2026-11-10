@@ -1,0 +1,25 @@
+{
+ "symbol": "BF-B",
+ "name": "Brown-Forman Corporation",
+ "primary_keywords": [
+  "Brown-Forman"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Jack Daniel's",
+  "Woodford Reserve",
+  "Old Forester",
+  "Bacardi",
+  "Dewar's",
+  "Kirkland",
+  "Laird's",
+  "Glenmorangie",
+  "Basil",
+  "Lapin",
+  "Glenfiddich",
+  "Crown Royal"
+ ],
+ "special_rules": {}
+}

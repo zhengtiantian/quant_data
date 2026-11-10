@@ -1,0 +1,25 @@
+{
+ "symbol": "TPR",
+ "name": "Tapestry, Inc.",
+ "primary_keywords": [
+  "Tapestry, Inc.",
+  "Coach Inc",
+  "Kate Spade",
+  "Tapestry Inc"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Tapestry"
+ ],
+ "dropped_expansion": [
+  "Coach",
+  "Kate Spade",
+  "Stuart Weitzman",
+  "Tory Burch",
+  "Michael Kors",
+  "Joanne Crevoiserat",
+  "Tapestry Inc"
+ ],
+ "special_rules": {}
+}

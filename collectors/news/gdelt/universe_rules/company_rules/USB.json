@@ -1,0 +1,22 @@
+{
+ "symbol": "USB",
+ "name": "U.S. Bancorp",
+ "primary_keywords": [
+  "U.S. Bancorp",
+  "US Bancorp"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Michael Hannon",
+  "U.S. Bank",
+  "M&T Bank",
+  "Ally Financial",
+  "Morgan Stanley",
+  "U.S. Bank Stadium",
+  "U.S. Bank Field",
+  "U.S. Bank Arena"
+ ],
+ "special_rules": {}
+}

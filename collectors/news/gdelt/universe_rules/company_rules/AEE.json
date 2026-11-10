@@ -1,0 +1,21 @@
+{
+ "symbol": "AEE",
+ "name": "Ameren Corporation",
+ "primary_keywords": [
+  "Ameren"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Ameren Missouri",
+  "Ameren Illinois",
+  "Ameren Transmission",
+  "Ameren Renewable Energy",
+  "Ameren Clean Energy",
+  "Ameren Power",
+  "Ameren Utilities",
+  "Ameren Energy"
+ ],
+ "special_rules": {}
+}

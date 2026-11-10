@@ -1,0 +1,23 @@
+{
+ "symbol": "CMG",
+ "name": "Chipotle Mexican Grill, Inc.",
+ "primary_keywords": [
+  "Chipotle"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Scott Saks",
+  "Brian Niccol",
+  "Scott Fox",
+  "Chipotle Rewards",
+  "Chipotle Digital",
+  "QSR",
+  "fast casual",
+  "burrito",
+  "taco",
+  "Mexican food"
+ ],
+ "special_rules": {}
+}

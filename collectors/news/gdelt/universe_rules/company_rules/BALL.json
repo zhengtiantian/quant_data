@@ -1,0 +1,24 @@
+{
+ "symbol": "BALL",
+ "name": "Ball Corporation",
+ "primary_keywords": [
+  "Ball Corporation",
+  "Ball Corp"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Steve Cahillane",
+  "Mike Tait",
+  "Ball Global",
+  "Ball Packaging",
+  "Ball Beverage",
+  "Ball Food",
+  "Ball Metal",
+  "Ball Glass",
+  "Ball Plastics",
+  "Ball Aluminum"
+ ],
+ "special_rules": {}
+}

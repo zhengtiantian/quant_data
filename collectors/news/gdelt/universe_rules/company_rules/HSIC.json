@@ -1,0 +1,23 @@
+{
+ "symbol": "HSIC",
+ "name": "Henry Schein, Inc.",
+ "primary_keywords": [
+  "Henry Schein"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Schein",
+  "Schein Dental",
+  "Schein Animal Health",
+  "Schein Health",
+  "Schein Connect",
+  "Schein X",
+  "Schein One",
+  "Schein Dental Solutions",
+  "Schein Animal Health Solutions",
+  "Schein Health Solutions"
+ ],
+ "special_rules": {}
+}

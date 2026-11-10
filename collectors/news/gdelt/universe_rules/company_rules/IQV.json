@@ -1,0 +1,23 @@
+{
+ "symbol": "IQV",
+ "name": "IQVIA Holdings Inc.",
+ "primary_keywords": [
+  "IQVIA"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Drew Venable",
+  "Jill Bould",
+  "IQVIA One",
+  "IQVIA Data",
+  "IQVIA Insights",
+  "IQVIA Solutions",
+  "IQVIA R&D",
+  "IQVIA Commercial",
+  "IQVIA Life Sciences",
+  "IQVIA Health"
+ ],
+ "special_rules": {}
+}

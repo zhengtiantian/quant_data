@@ -1,0 +1,21 @@
+{
+ "symbol": "VLTO",
+ "name": "Veralto Corporation",
+ "primary_keywords": [
+  "Veralto"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Pentair",
+  "Xylem",
+  "A.O. Smith",
+  "HydroLogic",
+  "Pentair Pool Products",
+  "Xylem Water Solutions",
+  "A.O. Smith Water Systems",
+  "HydroLogic Water Systems"
+ ],
+ "special_rules": {}
+}

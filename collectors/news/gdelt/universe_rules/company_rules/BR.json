@@ -1,0 +1,19 @@
+{
+ "symbol": "BR",
+ "name": "Broadridge Financial Solutions, Inc.",
+ "primary_keywords": [
+  "Broadridge"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Bill Baer",
+  "Broadridge Investor Communication Services",
+  "Broadridge Data Solutions",
+  "Broadridge Financial Solutions",
+  "Broadridge Technology Solutions",
+  "Broadridge Financial"
+ ],
+ "special_rules": {}
+}

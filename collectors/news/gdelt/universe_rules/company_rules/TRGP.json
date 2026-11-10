@@ -1,0 +1,21 @@
+{
+ "symbol": "TRGP",
+ "name": "Targa Resources Corp.",
+ "primary_keywords": [
+  "Targa Resources"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Greg Targos",
+  "Targa Midstream",
+  "Targa Pipeline",
+  "Targa Gas",
+  "Targa Storage",
+  "Targa Logistics",
+  "Targa Marketing",
+  "Targa Gathering"
+ ],
+ "special_rules": {}
+}

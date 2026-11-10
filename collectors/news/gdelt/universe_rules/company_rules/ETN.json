@@ -1,0 +1,26 @@
+{
+ "symbol": "ETN",
+ "name": "Eaton Corporation plc",
+ "primary_keywords": [
+  "Eaton Corporation",
+  "Eaton plc"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Eaton"
+ ],
+ "dropped_expansion": [
+  "Doug Bush",
+  "Marty Jendrzejczyk",
+  "Power Quality",
+  "HydraForce",
+  "Crouse-Hinds",
+  "Sensata Technologies",
+  "Electrical Americas",
+  "Electrical Global",
+  "Aircraft Group",
+  "Hydraulic Group"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,21 @@
+{
+ "symbol": "IR",
+ "name": "Ingersoll Rand Inc.",
+ "primary_keywords": [
+  "Ingersoll Rand"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Mike Gallagher",
+  "John D. Stoltz",
+  "Ingersoll Sullair",
+  "Thornley",
+  "Nashville",
+  "Air Liquide",
+  "Pentair",
+  "Caterpillar"
+ ],
+ "special_rules": {}
+}

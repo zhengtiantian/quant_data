@@ -22,8 +22,9 @@ from pathlib import Path
 
 import requests
 
-OUT = Path(os.getenv("UNIVERSE_RULES_DIR", "/Volumes/Data4T/universe/company_rules"))
-NAMES = Path("/Volumes/Data4T/universe/names.json")
+UNIVERSE_RULES = Path(__file__).resolve().parents[1] / "collectors" / "news" / "gdelt" / "universe_rules"
+OUT = Path(os.getenv("UNIVERSE_RULES_DIR", str(UNIVERSE_RULES / "company_rules")))
+NAMES = UNIVERSE_RULES / "names.json"
 LM = os.getenv("LM_STUDIO_URL", "http://localhost:1234/v1").rstrip("/")
 MODEL = os.getenv("RULES_LLM", "qwen/qwen3.8-27b")
 COMMON = {"inc", "corp", "group", "holdings", "company", "energy", "health", "capital", "financial", "global", "american",
@@ -271,7 +272,7 @@ def tighten() -> None:
 
 def main(syms: list) -> None:
     OUT.mkdir(parents=True, exist_ok=True)
-    syms = syms or Path("/Volumes/Data4T/universe/needs_rules.txt").read_text().split()
+    syms = syms or (UNIVERSE_RULES / "needs_rules.txt").read_text().split()
     info = names(syms)
     log = []
     for i, s in enumerate(syms, 1):

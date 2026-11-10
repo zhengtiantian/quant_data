@@ -1,0 +1,21 @@
+{
+ "symbol": "PHM",
+ "name": "PulteGroup, Inc.",
+ "primary_keywords": [
+  "PulteGroup",
+  "Pulte"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Charles Platkin",
+  "Jeffery Lohr",
+  "Centex",
+  "Meritage Homes",
+  "Taylor Morrison",
+  "Pulte Homes",
+  "K. Hovnanian"
+ ],
+ "special_rules": {}
+}

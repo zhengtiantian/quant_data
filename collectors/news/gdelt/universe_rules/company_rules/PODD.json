@@ -1,0 +1,25 @@
+{
+ "symbol": "PODD",
+ "name": "Insulet Corporation",
+ "primary_keywords": [
+  "Insulet"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Omnipod",
+  "Omnipod 5",
+  "Omnipod DASH",
+  "Omnipod 5 XL",
+  "Omnipod 5 Pro",
+  "Omnipod 5 Pro XL",
+  "Omnipod 5 Pro DASH",
+  "Omnipod 5 Pro DASH XL",
+  "Omnipod 5 Pro DASH XL",
+  "Omnipod 5 Pro DASH XL",
+  "Omnipod 5 Pro DASH XL",
+  "Omnipod 5 Pro DASH XL"
+ ],
+ "special_rules": {}
+}

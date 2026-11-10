@@ -1,0 +1,25 @@
+{
+ "symbol": "ADM",
+ "name": "Archer-Daniels-Midland Company",
+ "primary_keywords": [
+  "Archer-Daniels-Midland"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Niels B. Andersen",
+  "Cargill",
+  "Bunge",
+  "Lamb Weston",
+  "Crisco",
+  "Wesson",
+  "Pillsbury",
+  "Mazola",
+  "Cargill",
+  "Bunge",
+  "Lamb Weston",
+  "Crisco"
+ ],
+ "special_rules": {}
+}

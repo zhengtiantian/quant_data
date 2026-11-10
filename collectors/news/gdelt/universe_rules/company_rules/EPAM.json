@@ -1,0 +1,19 @@
+{
+ "symbol": "EPAM",
+ "name": "EPAM Systems, Inc.",
+ "primary_keywords": [
+  "EPAM"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Travis Kalanick",
+  "Boris Efimov",
+  "EPAM Anywhere",
+  "EPAM Digital",
+  "EPAM AI Lab",
+  "EPAM Ventures"
+ ],
+ "special_rules": {}
+}

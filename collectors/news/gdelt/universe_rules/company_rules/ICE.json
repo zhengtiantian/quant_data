@@ -1,0 +1,20 @@
+{
+ "symbol": "ICE",
+ "name": "Intercontinental Exchange, Inc.",
+ "primary_keywords": [
+  "Intercontinental Exchange"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Jeff Sprecher",
+  "ICE Futures",
+  "ICE Data Services",
+  "ICE Clearing",
+  "ICE Exchange",
+  "ICE Mortgage",
+  "ICE OTC Markets"
+ ],
+ "special_rules": {}
+}

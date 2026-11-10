@@ -1,0 +1,26 @@
+{
+ "symbol": "RJF",
+ "name": "Raymond James Financial, Inc.",
+ "primary_keywords": [
+  "Raymond James & Associates",
+  "Raymond James Financial"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Raymond James"
+ ],
+ "dropped_expansion": [
+  "Stephanie Smith",
+  "Michael Coughlin",
+  "Raymond James Financial",
+  "RJ Financial",
+  "Raymond James & Associates",
+  "Raymond James Trust",
+  "Raymond James Wealth Management",
+  "Raymond James Bank",
+  "Raymond James International",
+  "Raymond James Institutional"
+ ],
+ "special_rules": {}
+}

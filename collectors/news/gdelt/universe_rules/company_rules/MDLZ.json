@@ -1,0 +1,23 @@
+{
+ "symbol": "MDLZ",
+ "name": "Mondelez International, Inc.",
+ "primary_keywords": [
+  "Mondelez"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Oreo",
+  "Toblerone",
+  "Cadbury",
+  "Milka",
+  "Halls",
+  "Trident",
+  "Snickers",
+  "Dove",
+  "Iris",
+  "Rishi Soni"
+ ],
+ "special_rules": {}
+}

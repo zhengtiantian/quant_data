@@ -1,0 +1,24 @@
+{
+ "symbol": "DHI",
+ "name": "D.R. Horton, Inc.",
+ "primary_keywords": [
+  "D.R. Horton",
+  "DR Horton"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Bill Brown",
+  "Jim LoCascio",
+  "Meritage Homes",
+  "Taylor Morrison",
+  "Lennar",
+  "Hovnanian",
+  "PulteGroup",
+  "KB Home",
+  "Toll Brothers",
+  "MDC Holdings"
+ ],
+ "special_rules": {}
+}

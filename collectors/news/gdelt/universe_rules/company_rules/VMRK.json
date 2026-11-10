@@ -1,0 +1,23 @@
+{
+ "symbol": "VMRK",
+ "name": "Vivmark Residential",
+ "primary_keywords": [
+  "Vivmark Residential"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Vivint Smart Home",
+  "Vivint Solar",
+  "Vivint Security",
+  "Vivint Door",
+  "Vivint Outdoor",
+  "Vivint Alarm",
+  "Vivint Cameras",
+  "Vivint Thermostat",
+  "Vivint Water",
+  "Vivint Garage Door"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,28 @@
+{
+ "symbol": "GLW",
+ "name": "Corning Incorporated",
+ "primary_keywords": [
+  "Corning Gorilla Glass",
+  "Corning Incorporated",
+  "Corning Optical Communications",
+  "Corning Inc"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Corning"
+ ],
+ "dropped_expansion": [
+  "W. R. Wetherill Jr.",
+  "Corning Gorilla Glass",
+  "Corning Optical Communications",
+  "Corning Life Sciences",
+  "Corning Display Technologies",
+  "Corning Environmental Technologies",
+  "Corning Advanced Materials",
+  "Corning Specialty Materials",
+  "Corning Research",
+  "Corning Inc."
+ ],
+ "special_rules": {}
+}

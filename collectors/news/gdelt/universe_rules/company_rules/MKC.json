@@ -1,0 +1,26 @@
+{
+ "symbol": "MKC",
+ "name": "McCormick & Company, Incorporated",
+ "primary_keywords": [
+  "McCormick & Company",
+  "McCormick & Co"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "McCormick"
+ ],
+ "dropped_expansion": [
+  "Paul Igou",
+  "McCormick & Company",
+  "McCormick Science",
+  "McCormick Culinary",
+  "McCormick Global",
+  "McCormick Consumer",
+  "McCormick Professional",
+  "McCormick Retail",
+  "McCormick Foodservice",
+  "McCormick Ingredients"
+ ],
+ "special_rules": {}
+}

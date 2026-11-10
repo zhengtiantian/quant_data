@@ -1,0 +1,22 @@
+{
+ "symbol": "FMC",
+ "name": "FMC Corporation",
+ "primary_keywords": [
+  "FMC Corporation"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "FMC"
+ ],
+ "dropped_expansion": [
+  "Fumiga",
+  "Corteva",
+  "Bayer Crop Science",
+  "Gustavo de Oliveira",
+  "FMC Solutions",
+  "Crop Protection",
+  "Specialty Products"
+ ],
+ "special_rules": {}
+}

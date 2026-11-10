@@ -1,0 +1,25 @@
+{
+ "symbol": "WBD",
+ "name": "Warner Bros. Discovery Inc",
+ "primary_keywords": [
+  "Warner Bros. Discovery",
+  "WarnerMedia",
+  "Discovery Inc",
+  "Discovery, Inc.",
+  "Warner Bros Discovery"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "David Zaslav",
+  "Gunn Winkler",
+  "HBO Max",
+  "Discovery+",
+  "DC Studios",
+  "Warner Bros. Television",
+  "Max",
+  "Discovery Inc"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,19 @@
+{
+ "symbol": "CRWV",
+ "name": "CoreWeave, Inc.",
+ "primary_keywords": [
+  "CoreWeave"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Michael Intrator",
+  "Barry Sacks",
+  "CoreWeave Cloud",
+  "CoreWeave AI",
+  "CoreWeave Kubernetes",
+  "CoreWeave Inference"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,23 @@
+{
+ "symbol": "AMCR",
+ "name": "Amcor plc",
+ "primary_keywords": [
+  "Amcor"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Robert E. Breaud",
+  "R. Scott Harrington",
+  "Amcor Flexibles",
+  "Amcor Rigid Plastics",
+  "Amcor Glass",
+  "Amcor Metal",
+  "Amcor Healthcare",
+  "Amcor Packaging",
+  "Amcor Rigid Plastics",
+  "Amcor Flexibles"
+ ],
+ "special_rules": {}
+}

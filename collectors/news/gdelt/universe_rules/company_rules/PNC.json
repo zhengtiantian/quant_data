@@ -1,0 +1,56 @@
+{
+ "symbol": "PNC",
+ "name": "The PNC Financial Services Group, Inc.",
+ "primary_keywords": [
+  "PNC"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-05",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "PNC Bank",
+  "PNC Financial",
+  "PNC Insurance",
+  "PNC Asset Management",
+  "PNC Wealth Management",
+  "PNC Mortgage",
+  "PNC Auto",
+  "PNC Health",
+  "PNC Commercial Banking",
+  "PNC Retail Banking"
+ ],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "PNC is also Ghana's People's National Convention party (rule check 2026-11-04: 3/8)",
+   "required_keywords": [
+    "PNC"
+   ],
+   "min_matches": 1,
+   "exclude_patterns": [
+    "People'?s National Convention",
+    "\\bGhana",
+    "\\bAccra\\b",
+    "\\bNPP\\b",
+    "\\bNDC\\b",
+    "PNC (Bank )?Arts Center",
+    "PNC Park",
+    "PNC Arena",
+    "PNC Field",
+    "PNC (Music )?Pavilion",
+    "PNC Infratech",
+    "PNC Live Studio",
+    "PNC Championship"
+   ],
+   "domain_kill": [
+    ".com.gh",
+    "modernghana.com",
+    "ghanaweb.com",
+    "myjoyonline.com",
+    "citinewsroom.com",
+    "peacefmonline.com",
+    "graphic.com.gh"
+   ],
+   "trust_single_match": true
+  }
+ }
+}

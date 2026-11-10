@@ -1,0 +1,21 @@
+{
+ "symbol": "MCO",
+ "name": "Moody's Corporation",
+ "primary_keywords": [
+  "Moody's"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Mark Mobius",
+  "Randy Compton",
+  "Moody's Investors Service",
+  "Moody's Analytics",
+  "Moody's ESG Solutions",
+  "Moody's Risk Sciences",
+  "Moody's Corporate Solutions",
+  "Moody's News"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,24 @@
+{
+ "symbol": "COHR",
+ "name": "Coherent Corp.",
+ "primary_keywords": [
+  "Coherent Corp"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Coherent"
+ ],
+ "dropped_expansion": [
+  "Jim Anderson",
+  "Finisar",
+  "II-VI",
+  "Oclaro",
+  "NeoPhotonics",
+  "JDS Uniphase",
+  "IPG Photonics",
+  "Mitsubishi Electric",
+  "Lumentum"
+ ],
+ "special_rules": {}
+}

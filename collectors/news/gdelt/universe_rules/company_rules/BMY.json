@@ -1,0 +1,22 @@
+{
+ "symbol": "BMY",
+ "name": "Bristol-Myers Squibb Company",
+ "primary_keywords": [
+  "Bristol-Myers Squibb"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Opdivo",
+  "Eli Lilly",
+  "Alain Lampon",
+  "Yvo de Louw",
+  "Sprycel",
+  "Eliquis",
+  "Imbruvica",
+  "Ponatinib",
+  "BMS"
+ ],
+ "special_rules": {}
+}

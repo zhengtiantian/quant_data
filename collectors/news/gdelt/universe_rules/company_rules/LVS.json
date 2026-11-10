@@ -1,0 +1,21 @@
+{
+ "symbol": "LVS",
+ "name": "Las Vegas Sands Corp.",
+ "primary_keywords": [
+  "Las Vegas Sands"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Ananda Sarkaria",
+  "Vegas Sphere",
+  "The Londoner",
+  "Sands China",
+  "Macau",
+  "Marina Bay Sands",
+  "The Venetian",
+  "The Palazzo"
+ ],
+ "special_rules": {}
+}

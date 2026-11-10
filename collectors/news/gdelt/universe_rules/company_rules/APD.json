@@ -1,0 +1,21 @@
+{
+ "symbol": "APD",
+ "name": "Air Products and Chemicals, Inc.",
+ "primary_keywords": [
+  "Air Products and Chemicals"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Air Products"
+ ],
+ "dropped_expansion": [
+  "Steve Rowland",
+  "Airgas",
+  "Linde",
+  "Hydrogen",
+  "Industrial Gases",
+  "Linde Engineering"
+ ],
+ "special_rules": {}
+}

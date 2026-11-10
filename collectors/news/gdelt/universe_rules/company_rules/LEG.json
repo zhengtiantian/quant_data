@@ -1,0 +1,23 @@
+{
+ "symbol": "LEG",
+ "name": "Leggett & Platt Inc",
+ "primary_keywords": [
+  "Leggett & Platt",
+  "Leggett and Platt",
+  "LeggettPlatt"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Leggett"
+ ],
+ "dropped_expansion": [
+  "Leggett",
+  "Platt",
+  "Leggett & Platt Inc",
+  "Leggett and Platt",
+  "LeggettPlatt",
+  "Leggett & Platt Corporation"
+ ],
+ "special_rules": {}
+}

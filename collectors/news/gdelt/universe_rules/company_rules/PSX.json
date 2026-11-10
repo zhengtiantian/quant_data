@@ -1,0 +1,21 @@
+{
+ "symbol": "PSX",
+ "name": "Phillips 66",
+ "primary_keywords": [
+  "Phillips 66"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Vicki Hollub",
+  "Mike Hirtle",
+  "Phillips 66 Aviation",
+  "Phillips 66 Lubricants",
+  "Phillips 66 Chemicals",
+  "Phillips 66 Refining",
+  "Phillips 66 Marketing",
+  "Phillips 66 Renewables"
+ ],
+ "special_rules": {}
+}

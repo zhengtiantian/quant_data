@@ -1,0 +1,23 @@
+{
+ "symbol": "TMO",
+ "name": "Thermo Fisher Scientific Inc.",
+ "primary_keywords": [
+  "Thermo Fisher"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Kevin Anderson",
+  "Suvina Govil",
+  "Life Technologies",
+  "Applied Biosystems",
+  "PacBio",
+  "Nicolet",
+  "Finnigan",
+  "Element Biosciences",
+  "Ion Torrent",
+  "Qubit"
+ ],
+ "special_rules": {}
+}

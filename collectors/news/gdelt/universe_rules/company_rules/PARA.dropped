@@ -1,0 +1,24 @@
+{
+ "symbol": "PARA",
+ "name": "Parabolic Technologies",
+ "primary_keywords": [
+  "Parabolic Technologies"
+ ],
+ "expansion_keywords": [],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "Parabolic is a common geometric term and PARA is a common acronym (e.g., in productivity methods or other tickers)",
+   "required_keywords": [
+    "Parabolic Technologies",
+    "Parabolic Technologies, Inc."
+   ],
+   "min_matches": 1
+  }
+ },
+ "dropped_expansion": [
+  "Parabolic",
+  "PARA",
+  "Parabolic AI",
+  "Parabolic Software"
+ ]
+}

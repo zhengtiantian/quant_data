@@ -1,0 +1,27 @@
+{
+ "symbol": "MOH",
+ "name": "Molina Healthcare, Inc.",
+ "primary_keywords": [
+  "Molina Healthcare",
+  "Molina Advantage",
+  "Molina Care"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Molina"
+ ],
+ "dropped_expansion": [
+  "Molina Advantage",
+  "Molina Care",
+  "Molina Healthcare Group",
+  "Molina Healthcare, Inc.",
+  "Molina Healthcare of Texas",
+  "Molina Healthcare of Florida",
+  "Molina Healthcare of California",
+  "Molina Healthcare of Illinois",
+  "Molina Healthcare of Georgia",
+  "Molina Healthcare of New York"
+ ],
+ "special_rules": {}
+}

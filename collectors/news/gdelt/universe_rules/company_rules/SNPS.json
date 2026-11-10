@@ -1,0 +1,21 @@
+{
+ "symbol": "SNPS",
+ "name": "Synopsys, Inc.",
+ "primary_keywords": [
+  "Synopsys"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Sohrab Kiyani",
+  "Vijay Anand",
+  "Cadence",
+  "Ansys",
+  "VCS",
+  "PrimeTime",
+  "DesignWare",
+  "Mentor Graphics"
+ ],
+ "special_rules": {}
+}

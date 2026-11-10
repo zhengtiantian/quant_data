@@ -1,0 +1,24 @@
+{
+ "symbol": "BEN",
+ "name": "Franklin Templeton Inc.",
+ "primary_keywords": [
+  "Franklin Templeton",
+  "Franklin Resources"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Nate Anderson",
+  "Franklin Templeton Digital",
+  "Fidelity",
+  "BlackRock",
+  "Vanguard",
+  "Franklin Advisers",
+  "Templeton Global",
+  "Franklin Mutual",
+  "Franklin Equity",
+  "Franklin Income"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,21 @@
+{
+ "symbol": "DD",
+ "name": "DuPont de Nemours, Inc.",
+ "primary_keywords": [
+  "DuPont de Nemours"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "DuPont"
+ ],
+ "dropped_expansion": [
+  "Kathleen Wilson",
+  "Kevlar",
+  "Tyvek",
+  "Corning",
+  "EMD Serono",
+  "E.I. du Pont de Nemours"
+ ],
+ "special_rules": {}
+}

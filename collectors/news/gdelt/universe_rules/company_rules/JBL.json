@@ -1,0 +1,21 @@
+{
+ "symbol": "JBL",
+ "name": "Jabil Inc.",
+ "primary_keywords": [
+  "Jabil"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Mike Dastoor",
+  "Jabil Circuit",
+  "Jabil Inc",
+  "JBL Electronics",
+  "Jabil Healthcare",
+  "Jabil Automotive",
+  "Jabil Industrial",
+  "Jabil Communications"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,21 @@
+{
+ "symbol": "BAC",
+ "name": "Bank of America Corporation",
+ "primary_keywords": [
+  "Bank of America"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Brian Moynihan",
+  "Merrill",
+  "Charles Schwab",
+  "Ally Financial",
+  "BofA",
+  "Morgan Crouch",
+  "Merrill Edge",
+  "BofA Securities"
+ ],
+ "special_rules": {}
+}

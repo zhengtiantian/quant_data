@@ -1,0 +1,21 @@
+{
+ "symbol": "GIS",
+ "name": "General Mills, Inc.",
+ "primary_keywords": [
+  "General Mills"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Filippo Pisoni",
+  "Cheerios",
+  "Hartley",
+  "Old Milwaukee",
+  "Betty Crocker",
+  "Yoplait",
+  "Nature Valley",
+  "Green Giant"
+ ],
+ "special_rules": {}
+}

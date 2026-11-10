@@ -1,0 +1,21 @@
+{
+ "symbol": "ROK",
+ "name": "Rockwell Automation, Inc.",
+ "primary_keywords": [
+  "Rockwell Automation"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Bruce Bostrom",
+  "FactoryTalk",
+  "ControlLogix",
+  "Stratix",
+  "Kinetix",
+  "Allen-Bradley",
+  "Plexus",
+  "Cognex"
+ ],
+ "special_rules": {}
+}

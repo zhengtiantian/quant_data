@@ -1,0 +1,21 @@
+{
+ "symbol": "EQIX",
+ "name": "Equinix, Inc.",
+ "primary_keywords": [
+  "Equinix"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Amir Efrati",
+  "Michael Barash",
+  "Interconnection",
+  "Data Centers",
+  "Colocation",
+  "Equinix Metal",
+  "Equinix Cloud Exchange",
+  "Equinix Fabric"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,19 @@
+{
+ "symbol": "IDXX",
+ "name": "IDEXX Laboratories, Inc.",
+ "primary_keywords": [
+  "IDEXX"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Michael Fraser",
+  "Cathy O'Connell",
+  "Abaxis",
+  "VetScan",
+  "DxOne",
+  "IDEXX Laboratories"
+ ],
+ "special_rules": {}
+}

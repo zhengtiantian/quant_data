@@ -1,0 +1,23 @@
+{
+ "symbol": "SOLS",
+ "name": "Solstice Advanced Materials, Inc.",
+ "primary_keywords": [
+  "Solstice Advanced Materials"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Solstice",
+  "SOLSTICE",
+  "Solstice Advanced Materials, Inc.",
+  "Solstice Advanced Materials Inc",
+  "Solstice Advanced Materials, Inc.",
+  "Solstice Advanced Materials Inc.",
+  "Solstice Advanced Materials, Inc",
+  "Solstice Advanced Materials Inc",
+  "Solstice Advanced Materials, Inc.",
+  "Solstice Advanced Materials Inc."
+ ],
+ "special_rules": {}
+}

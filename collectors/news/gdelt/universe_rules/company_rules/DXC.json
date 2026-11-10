@@ -1,0 +1,23 @@
+{
+ "symbol": "DXC",
+ "name": "DXC Technology Company",
+ "primary_keywords": [
+  "DXC"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Michael Dell",
+  "Ravi S. Menon",
+  "Michael D. Dell",
+  "Ravi Menon",
+  "Michael Dell Jr.",
+  "Ravi S. Menon",
+  "Michael Dell",
+  "Ravi Menon",
+  "Michael Dell Jr.",
+  "Ravi S. Menon"
+ ],
+ "special_rules": {}
+}

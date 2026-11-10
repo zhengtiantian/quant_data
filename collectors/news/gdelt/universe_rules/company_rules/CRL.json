@@ -1,0 +1,23 @@
+{
+ "symbol": "CRL",
+ "name": "Charles River Laboratories International, Inc.",
+ "primary_keywords": [
+  "Charles River Laboratories"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Charles River",
+  "CRL Life Sciences",
+  "CRL Discovery",
+  "CRL Preclinical",
+  "CRL CRO",
+  "CRL Diagnostics",
+  "CRL Research",
+  "CRL Animal Models",
+  "CRL Toxicology",
+  "CRL Pharmacology"
+ ],
+ "special_rules": {}
+}

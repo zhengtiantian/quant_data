@@ -1,0 +1,23 @@
+{
+ "symbol": "GL",
+ "name": "Globe Life Inc.",
+ "primary_keywords": [
+  "Globe Life"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Globe Life Re",
+  "Globe Life Reinsurance",
+  "Globe Life Insurance Company of New York",
+  "Globe Life Insurance Company of America",
+  "Globe Life Insurance Company of Wisconsin",
+  "Globe Life Insurance Company of New Jersey",
+  "Globe Life Insurance Company of Illinois",
+  "Globe Life Insurance Company of Texas",
+  "Globe Life Insurance Company of Washington",
+  "Globe Life Insurance Company of California"
+ ],
+ "special_rules": {}
+}

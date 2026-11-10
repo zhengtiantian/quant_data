@@ -1,0 +1,23 @@
+{
+ "symbol": "ATO",
+ "name": "Atmos Energy Corporation",
+ "primary_keywords": [
+  "Atmos Energy"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "John H. Murphy",
+  "Michael J. D'Amico",
+  "Atmos Energy Corporation",
+  "Atmos Energy International",
+  "Atmos Energy Texas",
+  "Atmos Energy Illinois",
+  "Atmos Energy New Mexico",
+  "Atmos Energy Oklahoma",
+  "Atmos Energy Louisiana",
+  "Atmos Energy Arkansas"
+ ],
+ "special_rules": {}
+}

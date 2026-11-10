@@ -1,0 +1,21 @@
+{
+ "symbol": "NEE",
+ "name": "NextEra Energy, Inc.",
+ "primary_keywords": [
+  "NextEra Energy"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "John Ketchum",
+  "Dennis Bakke",
+  "NextEra Energy Resources",
+  "FPL",
+  "Florida Power & Light",
+  "NextEra Energy Clean Energy",
+  "Sunflower Wind",
+  "Cape Wind"
+ ],
+ "special_rules": {}
+}

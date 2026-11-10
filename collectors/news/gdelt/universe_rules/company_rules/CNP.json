@@ -1,0 +1,23 @@
+{
+ "symbol": "CNP",
+ "name": "CenterPoint Energy, Inc.",
+ "primary_keywords": [
+  "CenterPoint Energy"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Houston Electric",
+  "CenterPoint Gas",
+  "CenterPoint Power",
+  "CenterPoint Resources",
+  "CenterPoint Energy Texas",
+  "CenterPoint Energy Louisiana",
+  "CenterPoint Energy New Mexico",
+  "CenterPoint Energy Oklahoma",
+  "CenterPoint Energy Arkansas",
+  "CenterPoint Energy Mississippi"
+ ],
+ "special_rules": {}
+}

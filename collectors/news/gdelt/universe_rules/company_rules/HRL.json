@@ -1,0 +1,19 @@
+{
+ "symbol": "HRL",
+ "name": "Hormel Foods Corporation",
+ "primary_keywords": [
+  "Hormel"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Spam",
+  "Gorton's",
+  "Sabra",
+  "Jiffy",
+  "Pepperidge Farm",
+  "Hormel CEO"
+ ],
+ "special_rules": {}
+}

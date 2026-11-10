@@ -1,0 +1,21 @@
+{
+ "symbol": "EQT",
+ "name": "EQT Corporation",
+ "primary_keywords": [
+  "EQT Corporation"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "EQT"
+ ],
+ "dropped_expansion": [
+  "Chris Conaway",
+  "EQT Midstream",
+  "Marcellus Shale",
+  "Utica Shale",
+  "EQT Production",
+  "EQT Partners"
+ ],
+ "special_rules": {}
+}

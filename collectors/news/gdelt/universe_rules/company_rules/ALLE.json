@@ -1,0 +1,23 @@
+{
+ "symbol": "ALLE",
+ "name": "Allegion plc",
+ "primary_keywords": [
+  "Allegion"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Schlage",
+  "Interflex",
+  "Lobi",
+  "Laitram",
+  "Kwikset",
+  "Emtek",
+  "Von Duprin",
+  "Lutron",
+  "Kris Goff",
+  "John C. St. John"
+ ],
+ "special_rules": {}
+}

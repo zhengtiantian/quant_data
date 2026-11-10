@@ -1,0 +1,23 @@
+{
+ "symbol": "ROP",
+ "name": "Roper Technologies, Inc.",
+ "primary_keywords": [
+  "Roper Technologies"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Michael D. Hutt",
+  "Roper Industries",
+  "Roper Scientific",
+  "Roper Electronics",
+  "Roper Power",
+  "Roper Safety",
+  "Roper Software",
+  "Roper Aerospace",
+  "Roper Defense",
+  "Roper Medical"
+ ],
+ "special_rules": {}
+}

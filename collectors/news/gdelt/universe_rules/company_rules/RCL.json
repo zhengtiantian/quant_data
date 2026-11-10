@@ -1,0 +1,23 @@
+{
+ "symbol": "RCL",
+ "name": "Royal Caribbean Cruises Ltd.",
+ "primary_keywords": [
+  "Royal Caribbean"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Michael Bayley",
+  "Omar K. Marmou",
+  "Icon of the Seas",
+  "Utopia of the Seas",
+  "Quantum of the Seas",
+  "Celebrity Cruises",
+  "Carnival Corporation",
+  "Admiral's Choice",
+  "Studio B",
+  "North Star"
+ ],
+ "special_rules": {}
+}

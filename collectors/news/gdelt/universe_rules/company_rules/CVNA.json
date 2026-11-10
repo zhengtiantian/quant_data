@@ -1,0 +1,23 @@
+{
+ "symbol": "CVNA",
+ "name": "Carvana Co.",
+ "primary_keywords": [
+  "Carvana"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Ken Gibson",
+  "Alex Polizzi",
+  "Carvana Car",
+  "Carvana Bank",
+  "Carvana Marketplace",
+  "Carvana Pro",
+  "Carvana Mobile",
+  "Carvana Auto",
+  "Carvana Finance",
+  "Carvana Insurance"
+ ],
+ "special_rules": {}
+}

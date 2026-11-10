@@ -1,0 +1,23 @@
+{
+ "symbol": "SHW",
+ "name": "The Sherwin-Williams Company",
+ "primary_keywords": [
+  "Sherwin-Williams"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Richard G. Gumerock",
+  "Kelly Inman",
+  "Sherwin-Williams Pro",
+  "Emerald",
+  "Durabuild",
+  "Vista",
+  "Glidden",
+  "Kilz",
+  "Restor-a-Deck",
+  "Sherwin-Williams Consumer"
+ ],
+ "special_rules": {}
+}

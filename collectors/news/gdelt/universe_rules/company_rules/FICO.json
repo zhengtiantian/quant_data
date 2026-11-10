@@ -1,0 +1,25 @@
+{
+ "symbol": "FICO",
+ "name": "Fair Isaac Corporation",
+ "primary_keywords": [
+  "Fair Isaac"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "FICO Score",
+  "FICO Score 9",
+  "FICO Score 10",
+  "FICO Score 10T",
+  "FICO Score 10T Gen 2",
+  "FICO Score 10T Gen 3",
+  "FICO Score 10T Gen 4",
+  "FICO Score 10T Gen 5",
+  "FICO Score 10T Gen 6",
+  "FICO Score 10T Gen 7",
+  "FICO Score 10T Gen 8",
+  "FICO Score 10T Gen 9"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,20 @@
+{
+ "symbol": "PDD",
+ "name": "PDD Holdings Inc.",
+ "primary_keywords": [
+  "Pinduoduo",
+  "PDD Holdings"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "PDD"
+ ],
+ "dropped_expansion": [
+  "Temu",
+  "Colin Gao",
+  "Jin Chao",
+  "Pinduoduo Group"
+ ],
+ "special_rules": {}
+}

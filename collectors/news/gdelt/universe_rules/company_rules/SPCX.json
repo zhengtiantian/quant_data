@@ -1,0 +1,21 @@
+{
+ "symbol": "SPCX",
+ "name": "Space Exploration Technologies Corp.",
+ "primary_keywords": [
+  "SpaceX"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Elon Musk",
+  "Starship",
+  "Falcon 9",
+  "Starlink",
+  "Gwynne Shotwell",
+  "Hawthorne",
+  "Starbase",
+  "Dragon"
+ ],
+ "special_rules": {}
+}

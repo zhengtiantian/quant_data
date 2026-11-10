@@ -1,0 +1,23 @@
+{
+ "symbol": "FLS",
+ "name": "Flowserve Corporation",
+ "primary_keywords": [
+  "Flowserve"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Jim Rogers",
+  "Pump",
+  "Valve",
+  "Seal",
+  "Metering",
+  "Process Equipment",
+  "Oil and Gas",
+  "Chemical Processing",
+  "Power Generation",
+  "Water and Wastewater"
+ ],
+ "special_rules": {}
+}

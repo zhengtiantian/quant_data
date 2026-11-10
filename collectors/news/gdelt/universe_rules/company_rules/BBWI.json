@@ -1,0 +1,21 @@
+{
+ "symbol": "BBWI",
+ "name": "Bath & Body Works, Inc.",
+ "primary_keywords": [
+  "Bath & Body Works"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Ulta Beauty",
+  "Bath & Body Works Inc",
+  "Graham Fender",
+  "Carter Rea",
+  "Aveda",
+  "e.l.f. Cosmetics",
+  "Milk Makeup",
+  "Bath & Body Works stores"
+ ],
+ "special_rules": {}
+}

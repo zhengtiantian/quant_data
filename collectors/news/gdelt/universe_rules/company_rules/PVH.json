@@ -1,0 +1,23 @@
+{
+ "symbol": "PVH",
+ "name": "PVH Corp.",
+ "primary_keywords": [
+  "PVH Corp"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "PVH"
+ ],
+ "dropped_expansion": [
+  "Michael Jeffries",
+  "Liz Ryan",
+  "Tommy Bahama",
+  "Armani Exchange",
+  "Wrangler",
+  "Levi's",
+  "Jones New York",
+  "Smart Brand"
+ ],
+ "special_rules": {}
+}

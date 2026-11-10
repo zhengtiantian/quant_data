@@ -1,0 +1,23 @@
+{
+ "symbol": "FFIV",
+ "name": "F5, Inc.",
+ "primary_keywords": [
+  "F5, Inc.",
+  "F5 Networks",
+  "F5 Inc"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "BIG-IP",
+  "Mike Loukides",
+  "Gautam Datar",
+  "F5 NGINX",
+  "Application Security Manager",
+  "Advanced Web Application Firewall",
+  "F5 Distributed Cloud",
+  "Troy Gevaert"
+ ],
+ "special_rules": {}
+}

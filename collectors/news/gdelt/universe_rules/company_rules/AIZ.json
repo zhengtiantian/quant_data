@@ -1,0 +1,23 @@
+{
+ "symbol": "AIZ",
+ "name": "Assurant, Inc.",
+ "primary_keywords": [
+  "Assurant"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Assurant Health",
+  "Assurant Guaranty",
+  "Assurant Financial",
+  "AssureX",
+  "Assurant Solutions",
+  "Assurant Specialty Group",
+  "Assurant Employee Benefits",
+  "Assurant Retirement",
+  "Assurant Life",
+  "Assurant Property & Casualty"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,25 @@
+{
+ "symbol": "ED",
+ "name": "Consolidated Edison, Inc.",
+ "primary_keywords": [
+  "Consolidated Edison",
+  "Con Edison",
+  "ConEd"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "John Silvester",
+  "Michael McGarry",
+  "New York State Electric",
+  "Westchester Lighting",
+  "Con Edison Transmission",
+  "Con Edison Generation",
+  "Con Edison Renewable Energy",
+  "Con Edison Gas",
+  "Con Edison Electric",
+  "Con Edison Water"
+ ],
+ "special_rules": {}
+}

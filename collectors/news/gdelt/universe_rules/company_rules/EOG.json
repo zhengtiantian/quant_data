@@ -1,0 +1,23 @@
+{
+ "symbol": "EOG",
+ "name": "EOG Resources, Inc.",
+ "primary_keywords": [
+  "EOG"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Richard D. Daugherty",
+  "Michael J. Harkins",
+  "Permian Basin",
+  "Williston Basin",
+  "Anadarko Basin",
+  "Utica Shale",
+  "Eagle Ford",
+  "Bakken",
+  "Marcellus",
+  "Haynesville"
+ ],
+ "special_rules": {}
+}

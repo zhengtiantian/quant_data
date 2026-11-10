@@ -1,0 +1,21 @@
+{
+ "symbol": "HII",
+ "name": "Huntington Ingalls Industries, Inc.",
+ "primary_keywords": [
+  "Huntington Ingalls"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Chris Kastner",
+  "John Feick",
+  "Newport News Shipbuilding",
+  "Ingalls Shipbuilding",
+  "Nuclear Fleet",
+  "CVN-78",
+  "USS Gerald R. Ford",
+  "Aukus"
+ ],
+ "special_rules": {}
+}

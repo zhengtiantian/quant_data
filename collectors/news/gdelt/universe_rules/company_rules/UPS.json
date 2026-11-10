@@ -1,0 +1,21 @@
+{
+ "symbol": "UPS",
+ "name": "United Parcel Service, Inc.",
+ "primary_keywords": [
+  "United Parcel Service"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Carl Icahn",
+  "Carol Tomé",
+  "Scott D. Dole",
+  "OnTrac",
+  "SPX",
+  "Pittsburgh International Airport",
+  "Worldport",
+  "UPS Store"
+ ],
+ "special_rules": {}
+}

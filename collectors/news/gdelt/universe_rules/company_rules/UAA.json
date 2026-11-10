@@ -1,0 +1,22 @@
+{
+ "symbol": "UAA",
+ "name": "Under Armour, Inc.",
+ "primary_keywords": [
+  "Under Armour"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Kevin Plank",
+  "Chet Bullock",
+  "HeatGear",
+  "ColdGear",
+  "Project Rock",
+  "Curry Brand",
+  "UA Record",
+  "UA Vanquish",
+  "UA HOVR"
+ ],
+ "special_rules": {}
+}

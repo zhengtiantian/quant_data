@@ -1,0 +1,29 @@
+{
+ "symbol": "SYF",
+ "name": "Synchrony Financial",
+ "primary_keywords": [
+  "Synchrony Bank",
+  "Synchrony Card",
+  "Synchrony Financial"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Synchrony"
+ ],
+ "dropped_expansion": [
+  "Synchrony Bank",
+  "Synchrony Card",
+  "Synchrony Bankcard",
+  "Synchrony Bankcard Visa",
+  "Synchrony Bankcard Mastercard",
+  "Synchrony Bankcard American Express",
+  "Synchrony Bankcard Discover",
+  "Synchrony Bankcard Citi",
+  "Synchrony Bankcard Chase",
+  "Synchrony Bankcard Bank of America",
+  "Synchrony Bankcard Wells Fargo",
+  "Synchrony Bankcard US Bank"
+ ],
+ "special_rules": {}
+}

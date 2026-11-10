@@ -1,0 +1,23 @@
+{
+ "symbol": "OMC",
+ "name": "Omnicom Group Inc.",
+ "primary_keywords": [
+  "Omnicom"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "DDB",
+  "BBDO",
+  "MullenLowe",
+  "Hill+Knowlton Strategies",
+  "RPA",
+  "Bates",
+  "TBWA\\Chiat\\Day",
+  "Falter",
+  "John Wren",
+  "Katie Davis"
+ ],
+ "special_rules": {}
+}

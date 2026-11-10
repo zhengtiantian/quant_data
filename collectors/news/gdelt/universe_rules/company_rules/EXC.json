@@ -1,0 +1,23 @@
+{
+ "symbol": "EXC",
+ "name": "Exelon Corporation",
+ "primary_keywords": [
+  "Exelon"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "ComEd",
+  "Peco",
+  "BGE",
+  "Delmarva",
+  "Constellation Energy",
+  "Drew Maloney",
+  "John Ketchum",
+  "PPL Electric",
+  "PECO",
+  "Baltimore Gas and Electric"
+ ],
+ "special_rules": {}
+}

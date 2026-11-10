@@ -1,0 +1,23 @@
+{
+ "symbol": "NDSN",
+ "name": "Nordson Corporation",
+ "primary_keywords": [
+  "Nordson"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Nordson EFD",
+  "Nordson ASYMTEK",
+  "Nordson DAGE",
+  "Nordson Electronics",
+  "Nordson Precision",
+  "Nordson YDT",
+  "Nordson ABG",
+  "Nordson TSS",
+  "Nordson ASY",
+  "Nordson DAGE"
+ ],
+ "special_rules": {}
+}

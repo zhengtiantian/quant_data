@@ -1,0 +1,23 @@
+{
+ "symbol": "AZO",
+ "name": "AutoZone, Inc.",
+ "primary_keywords": [
+  "AutoZone"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Andy Palmer",
+  "Bobby Murphy",
+  "NAPA Auto Parts",
+  "O'Reilly Auto Parts",
+  "Advance Auto Parts",
+  "Pep Boys",
+  "Batteries Plus",
+  "MasterTech",
+  "Duralast",
+  "AutoZone Pro"
+ ],
+ "special_rules": {}
+}

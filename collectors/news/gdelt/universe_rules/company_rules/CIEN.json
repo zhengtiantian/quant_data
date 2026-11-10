@@ -1,0 +1,20 @@
+{
+ "symbol": "CIEN",
+ "name": "Ciena Corporation",
+ "primary_keywords": [
+  "Ciena"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "WaveLogic",
+  "6650",
+  "Line 100G",
+  "WebRamp",
+  "Genevieve Kresl",
+  "Michael Hurlston",
+  "Ciena 6900"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,23 @@
+{
+ "symbol": "PCAR",
+ "name": "PACCAR Inc",
+ "primary_keywords": [
+  "PACCAR"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Kenworth",
+  "Peterbilt",
+  "Daimler Trucks",
+  "Navistar",
+  "PACCAR Financial",
+  "Thomas J. Lauder",
+  "John J. St. Pierre",
+  "Kenworth T680",
+  "Peterbilt 579",
+  "PACCAR Parts"
+ ],
+ "special_rules": {}
+}

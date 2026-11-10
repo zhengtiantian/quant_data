@@ -1,0 +1,21 @@
+{
+ "symbol": "SPG",
+ "name": "Simon Property Group, Inc.",
+ "primary_keywords": [
+  "Simon Property"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Jeffery Blaine",
+  "Jeff Blaine",
+  "Simon Mall",
+  "Woodfield Mall",
+  "Schaumburg",
+  "Grove at Grand Prairie",
+  "The Grove",
+  "Simon Centers"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,36 @@
+{
+ "symbol": "UDR",
+ "name": "UDR, Inc.",
+ "primary_keywords": [
+  "UDR"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Michael D'Amato",
+  "Jeffrey D. D'Amato",
+  "Cody D. D'Amato",
+  "Michael J. D'Amato",
+  "UDR Residential",
+  "UDR Commercial",
+  "UDR Industrial",
+  "UDR Logistics"
+ ],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "UDR is also the Ulster Defence Regiment (rule check 2026-11-04: 4/8)",
+   "required_keywords": [
+    "UDR"
+   ],
+   "min_matches": 1,
+   "trust_single_match": true,
+   "case_sensitive": true,
+   "exclude_patterns": [
+    "Ulster Defen[cs]e Regiment",
+    "\\bUDR (soldiers?|members?|man|men|patrols?|officers?|veterans?)\\b",
+    "\\b(IRA|Tyrone|Fermanagh|Armagh|loyalist|Troubles)\\b"
+   ]
+  }
+ }
+}

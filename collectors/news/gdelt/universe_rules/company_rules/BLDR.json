@@ -1,0 +1,23 @@
+{
+ "symbol": "BLDR",
+ "name": "Builders FirstSource, Inc.",
+ "primary_keywords": [
+  "Builders FirstSource"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Jeff Rouse",
+  "John K. Knauss",
+  "CPI",
+  "CPI Roofing",
+  "CPI Building Products",
+  "CPI Windows",
+  "CPI Doors",
+  "CPI Siding",
+  "CPI Roofing Products",
+  "CPI Building Products Distribution"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,18 @@
+{
+ "symbol": "SNDK",
+ "name": "Sandisk Corporation",
+ "primary_keywords": [
+  "SanDisk"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "David Goeckeler",
+  "SanDisk iXpand",
+  "SanDisk Ultra",
+  "SanDisk Extreme",
+  "SanDisk Flash"
+ ],
+ "special_rules": {}
+}

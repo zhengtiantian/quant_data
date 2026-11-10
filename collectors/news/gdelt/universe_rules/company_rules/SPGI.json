@@ -1,0 +1,21 @@
+{
+ "symbol": "SPGI",
+ "name": "S&P Global Inc.",
+ "primary_keywords": [
+  "S&P Global"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Mark McKibbin",
+  "S&P Dow Jones Indices",
+  "Capital IQ",
+  "IHS Markit",
+  "Compustat",
+  "Platts",
+  "S&P Global MarketIntelligence",
+  "S&P Global Ratings"
+ ],
+ "special_rules": {}
+}

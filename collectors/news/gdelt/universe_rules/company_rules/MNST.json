@@ -1,0 +1,22 @@
+{
+ "symbol": "MNST",
+ "name": "Monster Beverage Corporation",
+ "primary_keywords": [
+  "Monster Beverage"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Hans Resch",
+  "Bill Gibson",
+  "Monster Energy",
+  "Redline",
+  "Manz",
+  "Torgo",
+  "Full Throttle",
+  "Reign",
+  "Loacker"
+ ],
+ "special_rules": {}
+}

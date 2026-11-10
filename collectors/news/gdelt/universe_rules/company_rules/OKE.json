@@ -1,0 +1,24 @@
+{
+ "symbol": "OKE",
+ "name": "ONEOK, Inc.",
+ "primary_keywords": [
+  "ONEOK"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "John W. Rainey",
+  "Cody D. Hawkins",
+  "Cody Hawkins",
+  "John Rainey",
+  "Magellan Midstream Partners",
+  "Magellan",
+  "Cimarex",
+  "Cimarex Energy",
+  "ONEOK Partners",
+  "OKE Partners",
+  "Cimarex Energy Company"
+ ],
+ "special_rules": {}
+}

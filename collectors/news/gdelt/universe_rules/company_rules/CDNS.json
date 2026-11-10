@@ -1,0 +1,25 @@
+{
+ "symbol": "CDNS",
+ "name": "Cadence Design Systems, Inc.",
+ "primary_keywords": [
+  "Cadence Design Systems"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Cadence"
+ ],
+ "dropped_expansion": [
+  "Anat Ramin",
+  "Vivek Bhaduriam",
+  "Jasper",
+  "Cerebrus",
+  "Allegro",
+  "Virtuoso",
+  "Spectra",
+  "Innovus",
+  "Tempus",
+  "ConvergentSC"
+ ],
+ "special_rules": {}
+}

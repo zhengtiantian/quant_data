@@ -1,0 +1,25 @@
+{
+ "symbol": "ERIE",
+ "name": "Erie Indemnity Company",
+ "primary_keywords": [
+  "Erie Indemnity"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Erie Insurance",
+  "Erie Insurance Group",
+  "Erie Insurance Holdings",
+  "Erie Insurance Agency",
+  "Erie Insurance Company",
+  "Erie Insurance Exchange",
+  "Erie Insurance Agency of New York",
+  "Erie Insurance Agency of Pennsylvania",
+  "Erie Insurance Agency of New Jersey",
+  "Erie Insurance Agency of Ohio",
+  "Erie Insurance Agency of Michigan",
+  "Erie Insurance Agency of Illinois"
+ ],
+ "special_rules": {}
+}

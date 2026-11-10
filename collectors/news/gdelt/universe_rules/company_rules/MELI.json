@@ -1,0 +1,22 @@
+{
+ "symbol": "MELI",
+ "name": "MercadoLibre, Inc.",
+ "primary_keywords": [
+  "MercadoLibre",
+  "Mercado Libre"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Mercado Pago",
+  "Mercado Shops",
+  "Mercado Crédito",
+  "Maximiliano Vicuña",
+  "Guido Alvarado",
+  "Mercado Envios",
+  "Mercado Crédito",
+  "Mercado Ads"
+ ],
+ "special_rules": {}
+}

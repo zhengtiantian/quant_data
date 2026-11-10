@@ -1,0 +1,23 @@
+{
+ "symbol": "SJM",
+ "name": "The J. M. Smucker Company",
+ "primary_keywords": [
+  "Smucker"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Jif",
+  "Pillsbury",
+  "Schwan's",
+  "Hostess",
+  "Fruit by the Foot",
+  "Uncle Ben's",
+  "Crisco",
+  "Goya",
+  "Sara Lee",
+  "Bertolli"
+ ],
+ "special_rules": {}
+}

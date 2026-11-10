@@ -1,0 +1,22 @@
+{
+ "symbol": "FDX",
+ "name": "FedEx Corporation",
+ "primary_keywords": [
+  "FedEx"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Joe Esposito",
+  "John Smith",
+  "Fred Smith",
+  "FedEx Express",
+  "FedEx Ground",
+  "FedEx Freight",
+  "FedEx Office",
+  "Memphis Hub",
+  "Supermain"
+ ],
+ "special_rules": {}
+}

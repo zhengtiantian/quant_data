@@ -1,0 +1,25 @@
+{
+ "symbol": "MTD",
+ "name": "Mettler-Toledo International Inc.",
+ "primary_keywords": [
+  "Mettler-Toledo",
+  "Mettler Toledo"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Sasha K. Sadowski",
+  "XPRIDE",
+  "XPRISM",
+  "XPRIO",
+  "XPRIO",
+  "XPRIDE",
+  "XPRISM",
+  "XPRIO",
+  "XPRIDE",
+  "XPRISM",
+  "XPRIO"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,18 @@
+{
+ "symbol": "VNT",
+ "name": "Vontier Corporation",
+ "primary_keywords": [
+  "Vontier"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Vontier",
+  "VNT",
+  "Cognizant",
+  "Vontier Inc.",
+  "Vontier Corporation"
+ ],
+ "special_rules": {}
+}

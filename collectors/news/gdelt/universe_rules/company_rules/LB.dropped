@@ -1,0 +1,26 @@
+{
+ "symbol": "LB",
+ "name": "LandBridge Corporation",
+ "primary_keywords": [
+  "LandBridge"
+ ],
+ "expansion_keywords": [],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "LB is a common ticker symbol and abbreviation; LandBridge is a generic term for land bridges",
+   "required_keywords": [
+    "LandBridge",
+    "LandBridge Corporation",
+    "LandBridge Energy",
+    "LandBridge Oil & Gas"
+   ],
+   "min_matches": 1
+  }
+ },
+ "dropped_expansion": [
+  "LandBridge Corporation",
+  "LandBridge Energy",
+  "LandBridge Oil & Gas",
+  "LandBridge E&P"
+ ]
+}

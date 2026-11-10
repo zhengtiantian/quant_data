@@ -1,0 +1,36 @@
+{
+ "symbol": "TRI",
+ "name": "Thomson Reuters Corporation",
+ "primary_keywords": [
+  "Thomson Reuters"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-05",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Reuters",
+  "Westlaw",
+  "CoCounsel",
+  "LSEG",
+  "John Thomson",
+  "Nina Eshram",
+  "FactSet",
+  "Refinitiv"
+ ],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "kfgo.com carries the Reuters wire with a 'Thomson Reuters' byline in every headline: 11,500 of 16,840 kept rows (2026-11-05)",
+   "required_keywords": [
+    "Thomson Reuters"
+   ],
+   "min_matches": 1,
+   "trust_single_match": true,
+   "exclude_title_patterns": [
+    "Thomson Reuters.{0,5}Ipsos"
+   ],
+   "domain_kill": [
+    "kfgo.com"
+   ]
+  }
+ }
+}

@@ -1,0 +1,24 @@
+{
+ "symbol": "HONA",
+ "name": "Honeywell Aerospace Inc.",
+ "primary_keywords": [
+  "Honeywell Aerospace"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Honeywell",
+  "Aerospace & Defense",
+  "Honeywell Forge",
+  "Honeywell Process Solutions",
+  "Honeywell Safety & Productivity",
+  "Honeywell Building Technologies",
+  "Honeywell Performance Materials & Technologies",
+  "Honeywell SPS",
+  "Honeywell PMS",
+  "Honeywell BST",
+  "Honeywell PMT"
+ ],
+ "special_rules": {}
+}

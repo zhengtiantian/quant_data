@@ -1,0 +1,28 @@
+{
+ "symbol": "POOL",
+ "name": "Pool Corporation",
+ "primary_keywords": [
+  "Pool Corporation"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "PoolCorp",
+  "Pool Supply",
+  "Pool Products",
+  "Pool Distribution",
+  "Pool Service",
+  "Pool Equipment",
+  "Pool Chemicals",
+  "Pool Maintenance",
+  "Pool Repair",
+  "Pool Construction"
+ ],
+ "special_rules": {},
+ "headline_names": [
+  "Pool Corporation",
+  "Pool Corp",
+  "POOLCORP"
+ ]
+}

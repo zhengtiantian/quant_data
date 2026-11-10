@@ -1,0 +1,19 @@
+{
+ "symbol": "COST",
+ "name": "Costco Wholesale Corporation",
+ "primary_keywords": [
+  "Costco"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Ron Vachris",
+  "Kirkland Signature",
+  "Costco Wholesale",
+  "Kirkland",
+  "Costco Business Center",
+  "Costco Travel"
+ ],
+ "special_rules": {}
+}

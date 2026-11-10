@@ -1,0 +1,21 @@
+{
+ "symbol": "GEV",
+ "name": "GE Vernova Inc.",
+ "primary_keywords": [
+  "GE Vernova"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Flint Shivlin",
+  "Mark Roberge",
+  "Scott Strazik",
+  "HA Gas Turbine",
+  "Levanta",
+  "GridBridge",
+  "GE Aerospace",
+  "GE HealthCare"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,21 @@
+{
+ "symbol": "TFX",
+ "name": "Teleflex Incorporated",
+ "primary_keywords": [
+  "Teleflex"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "C. Michael McGinnis",
+  "Stryker",
+  "Endo-Link",
+  "C-Rush",
+  "Teleflex Medical",
+  "Teleflex Life Sciences",
+  "Teleflex Industrial",
+  "Teleflex Healthcare"
+ ],
+ "special_rules": {}
+}

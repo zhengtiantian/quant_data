@@ -1,0 +1,23 @@
+{
+ "symbol": "ALL",
+ "name": "The Allstate Corporation",
+ "primary_keywords": [
+  "Allstate"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Tom Wilson",
+  "Michael Meehan",
+  "Allstate Insurance",
+  "Allstate Financial",
+  "Allstate Life",
+  "Allstate Property and Casualty",
+  "Allstate Protection",
+  "Allstate Auto",
+  "Allstate Home",
+  "Allstate Business"
+ ],
+ "special_rules": {}
+}

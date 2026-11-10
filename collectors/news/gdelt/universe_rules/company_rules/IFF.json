@@ -1,0 +1,22 @@
+{
+ "symbol": "IFF",
+ "name": "International Flavors & Fragrances Inc.",
+ "primary_keywords": [
+  "International Flavors & Fragrances"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Graham Day",
+  "Kerry Group",
+  "Givaudan",
+  "Firmenich",
+  "Symrise",
+  "BASF",
+  "Flavor",
+  "Fragrance",
+  "Specialty Chemicals"
+ ],
+ "special_rules": {}
+}

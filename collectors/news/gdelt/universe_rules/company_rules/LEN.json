@@ -1,0 +1,21 @@
+{
+ "symbol": "LEN",
+ "name": "Lennar Corporation",
+ "primary_keywords": [
+  "Lennar"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Stewart Prusik",
+  "David Mueller",
+  "Lennar Homes",
+  "Lennar Financial",
+  "Lennar Land",
+  "Lennar Mortgage",
+  "Lennar Commercial",
+  "Lennar Logistics"
+ ],
+ "special_rules": {}
+}

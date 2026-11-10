@@ -1,0 +1,21 @@
+{
+ "symbol": "MO",
+ "name": "Altria Group, Inc.",
+ "primary_keywords": [
+  "Altria"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Marlboro",
+  "Lorillard",
+  "Nabob",
+  "K. C. Kreeger",
+  "Sharon Bowles",
+  "Zyn",
+  "NJOY",
+  "lovenjoys"
+ ],
+ "special_rules": {}
+}

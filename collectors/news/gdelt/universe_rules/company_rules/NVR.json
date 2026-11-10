@@ -1,0 +1,33 @@
+{
+ "symbol": "NVR",
+ "name": "NVR, Inc.",
+ "primary_keywords": [
+  "NVR"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "David S. Clark",
+  "N. David Clark",
+  "NVR Homes",
+  "NVR Inc",
+  "NVR, Inc."
+ ],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "NVR is also German voting-rights notices (DGAP-NVR / EQS-NVR) (rule check 2026-11-04: 5/8)",
+   "required_keywords": [
+    "NVR"
+   ],
+   "min_matches": 1,
+   "trust_single_match": true,
+   "case_sensitive": true,
+   "exclude_patterns": [
+    "(DGAP|EQS)[- ]?NVR",
+    "WpHG",
+    "voting rights"
+   ]
+  }
+ }
+}

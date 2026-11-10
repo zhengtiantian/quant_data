@@ -1,0 +1,23 @@
+{
+ "symbol": "PAYC",
+ "name": "Paycom Software, Inc.",
+ "primary_keywords": [
+  "Paycom"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Alan J. Wilson",
+  "Paycom HR",
+  "Paycom Payroll",
+  "Paycom Time & Attendance",
+  "Paycom Benefits",
+  "Paycom Payroll Direct",
+  "Paycom Payroll Plus",
+  "Paycom Payroll Pro",
+  "Paycom Payroll Elite",
+  "Paycom Payroll Premier"
+ ],
+ "special_rules": {}
+}

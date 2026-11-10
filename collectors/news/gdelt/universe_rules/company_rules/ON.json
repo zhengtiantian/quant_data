@@ -1,0 +1,31 @@
+{
+ "symbol": "ON",
+ "name": "ON Semiconductor Corporation",
+ "primary_keywords": [
+  "ON Semiconductor",
+  "onsemi"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Hakim Sami",
+  "PowerSIL",
+  "GreenChip",
+  "Automotive Power",
+  "Analog IC",
+  "Power Management"
+ ],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "'on semiconductor(s)' is ordinary English (rule check 2026-11-04: 1/8 relevant)",
+   "required_keywords": [
+    "ON Semiconductor",
+    "onsemi"
+   ],
+   "case_sensitive": true,
+   "min_matches": 1,
+   "trust_single_match": true
+  }
+ }
+}

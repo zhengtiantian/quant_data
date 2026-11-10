@@ -1,0 +1,35 @@
+{
+ "symbol": "AIG",
+ "name": "American International Group, Inc.",
+ "primary_keywords": [
+  "American International"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-05",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Peter Zaffaroni",
+  "Brian Babbitt",
+  "AIG Financial",
+  "Chubb",
+  "AIG Re",
+  "AIG Life",
+  "AIG Investments",
+  "AIG Real Estate"
+ ],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "other 'American International ...' names and AIG's 13F stakes in other companies (rule check 2026-11-05: 6 of 16 noise)",
+   "required_keywords": [
+    "American International"
+   ],
+   "min_matches": 1,
+   "trust_single_match": true,
+   "exclude_patterns": [
+    "American International (College|School|University|Industries|Hospital|Airport|Raceway|Group of Schools)",
+    "American International Group,? Inc\\.? (Has|Acquires|Sells|Buys|Reduces|Increases|Raises|Lowers|Trims|Boosts|Cuts|Takes|Invests)\\b.{0,60}\\b(Position|Stake|Holdings|Shares) (in|of)\\b",
+    "Shares (Sold|Bought|Purchased) by American International Group"
+   ]
+  }
+ }
+}

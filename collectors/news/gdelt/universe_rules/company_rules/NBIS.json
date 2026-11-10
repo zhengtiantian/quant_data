@@ -1,0 +1,25 @@
+{
+ "symbol": "NBIS",
+ "name": "Nebius Group N.V.",
+ "primary_keywords": [
+  "Nebius",
+  "Yandex N.V.",
+  "Yandex NV"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Alexey Kuznetsov",
+  "Tolstoy",
+  "Avride",
+  "Avride.ai",
+  "Nebius Cloud",
+  "Yandex Cloud",
+  "Yandex Go",
+  "Yandex Maps",
+  "Yandex Music",
+  "Yandex Search"
+ ],
+ "special_rules": {}
+}

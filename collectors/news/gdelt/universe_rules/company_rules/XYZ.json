@@ -1,0 +1,18 @@
+{
+ "symbol": "XYZ",
+ "name": "Block, Inc.",
+ "primary_keywords": [
+  "Block, Inc.",
+  "Block Inc",
+  "Cash App",
+  "Afterpay",
+  "Square Inc",
+  "Square, Inc."
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Square"
+ ],
+ "special_rules": {}
+}

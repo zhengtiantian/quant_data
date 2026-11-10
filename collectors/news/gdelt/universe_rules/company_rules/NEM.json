@@ -1,0 +1,23 @@
+{
+ "symbol": "NEM",
+ "name": "Newmont Corporation",
+ "primary_keywords": [
+  "Newmont"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Nathaniel Lomas",
+  "Tomasz M. Krol",
+  "Cortez",
+  "Red Chris",
+  "Peñasquito",
+  "Ahafo",
+  "Boddington",
+  "Tasiast",
+  "Boddington Mine",
+  "Newcrest"
+ ],
+ "special_rules": {}
+}

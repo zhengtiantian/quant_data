@@ -1,0 +1,23 @@
+{
+ "symbol": "TEL",
+ "name": "TE Connectivity plc",
+ "primary_keywords": [
+  "TE Connectivity"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Rick Ors",
+  "C. Michael Reilly",
+  "Amphenol",
+  "Commscope",
+  "Molex",
+  "Commscope",
+  "Automotive",
+  "Industrial",
+  "Wireless Infrastructure",
+  "Data Center"
+ ],
+ "special_rules": {}
+}

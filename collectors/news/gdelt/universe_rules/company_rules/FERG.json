@@ -1,0 +1,24 @@
+{
+ "symbol": "FERG",
+ "name": "Ferguson Enterprises Inc.",
+ "primary_keywords": [
+  "Ferguson Enterprises",
+  "Ferguson Home",
+  "Ferguson Water"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Ferguson"
+ ],
+ "dropped_expansion": [
+  "John Geise",
+  "Ferguson Home",
+  "Ferguson Water",
+  "Ferguson Fire",
+  "Ferguson Mechanical",
+  "Ferguson Electrical",
+  "Ferguson Plumbing"
+ ],
+ "special_rules": {}
+}

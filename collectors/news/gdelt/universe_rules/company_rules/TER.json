@@ -1,0 +1,21 @@
+{
+ "symbol": "TER",
+ "name": "Teradyne, Inc.",
+ "primary_keywords": [
+  "Teradyne"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Ulf Andersson",
+  "M12",
+  "UltraFLEX",
+  "J750",
+  "Verigy",
+  "Mentor Graphics",
+  "Ansys",
+  "J750A"
+ ],
+ "special_rules": {}
+}

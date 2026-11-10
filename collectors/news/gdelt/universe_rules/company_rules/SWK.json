@@ -1,0 +1,23 @@
+{
+ "symbol": "SWK",
+ "name": "Stanley Black & Decker, Inc.",
+ "primary_keywords": [
+  "Black & Decker"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "S. Stanley Pritchard",
+  "DeWalt",
+  "Milwaukee",
+  "CRAFTSMAN",
+  "IRIS",
+  "Husqvarna",
+  "Ryobi",
+  "Fein",
+  "Laserliner",
+  "Stanley"
+ ],
+ "special_rules": {}
+}

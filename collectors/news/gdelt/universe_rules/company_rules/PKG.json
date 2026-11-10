@@ -1,0 +1,23 @@
+{
+ "symbol": "PKG",
+ "name": "Packaging Corporation of America",
+ "primary_keywords": [
+  "Packaging Corporation of America"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Tim Donahue",
+  "John K. Knecht",
+  "Crown Holdings",
+  "Ball Corporation",
+  "Owens-Illinois",
+  "Containerboard",
+  "Corrugated",
+  "Fiber Packaging",
+  "Rigid Packaging",
+  "Flexible Packaging"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,24 @@
+{
+ "symbol": "PEP",
+ "name": "PepsiCo, Inc.",
+ "primary_keywords": [
+  "PepsiCo",
+  "Pepsi"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Laurie Glimcher",
+  "Ramon Laguarta",
+  "Quaker Oats",
+  "Tropicana",
+  "Doritos",
+  "Lay's",
+  "Gatorade",
+  "Tostitos",
+  "Frito-Lay",
+  "Pepsi Beveraging Group"
+ ],
+ "special_rules": {}
+}

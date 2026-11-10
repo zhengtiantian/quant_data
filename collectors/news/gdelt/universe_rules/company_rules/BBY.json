@@ -1,0 +1,28 @@
+{
+ "symbol": "BBY",
+ "name": "Best Buy Co., Inc.",
+ "primary_keywords": [
+  "Best Buy"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Corie Barry",
+  "Elad Gil",
+  "Geek Squad",
+  "My Best Buy",
+  "Best Buy Mobile",
+  "Priceline",
+  "Magnolia Video"
+ ],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "Best Buy: also an ordinary word, a surname, a place or another organisation",
+   "required_keywords": [
+    "Best Buy"
+   ],
+   "min_matches": 1
+  }
+ }
+}

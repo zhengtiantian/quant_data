@@ -1,0 +1,24 @@
+{
+ "symbol": "NWSA",
+ "name": "News Corporation",
+ "primary_keywords": [
+  "News Corp",
+  "News Corporation"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Reed Hastings",
+  "David Zaslav",
+  "Walt Disney",
+  "Paramount Global",
+  "Sky",
+  "HarperCollins",
+  "Relativity Media",
+  "The Wall Street Journal",
+  "Bloomberg",
+  "Netflix"
+ ],
+ "special_rules": {}
+}

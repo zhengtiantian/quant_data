@@ -1,0 +1,21 @@
+{
+ "symbol": "MAR",
+ "name": "Marriott International, Inc.",
+ "primary_keywords": [
+  "Marriott"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Arne Sorenson",
+  "Ritz-Carlton",
+  "Westin",
+  "Marriott Bonvoy",
+  "Sheraton",
+  "Courtyard by Marriott",
+  "Marriott Vacations Worldwide",
+  "Gaylord Hotels"
+ ],
+ "special_rules": {}
+}

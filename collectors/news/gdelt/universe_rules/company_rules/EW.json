@@ -1,0 +1,19 @@
+{
+ "symbol": "EW",
+ "name": "Edwards Lifesciences Corporation",
+ "primary_keywords": [
+  "Edwards Lifesciences"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Jocelyn Banks",
+  "CoreValve",
+  "SAPIEN",
+  "ValveSaver",
+  "Edwards Valve",
+  "Jocelyn Banks"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,23 @@
+{
+ "symbol": "ARE",
+ "name": "Alexandria Real Estate Equities, Inc.",
+ "primary_keywords": [
+  "Alexandria Real Estate"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Alexandria Life Sciences",
+  "Alexandria Business Park",
+  "Alexandria Industrial",
+  "Alexandria Research Park",
+  "Alexandria Corporate Park",
+  "Alexandria Logistics",
+  "Alexandria Data Center",
+  "Alexandria Innovation",
+  "Alexandria Technology",
+  "Alexandria Healthcare"
+ ],
+ "special_rules": {}
+}

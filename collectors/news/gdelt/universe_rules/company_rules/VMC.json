@@ -1,0 +1,28 @@
+{
+ "symbol": "VMC",
+ "name": "Vulcan Materials Company",
+ "primary_keywords": [
+  "Vulcan Materials",
+  "Vulcan Aggregates",
+  "Vulcan Asphalt",
+  "Vulcan Cement",
+  "Vulcan Ready Mix"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Vulcan"
+ ],
+ "dropped_expansion": [
+  "Vulcan Cement",
+  "Vulcan Aggregates",
+  "Vulcan Ready Mix",
+  "Vulcan Asphalt",
+  "Vulcan Aggregates",
+  "Vulcan Cement",
+  "Vulcan Ready Mix",
+  "Vulcan Asphalt",
+  "Vulcan Materials"
+ ],
+ "special_rules": {}
+}

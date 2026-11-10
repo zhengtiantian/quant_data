@@ -1,0 +1,24 @@
+{
+ "symbol": "ETR",
+ "name": "Entergy Corporation",
+ "primary_keywords": [
+  "Entergy"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "John Ketchum",
+  "Entergy Louisiana",
+  "Entergy Mississippi",
+  "Entergy Arkansas",
+  "Entergy New Orleans",
+  "Entergy Texas",
+  "Entergy Arkansas",
+  "Entergy Mississippi",
+  "Entergy Louisiana",
+  "Entergy New Orleans",
+  "Entergy Texas"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,19 @@
+{
+ "symbol": "CNC",
+ "name": "Centene Corporation",
+ "primary_keywords": [
+  "Centene"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Maxim Group",
+  "Magellan Health",
+  "Anthem BCBS",
+  "Wellcare",
+  "HealthSmart",
+  "Centene Corporation"
+ ],
+ "special_rules": {}
+}

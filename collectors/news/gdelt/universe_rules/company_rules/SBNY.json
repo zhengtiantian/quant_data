@@ -1,0 +1,19 @@
+{
+ "symbol": "SBNY",
+ "name": "Signature Bank",
+ "primary_keywords": [
+  "Signature Bank"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Michael Hannon",
+  "Michael Klein",
+  "Signature Bank of New York",
+  "Signature Global",
+  "Signature Private Client",
+  "Signature Wealth Management"
+ ],
+ "special_rules": {}
+}

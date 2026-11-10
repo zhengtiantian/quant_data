@@ -1,0 +1,19 @@
+{
+ "symbol": "AMT",
+ "name": "American Tower Corporation",
+ "primary_keywords": [
+  "American Tower"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "John Gibson",
+  "Michael Bitter",
+  "American Tower Properties",
+  "SBA Communications",
+  "Cellco Partnership",
+  "Vantage Towers"
+ ],
+ "special_rules": {}
+}

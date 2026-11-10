@@ -1,0 +1,19 @@
+{
+ "symbol": "EFX",
+ "name": "Equifax Inc.",
+ "primary_keywords": [
+  "Equifax"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "John W. Brennan",
+  "Michael Jackson",
+  "CoreLogic",
+  "MyEquifax",
+  "Equifax Credit Report",
+  "2017 Equifax data breach"
+ ],
+ "special_rules": {}
+}

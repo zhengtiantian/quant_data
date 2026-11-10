@@ -1,0 +1,21 @@
+{
+ "symbol": "QRVO",
+ "name": "Qorvo, Inc.",
+ "primary_keywords": [
+  "Qorvo"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "QRVO",
+  "Raj Subramaniam",
+  "Jeff Winik",
+  "RF360",
+  "Qorvo RF360",
+  "Qorvo Power",
+  "Qorvo Automotive",
+  "Qorvo Industrial"
+ ],
+ "special_rules": {}
+}

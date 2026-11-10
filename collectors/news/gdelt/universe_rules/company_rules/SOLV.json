@@ -1,0 +1,20 @@
+{
+ "symbol": "SOLV",
+ "name": "Solventum Corporation",
+ "primary_keywords": [
+  "Solventum"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "David Evans",
+  "Solventum Health",
+  "Solventum Safety",
+  "Solventum Building",
+  "Solventum Water",
+  "Solventum Fire",
+  "Solventum Security"
+ ],
+ "special_rules": {}
+}

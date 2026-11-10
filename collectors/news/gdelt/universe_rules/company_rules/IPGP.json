@@ -1,0 +1,19 @@
+{
+ "symbol": "IPGP",
+ "name": "IPG Photonics Corporation",
+ "primary_keywords": [
+  "IPG Photonics"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Savanne",
+  "Sapphire",
+  "Spectra-Physics",
+  "nLight",
+  "Mikael Cho",
+  "IPG Photonics Corporation"
+ ],
+ "special_rules": {}
+}

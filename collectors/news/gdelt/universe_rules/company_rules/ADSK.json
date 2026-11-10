@@ -1,0 +1,25 @@
+{
+ "symbol": "ADSK",
+ "name": "Autodesk, Inc.",
+ "primary_keywords": [
+  "Autodesk"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Autodesk Fusion",
+  "Autodesk Revit",
+  "Autodesk Maya",
+  "Autodesk 3ds Max",
+  "Autodesk AutoCAD",
+  "Autodesk Inventor",
+  "Autodesk Civil 3D",
+  "Autodesk Navisworks",
+  "Autodesk Forma",
+  "Autodesk Construction Cloud",
+  "Autodesk Platform Services",
+  "Autodesk A360"
+ ],
+ "special_rules": {}
+}

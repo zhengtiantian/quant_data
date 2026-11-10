@@ -1,0 +1,23 @@
+{
+ "symbol": "MSI",
+ "name": "Motorola Solutions, Inc.",
+ "primary_keywords": [
+  "Motorola Solutions"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Rafael Mitchell-Essed",
+  "Avigay Scharf",
+  "Lynx",
+  "Avigilon",
+  "Motorola Solutions Aviation",
+  "APX",
+  "XPR",
+  "LAPD",
+  "FLEET",
+  "Command Center"
+ ],
+ "special_rules": {}
+}

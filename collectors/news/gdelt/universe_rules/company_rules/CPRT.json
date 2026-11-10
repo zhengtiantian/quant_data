@@ -1,0 +1,26 @@
+{
+ "symbol": "CPRT",
+ "name": "Copart, Inc.",
+ "primary_keywords": [
+  "Copart",
+  "Copartcom"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Copart.com",
+  "Copart Auto Auctions",
+  "Copart Canada",
+  "Copart Mexico",
+  "Copart Europe",
+  "Copart Australia",
+  "Copart New Zealand",
+  "Copart UK",
+  "Copart Ireland",
+  "Copart Germany",
+  "Copart France",
+  "Copart Spain"
+ ],
+ "special_rules": {}
+}

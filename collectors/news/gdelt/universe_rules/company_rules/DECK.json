@@ -1,0 +1,54 @@
+{
+ "symbol": "DECK",
+ "name": "Deckers Outdoor Corporation",
+ "primary_keywords": [
+  "HOKA",
+  "UGG",
+  "Deckers Outdoor"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-05",
+ "weak_names_not_counted": [
+  "Deckers"
+ ],
+ "dropped_expansion": [
+  "Adrian Anderson",
+  "Teva",
+  "Sanuk",
+  "Merrell",
+  "HOKA One One",
+  "UGG Australia",
+  "Koolaburra"
+ ],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "HOKA / UGG name products in shop deals and reviews, not company news (rule check 2026-11-04: 3/8)",
+   "required_keywords": [
+    "HOKA",
+    "UGG",
+    "UGGs",
+    "Deckers Outdoor",
+    "Deckers"
+   ],
+   "min_matches": 1,
+   "exclude_title_patterns": [
+    "\\bsales?\\b",
+    "\\bdeals?\\b",
+    "% off\\b",
+    "\\breviews?\\b",
+    "\\bBlack Friday\\b",
+    "\\bCyber Monday\\b",
+    "\\bPrime Day\\b",
+    "\\bunder \\$\\d+",
+    "\\bbest\\b.{0,40}\\b(shoes|sneakers|slippers|boots|sandals)\\b",
+    "\\bcoupons?\\b",
+    "\\bdiscounts?\\b"
+   ],
+   "trust_single_match": true,
+   "exclude_patterns": [
+    "Princess Hoka",
+    "Chickasaw"
+   ]
+  }
+ }
+}

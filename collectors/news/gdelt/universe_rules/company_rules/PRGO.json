@@ -1,0 +1,25 @@
+{
+ "symbol": "PRGO",
+ "name": "Perrigo Company plc",
+ "primary_keywords": [
+  "Perrigo"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Perrigo Company plc",
+  "PRGO",
+  "Sally Hansen",
+  "Neutrogena",
+  "Eucerin",
+  "Vicks",
+  "Centrum",
+  "Aleve",
+  "Tums",
+  "Bayer Consumer Health",
+  "John C. Gorman",
+  "Michael J. Kowalski"
+ ],
+ "special_rules": {}
+}

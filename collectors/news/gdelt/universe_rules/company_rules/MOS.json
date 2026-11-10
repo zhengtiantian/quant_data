@@ -1,0 +1,32 @@
+{
+ "symbol": "MOS",
+ "name": "The Mosaic Company",
+ "primary_keywords": [
+  "Mosaic Company",
+  "Mosaic Crop Nutrition",
+  "Mosaic Fertilizer Solutions",
+  "Mosaic Fertilizers",
+  "Mosaic Nutrition",
+  "Mosaic Phosphate Solutions",
+  "Mosaic Phosphates",
+  "Mosaic Potash"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Mosaic"
+ ],
+ "dropped_expansion": [
+  "Marty Ross",
+  "Mosaic Fertilizers",
+  "Mosaic Potash",
+  "Mosaic Phosphates",
+  "Mosaic Nutrition",
+  "Mosaic Crop Nutrition",
+  "Mosaic Fertilizer Solutions",
+  "Mosaic Potash Solutions",
+  "Mosaic Phosphate Solutions",
+  "Mosaic Nutrition Solutions"
+ ],
+ "special_rules": {}
+}

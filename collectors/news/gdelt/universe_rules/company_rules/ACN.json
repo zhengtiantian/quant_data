@@ -1,0 +1,21 @@
+{
+ "symbol": "ACN",
+ "name": "Accenture plc",
+ "primary_keywords": [
+  "Accenture"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Julie Sweet",
+  "Accenture Song",
+  "Accenture Interactive",
+  "Accenture Federal",
+  "Accenture Applied Intelligence",
+  "Accenture Research",
+  "Accenture Studio",
+  "Accenture Health"
+ ],
+ "special_rules": {}
+}

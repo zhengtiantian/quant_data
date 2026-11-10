@@ -1,0 +1,23 @@
+{
+ "symbol": "STZ",
+ "name": "Constellation Brands, Inc.",
+ "primary_keywords": [
+  "Constellation Brands"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Corona",
+  "Modelo",
+  "Topo Chico",
+  "Erie",
+  "Sapporo",
+  "Mike Gargiulo",
+  "Cristina Fabbri",
+  "Gordon Biersch",
+  "Redd's",
+  "Bacardi"
+ ],
+ "special_rules": {}
+}

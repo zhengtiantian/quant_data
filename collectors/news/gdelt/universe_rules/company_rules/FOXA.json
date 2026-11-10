@@ -1,0 +1,26 @@
+{
+ "symbol": "FOXA",
+ "name": "Fox Corporation",
+ "primary_keywords": [
+  "Fox Corporation",
+  "Fox Corp"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Chase Carey",
+  "Fox News",
+  "Fox Sports",
+  "Fox Broadcasting",
+  "Fox News Channel",
+  "Fox Sports 1",
+  "Fox Sports 2",
+  "Fox Sports 3",
+  "Fox Sports 4",
+  "Fox Sports 5",
+  "Fox Sports 6",
+  "Fox Sports 7"
+ ],
+ "special_rules": {}
+}

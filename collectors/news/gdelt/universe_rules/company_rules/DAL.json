@@ -1,0 +1,23 @@
+{
+ "symbol": "DAL",
+ "name": "Delta Air Lines, Inc.",
+ "primary_keywords": [
+  "Delta Air Lines"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Delta"
+ ],
+ "dropped_expansion": [
+  "Ed Bastian",
+  "Medallion",
+  "SkyMiles",
+  "Delta One",
+  "Aeromexico",
+  "Virgin Atlantic",
+  "SkyTeam",
+  "Atlanta Hartsfield-Jackson"
+ ],
+ "special_rules": {}
+}

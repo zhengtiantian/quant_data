@@ -1,0 +1,30 @@
+{
+ "symbol": "NWS",
+ "name": "News Corporation",
+ "primary_keywords": [
+  "News Corp",
+  "News Corporation"
+ ],
+ "expansion_keywords": [],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "NWS is a common ticker symbol and News is an ordinary word",
+   "required_keywords": [
+    "News Corp",
+    "News Corporation"
+   ],
+   "min_matches": 1
+  }
+ },
+ "dropped_expansion": [
+  "Reed Hastings",
+  "David Zaslav",
+  "Warner Bros. Discovery",
+  "HBO Max",
+  "Discovery+",
+  "CNN",
+  "TNT",
+  "TBS",
+  "DC Comics"
+ ]
+}

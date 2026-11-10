@@ -1,0 +1,21 @@
+{
+ "symbol": "CASY",
+ "name": "Casey's General Stores, Inc.",
+ "primary_keywords": [
+  "Casey's General Stores"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Casey's"
+ ],
+ "dropped_expansion": [
+  "Casey's",
+  "CASY",
+  "Casey's General Stores",
+  "Casey's Inc",
+  "Casey's Stores",
+  "Casey's General Store"
+ ],
+ "special_rules": {}
+}

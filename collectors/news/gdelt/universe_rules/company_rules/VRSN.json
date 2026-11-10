@@ -1,0 +1,23 @@
+{
+ "symbol": "VRSN",
+ "name": "VeriSign, Inc.",
+ "primary_keywords": [
+  "VeriSign"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Verisign",
+  "VeriSign Inc",
+  "VeriSign, Inc.",
+  "VeriSign Inc.",
+  "VeriSign Inc",
+  "VeriSign, Inc",
+  "VeriSign Inc",
+  "VeriSign",
+  "VeriSign Inc",
+  "VeriSign, Inc"
+ ],
+ "special_rules": {}
+}

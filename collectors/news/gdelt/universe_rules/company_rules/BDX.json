@@ -1,0 +1,24 @@
+{
+ "symbol": "BDX",
+ "name": "Becton, Dickinson and Company",
+ "primary_keywords": [
+  "Becton Dickinson",
+  "Becton, Dickinson and"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Rita F. Redberg",
+  "C. Michael Rinehart",
+  "Cytiva",
+  "BD Biosciences",
+  "BD Medical",
+  "BD R&D",
+  "BD Vacutainer",
+  "BD Purity",
+  "BD Micro",
+  "BD Alaris"
+ ],
+ "special_rules": {}
+}

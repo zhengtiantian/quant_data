@@ -1,0 +1,23 @@
+{
+ "symbol": "ECHO",
+ "name": "EchoStar Corporation",
+ "primary_keywords": [
+  "EchoStar"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Hughes",
+  "DirecTV",
+  "Sling",
+  "EchoStar Mobile",
+  "HughesNet",
+  "EchoStar Aerospace",
+  "EchoStar Defense",
+  "EchoStar Space",
+  "EchoStar Communications",
+  "EchoStar Group"
+ ],
+ "special_rules": {}
+}

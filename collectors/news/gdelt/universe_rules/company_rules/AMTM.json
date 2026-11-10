@@ -1,0 +1,23 @@
+{
+ "symbol": "AMTM",
+ "name": "Amentum Holdings, Inc.",
+ "primary_keywords": [
+  "Amentum"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Amentum Services",
+  "Amentum Health",
+  "Amentum Energy",
+  "Amentum Mission Solutions",
+  "Amentum Federal",
+  "Amentum International",
+  "Amentum Technology",
+  "Amentum Cyber",
+  "Amentum Space",
+  "Amentum Defense"
+ ],
+ "special_rules": {}
+}

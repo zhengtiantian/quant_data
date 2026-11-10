@@ -1,0 +1,22 @@
+{
+ "symbol": "TROW",
+ "name": "T. Rowe Price Group, Inc.",
+ "primary_keywords": [
+  "T. Rowe Price",
+  "T Rowe Price"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Andy Biggs",
+  "T. Rowe Price Associates",
+  "T. Rowe Price International",
+  "T. Rowe Price Capital",
+  "T. Rowe Price Digital",
+  "T. Rowe Price Retirement",
+  "T. Rowe Price Real Estate",
+  "T. Rowe Price Private Markets"
+ ],
+ "special_rules": {}
+}

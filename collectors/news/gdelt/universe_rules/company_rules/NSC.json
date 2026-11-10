@@ -1,0 +1,22 @@
+{
+ "symbol": "NSC",
+ "name": "Norfolk Southern Corporation",
+ "primary_keywords": [
+  "Norfolk Southern"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Matt Rutledge",
+  "Norfolk Southern Railway",
+  "CSX",
+  "Norfolk Southern Health",
+  "Norfolk Southern Foundation",
+  "Norfolk Southern Logistics",
+  "Norfolk Southern Freight",
+  "Norfolk Southern Passenger",
+  "Norfolk Southern Intermodal"
+ ],
+ "special_rules": {}
+}

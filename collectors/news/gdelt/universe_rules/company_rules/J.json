@@ -1,0 +1,24 @@
+{
+ "symbol": "J",
+ "name": "Jacobs Solutions Inc.",
+ "primary_keywords": [
+  "Jacobs Solutions",
+  "Jacobs Engineering"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Jacobs"
+ ],
+ "dropped_expansion": [
+  "Michael Ricks",
+  "Jacobs Engineering",
+  "Jacobs Data",
+  "Jacobs Technology",
+  "Jacobs Infrastructure",
+  "Jacobs Global",
+  "Jacobs GDS",
+  "Jacobs Solutions Inc"
+ ],
+ "special_rules": {}
+}

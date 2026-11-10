@@ -1,0 +1,23 @@
+{
+ "symbol": "KMX",
+ "name": "CarMax, Inc.",
+ "primary_keywords": [
+  "CarMax"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Brian Celeste",
+  "Carmax Auto",
+  "CarMax Finance",
+  "CarMax Tech",
+  "CarMax Auto Finance",
+  "CarMax Insurance",
+  "CarMax Auto Insurance",
+  "CarMax Auto Warranty",
+  "CarMax Auto Protection",
+  "CarMax Auto Care"
+ ],
+ "special_rules": {}
+}

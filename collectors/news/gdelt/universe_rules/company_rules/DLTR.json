@@ -1,0 +1,19 @@
+{
+ "symbol": "DLTR",
+ "name": "Dollar Tree, Inc.",
+ "primary_keywords": [
+  "Dollar Tree"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Beverly Sookias",
+  "Family Dollar",
+  "Dollar General",
+  "Burlington",
+  "Five Below",
+  "Dollar Tree Stores"
+ ],
+ "special_rules": {}
+}

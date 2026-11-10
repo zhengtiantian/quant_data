@@ -1,0 +1,32 @@
+{
+ "symbol": "NDAQ",
+ "name": "Nasdaq, Inc.",
+ "primary_keywords": [
+  "Nasdaq Data Link",
+  "Nasdaq Private Market",
+  "Nasdaq TotalView",
+  "Nasdaq, Inc.",
+  "Nasdaq Inc"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Nasdaq",
+  "Nasdaq-100"
+ ],
+ "dropped_expansion": [
+  "Adena Friedman",
+  "Tom Renner",
+  "Nasdaq Data Link",
+  "Nasdaq Private Market",
+  "Nasdaq TotalView",
+  "Nasdaq-100",
+  "Nasdaq-100 Index",
+  "Nasdaq-100 Futures",
+  "Nasdaq-100 Options",
+  "Nasdaq-100 ETF",
+  "Nasdaq-100 Index Fund",
+  "Nasdaq-100 Index Futures"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,24 @@
+{
+ "symbol": "VTR",
+ "name": "Ventas, Inc.",
+ "primary_keywords": [
+  "Ventas, Inc.",
+  "Ventas Inc"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Ventas"
+ ],
+ "dropped_expansion": [
+  "Jeffery H. Blau",
+  "Michael J. D'Amore",
+  "Vornado",
+  "Brookfield",
+  "Life Science",
+  "Senior Housing",
+  "Medical Office",
+  "LifeStance"
+ ],
+ "special_rules": {}
+}

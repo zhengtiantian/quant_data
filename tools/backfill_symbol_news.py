@@ -44,6 +44,9 @@ WORK_DIR = os.getenv("BACKFILL_WORK_DIR", "/Volumes/Data4T/news_backfill")
 # company match and two-model enrichment do not take on hundreds of new companies unasked.
 RULES_DIR = os.getenv("BACKFILL_RULES_DIR") or None          # None: collectors/news/gdelt/company_rules
 NEWS_COLLECTION = os.getenv("BACKFILL_COLLECTION", "news_articles")
+# Stamped on every stored article when set: the universe backfill writes into news_articles since 2026-11-10
+# with origin=universe_backfill, which the nightly company match, enrichment, features and RAG index skip.
+ORIGIN = os.getenv("BACKFILL_ORIGIN") or None
 # Keep a GKG row only when the company is named in its headline (or the URL slug). GKG lists
 # every organisation an article mentions, and on 120 hand-checked universe rows (2026-11-03) 39% were about
 # something else: market wraps naming it once, other companies' news, research-report spam. Requiring the
@@ -127,12 +130,15 @@ def scan_many(symbols_keywords: dict, since: str, deadline: float | None = None,
     return True
 
 
-def existing_urls(urls: list[str]) -> set[str]:
+def existing_urls(urls: list[str], symbol: str) -> set[str]:
+    """URLs already stored for this company. Another company's copy does not count: since 2026-11-10
+    (plan B) an article is stored once per company it is about."""
     import pymongo
     col = pymongo.MongoClient(os.getenv("MONGO_URI"))["quant_data"][NEWS_COLLECTION]
     have = set()
     for i in range(0, len(urls), 1000):
-        have.update(d["url"] for d in col.find({"url": {"$in": urls[i:i + 1000]}}, {"url": 1, "_id": 0}))
+        have.update(d["url"] for d in col.find({"url": {"$in": urls[i:i + 1000]}, "symbol": symbol},
+                                               {"url": 1, "_id": 0}))
     return have
 
 
@@ -150,7 +156,7 @@ def filter_stage(symbol: str, cand: Path, out: Path, workers: int) -> None:
     decided_file = out.with_suffix(".decided")
     if decided_file.exists():
         seen |= set(decided_file.read_text().split("\n"))
-    stored = existing_urls([u for u in rows if u not in seen])
+    stored = existing_urls([u for u in rows if u not in seen], symbol)
     todo = [r for u, r in rows.items() if u not in seen and u not in stored]
     progress("filter", 0, len(todo), f"unique={len(rows)} already_stored={len(stored)}")
 
@@ -198,7 +204,7 @@ def fetch_stage(symbol: str, name: str, kept: Path, workers: int) -> None:
     done_file = kept.with_suffix(".fetched")
     done = set(done_file.read_text().split("\n")) if done_file.exists() else set()
     rows = [json.loads(l) for l in kept.open()]
-    stored = existing_urls([r["url"] for r in rows if r["url"] not in done])
+    stored = existing_urls([r["url"] for r in rows if r["url"] not in done], symbol)
     groups: dict[str, list[dict]] = {}
     for r in rows:
         groups.setdefault(story_key(r["url"], r.get("raw", "")), []).append(r)
@@ -231,7 +237,10 @@ def fetch_stage(symbol: str, name: str, kept: Path, workers: int) -> None:
             url, art = f.result()
             fd.write(url + "\n")
             if art:
-                pending.append(UpdateOne({"url": art["url"]}, {"$setOnInsert": art}, upsert=True))
+                if ORIGIN:
+                    art["origin"] = ORIGIN
+                pending.append(UpdateOne({"url": art["url"], "symbol": art.get("symbol", symbol)},
+                                         {"$setOnInsert": art}, upsert=True))
                 stats[art.get("data_quality", "full") if art.get("data_quality") in stats else "full"] += 1
             else:
                 stats["rejected_or_dead"] += 1

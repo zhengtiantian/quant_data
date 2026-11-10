@@ -1,0 +1,23 @@
+{
+ "symbol": "BG",
+ "name": "Bunge Global SA",
+ "primary_keywords": [
+  "Bunge"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "John Bunge",
+  "Gregory Jaffe",
+  "Cargill",
+  "ADM",
+  "Limagrain",
+  "Agri-business",
+  "Crushers",
+  "Oilseeds",
+  "Edible Oils",
+  "Flour Mills"
+ ],
+ "special_rules": {}
+}

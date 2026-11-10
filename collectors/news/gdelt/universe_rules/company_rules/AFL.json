@@ -1,0 +1,21 @@
+{
+ "symbol": "AFL",
+ "name": "Aflac Incorporated",
+ "primary_keywords": [
+  "Aflac"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Tom Wilson",
+  "Michael Meehan",
+  "Aflac Life",
+  "Aflac Health",
+  "Aflac International",
+  "Aflac Japan",
+  "Aflac Insurance Company of New York",
+  "Aflac Insurance Company of America"
+ ],
+ "special_rules": {}
+}

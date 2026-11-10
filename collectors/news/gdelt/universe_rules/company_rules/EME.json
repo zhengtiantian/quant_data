@@ -1,0 +1,18 @@
+{
+ "symbol": "EME",
+ "name": "EMCOR Group, Inc.",
+ "primary_keywords": [
+  "EMCOR"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "John W. Rogers",
+  "Michael J. Kowalski",
+  "EMCOR Services",
+  "EMCOR International",
+  "EMCOR Group Inc"
+ ],
+ "special_rules": {}
+}

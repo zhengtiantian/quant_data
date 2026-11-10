@@ -1,0 +1,25 @@
+{
+ "symbol": "LYB",
+ "name": "LyondellBasell Industries N.V.",
+ "primary_keywords": [
+  "LyondellBasell",
+  "Lyondell",
+  "Basell"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Richard Young",
+  "Renee Haas",
+  "Cristian Rattini",
+  "Ineos",
+  "SABIC",
+  "Covestro",
+  "Mitsui",
+  "Cyclo Olefin Polymer",
+  "POE",
+  "Metabolic"
+ ],
+ "special_rules": {}
+}

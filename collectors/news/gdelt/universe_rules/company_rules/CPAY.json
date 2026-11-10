@@ -1,0 +1,23 @@
+{
+ "symbol": "CPAY",
+ "name": "Corpay, Inc.",
+ "primary_keywords": [
+  "Corpay",
+  "FleetCor"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Michael D'Antoni",
+  "Kirk Lunsford",
+  "Worldpay",
+  "Fiserv",
+  "Paxar",
+  "Ingenico",
+  "CardinalCommerce",
+  "Payee",
+  "Corpay Merchant Services"
+ ],
+ "special_rules": {}
+}

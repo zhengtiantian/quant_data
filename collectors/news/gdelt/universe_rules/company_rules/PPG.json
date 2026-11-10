@@ -1,0 +1,37 @@
+{
+ "symbol": "PPG",
+ "name": "PPG Industries, Inc.",
+ "primary_keywords": [
+  "PPG"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-05",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Michael J. McGarry",
+  "Dulux",
+  "Glidden",
+  "PPG Aerospace",
+  "Pittsburgh Paints",
+  "Pittsburgh Plate Glass"
+ ],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "PPG is also an arena name, points per game and photoplethysmography (rule check 2026-11-05: 7 of 22 noise)",
+   "required_keywords": [
+    "PPG"
+   ],
+   "min_matches": 1,
+   "trust_single_match": true,
+   "exclude_patterns": [
+    "PPG Paints Arena",
+    "points per game",
+    "\\bPPG[- ]based\\b",
+    "photoplethysmo"
+   ],
+   "exclude_title_patterns": [
+    "\\b\\d+\\.\\d+ ?PPG\\b"
+   ]
+  }
+ }
+}

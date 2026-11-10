@@ -1,0 +1,21 @@
+{
+ "symbol": "CAH",
+ "name": "Cardinal Health, Inc.",
+ "primary_keywords": [
+  "Cardinal Health"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Marty Bland",
+  "Cencora",
+  "McKesson",
+  "AmerisourceBergen",
+  "Vitality",
+  "Cardinal Health Specialty",
+  "Medline",
+  "HCA Healthcare"
+ ],
+ "special_rules": {}
+}

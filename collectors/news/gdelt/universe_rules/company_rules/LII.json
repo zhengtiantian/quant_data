@@ -1,0 +1,23 @@
+{
+ "symbol": "LII",
+ "name": "Lennox International Inc.",
+ "primary_keywords": [
+  "Lennox International"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Lennox"
+ ],
+ "dropped_expansion": [
+  "Mark Barbin",
+  "Kirk Leach",
+  "Miller Air",
+  "Bryant",
+  "Goodman",
+  "Amana",
+  "Evolution",
+  "iComfort"
+ ],
+ "special_rules": {}
+}

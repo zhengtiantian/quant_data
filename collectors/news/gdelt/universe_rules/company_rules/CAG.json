@@ -1,0 +1,23 @@
+{
+ "symbol": "CAG",
+ "name": "Conagra Brands, Inc.",
+ "primary_keywords": [
+  "Conagra"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Pamela Danck",
+  "Hunt's",
+  "Pillsbury",
+  "Reddi-wip",
+  "Ezra",
+  "Healthy Choice",
+  "Dial",
+  "Sargento",
+  "Slim Jim",
+  "Chef Boyardee"
+ ],
+ "special_rules": {}
+}

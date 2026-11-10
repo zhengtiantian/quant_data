@@ -1,0 +1,21 @@
+{
+ "symbol": "LH",
+ "name": "Labcorp Holdings Inc.",
+ "primary_keywords": [
+  "Labcorp"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Rex Habscheid",
+  "David Foster",
+  "Quest Diagnostics",
+  "BioReference Laboratories",
+  "Cytel",
+  "Labcorp Drug Development",
+  "LDTs",
+  "Clinical Diagnostics"
+ ],
+ "special_rules": {}
+}

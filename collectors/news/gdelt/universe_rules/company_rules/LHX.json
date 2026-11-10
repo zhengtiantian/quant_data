@@ -1,0 +1,25 @@
+{
+ "symbol": "LHX",
+ "name": "L3Harris Technologies, Inc.",
+ "primary_keywords": [
+  "L3Harris"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Chris Kubasik",
+  "AN/ALQ-249",
+  "AN/APG-81",
+  "AN/SPQ-23",
+  "AN/ASQ-235",
+  "AN/ALQ-218",
+  "AN/ALQ-214",
+  "AN/ALQ-213",
+  "AN/ALQ-212",
+  "AN/ALQ-211",
+  "AN/ALQ-210",
+  "AN/ALQ-209"
+ ],
+ "special_rules": {}
+}

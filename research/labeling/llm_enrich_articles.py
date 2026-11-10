@@ -429,6 +429,10 @@ def main() -> None:
         log.info("Models ready in %.1fs", time.time() - t0)
 
         query = {f"llm_sentiment_{suffix}": {"$exists": False}}
+        # The 490 universe companies' rows (origin=universe_backfill, 2026-11-10) are labelled by the
+        # distilled students, not by this nightly pass: ~700k rows would hold the chain for days.
+        if os.getenv("ENRICH_INCLUDE_UNIVERSE", "0") != "1":
+            query["origin"] = {"$ne": "universe_backfill"}
         projection = {"_id": 1, "title": 1, "content": 1, "symbol": 1, "name": 1}
 
         run_loop(coll, query, projection,

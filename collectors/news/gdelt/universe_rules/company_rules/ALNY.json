@@ -1,0 +1,23 @@
+{
+ "symbol": "ALNY",
+ "name": "Alnylam Pharmaceuticals, Inc.",
+ "primary_keywords": [
+  "Alnylam"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Wolters",
+  "Oncaspar",
+  "Oxlumo",
+  "Leqvio",
+  "Onpattro",
+  "Amvuttra",
+  "Tegsedi",
+  "Odensio",
+  "Galafold",
+  "Volemy"
+ ],
+ "special_rules": {}
+}

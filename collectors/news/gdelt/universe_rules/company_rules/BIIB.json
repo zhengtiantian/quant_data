@@ -1,0 +1,23 @@
+{
+ "symbol": "BIIB",
+ "name": "Biogen Inc.",
+ "primary_keywords": [
+  "Biogen"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Miguel Setas",
+  "Tysabri",
+  "Spinraza",
+  "Alecso",
+  "Ocrevus",
+  "Briumvi",
+  "Leqembi",
+  "Vumerity",
+  "Tofacitinib",
+  "Biogen Idec"
+ ],
+ "special_rules": {}
+}

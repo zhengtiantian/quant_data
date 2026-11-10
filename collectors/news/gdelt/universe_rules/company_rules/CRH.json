@@ -1,0 +1,23 @@
+{
+ "symbol": "CRH",
+ "name": "CRH plc",
+ "primary_keywords": [
+  "CRH"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "CRH Building Materials",
+  "CRH Aggregates",
+  "CRH Cement",
+  "CRH Ready-Mix",
+  "CRH Construction Products",
+  "CRH Road",
+  "CRH Roofing",
+  "CRH Paving",
+  "CRH Construction",
+  "CRH Building"
+ ],
+ "special_rules": {}
+}

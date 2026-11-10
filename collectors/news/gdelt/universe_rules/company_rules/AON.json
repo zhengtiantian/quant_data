@@ -1,0 +1,21 @@
+{
+ "symbol": "AON",
+ "name": "Aon plc",
+ "primary_keywords": [
+  "Aon"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Greg Case",
+  "Aon Benfield",
+  "Aon Risk Solutions",
+  "Aon Re",
+  "Aon Affinity",
+  "Aon Hewitt",
+  "Aon Consulting",
+  "Aon Digital"
+ ],
+ "special_rules": {}
+}

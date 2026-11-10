@@ -1,0 +1,23 @@
+{
+ "symbol": "GDDY",
+ "name": "GoDaddy Inc.",
+ "primary_keywords": [
+  "GoDaddy"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Matt Rosenthal",
+  "Bill Goodwin",
+  "GoDaddy Pro",
+  "GoDaddy Ads",
+  "GoDaddy Security",
+  "GoDaddy AI",
+  "GoDaddy Registrar",
+  "GoDaddy Websites",
+  "GoDaddy Email",
+  "GoDaddy Domains"
+ ],
+ "special_rules": {}
+}

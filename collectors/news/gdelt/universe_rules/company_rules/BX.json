@@ -1,0 +1,38 @@
+{
+ "symbol": "BX",
+ "name": "Blackstone Inc.",
+ "primary_keywords": [
+  "Blackstone"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Steve Schwarzman",
+  "Jon Gray",
+  "Blackstone Real Estate",
+  "Blackstone Private Equity",
+  "Blackstone Credit",
+  "Blackstone Infrastructure",
+  "Blackstone Life Sciences",
+  "Blackstone Digital Assets",
+  "Blackstone Private Wealth",
+  "Blackstone Real Estate Equity"
+ ],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "Blackstone is also a griddle brand and a surname (rule check 2026-11-04: 3/8)",
+   "required_keywords": [
+    "Blackstone"
+   ],
+   "min_matches": 1,
+   "trust_single_match": true,
+   "exclude_title_patterns": [
+    "\\b(grills?|griddles?)\\b",
+    "\\bdeals?\\b",
+    "\\b(Lydia|Jerry|Harry|Kevin|Mike|Sean|Carl) Blackstone\\b",
+    "\\bBlackstone to perform\\b"
+   ]
+  }
+ }
+}

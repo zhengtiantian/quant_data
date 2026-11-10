@@ -1,0 +1,23 @@
+{
+ "symbol": "SLG",
+ "name": "SL Green Realty Corp.",
+ "primary_keywords": [
+  "SL Green"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Thomas J. Hickey",
+  "One Vanderbilt",
+  "425 Park Avenue",
+  "111 West 57th Street",
+  "55 Water Street",
+  "150 West 30th Street",
+  "200 West Street",
+  "120 Wall Street",
+  "500 Fifth Avenue",
+  "1000 Fifth Avenue"
+ ],
+ "special_rules": {}
+}

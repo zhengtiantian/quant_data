@@ -1,0 +1,23 @@
+{
+ "symbol": "ECL",
+ "name": "Ecolab Inc.",
+ "primary_keywords": [
+  "Ecolab"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Michael T. Toller",
+  "Derek D. Smith",
+  "Diversey",
+  "Pentair Pool Products",
+  "AquaPure",
+  "Nalco",
+  "CROdaq",
+  "Hygiene Solutions",
+  "Water Solutions",
+  "Food Ingredients"
+ ],
+ "special_rules": {}
+}

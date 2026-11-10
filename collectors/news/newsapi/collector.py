@@ -146,11 +146,12 @@ def save_to_mongo(articles):
 def ensure_index():
     client = MongoClient(MONGO_URI)
     col = client["quant_data"]["news_articles"]
+    # (url, symbol) since 2026-11-10: one article may be stored for each company it is about (plan B)
     try:
-        col.create_index({"url": 1}, unique=True, sparse=True)
-        print("Index created on url")
-    except:
-        print("Index already exists")
+        col.create_index([("url", 1), ("symbol", 1)], unique=True, name="url_1_symbol_1")
+        print("Index on (url, symbol)")
+    except Exception as e:  # noqa: BLE001
+        print(f"Index setup skipped: {e}")
 
 
 # =========================================================

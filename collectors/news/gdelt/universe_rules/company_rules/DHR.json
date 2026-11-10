@@ -1,0 +1,23 @@
+{
+ "symbol": "DHR",
+ "name": "Danaher Corporation",
+ "primary_keywords": [
+  "Danaher"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Rick Dalrymple",
+  "Beckman Coulter",
+  "Leica Microsystems",
+  "BioTek",
+  "Cytiva",
+  "Pall Corporation",
+  "VWR International",
+  "Bio-Rad",
+  "Agilent",
+  "Thermo Fisher"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,21 @@
+{
+ "symbol": "FAST",
+ "name": "Fastenal Company",
+ "primary_keywords": [
+  "Fastenal"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Greg Forest",
+  "Tim Forest",
+  "Fastenal Industrial",
+  "Fastenal Logistics",
+  "Fastenal Supply",
+  "Fastenal Canada",
+  "Fastenal UK",
+  "Fastenal Mexico"
+ ],
+ "special_rules": {}
+}

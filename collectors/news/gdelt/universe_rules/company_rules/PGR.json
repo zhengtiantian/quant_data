@@ -1,0 +1,24 @@
+{
+ "symbol": "PGR",
+ "name": "The Progressive Corporation",
+ "primary_keywords": [
+  "Progressive Casualty",
+  "Progressive Insurance",
+  "The Progressive Corporation"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Progressive"
+ ],
+ "dropped_expansion": [
+  "Bill Grether",
+  "Tricia Dutton",
+  "Progressive Direct",
+  "The Hartford",
+  "Progressive Casualty",
+  "Snappy",
+  "Progressive Auto"
+ ],
+ "special_rules": {}
+}

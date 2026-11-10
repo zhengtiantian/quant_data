@@ -1,0 +1,33 @@
+{
+ "symbol": "EBAY",
+ "name": "eBay Inc.",
+ "primary_keywords": [
+  "eBay"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-05",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Jamie Iannone",
+  "Bhavana Krishnamurthy",
+  "Magical Listing",
+  "eBay Motors",
+  "eBay International",
+  "eBay Classifieds"
+ ],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "items bought or sold on eBay are not eBay's news (rule check 2026-11-05: 5 of 20 noise)",
+   "required_keywords": [
+    "eBay"
+   ],
+   "min_matches": 1,
+   "trust_single_match": true,
+   "exclude_title_patterns": [
+    "\\b(sold|sells|sell|selling|listed|bought|fetch(es|ed)?|goes for|went for)\\b.{0,60}\\bon eBay\\b",
+    "\\bon eBay\\b.{0,30}\\b(for|bidding|listing)\\b",
+    "eBay (dress|bidding war|find)"
+   ]
+  }
+ }
+}

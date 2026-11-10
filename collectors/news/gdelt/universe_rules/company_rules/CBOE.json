@@ -1,0 +1,35 @@
+{
+ "symbol": "CBOE",
+ "name": "Cboe Global Markets, Inc.",
+ "primary_keywords": [
+  "Cboe Australia",
+  "Cboe Brazil",
+  "Cboe Canada",
+  "Cboe Data",
+  "Cboe Europe",
+  "Cboe India",
+  "Cboe Japan",
+  "Cboe Mexico",
+  "Cboe Global Markets"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Cboe"
+ ],
+ "dropped_expansion": [
+  "Jeff Sprecher",
+  "Cboe Canada",
+  "Cboe Europe",
+  "Cboe Australia",
+  "Cboe Mexico",
+  "Cboe Brazil",
+  "Cboe India",
+  "Cboe Japan",
+  "Cboe Global Indices",
+  "Cboe Volatility Index",
+  "VIX",
+  "Cboe Data"
+ ],
+ "special_rules": {}
+}

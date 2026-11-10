@@ -1,0 +1,20 @@
+{
+ "symbol": "CTAS",
+ "name": "Cintas Corporation",
+ "primary_keywords": [
+  "Cintas"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Roberto Alvarez",
+  "Cintas Corporation",
+  "Uniform Rental",
+  "First Aid",
+  "Fire Protection",
+  "Safety Products",
+  "Workplace Safety"
+ ],
+ "special_rules": {}
+}

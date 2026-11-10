@@ -1,0 +1,29 @@
+{
+ "symbol": "CTSH",
+ "name": "Cognizant Technology Solutions Corporation",
+ "primary_keywords": [
+  "Cognizant Cloud",
+  "Cognizant Digital",
+  "Cognizant Financial Services",
+  "Cognizant GenAI",
+  "Cognizant Health",
+  "Cognizant Technology Solutions"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Cognizant"
+ ],
+ "dropped_expansion": [
+  "Ravi Menon",
+  "Rajeev Sukumaran",
+  "Nitin Kanojia",
+  "Cognizant GenAI",
+  "Cognizant Cloud",
+  "Cognizant Digital",
+  "Cognizant Financial Services",
+  "Cognizant Health",
+  "Cognizant Technology Solutions"
+ ],
+ "special_rules": {}
+}

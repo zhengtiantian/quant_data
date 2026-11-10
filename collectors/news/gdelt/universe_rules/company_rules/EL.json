@@ -1,0 +1,24 @@
+{
+ "symbol": "EL",
+ "name": "The Estée Lauder Companies Inc.",
+ "primary_keywords": [
+  "Estée Lauder",
+  "Estee Lauder"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Aramis",
+  "Clinique",
+  "MAC Cosmetics",
+  "La Mer",
+  "Bobbi Brown",
+  "Aveda",
+  "Origins",
+  "Tom Ford Beauty",
+  "Diane Fenison",
+  "John O'Kane"
+ ],
+ "special_rules": {}
+}

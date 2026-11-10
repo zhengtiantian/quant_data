@@ -1,0 +1,21 @@
+{
+ "symbol": "HWM",
+ "name": "Howmet Aerospace Inc.",
+ "primary_keywords": [
+  "Howmet"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "PCC Aerospace",
+  "Aerometal",
+  "Carpenter Technology",
+  "R. Scott Booth",
+  "John C. Stoltz",
+  "Aerostructures",
+  "Engine Components",
+  "Aircraft Systems"
+ ],
+ "special_rules": {}
+}

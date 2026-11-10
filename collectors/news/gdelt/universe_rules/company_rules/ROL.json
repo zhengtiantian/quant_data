@@ -1,0 +1,22 @@
+{
+ "symbol": "ROL",
+ "name": "Rollins, Inc.",
+ "primary_keywords": [
+  "Rollins, Inc.",
+  "Rollins Inc"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Rollins"
+ ],
+ "dropped_expansion": [
+  "Pest Control",
+  "Orkin",
+  "A. Gary Conover",
+  "Terminix",
+  "National Pest Control",
+  "Rapid Environment Response"
+ ],
+ "special_rules": {}
+}

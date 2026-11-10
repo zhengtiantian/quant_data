@@ -1,0 +1,24 @@
+{
+ "symbol": "BNY",
+ "name": "The Bank of New York Mellon Corporation",
+ "primary_keywords": [
+  "Bank of New York Mellon",
+  "BNY Mellon"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Robert M. Willard",
+  "Michael J. Santomassimo",
+  "Mellon",
+  "State Street",
+  "BlackRock",
+  "asset management",
+  "custody",
+  "clearing",
+  "fund services",
+  "wealth management"
+ ],
+ "special_rules": {}
+}

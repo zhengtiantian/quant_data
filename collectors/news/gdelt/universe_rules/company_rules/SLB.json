@@ -1,0 +1,40 @@
+{
+ "symbol": "SLB",
+ "name": "SLB N.V.",
+ "primary_keywords": [
+  "SLB",
+  "Schlumberger"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-05",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Jeroen van der Woude",
+  "Jeroen Dik",
+  "Baker Hughes",
+  "Cameron",
+  "Schlumberger",
+  "Compass",
+  "SLB One"
+ ],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "SLB is also Sanjay Leela Bhansali, Standard Lesotho Bank and SLB Capital Advisors (rule check 2026-11-05: 6 of 18 noise)",
+   "required_keywords": [
+    "SLB",
+    "Schlumberger"
+   ],
+   "min_matches": 1,
+   "trust_single_match": true,
+   "exclude_patterns": [
+    "Bhansali",
+    "Heeramandi",
+    "Sanjay Leela",
+    "SLB Capital",
+    "Lesotho",
+    "Shanti Celeste",
+    "\\bBollywood\\b"
+   ]
+  }
+ }
+}

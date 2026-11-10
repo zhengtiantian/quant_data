@@ -1,0 +1,21 @@
+{
+ "symbol": "LDOS",
+ "name": "Leidos Holdings, Inc.",
+ "primary_keywords": [
+  "Leidos"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Stephen J. Ellis",
+  "Leidos Digital",
+  "Leidos Health",
+  "Leidos Space",
+  "Leidos Cyber",
+  "Leidos Government",
+  "Leidos Engineering",
+  "Leidos International"
+ ],
+ "special_rules": {}
+}

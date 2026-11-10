@@ -1,0 +1,21 @@
+{
+ "symbol": "LNT",
+ "name": "Alliant Energy Corporation",
+ "primary_keywords": [
+  "Alliant Energy"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Dan Diller",
+  "Alliant Energy Solutions",
+  "Alliant Energy Cooperative",
+  "Wisconsin Public Service",
+  "Iowa Public Service",
+  "Minnesota Power",
+  "Alliant Energy Retail",
+  "Alliant Energy Transmission"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,24 @@
+{
+ "symbol": "CHD",
+ "name": "Church & Dwight Co., Inc.",
+ "primary_keywords": [
+  "Church & Dwight",
+  "Church and Dwight"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Arm & Hammer",
+  "Tide",
+  "Dawn",
+  "OxiClean",
+  "Raid",
+  "Lysol",
+  "Dettol",
+  "Gum",
+  "Dr. Squirt",
+  "Sally Johnson"
+ ],
+ "special_rules": {}
+}

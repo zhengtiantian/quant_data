@@ -1,0 +1,21 @@
+{
+ "symbol": "SEDG",
+ "name": "SolarEdge Technologies, Inc.",
+ "primary_keywords": [
+  "SolarEdge"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Shai Levi",
+  "Shahar Sadeh",
+  "Solar Optimizer",
+  "Power Optimizer",
+  "Solar Inverter",
+  "Battery Storage",
+  "Home Energy Management System",
+  "HEMS"
+ ],
+ "special_rules": {}
+}

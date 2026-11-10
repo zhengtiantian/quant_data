@@ -1,0 +1,23 @@
+{
+ "symbol": "APO",
+ "name": "Apollo Global Management, Inc.",
+ "primary_keywords": [
+  "Apollo Global Management",
+  "Apollo Funds"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Apollo"
+ ],
+ "dropped_expansion": [
+  "Joshua Harris",
+  "Leah Burden",
+  "Apollo Funds",
+  "Apollo Asset Management",
+  "Apollo Insurance",
+  "Apollo Global",
+  "Apollo Capital"
+ ],
+ "special_rules": {}
+}

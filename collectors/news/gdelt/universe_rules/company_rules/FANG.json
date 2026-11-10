@@ -1,0 +1,20 @@
+{
+ "symbol": "FANG",
+ "name": "Diamondback Energy, Inc.",
+ "primary_keywords": [
+  "Diamondback Energy"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Ryan Manuel",
+  "Nick Landry",
+  "Permian Basin",
+  "Midland Basin",
+  "Eagle Ford",
+  "Williston Basin",
+  "Diamondback"
+ ],
+ "special_rules": {}
+}

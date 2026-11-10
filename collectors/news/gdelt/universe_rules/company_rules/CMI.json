@@ -1,0 +1,27 @@
+{
+ "symbol": "CMI",
+ "name": "Cummins Inc.",
+ "primary_keywords": [
+  "Cummins Inc"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Cummins"
+ ],
+ "dropped_expansion": [
+  "Thomas U. LaDoux",
+  "Bryan T. Strickland",
+  "Cummins QSK60",
+  "Cummins QSK95",
+  "Cummins QSK125",
+  "Cummins QSK150",
+  "Cummins QSK190",
+  "Cummins QSK250",
+  "Cummins QSK300",
+  "Cummins QSK350",
+  "Cummins QSK400",
+  "Cummins QSK450"
+ ],
+ "special_rules": {}
+}

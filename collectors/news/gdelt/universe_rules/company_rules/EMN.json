@@ -1,0 +1,24 @@
+{
+ "symbol": "EMN",
+ "name": "Eastman Chemical Company",
+ "primary_keywords": [
+  "Eastman Chemical",
+  "Eastman Chemicals"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Eastman"
+ ],
+ "dropped_expansion": [
+  "Kathryn Combs",
+  "Eastman Kodak",
+  "Eastman Kodak Company",
+  "Eastman Chemical Company",
+  "Eastman Kodak plc",
+  "Eastman Chemical Co",
+  "Eastman Chemicals",
+  "Eastman"
+ ],
+ "special_rules": {}
+}

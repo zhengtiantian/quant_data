@@ -1,0 +1,27 @@
+{
+ "symbol": "STT",
+ "name": "State Street Corporation",
+ "primary_keywords": [
+  "State Street Bank",
+  "State Street Corporation",
+  "State Street Global Advisors",
+  "State Street Trust"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "State Street"
+ ],
+ "dropped_expansion": [
+  "Mark Mack",
+  "Brian Rose",
+  "State Street Global Advisors",
+  "SSGA",
+  "State Street Bank",
+  "State Street Trust",
+  "State Street Corporation",
+  "State Street Investment Management",
+  "State Street Global Markets"
+ ],
+ "special_rules": {}
+}

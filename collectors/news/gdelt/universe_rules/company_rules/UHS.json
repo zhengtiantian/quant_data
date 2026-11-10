@@ -1,0 +1,21 @@
+{
+ "symbol": "UHS",
+ "name": "Universal Health Services, Inc.",
+ "primary_keywords": [
+  "Universal Health Services"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Lance Roberson",
+  "Jeffrey S. Blum",
+  "Aya Healthcare",
+  "Covenant Medical Center",
+  "Pinnacle Health",
+  "Covenant Behavioral Health",
+  "Covenant Medical",
+  "Aya Health"
+ ],
+ "special_rules": {}
+}

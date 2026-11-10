@@ -1,0 +1,27 @@
+{
+ "symbol": "CZR",
+ "name": "Caesars Entertainment, Inc.",
+ "primary_keywords": [
+  "Caesars Entertainment",
+  "Caesars Palace",
+  "Caesars Sportsbook"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Caesars"
+ ],
+ "dropped_expansion": [
+  "Tony Haskins",
+  "Caesars Superdome",
+  "Harrah's",
+  "Caesars Palace",
+  "William Hill",
+  "Caesars Sportsbook",
+  "Caesars Rewards",
+  "Caesars Digital",
+  "Caesars Live",
+  "Caesars Atlantic City"
+ ],
+ "special_rules": {}
+}

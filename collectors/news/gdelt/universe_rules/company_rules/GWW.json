@@ -1,0 +1,30 @@
+{
+ "symbol": "GWW",
+ "name": "W.W. Grainger, Inc.",
+ "primary_keywords": [
+  "W.W. Grainger",
+  "Grainger.com",
+  "WW Grainger",
+  "Graingercom"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Grainger"
+ ],
+ "dropped_expansion": [
+  "Grainger.com",
+  "Grainger Direct",
+  "Grainger Industrial Supply",
+  "Grainger Canada",
+  "Grainger UK",
+  "Grainger Australia",
+  "Grainger Mexico",
+  "Grainger Brazil",
+  "Grainger Germany",
+  "Grainger France",
+  "Grainger Spain",
+  "Grainger Italy"
+ ],
+ "special_rules": {}
+}

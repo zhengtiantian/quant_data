@@ -1,0 +1,21 @@
+{
+ "symbol": "NTAP",
+ "name": "NetApp, Inc.",
+ "primary_keywords": [
+  "NetApp"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Barry Balmer",
+  "George Kurian",
+  "OnCommand",
+  "SolidFire",
+  "Portworx",
+  "BlueXP",
+  "E-Series",
+  "FAS"
+ ],
+ "special_rules": {}
+}

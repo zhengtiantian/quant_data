@@ -1,0 +1,21 @@
+{
+ "symbol": "FDXF",
+ "name": "FedEx Freight Holding Company, Inc.",
+ "primary_keywords": [
+  "FedEx Freight"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "LTL",
+  "less-than-truckload",
+  "FedEx Ground",
+  "FedEx Express",
+  "Jim Johnston",
+  "John Smith",
+  "Randy Hutton",
+  "FedEx Corporation"
+ ],
+ "special_rules": {}
+}

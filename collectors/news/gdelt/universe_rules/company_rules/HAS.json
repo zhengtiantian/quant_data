@@ -1,0 +1,25 @@
+{
+ "symbol": "HAS",
+ "name": "Hasbro, Inc.",
+ "primary_keywords": [
+  "Hasbro"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Mattel",
+  "Monopoly",
+  "Risk",
+  "Clue",
+  "Mr. Potato Head",
+  "Transformers",
+  "My Little Pony",
+  "Charades",
+  "Operation",
+  "Cranium",
+  "Paw Patrol",
+  "Barbie"
+ ],
+ "special_rules": {}
+}

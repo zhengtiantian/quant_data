@@ -1,0 +1,25 @@
+{
+ "symbol": "ESS",
+ "name": "Essex Property Trust, Inc.",
+ "primary_keywords": [
+  "Essex Property",
+  "Essex REIT",
+  "Essex Residential"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Essex"
+ ],
+ "dropped_expansion": [
+  "John W. Rogers",
+  "Essex Residential",
+  "Essex Financial",
+  "Essex Credit",
+  "Essex Mortgage",
+  "Essex Investment",
+  "Essex Property",
+  "Essex REIT"
+ ],
+ "special_rules": {}
+}

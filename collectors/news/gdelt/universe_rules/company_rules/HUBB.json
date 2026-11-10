@@ -1,0 +1,34 @@
+{
+ "symbol": "HUBB",
+ "name": "Hubbell Incorporated",
+ "primary_keywords": [
+  "Hubbell Construction Products",
+  "Hubbell Grid & Utility Solutions",
+  "Hubbell Grid Solutions",
+  "Hubbell Incorporated",
+  "Hubbell Lighting",
+  "Hubbell Power Systems",
+  "Hubbell Premise & Commercial Solutions",
+  "Hubbell Premise Wiring",
+  "Hubbell Transmission & Distribution",
+  "Hubbell Utility Solutions"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Hubbell"
+ ],
+ "dropped_expansion": [
+  "James D. O'Neal",
+  "Hubbell Power Systems",
+  "Hubbell Lighting",
+  "Hubbell Premise Wiring",
+  "Hubbell Grid Solutions",
+  "Hubbell Construction Products",
+  "Hubbell Transmission & Distribution",
+  "Hubbell Utility Solutions",
+  "Hubbell Grid & Utility Solutions",
+  "Hubbell Premise & Commercial Solutions"
+ ],
+ "special_rules": {}
+}

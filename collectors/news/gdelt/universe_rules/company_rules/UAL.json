@@ -1,0 +1,21 @@
+{
+ "symbol": "UAL",
+ "name": "United Airlines Holdings, Inc.",
+ "primary_keywords": [
+  "United Airlines"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Scott Kirby",
+  "Hubert Joly",
+  "Continental Airlines",
+  "Star Alliance",
+  "Polaris",
+  "MileagePlus",
+  "Hartfield",
+  "Chicago O'Hare"
+ ],
+ "special_rules": {}
+}

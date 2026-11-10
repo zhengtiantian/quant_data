@@ -1,0 +1,22 @@
+{
+ "symbol": "GEN",
+ "name": "Gen Digital Inc.",
+ "primary_keywords": [
+  "Gen Digital",
+  "NortonLifeLock"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Norton",
+  "LifeLock",
+  "Avast",
+  "AVG",
+  "CCO",
+  "Avira",
+  "Genie",
+  "LifeLock Identity Protection"
+ ],
+ "special_rules": {}
+}

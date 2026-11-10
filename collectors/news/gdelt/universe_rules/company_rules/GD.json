@@ -1,0 +1,23 @@
+{
+ "symbol": "GD",
+ "name": "General Dynamics Corporation",
+ "primary_keywords": [
+  "General Dynamics"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Lockheed Martin",
+  "Raytheon",
+  "Northrop Grumman",
+  "BAE Systems",
+  "L3Harris",
+  "Huntington Ingalls",
+  "Electric Boat",
+  "General Dynamics Land Systems",
+  "Dassault Aviation",
+  "Mission Systems"
+ ],
+ "special_rules": {}
+}

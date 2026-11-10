@@ -1,0 +1,25 @@
+{
+ "symbol": "DGX",
+ "name": "Quest Diagnostics Incorporated",
+ "primary_keywords": [
+  "Quest Diagnostics"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Quest"
+ ],
+ "dropped_expansion": [
+  "Joseph Papa",
+  "Mark Rasmussen",
+  "Quest Diagnostics Laboratories",
+  "Quest Diagnostics Research",
+  "Quest Diagnostics Health Care",
+  "Quest Diagnostics Clinical Laboratories",
+  "Quest Diagnostics Diagnostics",
+  "Quest Diagnostics Research and Development",
+  "Quest Diagnostics Clinical Research",
+  "Quest Diagnostics Health Information"
+ ],
+ "special_rules": {}
+}

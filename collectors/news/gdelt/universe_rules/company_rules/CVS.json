@@ -1,0 +1,21 @@
+{
+ "symbol": "CVS",
+ "name": "CVS Health Corporation",
+ "primary_keywords": [
+  "CVS"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Larry Jenkins",
+  "Kareem Fahim",
+  "Aetna",
+  "MinuteClinic",
+  "Longs Drug",
+  "CareTrust",
+  "Oncology",
+  "CVS Pharmacy"
+ ],
+ "special_rules": {}
+}

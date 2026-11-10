@@ -1,0 +1,25 @@
+{
+ "symbol": "MPC",
+ "name": "Marathon Petroleum Corporation",
+ "primary_keywords": [
+  "Marathon Petroleum"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Phil LeBeau",
+  "Cactus Refinery",
+  "Cactus 2",
+  "Cactus 3",
+  "Cactus 4",
+  "Cactus 5",
+  "Cactus 6",
+  "Cactus 7",
+  "Cactus 8",
+  "Cactus 9",
+  "Cactus 10",
+  "Cactus 11"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,18 @@
+{
+ "symbol": "ROST",
+ "name": "Ross Stores, Inc.",
+ "primary_keywords": [
+  "Ross Stores"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Ross Dress for Less",
+  "dd's DIS",
+  "Brian Niccol",
+  "Michael J. Todd",
+  "Ross Stores Inc"
+ ],
+ "special_rules": {}
+}

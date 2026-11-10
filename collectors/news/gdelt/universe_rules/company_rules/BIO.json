@@ -1,0 +1,19 @@
+{
+ "symbol": "BIO",
+ "name": "Bio-Rad Laboratories, Inc.",
+ "primary_keywords": [
+  "Bio-Rad"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "C. Thomas Mason",
+  "Cecile Proust",
+  "Cytation",
+  "BioTek",
+  "D30",
+  "Bio-Rad Laboratories"
+ ],
+ "special_rules": {}
+}

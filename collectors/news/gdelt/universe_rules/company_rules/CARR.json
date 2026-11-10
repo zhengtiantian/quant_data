@@ -1,0 +1,29 @@
+{
+ "symbol": "CARR",
+ "name": "Carrier Global Corporation",
+ "primary_keywords": [
+  "Carrier Global",
+  "Carrier Air Conditioning",
+  "Carrier Building Performance",
+  "Carrier Chiller",
+  "Carrier Heat Pump",
+  "Carrier Industrial",
+  "Carrier Residential"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Carrier"
+ ],
+ "dropped_expansion": [
+  "Dave Uihlein",
+  "Bryan Newhale",
+  "Carrier Air Conditioning",
+  "Carrier Heat Pump",
+  "Carrier Chiller",
+  "Carrier Building Performance",
+  "Carrier Industrial",
+  "Carrier Residential"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,24 @@
+{
+ "symbol": "INFO",
+ "name": "Harbor PanAgora Dynamic Large Cap Core ETF",
+ "primary_keywords": [
+  "Harbor PanAgora Dynamic Large Cap Core ETF",
+  "INFO"
+ ],
+ "expansion_keywords": [],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "INFO is a common abbreviation for information and a ticker for other entities",
+   "required_keywords": [
+    "Harbor PanAgora Dynamic Large Cap Core ETF"
+   ],
+   "min_matches": 1
+  }
+ },
+ "dropped_expansion": [
+  "Harbor Fund Advisors",
+  "PanAgora",
+  "Dynamic Large Cap Core",
+  "Harbor PanAgora"
+ ]
+}

@@ -1,0 +1,21 @@
+{
+ "symbol": "BKR",
+ "name": "Baker Hughes Company",
+ "primary_keywords": [
+  "Baker Hughes"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Robert Miller",
+  "Mark Little",
+  "Baker Hughes a GE business",
+  "Drillbit",
+  "M-I SWACO",
+  "Schlumberger",
+  "Halliburton",
+  "Weatherford"
+ ],
+ "special_rules": {}
+}

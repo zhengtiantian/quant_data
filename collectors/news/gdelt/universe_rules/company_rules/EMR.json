@@ -1,0 +1,23 @@
+{
+ "symbol": "EMR",
+ "name": "Emerson Electric Co.",
+ "primary_keywords": [
+  "Emerson Electric"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Emerson"
+ ],
+ "dropped_expansion": [
+  "David Farr",
+  "Mark S. Young",
+  "Delta",
+  "Rosemount",
+  "ASCO",
+  "Billions",
+  "Process Automation",
+  "Building Technologies"
+ ],
+ "special_rules": {}
+}

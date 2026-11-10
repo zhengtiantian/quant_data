@@ -1,0 +1,28 @@
+{
+ "symbol": "CHTR",
+ "name": "Charter Communications, Inc.",
+ "primary_keywords": [
+  "Charter Communications",
+  "Spectrum Business",
+  "Spectrum Internet",
+  "Spectrum Mobile",
+  "Spectrum TV"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Charter",
+  "Spectrum"
+ ],
+ "dropped_expansion": [
+  "Monroe",
+  "Joshua Begley",
+  "Brian Lisse",
+  "Spectrum Mobile",
+  "Spectrum Internet",
+  "Spectrum TV",
+  "Spectrum Business",
+  "Spectrum 1"
+ ],
+ "special_rules": {}
+}

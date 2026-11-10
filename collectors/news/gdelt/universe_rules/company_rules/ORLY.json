@@ -1,0 +1,19 @@
+{
+ "symbol": "ORLY",
+ "name": "O'Reilly Automotive, Inc.",
+ "primary_keywords": [
+  "O'Reilly Automotive"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Brad Jacobs",
+  "O'Reilly Auto Parts",
+  "AutoZone",
+  "NAPA Auto Parts",
+  "Advance Auto Parts",
+  "O'Reilly Financial Services"
+ ],
+ "special_rules": {}
+}

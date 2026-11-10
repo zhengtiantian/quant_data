@@ -1,0 +1,27 @@
+{
+ "symbol": "MSCI",
+ "name": "MSCI Inc.",
+ "primary_keywords": [
+  "MSCI Inc"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "MSCI"
+ ],
+ "dropped_expansion": [
+  "Barry A. Stern",
+  "MSCI World Index",
+  "MSCI ESG Ratings",
+  "MSCI Barra",
+  "MSCI ESG Research",
+  "MSCI ESG Manager Ratings",
+  "MSCI ESG Controversies",
+  "MSCI ESG Screened Indexes",
+  "MSCI ESG Ratings Methodology",
+  "MSCI ESG Manager Ratings Methodology",
+  "MSCI ESG Controversies Methodology",
+  "MSCI ESG Screened Indexes Methodology"
+ ],
+ "special_rules": {}
+}

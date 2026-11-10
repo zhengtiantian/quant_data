@@ -1,0 +1,27 @@
+{
+ "symbol": "TRMB",
+ "name": "Trimble Inc.",
+ "primary_keywords": [
+  "Trimble Business Center",
+  "Trimble Earthworks",
+  "Trimble Inc"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Trimble"
+ ],
+ "dropped_expansion": [
+  "Brian Mefi",
+  "Trimble Business Center",
+  "Trimble Earthworks",
+  "Trimble TBC",
+  "Trimble Access",
+  "Trimble Earthworks",
+  "Trimble Construction",
+  "Trimble Agriculture",
+  "Trimble Geospatial",
+  "Trimble Positioning"
+ ],
+ "special_rules": {}
+}

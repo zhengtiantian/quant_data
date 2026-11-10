@@ -1,0 +1,23 @@
+{
+ "symbol": "TDG",
+ "name": "TransDigm Group Incorporated",
+ "primary_keywords": [
+  "TransDigm"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Jeff Immelt",
+  "Meggitt",
+  "Honeywell Aerospace",
+  "Collins Aerospace",
+  "AAR Corp",
+  "AeroVironment",
+  "GE Aerospace",
+  "Rolls-Royce",
+  "Safran",
+  "Parker Hannifin"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,21 @@
+{
+ "symbol": "TSCO",
+ "name": "Tractor Supply Company",
+ "primary_keywords": [
+  "Tractor Supply"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Tractor Supply Co",
+  "Tractor Supply Company",
+  "Tractor Supply Stores",
+  "Tractor Supply Inc",
+  "Tractor Supply",
+  "TSCO",
+  "Tractor Supply Company Inc",
+  "Tractor Supply Co. Inc."
+ ],
+ "special_rules": {}
+}

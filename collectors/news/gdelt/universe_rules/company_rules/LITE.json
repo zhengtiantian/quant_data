@@ -1,0 +1,23 @@
+{
+ "symbol": "LITE",
+ "name": "Lumentum Holdings Inc.",
+ "primary_keywords": [
+  "Lumentum"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Hartmut Erbe",
+  "Ciena",
+  "Coherent",
+  "Cloud Light",
+  "Cloud Computing",
+  "Datacom",
+  "Optical Transceivers",
+  "Laser Diodes",
+  "3D Sensing",
+  "Industrial Lasers"
+ ],
+ "special_rules": {}
+}

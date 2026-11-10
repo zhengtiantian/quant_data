@@ -1,0 +1,23 @@
+{
+ "symbol": "EVRG",
+ "name": "Evergy, Inc.",
+ "primary_keywords": [
+  "Evergy"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Evergy Kansas City",
+  "Evergy Oklahoma",
+  "Evergy Green",
+  "Evergy Energy",
+  "Evergy Renewables",
+  "Evergy Power",
+  "Evergy Transmission",
+  "Evergy Distribution",
+  "Evergy Customer",
+  "Evergy Utility"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,22 @@
+{
+ "symbol": "KMB",
+ "name": "Kimberly-Clark Corporation",
+ "primary_keywords": [
+  "Kimberly-Clark"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Scott Bartz",
+  "Kleenex",
+  "Huggies",
+  "Cottonelle",
+  "Kotex",
+  "Scott",
+  "Coterie",
+  "Poise",
+  "Kleenex Professional"
+ ],
+ "special_rules": {}
+}

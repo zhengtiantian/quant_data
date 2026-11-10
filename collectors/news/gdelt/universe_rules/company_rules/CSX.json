@@ -1,0 +1,23 @@
+{
+ "symbol": "CSX",
+ "name": "CSX Corporation",
+ "primary_keywords": [
+  "CSX"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Juan Enriquez",
+  "CSX Transportation",
+  "CSX Switching & Terminal",
+  "CSX Logistics",
+  "CSX Intermodal",
+  "CSX Container",
+  "CSX Marine",
+  "CSX Real Estate",
+  "CSX Energy",
+  "CSX Health"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,28 @@
+{
+ "symbol": "AXON",
+ "name": "Axon Enterprise, Inc.",
+ "primary_keywords": [
+  "Taser International",
+  "Axon Digital Evidence",
+  "Axon Force",
+  "Axon Enterprise"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Axon"
+ ],
+ "dropped_expansion": [
+  "Ramon Feingold",
+  "Taser",
+  "Body Camera",
+  "Axon Digital Evidence",
+  "Axon Evidence",
+  "Axon Force",
+  "Axon App",
+  "Axon Line",
+  "Axon Fusion",
+  "Axon Real-Time"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,25 @@
+{
+ "symbol": "D",
+ "name": "Dominion Energy, Inc.",
+ "primary_keywords": [
+  "Dominion Energy"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Dominion Resources",
+  "Dominion Energy Virginia",
+  "Dominion Energy South Carolina",
+  "Dominion Energy Ohio",
+  "Dominion Energy Kentucky",
+  "Dominion Energy North Carolina",
+  "Dominion Energy New Jersey",
+  "Dominion Energy New York",
+  "Dominion Energy Maryland",
+  "Dominion Energy Delaware",
+  "Dominion Energy Pennsylvania",
+  "Dominion Energy West Virginia"
+ ],
+ "special_rules": {}
+}

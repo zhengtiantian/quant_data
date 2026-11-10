@@ -1,0 +1,21 @@
+{
+ "symbol": "FCX",
+ "name": "Freeport-McMoRan Inc.",
+ "primary_keywords": [
+  "Freeport-McMoRan"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Kathleen Quirk",
+  "Cerro Verde",
+  "Morenci",
+  "Grasberg",
+  "Copper Mountain",
+  "Safford",
+  "Afton",
+  "Bagdad"
+ ],
+ "special_rules": {}
+}

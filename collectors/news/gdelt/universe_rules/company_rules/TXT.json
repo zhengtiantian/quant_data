@@ -1,0 +1,21 @@
+{
+ "symbol": "TXT",
+ "name": "Textron Inc.",
+ "primary_keywords": [
+  "Textron"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Bell Textron",
+  "Benjamin Schreiner",
+  "Cessna",
+  "Robinson Helicopter",
+  "Beechcraft",
+  "Hillwood Holdings",
+  "Textron Systems",
+  "Fenwick"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,25 @@
+{
+ "symbol": "NRG",
+ "name": "NRG Energy, Inc.",
+ "primary_keywords": [
+  "NRG Energy"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "NRG"
+ ],
+ "dropped_expansion": [
+  "Mark Mays",
+  "NRG eVgo",
+  "NRG Home",
+  "NRG Energy Texas",
+  "NRG Energy Retail",
+  "NRG Energy Generation",
+  "NRG Energy Trading",
+  "NRG Energy Renewables",
+  "NRG Energy Storage",
+  "NRG Energy Data Centers"
+ ],
+ "special_rules": {}
+}

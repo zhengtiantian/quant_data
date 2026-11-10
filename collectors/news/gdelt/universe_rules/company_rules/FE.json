@@ -1,0 +1,23 @@
+{
+ "symbol": "FE",
+ "name": "FirstEnergy Corp.",
+ "primary_keywords": [
+  "FirstEnergy"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "AEP",
+  "American Electric Power",
+  "Ohio Edison",
+  "Illuminating Company",
+  "Potomac Edison",
+  "Cleveland Electric Illuminating",
+  "Toledo Edison",
+  "West Penn Power",
+  "Penelec",
+  "John Engler"
+ ],
+ "special_rules": {}
+}

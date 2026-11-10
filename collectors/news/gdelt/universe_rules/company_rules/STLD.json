@@ -1,0 +1,23 @@
+{
+ "symbol": "STLD",
+ "name": "Steel Dynamics, Inc.",
+ "primary_keywords": [
+  "Steel Dynamics"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Timothy Flynn",
+  "Gary Kuehl",
+  "Cleveland-Cliffs",
+  "LTV Steel",
+  "Cleveland Steel",
+  "Gary Works",
+  "Bessemer",
+  "Pittsburgh",
+  "Indiana",
+  "Ohio"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,21 @@
+{
+ "symbol": "VZ",
+ "name": "Verizon Communications Inc.",
+ "primary_keywords": [
+  "Verizon"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Verizon Wireless",
+  "Verizon Media",
+  "Cass R. Wagner",
+  "Danahera Morris",
+  "Verizon 5G",
+  "Verizon Fios",
+  "Verizon Business",
+  "Verizon Connect"
+ ],
+ "special_rules": {}
+}

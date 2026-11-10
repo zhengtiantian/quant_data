@@ -1,0 +1,28 @@
+{
+ "symbol": "WM",
+ "name": "Waste Management, Inc.",
+ "primary_keywords": [
+  "Waste Management"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "Waste Management: also an ordinary word, a surname, a place or another organisation; generic uses excluded (rule check 2026-11-04: 0/8)",
+   "required_keywords": [
+    "Waste Management"
+   ],
+   "min_matches": 1,
+   "exclude_patterns": [
+    "\\b(solid|industrial|municipal|medical|bio-?medical|hazardous|plastics?|PET|proper|e-|electronic|household|sustainable|integrated|responsible|community|urban|city|county)[ -]waste management",
+    "waste management (projects?|contracts?|efforts?|plans?|systems?|sector|policy|policies|facilit(y|ies)|practices|law|bill|crisis|issues?|problems?|programmes?|programs?|infrastructure|services in|in the)\\b"
+   ],
+   "exclude_title_patterns": [
+    "\\b(a|in|of|for|on|and|the) (Revolution in |better |proper |scientific |sustainable )?(E-)?Waste Management\\b(?! Inc)",
+    "\\bE-Waste Management\\b",
+    "Waste Management (Contracts?|Projects?|Plan|Efforts?|Crisis|Policy|Bill|Law|Act|Authority|Board|Department|Unit|Centre|Center|Facility)\\b"
+   ]
+  }
+ }
+}

@@ -1,0 +1,21 @@
+{
+ "symbol": "DOC",
+ "name": "Healthpeak Properties, Inc.",
+ "primary_keywords": [
+  "Healthpeak"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Michael Rinehart",
+  "David Kessler",
+  "Senior Housing",
+  "Skilled Nursing",
+  "Assisted Living",
+  "Life Sciences",
+  "Medical Office",
+  "Outpatient Care"
+ ],
+ "special_rules": {}
+}

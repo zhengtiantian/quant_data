@@ -1,0 +1,19 @@
+{
+ "symbol": "PRU",
+ "name": "Prudential Financial, Inc.",
+ "primary_keywords": [
+  "Prudential Financial"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Anthony Noto",
+  "Prudential Insurance",
+  "Prudential plc",
+  "John Gorman",
+  "Prudential Retirement",
+  "Prudential Securities"
+ ],
+ "special_rules": {}
+}

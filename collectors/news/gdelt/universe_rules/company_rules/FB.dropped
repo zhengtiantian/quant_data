@@ -1,0 +1,25 @@
+{
+ "symbol": "FB",
+ "name": "ProShares S&P 500 Dynamic Daily Buffer ETF",
+ "primary_keywords": [
+  "ProShares S&P 500 Dynamic Daily Buffer ETF"
+ ],
+ "expansion_keywords": [],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "FB is a common abbreviation for Facebook/Meta and a standard ticker symbol for other entities; ProShares is a broad asset manager with many funds.",
+   "required_keywords": [
+    "ProShares S&P 500 Dynamic Daily Buffer ETF"
+   ],
+   "min_matches": 1
+  }
+ },
+ "dropped_expansion": [
+  "Dynamic Daily Buffer",
+  "ProShares",
+  "S&P 500",
+  "Buffer ETF",
+  "Daily Buffer",
+  "ProShares S&P 500"
+ ]
+}

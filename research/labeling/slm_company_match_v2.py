@@ -69,8 +69,19 @@ SYMBOLS_FILTER = [s.strip().upper() for s in os.getenv("V2_SYMBOLS", "").split("
 #   V2_JOB_NAME=intraday_repair V2_RESUME=false \
 #   V2_SOURCE_FILTER='{"meta.collector": {"$exists": true}}' python slm_company_match_v2.py
 SOURCE_FILTER = json.loads(os.getenv("V2_SOURCE_FILTER", "") or "{}")
+# The 490 universe companies' articles (origin=universe_backfill, moved into news_articles 2026-11-10) reach
+# the matched collection by tools/backfill_universe_news.py promote, without this SLM pass, until the user
+# decides to run it: V2_INCLUDE_UNIVERSE=1 takes them in. V2_REASSIGN_TO_UNIVERSE=1 also lets a core
+# article be reassigned to one of the 490 (off: tonight's core match stays as it was, and the SLM calls
+# per article do not multiply with 490 more candidates).
+UNIVERSE_ORIGIN = "universe_backfill"
+INCLUDE_UNIVERSE = os.getenv("V2_INCLUDE_UNIVERSE", "0") == "1"
+REASSIGN_TO_UNIVERSE = os.getenv("V2_REASSIGN_TO_UNIVERSE", "0") == "1"
 SLM_MODELS = [m.strip() for m in os.getenv("SLM_MODELS", "").split(",") if m.strip()]
-SCAN_OTHER = os.getenv("V2_SCAN_OTHER", "true").lower() == "true"
+# Reassignment moved an article to another company named in it, because url was unique in news_articles
+# and an article could belong to one company only. Since plan B (2026-11-10) the collectors store one row
+# per company the article names, each judged for its own company here, so it is off by default.
+SCAN_OTHER = os.getenv("V2_SCAN_OTHER", "false").lower() == "true"
 CONTENT_CHARS = int(os.getenv("V2_CONTENT_CHARS", "1500"))
 
 # Multi-endpoint support: SLM_ENDPOINTS="url1|model1|workers1,url2|model2|workers2"
@@ -138,7 +149,8 @@ COMPANY_UNIVERSE: dict[str, tuple[str, list[str]]] = {
     # ── Storage expansion (2026-07-15) ───────────────────────────────────────
     "STX":   ("Seagate Technology",        ["Seagate", "Seagate Technology", "IronWolf", "BarraCuda", "Nytro SSD", "Dave Mosley"]),
     "WDC":   ("Western Digital",           ["Western Digital", "WD Blue", "WD Red", "SanDisk", "HGST", "Ultrastar", "David Goeckeler"]),
-    "HXSCL": ("SK Hynix",                  ["SK Hynix", "Kwak Noh-jung", "SK hynix DRAM", "HBM3E", "SK Hynix memory"]),
+    # SK Hynix is SKHY (the US ADR) further down. The placeholder HXSCL that stood here came first in this
+    # table, so every SK Hynix article was reassigned to it and SKHY kept 97 of 1,706 (fixed 2026-11-10).
     # ── NEW 60: SaaS / growth tech ───────────────────────────────────────────
     "SHOP":  ("Shopify",                    ["Shopify", "Tobi Lütke", "Shop Pay", "Shopify Plus", "Shopify Payments"]),
     "NET":   ("Cloudflare",                 ["Cloudflare", "Matthew Prince", "Cloudflare Workers", "DDoS protection"]),
@@ -204,8 +216,33 @@ COMPANY_UNIVERSE: dict[str, tuple[str, list[str]]] = {
     "GE":    ("GE Aerospace",               ["GE Aerospace", "GE Aviation", "General Electric", "Larry Culp", "LEAP engine", "GE9X"]),
     "DE":    ("Deere & Company",            ["John Deere", "Deere", "John May", "Deere & Co"]),
     "BA":    ("Boeing",                     ["Boeing", "Kelly Ortberg", "737 MAX", "787 Dreamliner", "777X", "Starliner"]),
-    "SKHY":  ("SK hynix",                   ["SK hynix", "SK Hynix", "Hynix"]),
+    "SKHY":  ("SK hynix",                   ["SK hynix", "Hynix", "Kwak Noh-jung"]),
 }
+CORE_SYMBOLS = frozenset(COMPANY_UNIVERSE)
+
+# The 490 universe companies (2026-11-10), read from their collector rules so the two cannot drift: the rule's
+# name and primary keywords (the expansion keywords are too weak to count as a mention). A symbol already
+# above keeps its entry (WDC); the .dropped files (share classes and renamed tickers, rule_aliases.json)
+# are not loaded, so one company never has two symbols here again (the HXSCL/SKHY mistake).
+UNIVERSE_RULES_DIR = Path(os.getenv(
+    "V2_UNIVERSE_RULES_DIR",
+    str(Path(__file__).resolve().parents[2] / "collectors" / "news" / "gdelt" / "universe_rules" / "company_rules")))
+
+
+def _load_universe_companies() -> dict[str, tuple[str, list[str]]]:
+    out: dict[str, tuple[str, list[str]]] = {}
+    for f in sorted(UNIVERSE_RULES_DIR.glob("*.json")):
+        r = json.loads(f.read_text())
+        sym = (r.get("symbol") or f.stem).upper()
+        kws = [k for k in r.get("primary_keywords") or [] if k and k.strip()]
+        if sym not in COMPANY_UNIVERSE and kws:
+            out[sym] = (r.get("name") or sym, kws)
+    return out
+
+
+COMPANY_UNIVERSE.update(_load_universe_companies())
+# Symbols whose keywords may pull an article away from the company it was collected for.
+REASSIGN_CANDIDATES = frozenset(COMPANY_UNIVERSE) if REASSIGN_TO_UNIVERSE else CORE_SYMBOLS
 
 _SCAN_PATTERNS: dict[str, re.Pattern] = {
     sym: re.compile(
@@ -250,7 +287,7 @@ def _scan_candidates(current_symbol: str, title: str, snippet: str) -> list[str]
     text = f"{title} {snippet}"
     return [
         sym for sym, pat in _SCAN_PATTERNS.items()
-        if sym != current_symbol and pat.search(text)
+        if sym != current_symbol and sym in REASSIGN_CANDIDATES and pat.search(text)
     ]
 
 
@@ -258,7 +295,7 @@ def _title_candidates(current_symbol: str, title: str) -> list[str]:
     """Return other symbols whose keywords appear in the title only."""
     return [
         sym for sym, pat in _SCAN_PATTERNS.items()
-        if sym != current_symbol and pat.search(title)
+        if sym != current_symbol and sym in REASSIGN_CANDIDATES and pat.search(title)
     ]
 
 
@@ -390,6 +427,8 @@ def build_query(last_id: ObjectId | None = None) -> dict[str, Any]:
         query["_id"] = {"$gt": last_id}
     if SYMBOLS_FILTER:
         query["symbol"] = {"$in": SYMBOLS_FILTER}
+    if not INCLUDE_UNIVERSE:
+        query["origin"] = {"$ne": UNIVERSE_ORIGIN}
     query.update(SOURCE_FILTER)
     return query
 

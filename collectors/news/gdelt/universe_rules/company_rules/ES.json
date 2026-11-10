@@ -1,0 +1,23 @@
+{
+ "symbol": "ES",
+ "name": "Eversource Energy",
+ "primary_keywords": [
+  "Eversource"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "John Netra",
+  "Eversource Energy",
+  "Connecticut Light and Power",
+  "Massachusetts Electric Company",
+  "New England Electric",
+  "PSE&G",
+  "Public Service Electric and Gas",
+  "New Jersey",
+  "Connecticut",
+  "Massachusetts"
+ ],
+ "special_rules": {}
+}

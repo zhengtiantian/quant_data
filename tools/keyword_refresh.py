@@ -57,7 +57,8 @@ sys.path.insert(0, str(ROOT / "tools"))
 sys.path.insert(0, str(ROOT / "collectors" / "news" / "gdelt"))
 
 RULE_SETS = {"core": Path(os.getenv("CORE_RULES_DIR", str(ROOT / "collectors" / "news" / "gdelt" / "company_rules"))),
-             "universe": Path(os.getenv("UNIVERSE_RULES_DIR", "/Volumes/Data4T/universe/company_rules"))}
+             "universe": Path(os.getenv("UNIVERSE_RULES_DIR",
+                                        str(ROOT / "collectors" / "news" / "gdelt" / "universe_rules" / "company_rules")))}
 PARQUET_DIR = Path(os.getenv("GKG_PARQUET_DIR", "/Volumes/Data4T/gkg_parquet"))
 OUT = Path(os.getenv("KEYWORD_REFRESH_DIR", "/Volumes/Data4T/keyword_refresh"))
 MODEL = os.getenv("KEYWORD_REFRESH_MODEL", "qwen3.5-9b-mlx")
@@ -614,7 +615,8 @@ def rescan(deadline: float | None = None) -> bool:
         print(f"rescan {rs}: {sum(map(len, kws.values()))} terms of {len(kws)} companies since {since} -> {work}", flush=True)
         uni = rs == "universe"
         settings = dict(WORK_DIR=str(work), RULES_DIR=str(RULE_SETS[rs]) if uni else None,
-                        NEWS_COLLECTION="news_articles_universe" if uni else "news_articles",
+                        NEWS_COLLECTION="news_articles",   # one store for both since 2026-11-10
+                        ORIGIN="universe_backfill" if uni else None,
                         TITLE_GATE=True)                # the core collector checks headlines too since 2026-11-04
         with _bf_settings(**settings) as bf:
             if not bf.scan_many(dict(kws), since, deadline, before_month=datetime.now().strftime("%Y-%m") if uni else "9999-99"):

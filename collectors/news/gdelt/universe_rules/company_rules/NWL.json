@@ -1,0 +1,25 @@
+{
+ "symbol": "NWL",
+ "name": "Newell Brands Inc.",
+ "primary_keywords": [
+  "Newell Brands"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Newell"
+ ],
+ "dropped_expansion": [
+  "Gillette",
+  "Sharpie",
+  "Elmer's",
+  "Rubbermaid",
+  "Cuisinart",
+  "Weber",
+  "Dale Wender",
+  "Sara Nelson",
+  "Office Depot",
+  "OfficeMax"
+ ],
+ "special_rules": {}
+}

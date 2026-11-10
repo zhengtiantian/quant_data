@@ -1,0 +1,22 @@
+{
+ "symbol": "PNW",
+ "name": "Pinnacle West Capital Corporation",
+ "primary_keywords": [
+  "Pinnacle West"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "APS",
+  "Arizona Public Service",
+  "Pinnacle West Energy",
+  "Pinnacle West Financial",
+  "Pinnacle West Gas",
+  "Pinnacle West Water",
+  "Pinnacle West Power",
+  "Pinnacle West Communications",
+  "Pinnacle West Capital Corporation"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,24 @@
+{
+ "symbol": "FRT",
+ "name": "Federal Realty Investment Trust",
+ "primary_keywords": [
+  "Federal Realty"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Jeffery R. Smith",
+  "Jeff Smith",
+  "Tysons Corner Center",
+  "Tysons",
+  "Pohatcong",
+  "Pohatcong Village",
+  "Northgate",
+  "Northgate Westcoast",
+  "Westfield",
+  "Brentwood Towne Centre",
+  "Brentwood"
+ ],
+ "special_rules": {}
+}

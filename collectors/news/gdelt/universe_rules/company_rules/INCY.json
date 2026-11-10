@@ -1,0 +1,20 @@
+{
+ "symbol": "INCY",
+ "name": "Incyte Corporation",
+ "primary_keywords": [
+  "Incyte"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Ruxolitinib",
+  "Jakafi",
+  "Pomalidomide",
+  "Nesapimod",
+  "Gilead Sciences",
+  "Jeff Howard",
+  "Rafael de la Torre"
+ ],
+ "special_rules": {}
+}

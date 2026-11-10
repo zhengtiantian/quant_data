@@ -1,0 +1,25 @@
+{
+ "symbol": "IEX",
+ "name": "IDEX Corporation",
+ "primary_keywords": [
+  "IDEX"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "IDEX X",
+  "IDEX XE",
+  "IDEX XE2",
+  "IDEX XE3",
+  "IDEX XE4",
+  "IDEX XE5",
+  "IDEX XE6",
+  "IDEX XE7",
+  "IDEX XE8",
+  "IDEX XE9",
+  "IDEX XE10",
+  "IDEX XE11"
+ ],
+ "special_rules": {}
+}

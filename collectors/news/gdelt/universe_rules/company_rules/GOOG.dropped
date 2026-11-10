@@ -1,0 +1,31 @@
+{
+ "symbol": "GOOG",
+ "name": "Alphabet Inc.",
+ "primary_keywords": [
+  "Alphabet",
+  "Google"
+ ],
+ "expansion_keywords": [],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "Google is a common verb and proper noun for the search engine, distinct from the parent company Alphabet, and GOOG is a ticker symbol.",
+   "required_keywords": [
+    "Alphabet",
+    "Alphabet Inc."
+   ],
+   "min_matches": 1
+  }
+ },
+ "dropped_expansion": [
+  "Sundar Pichai",
+  "Ruth Porat",
+  "Waymo",
+  "Verily",
+  "DeepMind",
+  "Google Cloud",
+  "Android",
+  "YouTube",
+  "Google Search",
+  "Google Pixel"
+ ]
+}

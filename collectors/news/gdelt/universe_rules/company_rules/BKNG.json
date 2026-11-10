@@ -1,0 +1,23 @@
+{
+ "symbol": "BKNG",
+ "name": "Booking Holdings Inc.",
+ "primary_keywords": [
+  "Booking Holdings",
+  "Booking.com",
+  "Bookingcom"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Gloria Margolis",
+  "Brian Kesinger",
+  "Priceline",
+  "Agoda",
+  "OpenTable",
+  "Kayak",
+  "Rakuten Travel",
+  "Travelport"
+ ],
+ "special_rules": {}
+}

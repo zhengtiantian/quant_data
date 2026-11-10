@@ -1,0 +1,25 @@
+{
+ "symbol": "ELV",
+ "name": "Elevance Health, Inc.",
+ "primary_keywords": [
+  "Elevance Health",
+  "Anthem Inc",
+  "Anthem, Inc."
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Anthem"
+ ],
+ "dropped_expansion": [
+  "Cigna",
+  "Maximus",
+  "Brian X. White",
+  "Mindy Kessler",
+  "Anthem Blue Cross Blue Shield",
+  "Cigna Healthcare",
+  "Blue Cross Blue Shield",
+  "Anthem Inc."
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,19 @@
+{
+ "symbol": "SBAC",
+ "name": "SBA Communications Corporation",
+ "primary_keywords": [
+  "SBA Communications"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "SBA",
+  "Jeffrey Hesse",
+  "Michael D'Amato",
+  "Cellco Partnership",
+  "SBA Realty",
+  "SBA Properties"
+ ],
+ "special_rules": {}
+}

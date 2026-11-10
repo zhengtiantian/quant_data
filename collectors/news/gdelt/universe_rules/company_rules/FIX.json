@@ -1,0 +1,19 @@
+{
+ "symbol": "FIX",
+ "name": "Comfort Systems USA, Inc.",
+ "primary_keywords": [
+  "Comfort Systems"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "John W. Greco",
+  "David A. Greco",
+  "Comfort Systems Mechanical",
+  "CSUSA",
+  "HVAC",
+  "mechanical construction"
+ ],
+ "special_rules": {}
+}

@@ -62,6 +62,11 @@ FEATURE_LOOKBACK_DAYS = int(os.getenv("FEATURE_LOOKBACK_DAYS", "180"))
 FEATURE_START_DATE = os.getenv("FEATURE_START_DATE")
 FEATURE_END_DATE = os.getenv("FEATURE_END_DATE")
 MIN_VALID_NEWS_DATE = pd.Timestamp(os.getenv("FEATURE_MIN_VALID_DATE", "1990-01-01"))
+# The 490 universe companies' articles share news_articles / the matched collection since 2026-11-10
+# (origin=universe_backfill). Left out unless FEATURE_INCLUDE_UNIVERSE=1, so the daily features, signals
+# and models keep the stocks they were built on until the user brings the 490 in.
+_UNIVERSE_FILTER = ({} if os.getenv("FEATURE_INCLUDE_UNIVERSE", "0") == "1"
+                    else {"origin": {"$ne": "universe_backfill"}})
 MAX_VALID_NEWS_DATE = pd.Timestamp(datetime.now(UTC).date()) + pd.Timedelta(days=1)
 
 
@@ -170,7 +175,7 @@ def load_news_frame() -> pd.DataFrame:
     col = client[DB_NAME][NEWS_COLLECTION]
 
     cursor = col.find(
-        {"symbol": {"$exists": True, "$ne": None}},
+        {"symbol": {"$exists": True, "$ne": None}, **_UNIVERSE_FILTER},
         {
             "_id": 0,
             "symbol": 1,
@@ -829,7 +834,7 @@ def load_llm_sentiment_frame() -> pd.DataFrame:
     col = client[DB_NAME][LLM_COLLECTION]
 
     cursor = col.find(
-        {"llm_sentiment_final": {"$exists": True}},
+        {"llm_sentiment_final": {"$exists": True}, **_UNIVERSE_FILTER},
         {
             "_id": 0,
             "symbol": 1,

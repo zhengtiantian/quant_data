@@ -1,0 +1,21 @@
+{
+ "symbol": "FISV",
+ "name": "Fiserv, Inc.",
+ "primary_keywords": [
+  "Fiserv"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Fiserv Merchant Services",
+  "Fiserv Payment Solutions",
+  "Fiserv University",
+  "Fiserv Health",
+  "Fiserv Retail",
+  "Fiserv Government",
+  "Fiserv International",
+  "Fiserv Business Solutions"
+ ],
+ "special_rules": {}
+}

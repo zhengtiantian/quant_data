@@ -1,0 +1,28 @@
+{
+ "symbol": "OTIS",
+ "name": "Otis Worldwide Corporation",
+ "primary_keywords": [
+  "Otis Colonnade",
+  "Otis EcoPort",
+  "Otis Elevator",
+  "Otis Gen2",
+  "Otis World Services",
+  "Otis Worldwide"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Otis"
+ ],
+ "dropped_expansion": [
+  "Otis Elevator",
+  "Otis World Services",
+  "Otis Gen2",
+  "Otis Colonnade",
+  "Otis EcoPort",
+  "Otis Elevator Company",
+  "Otis Worldwide",
+  "Otis Group"
+ ],
+ "special_rules": {}
+}

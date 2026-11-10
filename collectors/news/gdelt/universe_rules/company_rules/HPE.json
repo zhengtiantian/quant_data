@@ -1,0 +1,25 @@
+{
+ "symbol": "HPE",
+ "name": "Hewlett Packard Enterprise Company",
+ "primary_keywords": [
+  "Hewlett Packard Enterprise"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Antonio Neri",
+  "Meg Whitman",
+  "Antonio Neri",
+  "Antonio Neri",
+  "Antonio Neri",
+  "Antonio Neri",
+  "Antonio Neri",
+  "Antonio Neri",
+  "Antonio Neri",
+  "Antonio Neri",
+  "Antonio Neri",
+  "Antonio Neri"
+ ],
+ "special_rules": {}
+}

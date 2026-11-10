@@ -1,0 +1,24 @@
+{
+ "symbol": "LUMN",
+ "name": "Lumen Technologies, Inc.",
+ "primary_keywords": [
+  "Lumen Technologies",
+  "CenturyLink"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Lumen"
+ ],
+ "dropped_expansion": [
+  "Mike Sievert",
+  "Jeff Clarke",
+  "Centurion",
+  "Lumen Connect",
+  "Lumen Field",
+  "Lumen Learning",
+  "CenturyLink",
+  "Lumen Cloud"
+ ],
+ "special_rules": {}
+}

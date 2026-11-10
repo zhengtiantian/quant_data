@@ -1,0 +1,48 @@
+{
+ "symbol": "HSY",
+ "name": "The Hershey Company",
+ "primary_keywords": [
+  "Hershey"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-05",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Reese's",
+  "Kit Kat",
+  "Hershey's Kisses",
+  "Whirl",
+  "Jif",
+  "Buddy Ladd",
+  "Michael Durrett",
+  "Hershey Foods"
+ ],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "Hershey is also a town in Pennsylvania, its hockey team and schools (rule check 2026-11-04: 3/8)",
+   "required_keywords": [
+    "Hershey"
+   ],
+   "min_matches": 1,
+   "exclude_patterns": [
+    "Hershey Bears",
+    "Hershey,? (PA|Pa\\.|Penn\\.|Pennsylvania)\\b",
+    "Hersheypark",
+    "Milton Hershey School",
+    "Hershey Medical",
+    "Penn State Health",
+    "Giant Center",
+    "Hershey (Elementary|High School|Middle School|Intermediate|Theatre|Theater|Lodge|Gardens|Area|Township|Public Library|Country Club)",
+    "Derry Township"
+   ],
+   "trust_single_match": true,
+   "exclude_title_patterns": [
+    "\\b(in|to|from) Hershey\\b(?!'s| Foods| Co\\b| Company| Corp| stock| shares| chocolate)",
+    "\\bat Hershey (Theatre|Theater|Park|Lodge|Gardens|Medical|High|Middle|Elementary|Country Club|Bears|warehouse|Area)",
+    "Hershey'?s \\d+-\\d+ (win|loss|victory|defeat)",
+    "\\bWWE\\b.{0,40}Hershey",
+    "Things to Do in Hershey"
+   ]
+  }
+ }
+}

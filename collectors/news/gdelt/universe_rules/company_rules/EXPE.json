@@ -1,0 +1,22 @@
+{
+ "symbol": "EXPE",
+ "name": "Expedia Group, Inc.",
+ "primary_keywords": [
+  "Expedia"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Mark Okerstrom",
+  "Helen Zaltz",
+  "Hotels.com",
+  "Travelocity",
+  "Orbitz",
+  "Wing",
+  "Trivago",
+  "Vrbo",
+  "eBay Travel"
+ ],
+ "special_rules": {}
+}

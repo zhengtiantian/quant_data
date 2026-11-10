@@ -1,0 +1,23 @@
+{
+ "symbol": "CEG",
+ "name": "Constellation Energy Corporation",
+ "primary_keywords": [
+  "Constellation Energy"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Chris Wright",
+  "Three Mile Island",
+  "PSEG",
+  "Exelon",
+  "Duane Arnold",
+  "Comanche Peak",
+  "Susquehanna",
+  "Beaver Valley",
+  "Peach Bottom",
+  "Oconee"
+ ],
+ "special_rules": {}
+}

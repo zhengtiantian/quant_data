@@ -1,0 +1,24 @@
+{
+ "symbol": "RVTY",
+ "name": "Revvity, Inc.",
+ "primary_keywords": [
+  "Revvity",
+  "PerkinElmer"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Thermo Fisher Scientific",
+  "Life Technologies",
+  "Applied Biosystems",
+  "Invitrogen",
+  "Genscript",
+  "Bio-Rad",
+  "Cytiva",
+  "Danaher",
+  "Agilent",
+  "PerkinElmer"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,24 @@
+{
+ "symbol": "PCG",
+ "name": "PG&E Corporation",
+ "primary_keywords": [
+  "PG&E",
+  "Pacific Gas and Electric"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Jim Nussar",
+  "Suzanne Shaw",
+  "San Bruno",
+  "Camp Fire",
+  "Kincade Fire",
+  "Wildfire Public Safety Plan",
+  "California Public Utilities Commission",
+  "PG&E Bankruptcy",
+  "San Francisco",
+  "Northern California"
+ ],
+ "special_rules": {}
+}

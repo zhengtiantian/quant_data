@@ -1,0 +1,21 @@
+{
+ "symbol": "SWKS",
+ "name": "Skyworks Solutions, Inc.",
+ "primary_keywords": [
+  "Skyworks"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "David Das",
+  "Rajeev Suri",
+  "RF360",
+  "Sierra Wireless",
+  "MaxLinear",
+  "Qorvo",
+  "Skyworks iDirect",
+  "Skyworks Solar"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,23 @@
+{
+ "symbol": "EQR",
+ "name": "Equity Residential",
+ "primary_keywords": [
+  "Equity Residential"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "John W. Thill",
+  "Michael J. D'Amato",
+  "Equity Residential Properties",
+  "Equity Residential Management",
+  "Equity Residential Capital",
+  "Equity Residential Development",
+  "Equity Residential Construction",
+  "Equity Residential Leasing",
+  "Equity Residential Property Management",
+  "Equity Residential Asset Management"
+ ],
+ "special_rules": {}
+}

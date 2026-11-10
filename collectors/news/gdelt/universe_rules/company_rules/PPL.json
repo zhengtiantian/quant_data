@@ -1,0 +1,23 @@
+{
+ "symbol": "PPL",
+ "name": "PPL Corporation",
+ "primary_keywords": [
+  "PPL"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "David L. Hachey",
+  "PPL Electric Utilities",
+  "PPL Energy",
+  "PPL Environmental Services",
+  "PPL EnergyPlus",
+  "PPL Nuclear",
+  "Susquehanna Steam Electric Station",
+  "Beaver Valley Power Station",
+  "PSEG",
+  "Dominion Energy"
+ ],
+ "special_rules": {}
+}

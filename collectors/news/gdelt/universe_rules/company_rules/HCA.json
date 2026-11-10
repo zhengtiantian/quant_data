@@ -1,0 +1,23 @@
+{
+ "symbol": "HCA",
+ "name": "HCA Healthcare, Inc.",
+ "primary_keywords": [
+  "HCA"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Richard Davis",
+  "David HCA",
+  "Tenet Healthcare",
+  "Memorial Hermann",
+  "CommonSpirit Health",
+  "HCA Florida",
+  "HCA Midwest",
+  "HCA Southeast",
+  "HCA Texas",
+  "HCA West"
+ ],
+ "special_rules": {}
+}

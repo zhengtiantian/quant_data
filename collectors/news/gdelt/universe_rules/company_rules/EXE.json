@@ -1,0 +1,25 @@
+{
+ "symbol": "EXE",
+ "name": "Expand Energy Corporation",
+ "primary_keywords": [
+  "Expand Energy Corporation",
+  "Expand Energy Corp",
+  "Chesapeake Energy"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Expand Energy"
+ ],
+ "dropped_expansion": [
+  "Michael D. Hecker",
+  "Cody J. D. Hinkle",
+  "Pinnacle Energy",
+  "Crown Energy",
+  "Anadarko",
+  "Williston Basin",
+  "Permian Basin",
+  "Cimarron"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,25 @@
+{
+ "symbol": "NCLH",
+ "name": "Norwegian Cruise Line Holdings Ltd.",
+ "primary_keywords": [
+  "Norwegian Cruise Line"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Norwegian Breakaway",
+  "Norwegian Getaway",
+  "Norwegian Sky",
+  "Norwegian Jewel",
+  "Norwegian Pearl",
+  "Norwegian Star",
+  "Norwegian Sun",
+  "Norwegian Dawn",
+  "Norwegian Spirit",
+  "Norwegian Epic",
+  "Norwegian Bliss",
+  "Norwegian Joy"
+ ],
+ "special_rules": {}
+}

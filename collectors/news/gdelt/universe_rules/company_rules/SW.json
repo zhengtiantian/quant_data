@@ -1,0 +1,34 @@
+{
+ "symbol": "SW",
+ "name": "Smurfit Westrock Plc",
+ "primary_keywords": [
+  "Smurfit Kappa",
+  "WestRock"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-05",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Rafael de Marigny",
+  "Paul Hagan",
+  "Smurfit",
+  "WestRock",
+  "Kappa",
+  "Packaging & Containers",
+  "Consumer Cyclical"
+ ],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "Westrock Coffee is a different company (rule check 2026-11-05: 5 of 19 noise)",
+   "required_keywords": [
+    "Smurfit Kappa",
+    "WestRock"
+   ],
+   "min_matches": 1,
+   "trust_single_match": true,
+   "exclude_patterns": [
+    "Westrock Coffee"
+   ]
+  }
+ }
+}

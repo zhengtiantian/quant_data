@@ -1,0 +1,21 @@
+{
+ "symbol": "LIN",
+ "name": "Linde plc",
+ "primary_keywords": [
+  "Linde"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Sascha Moeller",
+  "Linde Engineering",
+  "Carbonyl Technologies",
+  "Linde Materials",
+  "Linde Gas",
+  "Linde Healthcare",
+  "Linde Digital",
+  "Linde Performance Materials"
+ ],
+ "special_rules": {}
+}

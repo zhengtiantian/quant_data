@@ -1,0 +1,23 @@
+{
+ "symbol": "WAT",
+ "name": "Waters Corporation",
+ "primary_keywords": [
+  "Waters Corporation"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Waters"
+ ],
+ "dropped_expansion": [
+  "David Hunt",
+  "ACQUITY",
+  "Xevo",
+  "Zorbatech",
+  "MicroMass",
+  "Alliance",
+  "Sunrise",
+  "Waters Associates"
+ ],
+ "special_rules": {}
+}

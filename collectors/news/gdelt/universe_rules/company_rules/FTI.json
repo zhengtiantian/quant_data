@@ -1,0 +1,21 @@
+{
+ "symbol": "FTI",
+ "name": "TechnipFMC plc",
+ "primary_keywords": [
+  "TechnipFMC",
+  "Technip FMC"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "John Browne",
+  "David B. Weis",
+  "Subsea 7",
+  "FMC Technologies",
+  "Technip",
+  "Hydris",
+  "FMC Flowcontrol"
+ ],
+ "special_rules": {}
+}

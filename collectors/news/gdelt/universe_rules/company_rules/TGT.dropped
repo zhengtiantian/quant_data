@@ -1,0 +1,34 @@
+{
+ "symbol": "TGT",
+ "name": "Target Corporation",
+ "primary_keywords": [
+  "Target",
+  "TGT"
+ ],
+ "expansion_keywords": [],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "Target is a common noun and also the name of other companies (e.g., Target Brands, Target Global)",
+   "required_keywords": [
+    "Target Circle",
+    "Target Corporation",
+    "Target RedCard",
+    "Target retail",
+    "Target stores"
+   ],
+   "min_matches": 1
+  }
+ },
+ "dropped_expansion": [
+  "Brian Cornell",
+  "Marcie Moffman",
+  "Target Circle",
+  "Target RedCard",
+  "Good & Gather",
+  "Cat & Jack",
+  "Target Plus",
+  "Target Optical",
+  "Target Pharmacy",
+  "Target Home"
+ ]
+}

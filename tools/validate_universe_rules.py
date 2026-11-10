@@ -40,10 +40,11 @@ os.environ.setdefault("USE_SLM_FILTER", "false")
 sys.path.insert(0, str(ROOT / "tools"))
 from special_rules.headline import short_names, title_gate  # noqa: E402  (the headline check the backfill and collector apply)
 
-RULES_DIR = os.getenv("BACKFILL_RULES_DIR", "/Volumes/Data4T/universe/company_rules")
+UNIVERSE_RULES = ROOT / "collectors" / "news" / "gdelt" / "universe_rules"
+RULES_DIR = os.getenv("BACKFILL_RULES_DIR", str(UNIVERSE_RULES / "company_rules"))
 PARQUET_DIR = os.getenv("GKG_PARQUET_DIR", "/Volumes/Data4T/gkg_parquet")
 OUT = Path(os.getenv("RULE_CHECK_DIR", "/Volumes/Data4T/universe/rule_check"))
-NAMES = Path("/Volumes/Data4T/universe/names.json")
+NAMES = UNIVERSE_RULES / "names.json"
 MONTHS = os.getenv("RULE_CHECK_MONTHS", "2021-06,2023-09,2025-09").split(",")
 SAMPLE = int(os.getenv("RULE_CHECK_SAMPLE", "8"))
 LM = os.getenv("LM_STUDIO_URL", "http://localhost:1234/v1").rstrip("/")

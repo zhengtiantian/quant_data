@@ -1,0 +1,24 @@
+{
+ "symbol": "ALB",
+ "name": "Albemarle Corporation",
+ "primary_keywords": [
+  "Albemarle Corporation",
+  "Albemarle Corp"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Albemarle"
+ ],
+ "dropped_expansion": [
+  "Bryan Johnson",
+  "Lithium Americas",
+  "Societal Impact",
+  "Lithium Carbonate",
+  "Potash",
+  "Fluoropolymers",
+  "Kirkland",
+  "Thacker Pass"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,21 @@
+{
+ "symbol": "CMCSA",
+ "name": "Comcast Corporation",
+ "primary_keywords": [
+  "Comcast"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Brian Lobb",
+  "David Cohen",
+  "NBCUniversal",
+  "Sky",
+  "Peacock",
+  "Xfinity",
+  "Universal Pictures",
+  "Warner Bros. Discovery"
+ ],
+ "special_rules": {}
+}

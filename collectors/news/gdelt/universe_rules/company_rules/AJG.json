@@ -1,0 +1,29 @@
+{
+ "symbol": "AJG",
+ "name": "Arthur J. Gallagher & Co.",
+ "primary_keywords": [
+  "Arthur J. Gallagher",
+  "Gallagher Bassett",
+  "Gallagher Benefit Services",
+  "Gallagher Insurance",
+  "Gallagher Re",
+  "Gallagher Risk",
+  "Arthur J Gallagher"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Gallagher"
+ ],
+ "dropped_expansion": [
+  "Michael Gallagher",
+  "Gallagher Bassett",
+  "Gallagher Re",
+  "Gallagher Risk",
+  "Gallagher Benefit Services",
+  "Gallagher Bassett International",
+  "Gallagher Insurance",
+  "Gallagher Bassett Solutions"
+ ],
+ "special_rules": {}
+}

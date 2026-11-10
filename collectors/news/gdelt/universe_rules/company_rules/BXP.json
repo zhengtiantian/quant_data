@@ -1,0 +1,21 @@
+{
+ "symbol": "BXP",
+ "name": "BXP, Inc.",
+ "primary_keywords": [
+  "BXP"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Helen T. Loewenthal",
+  "Jeffrey S. Blum",
+  "BXP International",
+  "BXP Europe",
+  "BXP Asia",
+  "BXP Latin America",
+  "BXP Global",
+  "BXP Capital"
+ ],
+ "special_rules": {}
+}

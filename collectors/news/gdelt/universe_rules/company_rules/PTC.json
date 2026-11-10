@@ -1,0 +1,23 @@
+{
+ "symbol": "PTC",
+ "name": "PTC Inc.",
+ "primary_keywords": [
+  "PTC Inc"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "PTC"
+ ],
+ "dropped_expansion": [
+  "Windchill",
+  "ThingWorx",
+  "Creo",
+  "Aras",
+  "Stephen C. Goldstein",
+  "Jared Spott",
+  "Codebeamer",
+  "Vuforia"
+ ],
+ "special_rules": {}
+}

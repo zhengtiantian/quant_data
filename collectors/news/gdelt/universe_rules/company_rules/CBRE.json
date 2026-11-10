@@ -1,0 +1,19 @@
+{
+ "symbol": "CBRE",
+ "name": "CBRE Group, Inc.",
+ "primary_keywords": [
+  "CBRE"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Joseph Ulses",
+  "Michael Hurd",
+  "CBRE Global Workplace",
+  "CBRE Research",
+  "CBRE Investment Management",
+  "CBRE Global Workplace Strategies"
+ ],
+ "special_rules": {}
+}

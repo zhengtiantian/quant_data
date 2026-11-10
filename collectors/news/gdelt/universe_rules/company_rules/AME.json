@@ -1,0 +1,23 @@
+{
+ "symbol": "AME",
+ "name": "AMETEK, Inc.",
+ "primary_keywords": [
+  "AMETEK"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "John Murphy",
+  "AMETEK Land",
+  "AMETEK Avtron",
+  "AMETEK Honeywell",
+  "AMETEK Samsong",
+  "AMETEK Pegasus",
+  "AMETEK Edco",
+  "AMETEK Searle",
+  "AMETEK TSI",
+  "AMETEK Bently Nevada"
+ ],
+ "special_rules": {}
+}

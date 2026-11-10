@@ -1,0 +1,23 @@
+{
+ "symbol": "BRK-B",
+ "name": "Berkshire Hathaway Inc.",
+ "primary_keywords": [
+  "Berkshire Hathaway"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Warren Buffett",
+  "Ajit Jain",
+  "Geico",
+  "BNSF Railway",
+  "Berkshire Hathaway Energy",
+  "See's Candies",
+  "Duracell",
+  "Lubrizol",
+  "NetJets",
+  "Marathon Petroleum"
+ ],
+ "special_rules": {}
+}

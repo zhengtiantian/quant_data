@@ -1,0 +1,20 @@
+{
+ "symbol": "CTVA",
+ "name": "Corteva, Inc.",
+ "primary_keywords": [
+  "Corteva"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Jeff Dutton",
+  "Corteva Agriscience",
+  "Pioneer",
+  "Stine",
+  "Corteva Agrisolutions",
+  "DuPont Pioneer",
+  "Corteva Crop Science"
+ ],
+ "special_rules": {}
+}

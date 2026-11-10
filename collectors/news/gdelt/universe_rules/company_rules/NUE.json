@@ -1,0 +1,23 @@
+{
+ "symbol": "NUE",
+ "name": "Nucor Corporation",
+ "primary_keywords": [
+  "Nucor"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Ken MacCullough",
+  "Nucor Steel",
+  "Nucor-Yamato",
+  "Nucor-Cliffside",
+  "Nucor-Galveston",
+  "Nucor-Steel Products",
+  "Nucor-Steel Mill",
+  "Nucor-Steel Processing",
+  "Nucor-Steel Service Centers",
+  "Nucor-Steel Distribution"
+ ],
+ "special_rules": {}
+}

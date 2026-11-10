@@ -1,0 +1,29 @@
+{
+ "symbol": "HLT",
+ "name": "Hilton Worldwide Holdings Inc.",
+ "primary_keywords": [
+  "Canopy by Hilton",
+  "Hampton by Hilton",
+  "Hilton Honors",
+  "Tru by Hilton",
+  "Hilton Worldwide Holdings"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Hilton"
+ ],
+ "dropped_expansion": [
+  "Christopher Nassetta",
+  "Cris Nassetta",
+  "Hilton Honors",
+  "DoubleTree",
+  "Waldorf Astoria",
+  "Canopy by Hilton",
+  "Curio Collection",
+  "Embassy Suites",
+  "Hampton by Hilton",
+  "Tru by Hilton"
+ ],
+ "special_rules": {}
+}

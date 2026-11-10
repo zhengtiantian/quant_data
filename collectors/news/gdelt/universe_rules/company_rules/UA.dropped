@@ -1,0 +1,27 @@
+{
+ "symbol": "UA",
+ "name": "Under Armour",
+ "primary_keywords": [
+  "Under Armour"
+ ],
+ "expansion_keywords": [],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "UA is a common abbreviation for Under Armour but also for University of Arizona, University of Arkansas, and other entities; 'Under' and 'Armour' are common words.",
+   "required_keywords": [
+    "Under Armour",
+    "Under Armour, Inc."
+   ],
+   "min_matches": 1
+  }
+ },
+ "dropped_expansion": [
+  "Kevin Plank",
+  "Chase Reilly",
+  "HeatGear",
+  "ColdGear",
+  "Project Rock",
+  "Curry Brand",
+  "UA Record"
+ ]
+}

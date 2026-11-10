@@ -1,0 +1,21 @@
+{
+ "symbol": "MCK",
+ "name": "McKesson Corporation",
+ "primary_keywords": [
+  "McKesson"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Brian Boler",
+  "Jeff Jones",
+  "Optum",
+  "Cardax",
+  "McKesson Medical-Surgical",
+  "McKesson Drug",
+  "McKesson Global",
+  "McKesson Health Services"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,25 @@
+{
+ "symbol": "CFG",
+ "name": "Citizens Financial Group, Inc.",
+ "primary_keywords": [
+  "Citizens Financial"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Brian Grogan",
+  "Citizens Bank",
+  "Citizens Financial",
+  "Citizens Direct",
+  "Citizens Access",
+  "Citizens Private Bank",
+  "Citizens Wealth",
+  "Citizens Insurance",
+  "Citizens Mortgage",
+  "Citizens Auto",
+  "Citizens Home",
+  "Citizens Business"
+ ],
+ "special_rules": {}
+}

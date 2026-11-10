@@ -1,0 +1,21 @@
+{
+ "symbol": "NXPI",
+ "name": "NXP Semiconductors N.V.",
+ "primary_keywords": [
+  "NXP"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Rafael Domenech",
+  "S32",
+  "i.MX",
+  "LPC",
+  "Kinetis",
+  "Secure Edge",
+  "Infineon",
+  "Qorvo"
+ ],
+ "special_rules": {}
+}

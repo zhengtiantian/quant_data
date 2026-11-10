@@ -1,0 +1,25 @@
+{
+ "symbol": "CPT",
+ "name": "Camden Property Trust",
+ "primary_keywords": [
+  "Camden Property Trust"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Camden",
+  "Camden Property",
+  "Camden Homes",
+  "Camden Town",
+  "Camden Yards",
+  "Camden Park",
+  "Camden Place",
+  "Camden Crossings",
+  "Camden Landing",
+  "Camden Village",
+  "Camden Point",
+  "Camden Square"
+ ],
+ "special_rules": {}
+}

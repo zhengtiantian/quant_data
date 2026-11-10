@@ -1,0 +1,24 @@
+{
+ "symbol": "EG",
+ "name": "Everest Group, Ltd.",
+ "primary_keywords": [
+  "Everest Group",
+  "Everest Re"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Everest Re",
+  "Everest National",
+  "Everest Casualty",
+  "Everest Commercial",
+  "Everest Specialty",
+  "Everest Life",
+  "Everest P&C",
+  "Everest Reinsurance",
+  "Everest Group Holdings",
+  "Everest Insurance"
+ ],
+ "special_rules": {}
+}

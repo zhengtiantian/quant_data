@@ -1,0 +1,19 @@
+{
+ "symbol": "AWK",
+ "name": "American Water Works Company, Inc.",
+ "primary_keywords": [
+  "American Water Works"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Michael J. McGlone",
+  "David A. Lyle",
+  "American Water",
+  "AWW",
+  "Water Utility",
+  "Regulated Water"
+ ],
+ "special_rules": {}
+}

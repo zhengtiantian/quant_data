@@ -1,0 +1,25 @@
+{
+ "symbol": "AES",
+ "name": "The AES Corporation",
+ "primary_keywords": [
+  "The AES Corporation"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "AES"
+ ],
+ "dropped_expansion": [
+  "Glen A. Allan",
+  "AES Clean Energy",
+  "AES Mexico",
+  "AES Colombia",
+  "AES Argentina",
+  "AES Chile",
+  "AES Uruguay",
+  "AES Peru",
+  "AES Brazil",
+  "AES Power"
+ ],
+ "special_rules": {}
+}

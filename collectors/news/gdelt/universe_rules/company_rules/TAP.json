@@ -1,0 +1,21 @@
+{
+ "symbol": "TAP",
+ "name": "Molson Coors Beverage Company",
+ "primary_keywords": [
+  "Coors"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Doug Richman",
+  "Coors Light",
+  "Molson Canadian",
+  "Corona",
+  "Blue Moon",
+  "Leffe",
+  "Henry Weinberger",
+  "Molson"
+ ],
+ "special_rules": {}
+}

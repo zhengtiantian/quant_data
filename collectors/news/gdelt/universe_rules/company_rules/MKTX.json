@@ -1,0 +1,23 @@
+{
+ "symbol": "MKTX",
+ "name": "MarketAxess Holdings Inc.",
+ "primary_keywords": [
+  "MarketAxess"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Michael Hannon",
+  "Michael D'Adamo",
+  "Moodys",
+  "S&P Global",
+  "Fitch",
+  "ICE",
+  "CME Group",
+  "Tradeweb",
+  "Bloomberg",
+  "Refinitiv"
+ ],
+ "special_rules": {}
+}

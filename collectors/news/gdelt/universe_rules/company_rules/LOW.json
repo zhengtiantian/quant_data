@@ -1,0 +1,23 @@
+{
+ "symbol": "LOW",
+ "name": "Lowe's Companies, Inc.",
+ "primary_keywords": [
+  "Lowe's Home Improvement",
+  "Lowe's Companies"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Lowe's",
+  "Lowe"
+ ],
+ "dropped_expansion": [
+  "Marvin",
+  "Bernard Kerchner",
+  "Mike Frisbie",
+  "Lowe's Home Improvement",
+  "Vista Outdoor",
+  "Lowe's Pro"
+ ],
+ "special_rules": {}
+}

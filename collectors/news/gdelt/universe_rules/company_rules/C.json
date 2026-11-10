@@ -1,0 +1,25 @@
+{
+ "symbol": "C",
+ "name": "Citigroup Inc.",
+ "primary_keywords": [
+  "Citigroup"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Citi"
+ ],
+ "dropped_expansion": [
+  "Jane Fraser",
+  "Citi Private Bank",
+  "Citi Ventures",
+  "Citi Health",
+  "Citi Trends",
+  "Citi Mortgage",
+  "Citi Card",
+  "Citi Mobile",
+  "Citi Wealth",
+  "Citi Research"
+ ],
+ "special_rules": {}
+}

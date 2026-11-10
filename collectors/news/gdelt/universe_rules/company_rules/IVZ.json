@@ -1,0 +1,39 @@
+{
+ "symbol": "IVZ",
+ "name": "Invesco Ltd.",
+ "primary_keywords": [
+  "Invesco"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-05",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Kendall Ackerman",
+  "Jeffrey Washington",
+  "Avantis",
+  "FTSE",
+  "MSCI",
+  "Invesco QQQ",
+  "Invesco Capital",
+  "Invesco Perpetual"
+ ],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "Invesco's funds and investment trusts publish daily NAV and regulatory notices (finanznachrichten.de: 10,862 rows, 2026-11-05)",
+   "required_keywords": [
+    "Invesco"
+   ],
+   "min_matches": 1,
+   "trust_single_match": true,
+   "exclude_title_patterns": [
+    "Net Asset Value",
+    "\\bUCITS ETF\\b",
+    "Invesco[\\w&,. ]{0,60}\\b(Trust|Trusts|Fund|Funds)\\b[\\w ]{0,10}(Plc|Ltd|Limited|Inc\\.?)?\\s*[-:]\\s",
+    "Total Voting Rights",
+    "Transaction in Own Shares",
+    "Portfolio (Update|Holdings)\\b",
+    "Monthly (Factsheet|Update|Dividend)"
+   ]
+  }
+ }
+}

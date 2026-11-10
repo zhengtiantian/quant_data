@@ -1,0 +1,27 @@
+{
+ "symbol": "MRK",
+ "name": "Merck & Co., Inc.",
+ "primary_keywords": [
+  "Merck Sharp & Dohme",
+  "Merck & Co Inc",
+  "Merck & Co."
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Merck"
+ ],
+ "dropped_expansion": [
+  "Keytruda",
+  "Vyepti",
+  "Jenny Johnson",
+  "Robert Davis",
+  "Merck Sharp & Dohme",
+  "MSD",
+  "Gardasil",
+  "Januvia",
+  "Brolucizumab",
+  "Pembrolizumab"
+ ],
+ "special_rules": {}
+}

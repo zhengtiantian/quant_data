@@ -1,0 +1,21 @@
+{
+ "symbol": "CINF",
+ "name": "Cincinnati Financial Corporation",
+ "primary_keywords": [
+  "Cincinnati Financial"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Cincinnati Insurance",
+  "Cincinnati Re",
+  "Cincinnati Casualty",
+  "Cincinnati Surety",
+  "Cincinnati Indemnity",
+  "Cincinnati P&C",
+  "Cincinnati Financial Group",
+  "Cincinnati Financial Insurance"
+ ],
+ "special_rules": {}
+}

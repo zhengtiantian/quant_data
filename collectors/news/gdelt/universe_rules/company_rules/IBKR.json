@@ -1,0 +1,25 @@
+{
+ "symbol": "IBKR",
+ "name": "Interactive Brokers Group, Inc.",
+ "primary_keywords": [
+  "Interactive Brokers"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Thomas Peterffy",
+  "TWS",
+  "IBKR Pro",
+  "IBKR Mobile",
+  "IBKR Lite",
+  "IBKR GlobalTrader",
+  "IBKR Trader Workstation",
+  "IBKR API",
+  "IBKR FIX",
+  "IBKR CQG",
+  "IBKR Rithmic",
+  "IBKR Kinetick"
+ ],
+ "special_rules": {}
+}

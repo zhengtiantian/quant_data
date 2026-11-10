@@ -1,0 +1,19 @@
+{
+ "symbol": "TFC",
+ "name": "Truist Financial Corporation",
+ "primary_keywords": [
+  "Truist"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Bill Rogers",
+  "Brian Sack",
+  "SunTrust",
+  "BB&T",
+  "Truist Bank",
+  "Truist Securities"
+ ],
+ "special_rules": {}
+}

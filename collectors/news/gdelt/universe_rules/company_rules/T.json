@@ -1,0 +1,21 @@
+{
+ "symbol": "T",
+ "name": "AT&T Inc.",
+ "primary_keywords": [
+  "AT&T"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "John Stankey",
+  "Patrick Schmit",
+  "AT&T Fiber",
+  "AT&T Mobility",
+  "AT&T International",
+  "AT&T Business",
+  "AT&T Sports",
+  "AT&T Stadium"
+ ],
+ "special_rules": {}
+}

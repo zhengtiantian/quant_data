@@ -1,0 +1,34 @@
+{
+ "symbol": "FOX",
+ "name": "Fox Corporation",
+ "primary_keywords": [
+  "Fox Corporation",
+  "Fox News",
+  "FOX"
+ ],
+ "expansion_keywords": [],
+ "special_rules": {
+  "ambiguous": {
+   "problem": "FOX is a common ticker symbol and name for other entities (e.g., Fox Entertainment, Fox Searchlight, or the animal); 'Fox' is also a common surname and place name.",
+   "required_keywords": [
+    "Fox Corporation",
+    "Fox News"
+   ],
+   "min_matches": 1
+  }
+ },
+ "dropped_expansion": [
+  "Chase Carey",
+  "Lachlan Murdoch",
+  "Fox Sports",
+  "Fox Broadcasting",
+  "Fox News Channel",
+  "Fox Business",
+  "Fox Sports 1",
+  "Fox Sports 2",
+  "Fox Sports 3",
+  "Fox Sports 4",
+  "Fox Sports 5",
+  "Fox Sports 6"
+ ]
+}

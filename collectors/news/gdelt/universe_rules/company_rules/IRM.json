@@ -1,0 +1,22 @@
+{
+ "symbol": "IRM",
+ "name": "Iron Mountain Incorporated",
+ "primary_keywords": [
+  "Iron Mountain Incorporated"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Iron Mountain"
+ ],
+ "dropped_expansion": [
+  "Bill Smead",
+  "IronCloud",
+  "IronKey",
+  "IronDocument",
+  "IronVault",
+  "IronConnect",
+  "Iron Mountain International"
+ ],
+ "special_rules": {}
+}

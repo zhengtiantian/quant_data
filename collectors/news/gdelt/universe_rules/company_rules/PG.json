@@ -1,0 +1,24 @@
+{
+ "symbol": "PG",
+ "name": "The Procter & Gamble Company",
+ "primary_keywords": [
+  "Procter & Gamble",
+  "P&G"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Shrinivas Vaidyanathan",
+  "Tide",
+  "Gillette",
+  "Crest",
+  "Pampers",
+  "Olay",
+  "Head & Shoulders",
+  "Dove",
+  "Crest 3D White",
+  "Always"
+ ],
+ "special_rules": {}
+}

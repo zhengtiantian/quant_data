@@ -1,0 +1,25 @@
+{
+ "symbol": "F",
+ "name": "Ford Motor Company",
+ "primary_keywords": [
+  "Ford Motor",
+  "Bill Ford"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Ford"
+ ],
+ "dropped_expansion": [
+  "Jim Farley",
+  "Bill Ford",
+  "F-150 Lightning",
+  "Mustang Mach-E",
+  "Ford Blue",
+  "Ford Model e",
+  "Ford Pro",
+  "Ford Performance",
+  "Ford Credit"
+ ],
+ "special_rules": {}
+}

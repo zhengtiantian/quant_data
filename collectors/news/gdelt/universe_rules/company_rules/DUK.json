@@ -1,0 +1,21 @@
+{
+ "symbol": "DUK",
+ "name": "Duke Energy Corporation",
+ "primary_keywords": [
+  "Duke Energy"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Gregory E. Coleman",
+  "Duke Energy Progress",
+  "Duke Energy Carolinas",
+  "Duke Energy Florida",
+  "Duke Energy Ohio",
+  "Duke Energy Indiana",
+  "Duke Energy Kentucky",
+  "Duke Energy Ohio"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,20 @@
+{
+ "symbol": "SNA",
+ "name": "Snap-on Incorporated",
+ "primary_keywords": [
+  "Snap-on"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Randy Hain",
+  "Mike Kessler",
+  "Snap-on Tools",
+  "Snap-on Diagnostics",
+  "Snap-on Financial",
+  "Snap-on Pro",
+  "Snap-on Automotive"
+ ],
+ "special_rules": {}
+}

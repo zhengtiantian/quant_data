@@ -1,0 +1,23 @@
+{
+ "symbol": "WAB",
+ "name": "Westinghouse Air Brake Technologies Corporation",
+ "primary_keywords": [
+  "Westinghouse Air Brake"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Karl Brauer",
+  "John Stoltzfus",
+  "Air Brake",
+  "Locobrain",
+  "Wabtec",
+  "Kissimmee",
+  "Cleveland",
+  "Railcar",
+  "Brake Systems",
+  "Locomotive"
+ ],
+ "special_rules": {}
+}

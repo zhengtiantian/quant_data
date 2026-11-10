@@ -1,0 +1,21 @@
+{
+ "symbol": "AAP",
+ "name": "Advance Auto Parts, Inc.",
+ "primary_keywords": [
+  "Advance Auto Parts"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Mike Keegan",
+  "O'Reilly Auto Parts",
+  "AutoZone",
+  "NAPA Auto Parts",
+  "Pep Boys",
+  "Gulf Oil",
+  "Carquest",
+  "AutoCare"
+ ],
+ "special_rules": {}
+}

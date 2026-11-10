@@ -1,0 +1,22 @@
+{
+ "symbol": "BAX",
+ "name": "Baxter International Inc.",
+ "primary_keywords": [
+  "Baxter Healthcare",
+  "Baxter International"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Baxter"
+ ],
+ "dropped_expansion": [
+  "Baxter International",
+  "Vivian H. O'Reilly",
+  "Renova",
+  "Cytel",
+  "Baxter Healthcare",
+  "Baxter International Inc"
+ ],
+ "special_rules": {}
+}

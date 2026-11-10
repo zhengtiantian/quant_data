@@ -1,0 +1,23 @@
+{
+ "symbol": "ITW",
+ "name": "Illinois Tool Works Inc.",
+ "primary_keywords": [
+  "Illinois Tool Works"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Sergeio Marchionne",
+  "Graham M. Ray",
+  "Loctite",
+  "Eaton",
+  "Oben",
+  "Magna-Clix",
+  "Husky",
+  "Mitec",
+  "Sikorsky",
+  "Gardner Denver"
+ ],
+ "special_rules": {}
+}

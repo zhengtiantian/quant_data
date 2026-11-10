@@ -1,0 +1,24 @@
+{
+ "symbol": "HBAN",
+ "name": "Huntington Bancshares Incorporated",
+ "primary_keywords": [
+  "Huntington Bancshares",
+  "Huntington Bank"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Stephen J. Soderstrom",
+  "Michael J. Hannon",
+  "Huntington National Bank",
+  "Huntington Investment Advisors",
+  "Huntington Trust",
+  "Huntington Insurance",
+  "Huntington Mortgage",
+  "Huntington Wealth Advisors",
+  "Huntington Bank Center",
+  "Huntington Bank Stadium"
+ ],
+ "special_rules": {}
+}

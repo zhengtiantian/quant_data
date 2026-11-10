@@ -1,0 +1,23 @@
+{
+ "symbol": "RHI",
+ "name": "Robert Half Inc.",
+ "primary_keywords": [
+  "Robert Half"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Robert Half International",
+  "Michael D. Dweck",
+  "Robert Half Technology",
+  "Robert Half Finance & Accounting",
+  "Robert Half Legal",
+  "Robert Half Marketing",
+  "Robert Half Sales",
+  "Robert Half Customer Service",
+  "Robert Half Construction",
+  "Robert Half Healthcare"
+ ],
+ "special_rules": {}
+}

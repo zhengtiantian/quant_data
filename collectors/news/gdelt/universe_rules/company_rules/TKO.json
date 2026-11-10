@@ -1,0 +1,20 @@
+{
+ "symbol": "TKO",
+ "name": "TKO Group Holdings, Inc.",
+ "primary_keywords": [
+  "TKO Group"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "TKO"
+ ],
+ "dropped_expansion": [
+  "WWE",
+  "UFC",
+  "Shane Van Ginder",
+  "Arclight Cinemas",
+  "TKO Group Holdings"
+ ],
+ "special_rules": {}
+}

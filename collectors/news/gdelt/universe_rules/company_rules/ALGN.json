@@ -1,0 +1,20 @@
+{
+ "symbol": "ALGN",
+ "name": "Align Technology, Inc.",
+ "primary_keywords": [
+  "Align Technology",
+  "Invisalign"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Dr. John L. Johnston",
+  "Dr. David M. Rodes",
+  "ClearCorrect",
+  "iTero",
+  "Vytell",
+  "SmileDirectClub"
+ ],
+ "special_rules": {}
+}

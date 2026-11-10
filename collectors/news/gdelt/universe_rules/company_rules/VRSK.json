@@ -1,0 +1,21 @@
+{
+ "symbol": "VRSK",
+ "name": "Verisk Analytics, Inc.",
+ "primary_keywords": [
+  "Verisk"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "CoreLogic",
+  "Covisint",
+  "Dun & Bradstreet",
+  "J.D. Power",
+  "MARC",
+  "S&P Global Ratings",
+  "Verisk Maplecroft",
+  "Verisk 360"
+ ],
+ "special_rules": {}
+}

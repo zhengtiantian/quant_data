@@ -1,0 +1,19 @@
+{
+ "symbol": "VRT",
+ "name": "Vertiv Holdings Co",
+ "primary_keywords": [
+  "Vertiv"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "George Zafiris",
+  "Liam Scanlan",
+  "Liebert",
+  "NetSchneider",
+  "Liebert i2000",
+  "Liebert CRV"
+ ],
+ "special_rules": {}
+}

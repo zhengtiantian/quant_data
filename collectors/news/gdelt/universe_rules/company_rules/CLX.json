@@ -1,0 +1,23 @@
+{
+ "symbol": "CLX",
+ "name": "The Clorox Company",
+ "primary_keywords": [
+  "Clorox"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Clorox",
+  "Bleach",
+  "Kai Exner",
+  "Burt's Bees",
+  "Glad",
+  "Hartley",
+  "Viva",
+  "Folgers",
+  "Cotopaxi",
+  "Pom"
+ ],
+ "special_rules": {}
+}

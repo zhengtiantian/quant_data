@@ -1,0 +1,21 @@
+{
+ "symbol": "MAS",
+ "name": "Masco Corporation",
+ "primary_keywords": [
+  "Masco"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Mansfield",
+  "American Standard",
+  "Delta",
+  "Jenn-Air",
+  "Hobart",
+  "Moen",
+  "Kohler",
+  "C. Michael Jeffries"
+ ],
+ "special_rules": {}
+}

@@ -1,0 +1,23 @@
+{
+ "symbol": "SYY",
+ "name": "Sysco Corporation",
+ "primary_keywords": [
+  "Sysco"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Ron Delaney",
+  "Gordon Smith",
+  "Gordon Smith Jr.",
+  "US Foods",
+  "Gordon Food Service",
+  "PepsiCo",
+  "Coca-Cola",
+  "Nestle",
+  "General Mills",
+  "Conagra"
+ ],
+ "special_rules": {}
+}

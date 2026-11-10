@@ -1,0 +1,19 @@
+{
+ "symbol": "EIX",
+ "name": "Edison International",
+ "primary_keywords": [
+  "Edison International"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [],
+ "dropped_expansion": [
+  "Southern California Edison",
+  "SCE",
+  "Drew Maloney",
+  "Michael Moroney",
+  "Edison Mission Energy",
+  "Edison Advanced Energy"
+ ],
+ "special_rules": {}
+}

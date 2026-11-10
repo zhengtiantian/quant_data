@@ -1,0 +1,21 @@
+{
+ "symbol": "JKHY",
+ "name": "Jack Henry & Associates, Inc.",
+ "primary_keywords": [
+  "Jack Henry & Associates",
+  "Jack Henry Financial",
+  "Jack Henry Software"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Jack Henry"
+ ],
+ "dropped_expansion": [
+  "Jack Henry Software",
+  "Jack Henry & Associates, Inc.",
+  "Jack Henry Financial",
+  "Jack Henry & Associates"
+ ],
+ "special_rules": {}
+}

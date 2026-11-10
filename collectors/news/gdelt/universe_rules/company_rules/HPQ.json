@@ -1,0 +1,24 @@
+{
+ "symbol": "HPQ",
+ "name": "HP Inc.",
+ "primary_keywords": [
+  "Hewlett Packard Inc",
+  "HP Inc"
+ ],
+ "expansion_keywords": [],
+ "tightened": "2026-11-03",
+ "weak_names_not_counted": [
+  "Hewlett Packard"
+ ],
+ "dropped_expansion": [
+  "Enrique Lores",
+  "Katie Hendricks",
+  "Zhan",
+  "Spectre",
+  "Elite",
+  "Omen",
+  "Pavilion",
+  "HP Inc"
+ ],
+ "special_rules": {}
+}
