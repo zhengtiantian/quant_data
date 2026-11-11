@@ -23,11 +23,17 @@ The rejected row carries the rule name as its model, so a rule can be measured a
 from __future__ import annotations
 
 import json
+import os
 import re
 from pathlib import Path
 from urllib.parse import urlsplit
 
-BLOCKLIST_FILE = Path(__file__).with_name("blocked_domains.json")
+# The list is rebuilt every week (keyword_refresh_weekly) into a file outside the repository, so the
+# working tree stays clean; the copy beside this module is the list of 2026-11-10, used until the
+# first rebuild and on a machine that has none.
+SEED_FILE = Path(__file__).with_name("blocked_domains.json")
+BLOCKLIST_FILE = Path(os.getenv("QUANT_BLOCKLIST_FILE",
+                                "~/Library/Application Support/quant/blocked_domains.json")).expanduser()
 
 # Page types. Each alternative is anchored on the punctuation or position that makes it a page title.
 _NON_NEWS_TITLE = re.compile(
@@ -66,10 +72,13 @@ def domain_of(url: str) -> str:
 def blocked_domains() -> frozenset[str]:
     global _blocked
     if _blocked is None:
-        try:
-            _blocked = frozenset(json.loads(BLOCKLIST_FILE.read_text())["domains"])
-        except (OSError, ValueError, KeyError):
-            _blocked = frozenset()
+        _blocked = frozenset()
+        for f in (BLOCKLIST_FILE, SEED_FILE):
+            try:
+                _blocked = frozenset(json.loads(f.read_text())["domains"])
+                break
+            except (OSError, ValueError, KeyError):
+                continue
     return _blocked
 
 

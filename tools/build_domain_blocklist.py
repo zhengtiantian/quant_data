@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Sites whose articles the relevance filter almost never keeps -> research/labeling/blocked_domains.json
-(read by research/labeling/prefilter.py, which rejects their rows before a model is asked).
+"""Sites whose articles the relevance filter almost never keeps -> prefilter.BLOCKLIST_FILE (outside the
+repository; research/labeling/prefilter.py reads it and rejects their rows before a model is asked).
+Runs every Saturday in keyword_refresh_weekly.
 
 Counts every judged row per site: core rows are judged when they lie behind the v2 job's cursor and
 kept when they are in the matched collection; universe rows carry the student's verdict on the
@@ -9,7 +10,7 @@ On 1.86M verdicts (2026-11-10) that is 31 sites, 0.6% of the rows, 88 kept rows 
 list reaches working business outlets (chicagobusiness.com, kyivindependent.com), so the bar stays at 2%.
 
     build_domain_blocklist.py            print the list, write nothing
-    build_domain_blocklist.py --write    write blocked_domains.json
+    build_domain_blocklist.py --write    write the list
 Env: LOCAL_MONGO_URI, BLOCK_MIN_ROWS (100), BLOCK_MAX_KEEP (0.02).
 """
 from __future__ import annotations
@@ -62,10 +63,7 @@ def main() -> None:
     blocked = sorted((d for d, (n, k) in stats.items() if n >= MIN_ROWS and k / n < MAX_KEEP),
                      key=lambda d: -stats[d][0])
     # a site already blocked stays at keep 0 from then on, so the earlier list is carried over
-    try:
-        earlier = json.loads(prefilter.BLOCKLIST_FILE.read_text())["domains"]
-    except (OSError, ValueError, KeyError):
-        earlier = []
+    earlier = sorted(prefilter.blocked_domains())
     domains = blocked + [d for d in earlier if d not in blocked]
     rows = sum(stats[d][0] for d in blocked)
     print(f"{total:,} judged rows on {len(stats):,} sites; blocked {len(blocked)} sites with {rows:,} rows "
@@ -74,6 +72,7 @@ def main() -> None:
     for d in blocked:
         print(f"  {d:40} {stats[d][0]:7,} rows, kept {stats[d][1]:5,}")
     if "--write" in sys.argv:
+        prefilter.BLOCKLIST_FILE.parent.mkdir(parents=True, exist_ok=True)
         prefilter.BLOCKLIST_FILE.write_text(json.dumps({
             "generated": date.today().isoformat(), "min_rows": MIN_ROWS, "max_keep": MAX_KEEP,
             "domains": domains, "stats": {d: stats[d] for d in blocked}}, indent=1) + "\n")

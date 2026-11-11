@@ -44,6 +44,12 @@ with DAG(
         lm_model="qwen3.5-9b-mlx",
         lm_workers_env=("LM_WORKERS",),
     )
+    # sites whose articles the relevance filter almost never keeps (research/labeling/prefilter.py)
+    host_task(
+        "domain_blocklist",
+        "tools/build_domain_blocklist.py --write",
+        execution_timeout=timedelta(minutes=15),
+    )
 
 with DAG(
     dag_id="keyword_refresh_apply",
