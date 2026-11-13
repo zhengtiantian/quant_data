@@ -124,3 +124,16 @@ with DAG(
                           + t.bash_command)
 
     enrich_a >> enrich_b >> merge_ab >> feature_rebuild >> index_news >> trigger_signals
+
+    # 2026-11-13 (N.9): shadow run of the GD1 students on the last 7 days' new articles. Writes only
+    # news_articles.student_gd1, which nothing reads yet; a side branch, so a failure never holds up
+    # the chain, and it queues for the GPU lock like the other student tasks (~2 min a night).
+    gd1_shadow = student_task(
+        "gd1_shadow",
+        "research/labeling/student_gd1_shadow.py",
+        name="gd1-shadow",
+        execution_timeout=timedelta(hours=1),
+    )
+    gd1_shadow.retries = 0
+    gd1_shadow.trigger_rule = "all_done"
+    enrich_b >> gd1_shadow

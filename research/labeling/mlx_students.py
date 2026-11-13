@@ -30,6 +30,11 @@ SPECS = {
     "relevance": {"dir": "relevance_q17_v4_22k", "base": "Qwen3-1.7B-bf16", "chat": "qwen", "max_tokens": 2, "batch": 32},
     "label_a": {"dir": "label_a_e2b_50k", "base": "gemma-4-e2b-it-bf16", "chat": "gemma", "max_tokens": 16, "batch": 16},
     "label_b": {"dir": "label_b_q17_50k", "base": "Qwen3-1.7B-bf16", "chat": "qwen", "max_tokens": 16, "batch": 16},
+    # GD1 students (2026-11-13, N.9): taught by Gemini Decision 1 on 96,816 articles, trained on Colab G4.
+    # Relevance: blind gold 86.1% (current relevance student 80.8%). Labels: blind accuracy ~85%.
+    # Shadow only for now: student_gd1_shadow.py writes them to the student_gd1 field, nothing reads it yet.
+    "gd1_relevance": {"dir": "gd1_rel_q17", "base": "Qwen3-1.7B-bf16", "chat": "qwen", "max_tokens": 2, "batch": 32},
+    "gd1_label": {"dir": "gd1_label_q17", "base": "Qwen3-1.7B-bf16", "chat": "qwen", "max_tokens": 16, "batch": 16},
 }
 
 REL_TITLE_CHARS, REL_BODY_CHARS = 200, 600
