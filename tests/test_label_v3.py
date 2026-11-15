@@ -27,7 +27,10 @@ def test_normalised_like_production_but_leadership_kept():
     assert sh.v3_label("other|0.1|loud|-|-", "x", [])["signal_strength"] == "low"
 
 
-def test_input_lists_the_other_companies():
+def test_input_lists_the_other_companies(monkeypatch, tmp_path):
+    # the names come from key_people.json; the peers table (outside the repository) is not needed here
+    monkeypatch.setattr(ms, "PEERS_PARQUET", tmp_path / "none.parquet")
+    monkeypatch.setattr(ms, "_v3", {})
     u = ms.label_v3_input("NVDA", "NVIDIA Corporation", "Title", "Body", ["AMD"])
     assert u.startswith("NVDA (NVIDIA Corporation)\nTitle: Title\nContent: Body\nOthers: AMD (")
     assert "Others" not in ms.label_v3_input("NVDA", "NVIDIA Corporation", "Title", "Body", [])
