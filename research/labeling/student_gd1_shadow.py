@@ -3,6 +3,9 @@
 
 Writes one new field on news_articles and nothing else:
   student_gd1 = {relevant, student_relevant, rel_rule, sentiment, event_type, signal_strength, rel_model, label_model, at}
+and, from the N.6 label student (gd1_label_v3, 2026-11-15; GD1_LABEL_STUDENT=gd1_label for the earlier one):
+  themes [the 14 v3 themes it says yes to], impacts {other company: -2..2}, others [the companies it was asked about];
+  event_type may then be `leadership`.
 relevant is the student's answer unless the key-person rule (key_people.py) overrides it to True;
 student_relevant keeps the student's own answer and rel_rule says what matched.
 Every article in the window gets both answers (labels too where the student says not relevant), so
@@ -40,6 +43,9 @@ DRY_RUN = os.getenv("GD1_DRY_RUN", "0") == "1"
 INCLUDE_UNIVERSE = os.getenv("GD1_INCLUDE_UNIVERSE", "0") == "1"
 # GD1_REAPPLY_RULES=1: no model; re-apply the key-person rule to rows that already have student_gd1
 REAPPLY = os.getenv("GD1_REAPPLY_RULES", "0") == "1"
+# the N.6 student once its adapter is installed, the earlier one until then
+LABEL_STUDENT = os.getenv("GD1_LABEL_STUDENT") or (
+    "gd1_label_v3" if (ms.STUDENTS_DIR / ms.SPECS["gd1_label_v3"]["dir"] / "adapters.safetensors").exists() else "gd1_label")
 FIELD = "student_gd1"
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
@@ -50,6 +56,18 @@ def rule_verdict(student_says: bool | None, symbol: str, title: str) -> tuple[bo
     """The student's answer, overridden to relevant when the title is about one of the company's leaders."""
     why = key_people.hit(symbol, title)
     return (True, f"key_person:{why}") if why and student_says is not True else (student_says, None)
+
+
+def v3_label(text: str, title: str, others: list[str]) -> dict | None:
+    """The N.6 label student's answer, normalised as production labels are; `leadership` is kept."""
+    p = ms.parse_label_v3(text, others)
+    if p is None:
+        return None
+    raw = p["event_type"]
+    event = "leadership" if raw.lower() == "leadership" else le._title_override(title, le._normalize_event_type(raw))
+    return {"sentiment": round(max(-1.0, min(1.0, p["sentiment"])), 4), "event_type": event,
+            "signal_strength": p["signal_strength"] if p["signal_strength"] in le.VALID_STRENGTHS else "low",
+            "themes": p["themes"], "impacts": p["impacts"], "others": others}
 
 
 def reapply(coll) -> None:
@@ -83,7 +101,8 @@ def main() -> None:
     log.info("since %s | articles: %d%s", SINCE, total, " (dry run)" if DRY_RUN else "")
     if not total:
         return
-    rel, lab = ms.Student("gd1_relevance"), ms.Student("gd1_label")
+    rel, lab = ms.Student("gd1_relevance"), ms.Student(LABEL_STUDENT)
+    v3 = LABEL_STUDENT == "gd1_label_v3"
     log.info("students ready: %s, %s", rel.id, lab.id)
     n = unparsed = kept = 0
     last_id, start = None, time.time()
@@ -99,10 +118,12 @@ def main() -> None:
         args = [(d.get("symbol") or "", d.get("name") or d.get("symbol") or "", d.get("title") or "", d.get("content") or "")
                 for d in docs]
         rel_txt = rel.generate([ms.relevance_input(*a) for a in args])
-        lab_txt = lab.generate([ms.label_input(*a) for a in args])
+        others = [ms.v3_others(a[0], a[2], a[3]) if v3 else [] for a in args]
+        lab_txt = lab.generate([ms.label_v3_input(*a, o) if v3 else ms.label_input(*a) for a, o in zip(args, others)])
         now, ops = datetime.now(timezone.utc), []
-        for d, rt, lt in zip(docs, rel_txt, lab_txt):
-            said, label = ms.parse_relevance(rt), to_label(lt, d.get("title") or "")
+        for d, rt, lt, o in zip(docs, rel_txt, lab_txt, others):
+            title = d.get("title") or ""
+            said, label = ms.parse_relevance(rt), (v3_label(lt, title, o) if v3 else to_label(lt, title))
             relevant, rule = rule_verdict(said, d.get("symbol"), d.get("title"))
             unparsed += said is None or label is None
             kept += relevant is True
@@ -110,6 +131,8 @@ def main() -> None:
                      "rel_model": rel.id, "label_model": lab.id, "at": now,
                      "sentiment": label and label["sentiment"], "event_type": label and label["event_type"],
                      "signal_strength": label and label["signal_strength"]}
+            if v3:
+                value.update(themes=label and label["themes"], impacts=label and label["impacts"], others=o)
             if DRY_RUN:
                 if len(ops) < 15:
                     print(f"  {d.get('symbol') or '':6} {str(relevant):5} {label} {(d.get('title') or '')[:70]}")

@@ -10,6 +10,7 @@ Each run, as of now:
      over a sliding window can renumber a storyline;
   4. Claude (judge.py, CLI on the subscription) judges each symbol that fired, at most MAX_PER_RUN a run
      and none after RUN_BUDGET; whatever is left fires again at the next check.
+Each run first scores the stored judgments against the stock's excess return since (score.py, step 7).
 Every judgment is stored in quant_data.news_linkage_judgments, valid or not; quant_ai shows the latest
 valid one per symbol in the holdings page's Action cell as a hint (it never changes the advice). A Claude
 failure is stored as `failed`, does not count as a firing, and is retried at the next check; the run then
@@ -31,6 +32,7 @@ import requests
 from pymongo import MongoClient
 
 import judge
+import score
 import storylines as sl
 import triggers as tg
 
@@ -88,6 +90,11 @@ def run(now: datetime, dry: bool = False) -> int:
     started = time.monotonic()
     db = MongoClient(sl.MONGO_URI, tz_aware=True)["quant_data"]
     coll = db[COLLECTION]
+    if not dry:
+        try:                                   # step 7: past judgments against what the stock did since
+            print(f"scored {score.update(db, now)} past judgments", flush=True)
+        except Exception as e:  # noqa: BLE001 - scoring must not stop the judging
+            print(f"scoring failed: {type(e).__name__}: {e}", flush=True)
     syms = followed()
     arts = sl.load_articles(syms, now - timedelta(days=LOOKBACK_DAYS), now)
     vecs = sl.embed(arts)

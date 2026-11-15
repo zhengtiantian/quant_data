@@ -27,10 +27,17 @@ if not MONGO_URI:
 # 2. Load stock universe
 # =========================================================
 
+BENCHMARKS = ["SPY"]
+
+
 def load_stock_universe():
     client = MongoClient(MONGO_URI)
     col = client["quant_data"]["stock_universe"]
     symbols = [s["symbol"] for s in col.find({}, {"symbol": 1, "_id": 0})]
+    # Benchmarks kept beside the universe (2026-11-15): N.6 scores news judgments by the excess return over
+    # SPY between the same open / close bars as the stock's. SPY left the universe in April 2026 and its
+    # bars here stopped on 04-13 (macro_indicators keeps only its close).
+    symbols += [b for b in BENCHMARKS if b not in symbols]
     # Optional filter: SYMBOLS_FILTER=AAPL,MSFT,... runs only those symbols
     sym_filter = os.getenv("SYMBOLS_FILTER", "")
     if sym_filter:
