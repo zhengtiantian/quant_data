@@ -80,3 +80,36 @@ def test_refire_only_on_escalation_and_symbol_gap():
     # fires once at the first check (6 in 24h), then once more when 30 >= 2 x 6 and 6 hours have passed
     assert [h.reason for t in trs for h in t.hot][0] in ("burst", "new")
     assert len(trs) == 2 and trs[1].hot[0].reason.endswith("+escalation")
+
+
+def test_cross_article_counts_only_at_the_strongest_effect():
+    weak = _line([(-3, 5)])
+    for a in weak.articles:
+        a.src, a.sentiment, a.via = "cross", -0.5, "AMD"        # impact -1: context for the judge only
+    assert tg.hot_at(weak, T0) is None
+    for a in weak.articles:
+        a.sentiment = -1.0                                       # impact -2: counts
+    assert tg.hot_at(weak, T0).reason == "new"
+
+
+def test_loader_adds_cross_articles_and_themes():
+    from conftest import FakeCollection
+    when = "2026-11-09T06:00:00+00:00"
+    g = lambda **kw: {"relevant": True, "signal_strength": "high", "sentiment": 0.4, "themes": [], "impacts": {}, **kw}
+    na = [
+        {"_id": "k1", "symbol": "NVDA", "title": "Nvidia ships Rubin", "publishedAt": when, "student_gd1": g(themes=["ai_capex"])},
+        {"_id": "o1", "symbol": "NVDA", "title": "Nvidia board probes ties", "publishedAt": when, "student_gd1": g()},
+        {"_id": "x1", "symbol": "AMD", "title": "AMD wins a Meta order", "publishedAt": when,
+         "student_gd1": g(impacts={"NVDA": -1, "AMD": 1}, themes=["ai_capex"])},
+        {"_id": "x0", "symbol": "AMD", "title": "AMD opens an office", "publishedAt": when, "student_gd1": g(impacts={"NVDA": 0})},
+        {"_id": "u1", "symbol": "AMD", "title": "AMD old story", "publishedAt": when, "origin": "universe_backfill",
+         "student_gd1": g(impacts={"NVDA": -2})},
+    ]
+    v2 = [{"_id": "k1", "symbol": "NVDA", "title": "Nvidia ships Rubin", "publishedAt": when, "llm_sentiment_final": 0.5,
+           "llm_signal_strength_a": "high"}]
+    db = {"news_articles": FakeCollection(na), "news_articles_company_matched_v2": FakeCollection(v2)}
+    arts = {a.id: a for a in sl.load_articles(["NVDA"], T0 - timedelta(days=1), T0, db=db)}
+    assert set(arts) == {"k1", "o1", "x1"}
+    assert arts["k1"].src == "kept" and arts["k1"].themes == ["ai_capex"]
+    x = arts["x1"]
+    assert (x.src, x.symbol, x.via, x.sentiment, x.themes) == ("cross", "NVDA", "AMD", -0.5, ["ai_capex"])

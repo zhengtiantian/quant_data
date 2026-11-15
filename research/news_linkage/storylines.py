@@ -26,6 +26,9 @@ Sources, merged (the audit found 21% of rejected articles relevant):
   kept    news_articles_company_matched_v2 (production relevance), labels A/B
   gd1     news_articles rows production rejected that the GD1 relevance student keeps (student_gd1, nightly)
   person  news_articles rows rejected by both whose title hits the key-person rule (key_people.hit)
+  cross   (step 6, 2026-11-15) news_articles rows filed under another company that the v3 label student says
+          move this one (student_gd1.impacts != 0), with `via` naming the company they are filed under
+Every article carries the v3 themes of the label student (student_gd1.themes), empty before the v3 labels.
 
 Embeddings: nomic-embed-text-v1.5 on title + first 1000 chars of the body (the description when the
 body is empty), the same text and model as the Qdrant index, cached per article id in EMB_CACHE.
@@ -81,11 +84,13 @@ class Article:
     text: str
     url: str
     domain: str
-    src: str                       # kept | gd1 | person
+    src: str                       # kept | gd1 | person | cross
     sentiment: float | None = None
     strength: int | None = None    # 0 low, 1 medium, 2 high (the stronger of the label sets)
     event: str | None = None
     person: str | None = None      # key-person rule hit, if any
+    themes: list = field(default_factory=list)   # v3 themes the label student says yes to (student_gd1.themes)
+    via: str | None = None         # cross: the company the article is filed under
     mark: str = ""                 # repeat | filler | progress
     storyline: str = ""
     sim: float = 0.0               # similarity to the closest earlier article of its storyline
@@ -141,28 +146,53 @@ def _strength(*vals) -> int | None:
 
 
 def load_articles(symbols: list[str], start: datetime, end: datetime, db=None) -> list[Article]:
-    """Every article of the three sources for these symbols, published in [start, end)."""
+    """Every article of the four sources for these symbols, published in [start, end):
+    kept / gd1 / person as in the module doc, and (N.6 step 6) cross: an article filed under another company
+    that the v3 label student says moves one of these symbols (student_gd1.impacts != 0), counted under the
+    symbol it moves, with `via` naming the company it is filed under."""
     db = db or MongoClient(MONGO_URI)["quant_data"]
     lo, hi = start.strftime("%Y-%m-%dT%H:%M"), end.strftime("%Y-%m-%dT%H:%M")
-    q = {"symbol": {"$in": symbols}, "publishedAt": {"$gte": lo, "$lt": hi}}
+    want = set(symbols)
     proj = {"title": 1, "content": 1, "description": 1, "url": 1, "symbol": 1, "publishedAt": 1, "collectedAt": 1}
-    out, kept = [], set()
-    for d in db["news_articles_company_matched_v2"].find(q, {**proj, "llm_sentiment_final": 1, "llm_event_type_a": 1,
-                                                             "llm_signal_strength_a": 1, "llm_signal_strength_b": 1}):
-        kept.add(str(d["_id"]))
-        out.append(_article(d, "kept", d.get("llm_sentiment_final"), _strength(d.get("llm_signal_strength_a"), d.get("llm_signal_strength_b")),
-                            d.get("llm_event_type_a")))
-    for d in db["news_articles"].find({**q, "origin": {"$ne": "universe_backfill"}}, {**proj, "student_gd1": 1}):
-        if str(d["_id"]) in kept:
-            continue
-        g = d.get("student_gd1") or {}
-        if g.get("relevant"):
-            src = "gd1"          # includes the rows the key-person rule turned to relevant (rel_rule)
-        elif key_people.hit(d.get("symbol"), d.get("title")):
-            src = "person"
-        else:
-            continue
-        out.append(_article(d, src, g.get("sentiment"), _strength(g.get("signal_strength")), g.get("event_type")))
+    out, kept = [], {}
+    for d in db["news_articles_company_matched_v2"].find({"symbol": {"$in": symbols}, "publishedAt": {"$gte": lo, "$lt": hi}},
+                                                         {**proj, "llm_sentiment_final": 1, "llm_event_type_a": 1,
+                                                          "llm_signal_strength_a": 1, "llm_signal_strength_b": 1}):
+        a = _article(d, "kept", d.get("llm_sentiment_final"), _strength(d.get("llm_signal_strength_a"), d.get("llm_signal_strength_b")),
+                     d.get("llm_event_type_a"))
+        kept[a.id] = a
+        out.append(a)
+    # news_articles has no index on the publication time: one light pass over the window, then the bodies of the
+    # rows needed, by _id
+    own, cross = {}, []
+    for d in db["news_articles"].find({"publishedAt": {"$gte": lo, "$lt": hi}, "origin": {"$ne": "universe_backfill"},
+                                       "symbol": {"$nin": [None, ""]}}, {"symbol": 1, "title": 1, "student_gd1": 1}):
+        i, sym, g = str(d["_id"]), d.get("symbol"), d.get("student_gd1") or {}
+        if sym in want:
+            if i in kept:
+                kept[i].themes = list(g.get("themes") or [])
+            elif g.get("relevant") or key_people.hit(sym, d.get("title")):
+                own[d["_id"]] = g      # gd1 includes the rows the key-person rule turned to relevant (rel_rule)
+        for other, level in (g.get("impacts") or {}).items():
+            if other in want and other != sym and level:
+                cross.append((d["_id"], other, level, g))
+    need = list(own) + [x[0] for x in cross if x[0] not in own]
+    docs = {}
+    for k in range(0, len(need), 1000):
+        for d in db["news_articles"].find({"_id": {"$in": need[k:k + 1000]}}, proj):
+            docs[d["_id"]] = d
+    for oid, g in own.items():
+        d = docs.get(oid)
+        if d:
+            a = _article(d, "gd1" if g.get("relevant") else "person", g.get("sentiment"), _strength(g.get("signal_strength")), g.get("event_type"))
+            a.themes = list(g.get("themes") or [])
+            out.append(a)
+    for oid, other, level, g in cross:
+        d = docs.get(oid)
+        if d:
+            a = _article({**d, "symbol": other}, "cross", level / 2, _strength(g.get("signal_strength")), g.get("event_type"))
+            a.via, a.themes = d.get("symbol"), list(g.get("themes") or [])
+            out.append(a)
     return [a for a in out if a.at and start <= a.at < end]
 
 

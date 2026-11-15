@@ -9,6 +9,8 @@ The packet Claude reads, all of it from before the moment `at` (no look-ahead):
   - each hot storyline: up to PER_LINE of its new-progress and filler articles (the first three, which say
     how the story began, then the latest), title + 300-character lede, site and time;
   - the symbol's other storylines active in the last 3 days, one line each with their latest titles;
+  - (step 6) each article's v3 themes, and a theme backdrop: other companies' strong articles on the themes that
+    recur in the packet, from the 3 days before the cutoff; articles filed under another company are marked;
   - background: hybrid retrieval (quant_ai news_rag, cut off at the storyline's first article) for
     earlier articles on the same subject;
   - prices: the stock's daily closes and its move since the day before the storyline began, beside SPY.
@@ -20,6 +22,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
+from collections import Counter
 import subprocess
 import sys
 import tempfile
@@ -36,6 +39,9 @@ sys.path.insert(0, str(QUANT_AI / "tools"))
 
 PER_LINE, CONTEXT_LINES, BACKGROUND = 20, 4, 6
 LEDE = 300
+# N.6 step 6: the themes on at least two of the packet's articles (up to THEMES_SHOWN), and for each up to
+# PER_THEME strong articles of other companies from the BACKDROP_DAYS before the cutoff
+THEMES_SHOWN, PER_THEME, BACKDROP_DAYS, BACKDROP_LEDE = 3, 3, 3, 200
 TIMEOUT_S = 300
 
 SCHEMA = {
@@ -61,11 +67,14 @@ SCHEMA = {
 }
 
 SYSTEM = """You assess how a cluster of news stories affects one US-listed stock. You are given articles grouped into
-storylines, background articles, and recent prices, all from before a cutoff time. Judge as of that cutoff:
-use only what the packet says and general domain knowledge, never knowledge of events after the cutoff.
+storylines, a theme backdrop, background articles, and recent prices, all from before a cutoff time. Judge as of that
+cutoff: use only what the packet says and general domain knowledge, never knowledge of events after the cutoff.
 
 Decide the combined effect of the hot storylines on the stock over the next 1 to 20 trading days, relative to
 the market. Several stories can reinforce, offset or change each other's meaning; say so when they do.
+An article marked "filed under X" is about another company and is included because it bears on this stock.
+The theme backdrop is other companies' news on the same themes (policy, trade, rates, AI investment...) from the
+last few days: a story can matter more, or less, given what else is happening, so weigh the combination.
 - direction: -2 strongly bearish (a material, lasting hit such as losing a key leader, a regulatory or legal
   threat to the core business, a guidance cut), -1 bearish, 0 no material effect (commentary, routine product
   news, a story the market already moved on), 1 bullish, 2 strongly bullish.
@@ -144,6 +153,29 @@ def _background(symbol: str, query: str, before: datetime, exclude: set[str]) ->
     return out
 
 
+def _theme_backdrop(db, symbol: str, at: datetime, themes: list[str], seen: set[str]) -> list[dict]:
+    """Other companies' strong, relevant articles on these themes from the BACKDROP_DAYS before `at` (N.6 step 6,
+    v3 labels in news_articles.student_gd1): what else is going on that the hot storylines may combine with."""
+    lo, hi = (at - timedelta(days=BACKDROP_DAYS)).strftime("%Y-%m-%dT%H:%M"), at.strftime("%Y-%m-%dT%H:%M")
+    q = {"publishedAt": {"$gte": lo, "$lt": hi}, "symbol": {"$nin": [symbol, None, ""]}, "origin": {"$ne": "universe_backfill"},
+         "student_gd1.relevant": True, "student_gd1.themes": {"$in": themes},
+         "student_gd1.signal_strength": {"$in": ["high", "medium"]}}
+    proj = {"title": 1, "content": 1, "description": 1, "symbol": 1, "url": 1, "publishedAt": 1, "collectedAt": 1, "student_gd1.themes": 1}
+    out, per = [], Counter()
+    for d in db["news_articles"].find(q, proj).sort("publishedAt", -1).limit(300):
+        when = sl._at(d)
+        key = sl._norm_title(d.get("title"))
+        hit = [t for t in themes if t in ((d.get("student_gd1") or {}).get("themes") or []) and per[t] < PER_THEME]
+        if not when or when >= at or not key or key in seen or not hit:
+            continue
+        seen.add(key)
+        per[hit[0]] += 1
+        body = (d.get("content") or "").strip() or str(d.get("description") or "").strip()
+        out.append({"at": when, "symbol": d.get("symbol"), "theme": hit[0], "title": (d.get("title") or "").strip(),
+                    "lede": body[:BACKDROP_LEDE], "url": d.get("url") or ""})
+    return sorted(out, key=lambda x: x["at"])
+
+
 def packet(symbol: str, at: datetime, hot: list[sl.Storyline], others: list[sl.Storyline], db=None) -> tuple[str, dict]:
     """The text Claude reads and the id -> article map used to check its citations."""
     from injection_guard import screen
@@ -159,14 +191,28 @@ def packet(symbol: str, at: datetime, hot: list[sl.Storyline], others: list[sl.S
             n += 1
             ids[f"A{n}"] = a
             title, lede = _text(a)
-            parts.append(f"[A{n}] {a.at:%Y-%m-%d %H:%M} {a.domain}{' (commentary)' if a.mark == 'filler' else ''}\n{title}\n{lede}")
+            tags = (" (commentary)" if a.mark == "filler" else "") + (f" (filed under {a.via})" if a.via else "")
+            parts.append(f"[A{n}] {a.at:%Y-%m-%d %H:%M} {a.domain}{tags}" + (f" themes: {', '.join(a.themes)}" if a.themes else "")
+                         + f"\n{title}\n{lede}")
     if others:
         parts.append("\n## Other storylines of this stock active in the last 3 days")
         for line in others[:CONTEXT_LINES]:
             latest = [a.title for a in line.articles if a.at < at and a.mark != "repeat"][-3:]
             parts.append(f"- {screen(line.head).text} (latest: " + " | ".join(screen(t).text for t in latest) + ")")
+    count = Counter(t for a in ids.values() for t in a.themes)
+    themes = [t for t, c in count.most_common(THEMES_SHOWN) if c >= 2]
+    if themes:
+        bd = _theme_backdrop(db, symbol, at, themes, {sl._norm_title(a.title) for a in ids.values()})
+        parts.append(f"\n## Theme backdrop: other companies' news on {', '.join(themes)} in the {BACKDROP_DAYS} days before the cutoff")
+        for x in bd:
+            n += 1
+            ids[f"T{n}"] = x
+            parts.append(f"[T{n}] {x['at']:%Y-%m-%d %H:%M} filed under {x['symbol']}, theme {x['theme']}\n"
+                         f"{screen(x['title']).text}\n{screen(x['lede']).text}")
+        if not bd:
+            parts.append("(none)")
     first = min(l.first_at for l in hot)
-    titles = {a.title for a in ids.values()}
+    titles = {x.title if isinstance(x, sl.Article) else x.get("title") for x in ids.values()}   # articles and backdrop rows
     bg = _background(symbol, hot[0].head, first, titles)
     parts.append(f"\n## Background: earlier articles on the subject (published before {first:%Y-%m-%d %H:%M} UTC)")
     for x in bg:

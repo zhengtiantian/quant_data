@@ -15,6 +15,11 @@ resignation), at least LINE_GAP after that firing, or when it is hot again more 
 it; otherwise a storyline that stays hot fires at every check. One symbol is judged at most once per
 SYMBOL_GAP, and the storylines hot at that check are judged together (the Huang affair ran as five
 storylines at once); a storyline that turns hot in between waits for the next judgment of its symbol.
+Articles filed under another company (the `cross` source of step 6) count toward firing only when the label
+student gives this symbol its strongest effect (impact +-2); the rest stay in the storyline as context for the
+judge. Counting them all doubled the triggers in the 10/29..11/15 replay (103 -> 202, 85 of the new ones led by
+other companies' news: one company's scandal firing two of its peers a dozen times each); with the gate it is 115, the same
+as without the cross source (2026-11-15).
 """
 from __future__ import annotations
 
@@ -30,6 +35,7 @@ MIN_PROGRESS, MIN_SITES, RATIO, BASE_DAYS = 5, 3, 3.0, 7
 LEAD_PROGRESS, LEAD_SITES = 2, 2
 ESCALATE, ESCALATE_MIN, QUIET_DAYS = 2.0, 5, 3
 LINE_GAP, SYMBOL_GAP = timedelta(hours=6), timedelta(hours=2)
+CROSS_FIRES = 1.0       # |sentiment| of a cross article (impact / 2) needed to count toward firing
 
 
 @dataclass
@@ -48,6 +54,11 @@ class Trigger:
     hot: list[Hot] = field(default_factory=list)
 
 
+def counts(a: sl.Article) -> bool:
+    """Whether an article counts toward firing: new progress, and from another company only at the strongest effect."""
+    return a.mark == "progress" and (a.src != "cross" or abs(a.sentiment or 0.0) >= CROSS_FIRES)
+
+
 def _leadership(a: sl.Article) -> bool:
     return bool(a.person) and bool(key_people.EVENT.search(a.title))
 
@@ -55,7 +66,7 @@ def _leadership(a: sl.Article) -> bool:
 def hot_at(line: sl.Storyline, t: datetime) -> Hot | None:
     """Whether `line` is hot at `t`, using only articles collected before `t`."""
     day = timedelta(days=1)
-    prog = [a for a in line.articles if a.mark == "progress" and a.at < t]
+    prog = [a for a in line.articles if counts(a) and a.at < t]
     last = [a for a in prog if a.at >= t - day]
     if not last:
         return None
