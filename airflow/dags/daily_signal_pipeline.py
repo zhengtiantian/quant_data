@@ -100,5 +100,5 @@ with DAG(
     wait >> [daily_price, premarket, analyst, macro]
     [daily_price, premarket, analyst, macro] >> features >> signals >> [positions, backtest] >> data_quality
 
-    # job_agent's daily scrape is not part of this chain: it runs on its own launchd schedule, 11:00
+    # job_agent's daily scrape runs in its own Airflow DAGs (job_agent_daily.py), 11:00
     # and 16:00 (2026-10-26: started after this chain at ~05:00 it found almost nothing new).
