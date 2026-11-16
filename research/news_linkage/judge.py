@@ -179,7 +179,7 @@ def _theme_backdrop(db, symbol: str, at: datetime, themes: list[str], seen: set[
 def packet(symbol: str, at: datetime, hot: list[sl.Storyline], others: list[sl.Storyline], db=None) -> tuple[str, dict]:
     """The text Claude reads and the id -> article map used to check its citations."""
     from injection_guard import screen
-    db = db or MongoClient(sl.MONGO_URI)["quant_data"]
+    db = MongoClient(sl.MONGO_URI)["quant_data"] if db is None else db
     ids, parts, n = {}, [], 0
     parts.append(f"Stock: {symbol}. Cutoff: {at:%Y-%m-%d %H:%M} UTC.")
     for k, line in enumerate(hot, 1):

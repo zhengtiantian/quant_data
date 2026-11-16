@@ -113,3 +113,8 @@ def test_loader_adds_cross_articles_and_themes():
     assert arts["k1"].src == "kept" and arts["k1"].themes == ["ai_capex"]
     x = arts["x1"]
     assert (x.src, x.symbol, x.via, x.sentiment, x.themes) == ("cross", "NVDA", "AMD", -0.5, ["ai_capex"])
+
+
+def test_malformed_url_does_not_stop_the_loader():
+    assert sl._domain("https://www.example.com/a") == "example.com"
+    assert sl._domain("http://[broken/a") == ""

@@ -150,7 +150,7 @@ def load_articles(symbols: list[str], start: datetime, end: datetime, db=None) -
     kept / gd1 / person as in the module doc, and (N.6 step 6) cross: an article filed under another company
     that the v3 label student says moves one of these symbols (student_gd1.impacts != 0), counted under the
     symbol it moves, with `via` naming the company it is filed under."""
-    db = db or MongoClient(MONGO_URI)["quant_data"]
+    db = MongoClient(MONGO_URI)["quant_data"] if db is None else db
     lo, hi = start.strftime("%Y-%m-%dT%H:%M"), end.strftime("%Y-%m-%dT%H:%M")
     want = set(symbols)
     proj = {"title": 1, "content": 1, "description": 1, "url": 1, "symbol": 1, "publishedAt": 1, "collectedAt": 1}
@@ -196,10 +196,17 @@ def load_articles(symbols: list[str], start: datetime, end: datetime, db=None) -
     return [a for a in out if a.at and start <= a.at < end]
 
 
+def _domain(url: str) -> str:
+    try:
+        return urlparse(url).netloc.replace("www.", "")
+    except ValueError:          # a malformed URL ("Invalid IPv6 URL" in a 2025 row)
+        return ""
+
+
 def _article(d, src, sentiment, strength, event) -> Article:
     url = d.get("url") or ""
     return Article(id=str(d["_id"]), symbol=d.get("symbol") or "", at=_at(d), title=(d.get("title") or "").strip(),
-                   text=_text(d), url=url, domain=urlparse(url).netloc.replace("www.", ""), src=src,
+                   text=_text(d), url=url, domain=_domain(url), src=src,
                    sentiment=None if sentiment is None else float(sentiment), strength=strength, event=event,
                    person=key_people.hit(d.get("symbol"), d.get("title")))
 
@@ -245,7 +252,7 @@ def title_df(db=None, end: datetime | None = None, days: int = 365, refresh: boo
     if TITLE_DF.exists() and not refresh:
         d = json.loads(TITLE_DF.read_text())
         return d["n"], d["df"]
-    db = db or MongoClient(MONGO_URI)["quant_data"]
+    db = MongoClient(MONGO_URI)["quant_data"] if db is None else db
     end = end or datetime.now(timezone.utc)
     lo, hi = (end - timedelta(days=days)).strftime("%Y-%m-%d"), end.strftime("%Y-%m-%d")
     n, df = 0, {}
