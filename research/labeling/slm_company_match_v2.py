@@ -326,12 +326,37 @@ def _title_candidates(current_symbol: str, title: str) -> list[str]:
     ]
 
 
+_NAME_SUFFIX = re.compile(r"[,.]?\s+(?:Corporation|Corp\.?|Inc\.?|Incorporated|Technologies|Technology|Platforms|Holdings|Company|Co\.|plc|Ltd\.?|Group)$")
+
+
+def _short_name(name: str) -> str:
+    """'Intel Corporation' -> 'Intel', 'KLA Corporation' -> 'KLA', 'Meta Platforms' -> 'Meta'."""
+    prev = None
+    while prev != name:
+        prev, name = name, _NAME_SUFFIX.sub("", name).strip()
+    return name
+
+
+# 2026-11-18: the keyword lists leave some bare names out on purpose (ambiguous for collection: "Intel",
+# "Oracle", "KLA"), so with keywords alone the direct-mention gate rejected most of their news from
+# 2026-11-04 (INTC 84 -> 2 matched articles a week, ORCL 66 -> 3, KLAC 13 -> 2). The short company name,
+# matched as written (case-sensitive), also counts as a mention; the relevance model still decides.
+_NAME_PATTERNS: dict[str, re.Pattern] = {
+    sym: re.compile(r"\b" + re.escape(short) + r"\b")
+    for sym, (name, _) in COMPANY_UNIVERSE.items()
+    if len(short := _short_name(name or "")) >= 2
+}
+
+
 def _has_direct_mention(symbol: str, title: str, content: str) -> bool:
-    """True when the matched symbol's keywords appear explicitly in title or body."""
-    pat = _SCAN_PATTERNS.get(symbol)
-    if not pat:
-        return False
-    return bool(pat.search(title) or pat.search(content))
+    """True when the matched symbol's keywords (any case) or its short company name (as written) appear
+    in title or body."""
+    hit = False
+    for pat in (_SCAN_PATTERNS.get(symbol), _NAME_PATTERNS.get(symbol)):
+        if pat and (pat.search(title) or pat.search(content)):
+            hit = True
+            break
+    return hit
 
 
 _THIN_BODY_MARKERS = (
