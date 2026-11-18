@@ -6,7 +6,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "research" / "models"))
 
-import barrier_model as bm  # noqa: E402
+import dirichlet as bm  # noqa: E402 - no data files at import (CI)
 
 
 def test_dirichlet_keeps_a_distribution_and_fixes_overconfidence():

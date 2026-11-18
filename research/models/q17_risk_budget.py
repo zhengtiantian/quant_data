@@ -195,6 +195,91 @@ def event_atr(per_atr: float = 1.6) -> dict:
             "by_year_pct_expanding": {int(y): round(float(hits[yr == y].mean() * 100), 1) for y in np.unique(yr)}}
 
 
+def event_atr_regime(per_atr: float = 1.6, alphas=(0.5, 1.0)) -> dict:
+    """The live fallback x a market-regime factor: (SPY's 20-session vol / its median over the year before)^alpha,
+    known at the close before the report. The live constant 2.635 and an expanding quantile, both tested."""
+    import news_events as ne
+    spy = ne._sessions("SPY").Close.pct_change()
+    v20 = spy.rolling(20).std()
+    regime = (v20 / v20.rolling(252, min_periods=120).median()).shift()
+    rows = []
+    for p in rb.EP_DIR.glob("*.daily.parquet"):
+        s = p.name.split(".")[0]
+        if s == "SPY":
+            continue
+        d = pd.read_parquet(p)[["High", "Low", "Close"]]
+        d.index = pd.to_datetime(d.index).tz_localize(None).normalize()
+        d = d[~d.index.duplicated()].sort_index().dropna()
+        pc = d.Close.shift()
+        tr = pd.concat([d.High - d.Low, (d.High - pc).abs(), (d.Low - pc).abs()], axis=1).max(axis=1)
+        atr_pct = (tr.rolling(14).mean() / d.Close).shift()
+        ret = d.Close.pct_change()
+        for day in rb.report_sessions(s, d.index):
+            if day >= pd.Timestamp("2016-01-01") and np.isfinite(ret.get(day, np.nan)) and np.isfinite(atr_pct.get(day, np.nan)) \
+                    and np.isfinite(regime.get(day, np.nan)):
+                rows.append({"date": day, "move": ret[day], "atr": per_atr * atr_pct[day], "regime": float(regime[day])})
+    ev = pd.DataFrame(rows).sort_values("date").reset_index(drop=True)
+    start = pd.Timestamp("2016-01-01") + pd.DateOffset(years=BURN_IN_YEARS)
+    out = {}
+    for a in (0.0, *alphas):
+        ratio = -ev.move / (ev.atr * ev.regime.clip(0.5, 3.0) ** a)
+        kq = _expanding_q(ratio, ev.date, start)
+        kk = ev.date.map(kq)
+        m = kk.notna()
+        hits = (ratio[m] > kk[m]).values
+        live = (ratio[m] > 2.635).values
+        yr = ev.date[m].dt.year.values
+        out[f"alpha_{a}"] = {"expanding": {"kupiec": kupiec(hits), "christoffersen": christoffersen(hits), "k_now": round(float(kq.iloc[-1]), 3)},
+                             "constant_2.635": {"kupiec": kupiec(live), "christoffersen": christoffersen(live)},
+                             "by_year_expanding_pct": {int(y): round(float(hits[yr == y].mean() * 100), 1) for y in np.unique(yr)}}
+    return out
+
+
+def event_atr_season(per_atr: float = 1.6, alpha: float = 0.5) -> dict:
+    """The live fallback x the season's heat: the median |report move| of the other names' reports over the
+    10 sessions before (known), over the same median for the 252 sessions before, clipped [0.5, 3], ^alpha."""
+    rows = []
+    for p in rb.EP_DIR.glob("*.daily.parquet"):
+        s = p.name.split(".")[0]
+        if s == "SPY":
+            continue
+        d = pd.read_parquet(p)[["High", "Low", "Close"]]
+        d.index = pd.to_datetime(d.index).tz_localize(None).normalize()
+        d = d[~d.index.duplicated()].sort_index().dropna()
+        pc = d.Close.shift()
+        tr = pd.concat([d.High - d.Low, (d.High - pc).abs(), (d.Low - pc).abs()], axis=1).max(axis=1)
+        atr_pct = (tr.rolling(14).mean() / d.Close).shift()
+        ret = d.Close.pct_change()
+        for day in rb.report_sessions(s, d.index):
+            if day >= pd.Timestamp("2016-01-01") and np.isfinite(ret.get(day, np.nan)) and np.isfinite(atr_pct.get(day, np.nan)):
+                rows.append({"symbol": s, "date": day, "move": ret[day], "atr": per_atr * atr_pct[day]})
+    ev = pd.DataFrame(rows).sort_values("date").reset_index(drop=True)
+    absm = ev.move.abs().values
+    dates = ev.date.values
+    heat = np.full(len(ev), np.nan)
+    for i in range(len(ev)):
+        d = dates[i]
+        recent = absm[(dates < d) & (dates >= d - np.timedelta64(14, "D"))]            # ~10 sessions
+        year = absm[(dates < d) & (dates >= d - np.timedelta64(365, "D"))]
+        if len(recent) >= 5 and len(year) >= 50:
+            heat[i] = np.median(recent) / np.median(year)
+    ev["heat"] = heat
+    ev = ev.dropna(subset=["heat"])
+    ratio = -ev.move / (ev.atr * ev.heat.clip(0.5, 3.0) ** alpha)
+    start = pd.Timestamp("2016-01-01") + pd.DateOffset(years=BURN_IN_YEARS)
+    kq = _expanding_q(ratio, ev.date, start)
+    kk = ev.date.map(kq)
+    m = kk.notna()
+    hits = (ratio[m] > kk[m]).values
+    live = (ratio[m] > 2.635).values
+    yr = ev.date[m].dt.year.values
+    base = (-ev.move / ev.atr)[m] > 2.635
+    return {"reports": int(m.sum()), "expanding": {"kupiec": kupiec(hits), "christoffersen": christoffersen(hits), "k_now": round(float(kq.iloc[-1]), 3)},
+            "constant_2.635": {"kupiec": kupiec(live), "christoffersen": christoffersen(live)},
+            "no_factor_same_rows": {"kupiec": kupiec(base.values), "christoffersen": christoffersen(base.values)},
+            "by_year_expanding_pct": {int(y): round(float(hits[yr == y].mean() * 100), 1) for y in np.unique(yr)}}
+
+
 def main() -> dict:
     STEP.mkdir(parents=True, exist_ok=True)
     rep = {"day": day(), "event": event(), "event_vol_scaled": event_scaled(), "event_atr_live_fallback": event_atr()}
