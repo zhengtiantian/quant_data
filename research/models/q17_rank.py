@@ -240,5 +240,106 @@ def score() -> dict:
     return rep
 
 
+# ---------------------------------------------------------------- round 4 redo (2026-11-18)
+
+COVER = ["sue", "since_report", "post_report_ret", "beta_1y"]       # the features that can be missing
+
+
+def build2() -> Path:
+    """Round 4's transform: per date and sector, rank-Gauss (norm.ppf) on the non-missing values, missing = 0
+    (the sector-neutral middle) with a coverage flag, so a missing feature neither lifts nor sinks a name."""
+    from scipy.stats import norm
+    df = pd.read_parquet(STEP / "panel.parquet")
+    for c in FEATS:
+        r = df.groupby(["date", "sector"])[c].rank(method="average")
+        n = df.groupby(["date", "sector"])[c].transform("count")
+        df[f"g_{c}"] = pd.Series(norm.ppf((r - 0.5) / n), index=df.index).where(df[c].notna() & (n > 1), 0.0).fillna(0.0)
+    for c in COVER:
+        df[f"has_{c}"] = df[c].notna().astype(float)
+    feats = [f"g_{c}" for c in FEATS] + [f"has_{c}" for c in COVER]
+    keep = ["date", "ticker", "year", "sector", "target", "fwd_raw", *feats]
+    out = STEP / "panel2.parquet"
+    df[keep].to_parquet(out)
+    meta = json.loads((STEP / "panel_meta.json").read_text())
+    meta["feats2"] = feats
+    (STEP / "panel2_meta.json").write_text(json.dumps(meta, indent=1))
+    print(f"{out}: {len(df):,} rows, {len(feats)} features")
+    return out
+
+
+def _pool_stress(df: pd.DataFrame) -> dict:
+    """Members of the day without bars that leave the index within the next 20 sessions, for the pool:
+    their count per date (the stress gives them 0%, -30% or -100%)."""
+    import news_events as ne
+    mem = pd.read_parquet(UNI / "membership.parquet")
+    mem["start"], mem["end"] = pd.to_datetime(mem.start), pd.to_datetime(mem.end)
+    have = {p.name.split(".")[0] for p in BARS.glob("*.daily.parquet")}
+    gone = mem[~mem.ticker.isin(have) & mem.end.notna()]
+    cal = ne._sessions("SPY").index
+    out = {}
+    for d in sorted(df.date.unique()):
+        pos = cal.searchsorted(d)
+        end = cal[min(pos + HOLD, len(cal) - 1)]
+        out[pd.Timestamp(d)] = int(((gone.start <= d) & (gone.end > d) & (gone.end <= end)).sum())
+    return out
+
+
+def score2() -> dict:
+    """IC, the buffered top 20 (keep a holding while it ranks in the top 40), turnover, 10 / 15 bp a side,
+    the pool under three delisting assumptions, and the DSR over every Q.17.6 variant tried."""
+    from scipy.stats import kurtosis, skew, spearmanr
+    df = pd.read_parquet(STEP / "panel2.parquet")
+    sc = pd.read_parquet(STEP / "colab2" / "scores.parquet")
+    df = df.merge(sc, on=["date", "ticker"], how="inner")
+    models = [c[2:] for c in sc.columns if c.startswith("s_")]
+    gone = _pool_stress(df)
+    prior = pd.read_parquet(STEP / "colab" / "scores.parquet")          # the first run's ridge / LambdaRank count as tried
+    tried = len(models) + len([c for c in prior.columns if c.startswith("s_")])
+    rep = {"rows": int(len(df)), "dates": int(df.date.nunique()), "variants_tried": tried,
+           "pool_missing_exits_per_date_mean": round(float(np.mean(list(gone.values()))), 2), "models": {}}
+    exs = {}
+    for m in models:
+        ic = df.groupby("date").apply(lambda g: spearmanr(g[f"s_{m}"], g.target).correlation if len(g) > 20 else np.nan).dropna()
+        ic_mean, ic_t = _nw(ic.values)
+        held, rows = [], []
+        for d, g in df.groupby("date"):
+            g = g.sort_values(f"s_{m}", ascending=False)
+            top40 = list(g.ticker.head(40))
+            keep = [t for t in held if t in top40]
+            new = [t for t in g.ticker if t not in keep][: 20 - len(keep)]
+            port = keep + new
+            turnover = 1.0 if not held else len(set(port) - set(held)) / 20
+            r = g.set_index("ticker").fwd_raw.reindex(port).mean()
+            pool_n, pool_r = len(g), g.fwd_raw.mean()
+            k = gone.get(pd.Timestamp(d), 0)
+            row = {"date": d, "turnover": turnover, "top": r}
+            for name, loss in (("pool", None), ("pool_0", 0.0), ("pool_m30", -0.30), ("pool_m100", -1.0)):
+                row[name] = pool_r if loss is None else (pool_r * pool_n + loss * k) / (pool_n + k)
+            rows.append(row)
+            held = port
+        p = pd.DataFrame(rows)
+        res = {"rank_ic": round(ic_mean, 4), "rank_ic_t_nw": round(ic_t, 2), "turnover_one_way_mean": round(float(p.turnover.iloc[1:].mean()), 3)}
+        for bp in (10, 15):
+            cost = 2 * p.turnover * bp / 1e4
+            for pool in ("pool", "pool_0", "pool_m30", "pool_m100"):
+                ex = (p.top - cost - p[pool]).values
+                mean, t = _nw(ex)
+                res[f"excess_{bp}bp_vs_{pool}"] = {"per_20d_pct": round(mean * 100, 3), "t_nw": round(t, 2)}
+                if bp == 15 and pool == "pool":
+                    exs[m] = ex
+        rep["models"][m] = res
+    srs = [v.mean() / v.std() for v in exs.values()]
+    for m, ex in exs.items():
+        sr = ex.mean() / ex.std()
+        r = rep["models"][m]
+        r["sharpe_ann_15bp"] = round(float(sr * math.sqrt(252 / HOLD)), 3)
+        r["dsr"] = round(_dsr(sr, len(ex), float(skew(ex)), float(kurtosis(ex, fisher=False)), tried, float(np.var(srs)) if len(srs) > 1 else 0.0), 3)
+        worst = min(r[f"excess_15bp_vs_{p}"]["t_nw"] for p in ("pool", "pool_0", "pool_m30", "pool_m100"))
+        r["passes"] = bool(r["rank_ic"] > 0.03 and r["rank_ic_t_nw"] >= 2.5 and r["turnover_one_way_mean"] <= 0.35 and worst >= 2.0 and r["dsr"] >= 0.95)
+    (STEP / "score2.json").write_text(json.dumps(rep, indent=1, default=str))
+    print(json.dumps(rep, indent=1, default=str))
+    return rep
+
+
 if __name__ == "__main__":
-    {"sectors": sectors, "build": build, "score": score}[sys.argv[1] if len(sys.argv) > 1 else "build"]()
+    {"sectors": sectors, "build": build, "score": score, "build2": build2, "score2": score2}[sys.argv[1] if len(sys.argv) > 1 else "build"]()
