@@ -22,7 +22,7 @@ from datetime import datetime, timedelta
 from airflow import DAG
 from airflow.operators.bash import BashOperator
 
-from _host_common import ROOT, PYTHON, BASE_ENV, notify_failure, wait_for_night_chain
+from _host_common import ROOT, PYTHON, BASE_ENV, lm_command, notify_failure, wait_for_night_chain
 
 default_args = {
     "owner": "quant",
@@ -71,6 +71,20 @@ with DAG(
         env=BASE_ENV,
         append_env=True,
         execution_timeout=timedelta(hours=2),
+    )
+
+    # The releases the pulse refresh just fetched from EDGAR (earnings_releases.py fetch), read by the
+    # local LLM: quant_ai's case against adding quotes the latest one (Q.17 round 4, 2026-11-18). Runs
+    # even when the refresh failed, so releases fetched before the failure are still read.
+    pulse >> BashOperator(
+        task_id="release_extract",
+        on_failure_callback=notify_failure,
+        trigger_rule="all_done",
+        bash_command=f"cd {ROOT} && " + lm_command(f"{PYTHON} {ROOT}/research/models/earnings_releases.py extract",
+                                                   "qwen3.5-9b-mlx", workers_env=("LM_WORKERS",)),
+        env=BASE_ENV,
+        append_env=True,
+        execution_timeout=timedelta(hours=1),
     )
 
     gate >> BashOperator(
