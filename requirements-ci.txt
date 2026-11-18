@@ -3,6 +3,7 @@
 pandas>=2.2.2
 numpy>=1.26.4
 numba>=0.60          # research/rl/simulator.py (tests/test_rl_simulator.py)
+scipy>=1.11          # barrier_model.dirichlet_fit (tests/test_barrier_calibration.py)
 pymongo>=4.7.0
 requests>=2.31       # research/news_linkage and research/labeling import it at module level
 python-dotenv>=1.0.1

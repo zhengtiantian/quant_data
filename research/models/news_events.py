@@ -53,6 +53,9 @@ def _days_for(s: str, arts: pd.DataFrame, idx: pd.DatetimeIndex):
     if arts.empty:
         return None
     arts = arts.copy()
+    # syndicated copies of one story differ only by URL host: one row per day and title, as
+    # daily_symbol_features._dedupe_syndication (Q.17 round 4, 2026-11-18; measured in q17_ablation's v2dd)
+    arts = arts.loc[~pd.DataFrame({"d": arts["date"].astype(str).str[:8], "t": arts["title"].fillna("")}).duplicated()]
     arts["sent"] = pd.to_numeric(arts.get("llm_sentiment_final"), errors="coerce")
     ds = arts["date"].astype(str)
     stamp = pd.to_datetime(ds.where(ds.str.len() == 14), format="%Y%m%d%H%M%S", errors="coerce", utc=True).dt.tz_convert("America/New_York")
