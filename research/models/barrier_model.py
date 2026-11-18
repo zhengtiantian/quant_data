@@ -56,6 +56,30 @@ FEATS = da.FEATS + NEWS_FEATS + ce.CAL_FEATS
 CLASSES = ("lower", "none", "upper")
 
 
+def dirichlet_fit(P: np.ndarray, y: np.ndarray, lam: float = 1e-3) -> dict:
+    """Dirichlet calibration (Kull et al. 2019): softmax(W log p + b), off-diagonal and intercept L2-penalised."""
+    from scipy.optimize import minimize
+    L = np.log(np.clip(P, 1e-6, 1))
+    Y = np.eye(P.shape[1])[y]
+    off = ~np.eye(P.shape[1], dtype=bool)
+    k = P.shape[1]
+
+    def loss(th):
+        W, b = th[:k * k].reshape(k, k), th[k * k:]
+        Z = L @ W.T + b
+        Z -= Z.max(axis=1, keepdims=True)
+        Q = np.exp(Z) / np.exp(Z).sum(axis=1, keepdims=True)
+        return -np.mean(np.sum(Y * np.log(np.clip(Q, 1e-6, 1)), axis=1)) + lam * (np.sum(W[off] ** 2) + np.sum(b ** 2))
+    th = minimize(loss, np.r_[np.eye(k).ravel(), np.zeros(k)], method="L-BFGS-B").x
+    return {"W": th[:k * k].reshape(k, k).round(6).tolist(), "b": th[k * k:].round(6).tolist(), "lambda": lam}
+
+
+def dirichlet_apply(c: dict, P: np.ndarray) -> np.ndarray:
+    Z = np.log(np.clip(P, 1e-6, 1)) @ np.asarray(c["W"]).T + np.asarray(c["b"])
+    Z -= Z.max(axis=1, keepdims=True)
+    return np.exp(Z) / np.exp(Z).sum(axis=1, keepdims=True)
+
+
 def barrier_labels(d: pd.DataFrame, up: float, down: float, h: int) -> np.ndarray:
     """0 = lower first, 1 = neither within h sessions, 2 = upper first; NaN where the window runs past the data."""
     o, hi, lo, c = d.Open.values, d.High.values, d.Low.values, d.Close.values
@@ -224,6 +248,12 @@ def situations() -> dict:
             # through isotonic fits to what happened, on the walk-forward predictions
             from sklearn.isotonic import IsotonicRegression
             grid = np.linspace(0, 1, 101)
+            # 2026-11-18 (Q.17 round 4, q17_calibration.py): Dirichlet calibration keeps the three
+            # probabilities a distribution and was the best out of sample in every year 2021-2026 (fitted on
+            # earlier years only: Brier 0.6200 vs 0.6272 for these curves, per-class ECE <= 1.2%); live()
+            # uses it, the curves stay as the fallback
+            yy = pr[f"b{k}"].astype(int).values
+            out["dirichlet_5"] = dirichlet_fit(pr[[f"p_{c}" for c in CLASSES]].values, yy)
             out["calibration_5"] = {c: [round(float(v), 4) for v in IsotonicRegression(out_of_bounds="clip", y_min=0.0, y_max=1.0)
                                         .fit(pr[f"p_{c}"], (pr[f"b{k}"] == i).astype(float)).predict(grid)]
                                     for i, c in ((0, "lower"), (2, "upper"))}
@@ -275,7 +305,10 @@ def live(sym: str, d: pd.DataFrame, f: pd.DataFrame) -> dict:
     raw = bundle["models"]["5"].predict_proba(x)[0]
     cuts = rep["situations"]["p_lower_cuts_5"]
     cal = rep["situations"].get("calibration_5")
-    if cal:
+    dc = rep["situations"].get("dirichlet_5")
+    if dc:
+        p = list(dirichlet_apply(dc, np.asarray([raw]))[0])
+    elif cal:
         lo = cal["lower"][int(round(raw[0] * 100))]
         hi = cal["upper"][int(round(raw[2] * 100))]
         p = [lo, max(0.0, 1 - lo - hi), hi]
@@ -286,7 +319,8 @@ def live(sym: str, d: pd.DataFrame, f: pd.DataFrame) -> dict:
                         "pre_holiday": bool(ahead.pre_holiday), "to_report_days": None if pd.isna(f["to_report"].iloc[-1]) else int(f["to_report"].iloc[-1])},
            "news_20": {c: float(nf[c].iloc[-1]) for c in ("guide_cut_20", "neg_earn_20", "downgrade_20", "upgrade_20")},
            "model_5": {"p_lower": round(float(p[0]) * 100, 1), "p_none": round(float(p[1]) * 100, 1), "p_upper": round(float(p[2]) * 100, 1),
-                       "risk_fifth": int(sum(raw[0] > c for c in cuts)) + 1, "calibrated": bool(cal)},   # 1 = calmest fifth, 5 = riskiest
+                       "risk_fifth": int(sum(raw[0] > c for c in cuts)) + 1, "calibrated": bool(dc or cal),
+                       "calibration": "dirichlet" if dc else "isotonic" if cal else None},   # 1 = calmest fifth, 5 = riskiest
            "sets": {}}
     for k, (u, l, h) in SETS.items():
         st = rep["situations"]["sets"][k].get(sit) or rep["situations"]["sets"][k].get("normal")
