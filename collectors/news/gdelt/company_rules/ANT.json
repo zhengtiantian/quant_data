@@ -1,0 +1,46 @@
+{
+    "symbol": "ANT",
+    "name": "Anthropic",
+    "primary_keywords": [
+        "Anthropic"
+    ],
+    "expansion_keywords": [
+        "Claude AI",
+        "Claude Code",
+        "Claude Opus",
+        "Claude Sonnet",
+        "Claude Haiku",
+        "Claude chatbot",
+        "Dario Amodei",
+        "Daniela Amodei",
+        "Constitutional AI"
+    ],
+    "special_rules": {
+        "ambiguous": {
+            "problem": "'anthropic' is also an adjective (the anthropic principle); 'Claude' alone is a first name and the ticker ANT is a common word, so neither counts on its own",
+            "required_keywords": [
+                "Anthropic",
+                "Claude AI",
+                "Claude Code",
+                "Claude Opus",
+                "Claude Sonnet",
+                "Claude Haiku",
+                "Dario Amodei",
+                "Daniela Amodei"
+            ],
+            "min_matches": 1,
+            "strict_validation_keywords": [
+                "Anthropic",
+                "Claude"
+            ]
+        }
+    },
+    "strict_validation_keywords": [
+        "Anthropic",
+        "Claude",
+        "Dario Amodei"
+    ],
+    "headline_names": [
+        "Anthropic"
+    ]
+}

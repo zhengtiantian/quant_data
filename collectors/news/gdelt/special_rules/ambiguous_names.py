@@ -177,6 +177,10 @@ class AmbiguousNameRule(BaseRule):
         "WDC": [r"david\s+goeckeler", r"western\s+digital", r"\bsandisk\b"],
         # SKHY: "Hynix" is unambiguous; the rule exists only to drop shop pages (RAM sticks "with SK Hynix IC").
         "SKHY": [r"\bhynix\b", r"\bsolidigm\b", r"kwak\s+noh.jung", r"\bskhy\b", r"\bm15x\b"],
+        # ANT (Anthropic, listed 2026-11-19): the name, its founders and the Claude product names are strong
+        # evidence; "Claude" alone (a first name) and the ticker (a word) are not.
+        "ANT": [r"\banthropic\b(?!\s+(?:principle|bias|reasoning|argument|selection))", r"dario\s+amodei", r"daniela\s+amodei",
+                r"claude\s+(?:ai|code|opus|sonnet|haiku|chatbot)\b", r"\(\s*nasdaq\s*:\s*ant\s*\)"],
         "SWKS": [r"liam\s+griffin", r"skyworks\s+solutions", r"skyworks\s+semiconductor"],
         "FTNT": [r"ken\s+xie", r"\bfortigate\b", r"fortinet\s+firewall", r"fortinet\s+security"],
         "ABNB": [r"brian\s+chesky", r"airbnb\s+host", r"airbnb\s+listing", r"airbnb\s+revenue"],
@@ -250,6 +254,8 @@ class AmbiguousNameRule(BaseRule):
 
     # 定义静态排除逻辑：秒杀已知的噪音 (Fast-Kill)
     STATIC_KILL_PATTERNS = {
+        # ANT: the adjective in physics / philosophy, not the company
+        "ANT": [r"anthropic\s+(?:principle|bias|reasoning|argument|selection|coincidence)"],
         "STX": [
             r"seagate\s+(?:avenue|ave\b|road|rd\b|street|boulevard|blvd|lane|court|beach|condominiums?|towers?|cove|terrace)",
             r"seagate\s+development", r"seagate\s+(?:genova|santorini|burrata|lee\s+wilson)", r"dundee",

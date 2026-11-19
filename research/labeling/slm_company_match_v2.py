@@ -244,6 +244,7 @@ COMPANY_UNIVERSE: dict[str, tuple[str, list[str]]] = {
     "DE":    ("Deere & Company",            ["John Deere", "Deere", "John May", "Deere & Co"]),
     "BA":    ("Boeing",                     ["Boeing", "Kelly Ortberg", "737 MAX", "787 Dreamliner", "777X", "Starliner"]),
     "SKHY":  ("SK hynix",                   ["SK hynix", "Hynix", "Kwak Noh-jung"]),
+    "ANT":   ("Anthropic, PBC",             ["Anthropic", "Claude AI", "Claude Code", "Dario Amodei", "Daniela Amodei"]),
 }
 CORE_SYMBOLS = frozenset(COMPANY_UNIVERSE)
 
@@ -326,7 +327,7 @@ def _title_candidates(current_symbol: str, title: str) -> list[str]:
     ]
 
 
-_NAME_SUFFIX = re.compile(r"[,.]?\s+(?:Corporation|Corp\.?|Inc\.?|Incorporated|Technologies|Technology|Platforms|Holdings|Company|Co\.|plc|Ltd\.?|Group)$")
+_NAME_SUFFIX = re.compile(r"[,.]?\s+(?:Corporation|Corp\.?|Inc\.?|Incorporated|Technologies|Technology|Platforms|Holdings|Company|Co\.|plc|Ltd\.?|Group|PBC)$")
 
 
 def _short_name(name: str) -> str:

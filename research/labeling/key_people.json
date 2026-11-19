@@ -9,6 +9,7 @@
   "AMD": {"aliases": ["AMD"], "people": ["Lisa Su"]},
   "AMGN": {"aliases": ["Amgen"], "people": ["Robert Bradway"]},
   "AMZN": {"aliases": ["Amazon", "AWS"], "people": ["Andy Jassy", "Jeff Bezos", "Matt Garman", "Brian Olsavsky"]},
+  "ANT": {"aliases": ["Anthropic"], "people": ["Dario Amodei", "Daniela Amodei", "Krishna Rao", "Jared Kaplan", "Mike Krieger", "Jack Clark"]},
   "APP": {"aliases": ["AppLovin"], "people": ["Adam Foroughi"]},
   "ARM": {"aliases": ["Arm"], "people": ["Rene Haas", "Masayoshi Son"]},
   "ASML": {"aliases": ["ASML"], "people": ["Christophe Fouquet", "Peter Wennink", "Martin van den Brink"]},
