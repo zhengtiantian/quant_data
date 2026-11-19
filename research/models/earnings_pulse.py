@@ -116,7 +116,12 @@ def fetch():
     ev = events()
     M1.mkdir(parents=True, exist_ok=True)
     todo = [r for r in ev.itertuples() if not (M1 / f"{r.symbol}_{r.day}.parquet").exists()]
-    progress("fetch", 0, len(todo), f"reports={len(ev)}")
+    # an evening whose reaction morning has not passed yet is left for the next run (no file is written, so
+    # it stays in todo): Alpaca's free plan refuses SIP bars of the last 15 minutes with a 403
+    cutoff = pd.Timestamp.now(tz="UTC") - pd.Timedelta(minutes=20)
+    waiting = [r for r in todo if pd.Timestamp(f"{pd.Timestamp(r.date).date()} 10:30", tz=NY).tz_convert("UTC") > cutoff]
+    todo = [r for r in todo if r not in waiting]
+    progress("fetch", 0, len(todo), f"reports={len(ev)}" + (f" ({len(waiting)} still to come)" if waiting else ""))
 
     def one(r):
         start = pd.Timestamp(f"{r.day} 15:30", tz=NY)

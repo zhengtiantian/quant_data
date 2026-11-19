@@ -145,9 +145,14 @@ def minutes(symbols):
         if old is not None:                      # weekly refresh: only the reports after the stored bars
             last = old.index.max().tz_convert(ny).date()
             evs = [e for e in evs if e[3] > last]
-            if not evs:
-                progress("minutes", n, len(symbols), f"{sym} up to date")
-                continue
+        # a window still open (a report this week, run mid-week) is left for the next run: Alpaca's free
+        # plan refuses SIP bars of the last 15 minutes with a 403, and the window would be incomplete anyway
+        cutoff = pd.Timestamp.now(tz="UTC") - pd.Timedelta(minutes=20)
+        open_now = [e for e in evs if pd.Timestamp(f"{e[3]} 20:00", tz=ny).tz_convert("UTC") > cutoff]
+        evs = [e for e in evs if e not in open_now]
+        if not evs:
+            progress("minutes", n, len(symbols), f"{sym} up to date" + (f" ({len(open_now)} window still open)" if open_now else ""))
+            continue
         rows = []
         with ThreadPoolExecutor(3) as ex:
             for bars in ex.map(lambda e: one(sym, e[2], e[3]), evs):
