@@ -34,7 +34,14 @@ Tiers shown to the user: "add" (model says it belongs, co-mention >= STRONG, not
           only the new headlines go to the model). Run at the start of each universe backfill window
           (it holds LM Studio: the filter may ask the SLM), before the labels.
 
-Usage: .venv311/bin/python tools/keyword_refresh.py mine|judge|run|apply|rescan|status [--until HH:MM] [--dry-run]
+  screen  (2026-11-19) the collateral check of the latest run's add / weak candidates (or --run DATE): past
+          co-mention over 24 months of GKG headlines, the words and companies next to the term in the
+          headlines that do not name the company, Claude on other meanings (`claude -p`; --no-claude skips).
+  auto    what auto_decide() would add (preview; the hourly apply adds them when settings.json says so)
+  audit   (daily) what each keyword in the rules brought in and the share the relevance model kept;
+          auto-added terms that fail are taken out again, those that pass are confirmed
+
+Usage: .venv311/bin/python tools/keyword_refresh.py mine|judge|run|screen|auto|apply|audit|rescan|status [--until HH:MM] [--dry-run]
        (judge / run / rescan under tools/lm_session.py run --model qwen3.5-9b-mlx --workers-env LM_WORKERS -- ...)
 """
 
@@ -419,6 +426,217 @@ def judge(res: dict, deadline: float | None = None) -> dict:
     return res
 
 
+# ---------------------------------------------------------------- collateral check (2026-11-19)
+# The user (2026-11-19): terms should go into the rules without a review where that is safe, and the ones
+# that would also pull in news about something else must be recognised. The week's co-mention is measured
+# while the term is in the company's news; these checks look at the rest of the time:
+#   history     the GKG headlines of the HISTORY_MONTHS before the week: of those containing the term, the
+#               share that name the company (today's keywords and the rule engine, as in mine())
+#   neighbour   in those that do not name it, the word most often next to the term ("Galaxy" before
+#               "A20") and the other tracked company most often named
+#   flood       those headlines per month: what the term would bring in on its own
+#   Claude      other common meanings in the news, one `claude -p` call per CLAUDE_BATCH terms
+# A candidate with any risk waits for the user; auto_decide() may apply the rest.
+HISTORY_MONTHS = int(os.getenv("KEYWORD_SCREEN_MONTHS", "24"))
+HIST_CAP = 3000
+RISK_CO, RISK_MIN_HIST = 0.5, 20
+NEIGHBOUR_SHARE, OTHER_SHARE, MIN_EXTRA = 0.4, 0.2, 8
+FLOOD_PER_MONTH = 300
+CLAUDE_BATCH = 40
+CLAUDE_TIMEOUT_S = 900
+SCREEN_TIERS = ("add", "weak")
+
+
+def history_titles(terms: list, before: str, months: int = HISTORY_MONTHS) -> dict:
+    """{term in lower case: [{title, url, ts, raw}]}: distinct GKG headlines containing the term in the
+    `months` months before `before` (YYYYMMDDHHMMSS), newest first, at most HIST_CAP per term."""
+    import pyarrow.compute as pc
+    import pyarrow.dataset as ds
+    import backfill_symbol_news as bf
+    if not terms:
+        return {}
+    prx = _kw_rx(terms).replace("(?<![\\w])", "\\b").replace("(?![\\w])", "\\b")      # RE2: no lookbehind
+    pats = {t.lower(): re.compile(r"(?<!\w)" + re.escape(t) + r"(?!\w)", re.I) for t in terms}
+    out: dict = {k: {} for k in pats}
+    end = datetime.strptime(before[:8], "%Y%m%d")
+    for m in sorted({(end - timedelta(days=30 * i)).strftime("%Y-%m") for i in range(months + 1)}, reverse=True):
+        p = PARQUET_DIR / f"month={m}"
+        if not p.exists():
+            continue
+        t = ds.dataset(str(p), format="parquet").to_table(columns=["ts", "url", "raw"])
+        t = t.filter(pc.less(t["ts"], before))
+        t = t.filter(pc.match_substring_regex(t["raw"], prx))
+        for r in t.to_pylist():
+            title = bf.gkg_title(r["raw"]).replace("’", "'").strip()
+            if len(title) < 12 or bf.SPAM_RE.search(title):
+                continue
+            key = re.sub(r"[^a-z0-9]+", " ", title.lower()).strip()
+            for k, pat in pats.items():
+                if len(out[k]) < HIST_CAP and key not in out[k] and pat.search(title):
+                    out[k][key] = {"title": title, "url": r["url"], "ts": str(r["ts"]), "raw": r["raw"]}
+    return {k: list(v.values()) for k, v in out.items()}
+
+
+def _company_test(cfg: dict, match: list, rm, sym: str):
+    """mine()'s test of a headline naming the company: today's keywords, then the rule engine unless a
+    proof name (a distinctive primary keyword, the identity words) is in the headline."""
+    rx = re.compile(_kw_rx(match)[4:], re.I) if match else None
+    rule = rm.rules.get(sym)
+    use_rule = rule is not None and type(rule).__name__ != "NoRule"
+    if use_rule:
+        _no_slm(rule)
+    amb = (cfg.get("special_rules") or {}).get("ambiguous") or {}
+    proof = [k for k in cfg.get("primary_keywords") or [] if isinstance(k, str) and len(k) > 3 and not _weak_word(k)
+             and k.upper() != k] + [k for k in (amb.get("strict_validation_keywords") or []) if isinstance(amb, dict) and isinstance(k, str)]
+    prx = re.compile(_kw_rx(proof)[4:], re.I) if proof else None
+
+    def names(e: dict) -> bool:
+        if rx is None or not rx.search(e["title"]):
+            return False
+        if not use_rule or (prx is not None and prx.search(e["title"])):
+            return True
+        return bool(rm.should_include(sym, {"title": e["title"], "content": e["raw"], "url": e["url"], "date": e["ts"][:8]}))
+    return names
+
+
+def _neighbours(titles: list, term: str) -> Counter:
+    """Words right before / after the term, once per headline ("before galaxy", "after jet")."""
+    tt = [w.lower() for w in _TOK.findall(term)]
+    out: Counter = Counter()
+    for title in titles:
+        toks = [w.lower() for w in _TOK.findall(title)]
+        seen = set()
+        for i in range(len(toks) - len(tt) + 1):
+            if toks[i:i + len(tt)] != tt:
+                continue
+            for side, j in (("before", i - 1), ("after", i + len(tt))):
+                if 0 <= j < len(toks) and toks[j] not in STOP and not toks[j].isdigit() and len(toks[j]) > 1:
+                    seen.add(f"{side} {toks[j]}")
+        out.update(seen)
+    return out
+
+
+CLAUDE_SYSTEM = "You check candidate keywords for a company news collector. Answer only in the given JSON schema."
+CLAUDE_PROMPT = """Each candidate below is a name found in this week's headlines about a listed company. If it becomes
+a keyword, every news headline that contains it is collected as news about that company.
+
+For each one, say whether that would often collect news about something else: another company's product or
+brand, a person with the same name, a place, a vehicle, an event, a sports team, a common phrase, a generic
+term, or an older meaning. Judge the name as it appears in English-language news in general, not only this
+week. risky = true when a noticeable share of headlines containing the name would not be about this company
+or what it owns. other = that other meaning in at most 10 words (empty when not risky).
+
+Candidates (id | company | name | kind | one headline):
+{rows}"""
+CLAUDE_SCHEMA = {"type": "object", "required": ["items"], "properties": {"items": {"type": "array", "items": {
+    "type": "object", "required": ["id", "risky", "other"],
+    "properties": {"id": {"type": "string"}, "risky": {"type": "boolean"}, "other": {"type": "string"}}}}}}
+
+
+def _claude_bin() -> str:
+    """As research/news_linkage/judge.py: the standalone CLI, else the one bundled with the VS Code extension."""
+    for p in (os.getenv("CLAUDE_BIN"), shutil.which("claude"), str(Path.home() / ".local/bin/claude")):
+        if p and Path(p).exists():
+            return p
+    bundled = sorted(Path.home().glob(".vscode/extensions/anthropic.claude-code-*/resources/native-binary/claude"))
+    if bundled:
+        return str(bundled[-1])
+    raise FileNotFoundError("no claude CLI found")
+
+
+def claude_check(cands: list) -> dict:
+    """{candidate id: {"risky", "other"}} from `claude -p` on the subscription (API keys cleared)."""
+    import subprocess
+    import tempfile
+    env = {k: v for k, v in os.environ.items() if k not in ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")}
+    out: dict = {}
+    for i in range(0, len(cands), CLAUDE_BATCH):
+        part = cands[i:i + CLAUDE_BATCH]
+        rows = "\n".join(f"{c['id']} | {c['name']} ({c['symbol']}) | {c['term']} | {c.get('kind') or '-'} | "
+                         f"{(c.get('examples') or [{}])[0].get('title', '')[:140]}" for c in part)
+        cmd = [_claude_bin(), "-p", "--output-format", "json", "--json-schema", json.dumps(CLAUDE_SCHEMA), "--tools", "",
+               "--strict-mcp-config", "--no-session-persistence", "--system-prompt", CLAUDE_SYSTEM]
+        try:
+            with tempfile.TemporaryDirectory(prefix="kw-screen-") as cwd:
+                r = subprocess.run(cmd, input=CLAUDE_PROMPT.format(rows=rows), capture_output=True, text=True,
+                                   timeout=CLAUDE_TIMEOUT_S, cwd=cwd, env=env)
+            res = json.loads(r.stdout) if r.returncode == 0 else {}
+            ans = res.get("structured_output") or json.loads(res.get("result") or "{}")
+        except Exception as e:  # noqa: BLE001 - an unanswered term keeps no Claude verdict and is not auto-applied
+            print(f"claude_check {i}: {type(e).__name__}: {e}", flush=True)
+            continue
+        ids = {c["id"] for c in part}
+        for a in (ans or {}).get("items") or []:
+            if a.get("id") in ids:
+                out[a["id"]] = {"risky": bool(a.get("risky")), "other": str(a.get("other") or "")[:120]}
+    return out
+
+
+def screen(res: dict, use_claude: bool = True) -> dict:
+    """Adds c["screen"] = {history, neighbours, others, flood, claude, risks} to the add / weak candidates."""
+    cands = [c for c in res.get("candidates") or [] if c.get("tier") in SCREEN_TIERS]
+    if not cands:
+        return res
+    t0 = time.time()
+    rules = load_rules()
+    created = datetime.fromisoformat((res.get("created") or now_iso())[:19])
+    before = (created - timedelta(days=res.get("days") or DAYS)).strftime("%Y%m%d%H%M%S")
+    hist = history_titles(sorted({c["term"] for c in cands}), before)
+    print(f"screen: {len(cands)} candidates, {sum(map(len, hist.values()))} past headlines ({time.time() - t0:.0f}s)", flush=True)
+    other_kw: dict = defaultdict(set)
+    for (_rs, sym), (_p, cfg, _m, _k, _rm) in rules.items():
+        for k in cfg.get("primary_keywords") or []:
+            if isinstance(k, str) and len(k) > 3 and not _weak_word(k):
+                other_kw[k.lower()].add(sym)
+    orx = re.compile(_kw_rx(other_kw)[4:], re.I)
+    tests: dict = {}
+    verdicts = claude_check(cands) if use_claude else {}
+    for c in cands:
+        key = (c["set"], c["symbol"])
+        if key not in rules:
+            c["screen"] = {"at": now_iso(), "risks": [{"code": "no_rule", "text": "the company's rule file is missing"}]}
+            continue
+        if key not in tests:
+            _p, cfg, match, _k, rm = rules[key]
+            tests[key] = _company_test(cfg, match, rm, c["symbol"])
+        rows = hist.get(c["term"].lower(), [])
+        flags = [tests[key](e) for e in rows]
+        extra = [e for e, f in zip(rows, flags) if not f]
+        n, w = len(rows), sum(flags)
+        first = min((e["ts"] for e in rows), default=None)
+        span = max(1.0, (created - datetime.strptime(first[:8], "%Y%m%d")).days / 30.4) if first else 1.0
+        per_month = round(len(extra) / span, 1)
+        nb = _neighbours([e["title"] for e in extra], c["term"]).most_common(3)
+        oc: Counter = Counter()
+        for e in extra:
+            oc.update({s for m in orx.findall(e["title"]) for s in other_kw.get(m.lower(), ()) if s != c["symbol"]})
+        risks = []
+        if n >= RISK_MIN_HIST and w / n < RISK_CO:
+            risks.append({"code": "history", "text": f"named the company in {w / n:.0%} of {n} headlines over {HISTORY_MONTHS} months"})
+        if len(extra) >= MIN_EXTRA and nb and nb[0][1] / len(extra) >= NEIGHBOUR_SHARE:
+            side, word = nb[0][0].split(" ", 1)
+            phrase = f"{word} {c['term']}" if side == "before" else f"{c['term']} {word}"
+            risks.append({"code": "neighbour", "text": f'other headlines mostly say "{phrase}" ({nb[0][1] / len(extra):.0%})'})
+        if len(extra) >= MIN_EXTRA and oc and oc.most_common(1)[0][1] / len(extra) >= OTHER_SHARE:
+            s, k = oc.most_common(1)[0]
+            risks.append({"code": "other_company", "text": f"{k / len(extra):.0%} of the other headlines are {s} news"})
+        if per_month >= FLOOD_PER_MONTH:
+            risks.append({"code": "flood", "text": f"{per_month:.0f} headlines a month without the company"})
+        v = verdicts.get(c["id"])
+        if v and v["risky"]:
+            risks.append({"code": "claude", "text": f"Claude: {v['other'] or 'other meanings'}"})
+        c["screen"] = {"at": now_iso(), "history_months": HISTORY_MONTHS, "hist_headlines": n, "hist_with_company": w,
+                       "hist_co_mention": round(w / n, 3) if n else None, "extra_per_month": per_month,
+                       "neighbours": [[k, round(x / len(extra), 2)] for k, x in nb] if extra else [],
+                       "others": [[s, round(x / len(extra), 2)] for s, x in oc.most_common(3)] if extra else [],
+                       "extra_examples": [{"title": e["title"], "url": e["url"], "ts": e["ts"]} for e in extra[:4]],
+                       "claude": v, "risks": risks}
+    res["screened"] = now_iso()
+    print(f"screen: done in {time.time() - t0:.0f}s; with a risk {sum(bool(c['screen']['risks']) for c in cands)} of {len(cands)}, "
+          f"Claude answered {len(verdicts)}", flush=True)
+    return res
+
+
 # ---------------------------------------------------------------- decisions -> rule files
 def _read(p: Path, default):
     try:
@@ -500,6 +718,153 @@ def apply(dry_run: bool = False) -> list:
                 f.write(json.dumps({"at": now_iso(), **c}, ensure_ascii=False) + "\n")
     print(json.dumps({"dry_run": dry_run, "changed": changes}, ensure_ascii=False), flush=True)
     return changes
+
+
+# ---------------------------------------------------------------- automatic decisions and their check (2026-11-19)
+# auto_decide: a candidate the model suggests adding (tier "add"), seen in AUTO_MIN_STORIES stories on
+# AUTO_MIN_SITES sites, screened with no risk and answered by Claude, that the user has not decided, is
+# added with by="auto" and history "first_seen" (no years of past news until audit() confirms it). Only
+# when <OUT>/settings.json has "auto_apply": true; otherwise <OUT>/auto_preview.json lists what it would add.
+# The user's decision always wins: an entry without by="auto" is never touched.
+# audit: for every keyword in the rules, the core articles collected since it went in that contain it but
+# none of the company's own names, i.e. the ones it brought in, and the share the relevance model kept. An
+# auto-added term is taken out again (reject, by="auto") when AUDIT_MIN_N of them were kept less than
+# AUDIT_KEEP_MIN, or when more than FLOOD_PER_WEEK come in a week; after CONFIRM_DAYS it is confirmed, and
+# a product / brand / service then gets its full history searched. -> <OUT>/audit.json
+AUTO_MIN_STORIES, AUTO_MIN_SITES = 3, 3
+AUDIT_MIN_N, AUDIT_KEEP_MIN, AUDIT_KEEP_OK = 10, 0.3, 0.5
+CONFIRM_DAYS, FLOOD_PER_WEEK = 14, 200
+
+
+def settings() -> dict:
+    return _read(OUT / "settings.json", {})
+
+
+def _write_decisions(change) -> dict:
+    """change(decisions) under quant_ai's lock (markets/keyword_review.py writes the same file)."""
+    import fcntl
+    OUT.mkdir(parents=True, exist_ok=True)
+    with open(OUT / "decisions.lock", "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        cur = _read(OUT / "decisions.json", {})
+        change(cur)
+        tmp = OUT / "decisions.json.tmp"
+        tmp.write_text(json.dumps(cur, indent=1, ensure_ascii=False))
+        tmp.rename(OUT / "decisions.json")
+    return cur
+
+
+def auto_eligible(p: dict) -> bool:
+    s = p.get("screen") or {}
+    return (p.get("tier") == "add" and "risks" in s and not s["risks"] and bool(s.get("claude"))
+            and (p.get("stories") or 0) >= AUTO_MIN_STORIES and (p.get("sites") or 0) >= AUTO_MIN_SITES)
+
+
+def auto_decide(dry_run: bool = False) -> list:
+    props, decisions = proposals(), _read(OUT / "decisions.json", {})
+    picks = sorted(pid for pid, p in props.items() if pid not in decisions and auto_eligible(p))
+    on = bool(settings().get("auto_apply")) and not dry_run
+    preview = {"at": now_iso(), "auto_apply": on, "ids": picks}
+    tmp = OUT / "auto_preview.json.tmp"
+    tmp.write_text(json.dumps(preview, indent=1, ensure_ascii=False))
+    tmp.rename(OUT / "auto_preview.json")
+    if on and picks:
+        now = datetime.now().isoformat(timespec="seconds")
+
+        def add(cur):
+            for pid in picks:
+                cur.setdefault(pid, {"decision": "add", "at": now, "by": "auto", "history": "first_seen"})
+        _write_decisions(add)
+    print(f"auto_decide: {len(picks)} eligible, {'added' if on else 'preview only'}", flush=True)
+    return picks
+
+
+def _own_names(rs: str, sym: str):
+    """The company's names before any refresh term: v2's keywords and short name, the rule's primary keywords."""
+    import slm_company_match_v2 as m2
+    prim = [k for k in (_read(RULE_SETS[rs] / f"{sym}.json", {}).get("primary_keywords") or []) if isinstance(k, str) and len(k) > 2]
+    pats = [p for p in (m2._SCAN_PATTERNS.get(sym), m2._NAME_PATTERNS.get(sym)) if p]
+    if prim:
+        pats.append(re.compile(r"(?<!\w)(" + "|".join(re.escape(k) for k in sorted(prim, key=len, reverse=True)) + r")(?!\w)"))
+    return lambda text: any(p.search(text) for p in pats)
+
+
+def audit(dry_run: bool = False) -> dict:
+    sys.path.insert(0, str(ROOT / "research" / "labeling"))
+    from pymongo import MongoClient
+    import slm_company_match_v2 as m2
+    entries = []
+    for rs, d in RULE_SETS.items():
+        for p in sorted(d.glob("*.json")) if d.exists() else []:
+            for a in _read(p, {}).get("auto_keywords") or []:
+                if a.get("as") == "keyword" and a.get("approved"):
+                    entries.append((rs, p.stem, a))
+    report: dict = {"at": now_iso(), "terms": {}}
+    if entries:
+        db = MongoClient(os.environ["MONGO_URI"])[m2.DB_NAME]
+        since = min(a["approved"][:10].replace("-", "") for _rs, _s, a in entries)
+        core = sorted({s for rs, s, _a in entries if rs == "core"})
+        docs = defaultdict(list)
+        proj = {"symbol": 1, "url": 1, "date": 1, "title": 1,
+                "content": {"$substrCP": [{"$ifNull": ["$content", ""]}, 0, m2.CONTENT_CHARS]}}
+        for d in db[m2.SOURCE_COLLECTION].aggregate([{"$match": {"date": {"$gte": since}, "symbol": {"$in": core},
+                                                                 "origin": {"$ne": m2.UNIVERSE_ORIGIN}}}, {"$project": proj}],
+                                                    allowDiskUse=True, batchSize=5000):
+            docs[d["symbol"]].append(d)
+        kept = {(r["symbol"], r["url"]) for r in db[m2.TARGET_COLLECTION].find(
+            {"symbol": {"$in": core}, "date": {"$gte": since}}, {"symbol": 1, "url": 1})}
+        decisions = _read(OUT / "decisions.json", {})
+        now = datetime.now()
+        for rs, sym, a in entries:
+            pid = a.get("id") or f"{rs}:{sym}:{a['term'].lower()}"
+            age = (now - datetime.fromisoformat(a["approved"][:19])).days
+            row = {"set": rs, "symbol": sym, "term": a["term"], "approved": a["approved"], "days": age,
+                   "by": (decisions.get(pid) or {}).get("by") or "user"}
+            if rs == "core":
+                own, pat = _own_names(rs, sym), re.compile(r"(?<!\w)" + re.escape(a["term"]) + r"(?!\w)", re.I)
+                day0 = a["approved"][:10].replace("-", "")
+                mine_ = [d for d in docs.get(sym, []) if (d.get("date") or "") >= day0
+                         and pat.search(f"{d.get('title') or ''} {d.get('content') or ''}")
+                         and not own(f"{d.get('title') or ''} {d.get('content') or ''}")]
+                n, k = len(mine_), sum((sym, d["url"]) in kept for d in mine_)
+                row.update(brought_in=n, kept=k, keep_rate=round(k / n, 3) if n else None,
+                           per_week=round(n / max(1, age) * 7, 1),
+                           examples=[{"title": d.get("title"), "url": d.get("url"), "kept": (sym, d["url"]) in kept} for d in mine_[:5]])
+                if row["by"] == "auto" and ((n >= AUDIT_MIN_N and k / n < AUDIT_KEEP_MIN) or (age >= 1 and row["per_week"] > FLOOD_PER_WEEK)):
+                    row["verdict"] = "revert"
+                    row["reason"] = (f"{row['per_week']:.0f} articles a week" if row["per_week"] > FLOOD_PER_WEEK
+                                     else f"the relevance model kept {k} of {n}")
+                elif age >= CONFIRM_DAYS and (n < AUDIT_MIN_N or k / n >= AUDIT_KEEP_OK):
+                    row["verdict"] = "confirmed"
+                elif n >= AUDIT_MIN_N and k / n < AUDIT_KEEP_MIN:
+                    row["verdict"] = "poor"                   # a term the user added: shown, not undone
+                else:
+                    row["verdict"] = "watching"
+            else:
+                row["verdict"] = "confirmed" if age >= CONFIRM_DAYS else "watching"   # universe rows: kept at the backfill
+            report["terms"][pid] = row
+        if not dry_run:
+            stamp = datetime.now().isoformat(timespec="seconds")
+
+            def change(cur):
+                for pid, row in report["terms"].items():
+                    d = cur.get(pid) or {}
+                    if d.get("by") != "auto":
+                        continue
+                    if row["verdict"] == "revert" and d.get("decision") == "add":
+                        cur[pid] = {**d, "decision": "reject", "at": stamp, "reason": row["reason"]}
+                    elif row["verdict"] == "confirmed" and not d.get("confirmed"):
+                        p = proposals().get(pid) or {}
+                        cur[pid] = {**d, "confirmed": stamp,
+                                    **({"history": "full"} if p.get("kind") in FULL_HISTORY_KINDS else {})}
+            if any(r["verdict"] in ("revert", "confirmed") for r in report["terms"].values()):
+                _write_decisions(change)
+    if not dry_run:
+        tmp = OUT / "audit.json.tmp"
+        tmp.write_text(json.dumps(report, indent=1, ensure_ascii=False, default=str))
+        tmp.rename(OUT / "audit.json")
+    print(f"audit: {len(report['terms'])} terms; " + json.dumps(Counter(r["verdict"] for r in report["terms"].values())), flush=True)
+    return report
 
 
 # ---------------------------------------------------------------- past months for added terms
@@ -701,7 +1066,23 @@ def main(argv: list) -> None:
         res = mine()
         _write_run(res, ".candidates")
         _write_run(judge(res, _until(argv)))
+    elif stage == "screen":
+        runs = sorted((OUT / "runs").glob("????-??-??.json"))
+        p = OUT / "runs" / f"{argv[argv.index('--run') + 1]}.json" if "--run" in argv else (runs[-1] if runs else None)
+        if p is None or not p.exists():
+            raise SystemExit(f"no run to screen: {p}")
+        res = screen(_read(p, {}), use_claude="--no-claude" not in argv)
+        tmp = p.with_suffix(".tmp")
+        tmp.write_text(json.dumps(res, indent=1, ensure_ascii=False))
+        tmp.rename(p)
+        print(f"wrote {p}", flush=True)
+    elif stage == "auto":
+        auto_decide(dry_run=True)
+    elif stage == "audit":
+        audit(dry_run="--dry-run" in argv)
     elif stage == "apply":
+        if "--dry-run" not in argv:
+            auto_decide()
         apply(dry_run="--dry-run" in argv)
     elif stage == "rescan":
         rescan(_until(argv))

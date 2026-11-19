@@ -171,7 +171,8 @@ COMPANY_UNIVERSE: dict[str, tuple[str, list[str]]] = {
     "CSCO":  ("Cisco Systems",              ["Cisco Systems", "Cisco Corp"]),
     "IBM":   ("IBM",                        ["IBM", "International Business Machines"]),
     "DELL":  ("Dell Technologies",          ["Dell Technologies", "Dell Computer"]),
-    "SMCI":  ("Super Micro Computer",       ["Supermicro", "Super Micro Computer"]),
+    # "Super Micro" and the ticker added 2026-11-19 (coverage watch: ~40 articles a week lost at the gate)
+    "SMCI":  ("Super Micro Computer",       ["Supermicro", "Super Micro Computer", "Super Micro", "SMCI"]),
     "INTU":  ("Intuit Inc.",                ["Intuit", "TurboTax", "QuickBooks"]),
     # ── Storage expansion (2026-07-15) ───────────────────────────────────────
     "STX":   ("Seagate Technology",        ["Seagate", "Seagate Technology", "IronWolf", "BarraCuda", "Nytro SSD", "Dave Mosley"]),
@@ -349,11 +350,47 @@ _NAME_PATTERNS: dict[str, re.Pattern] = {
 }
 
 
+# 2026-11-19: two more sources of names count as a mention, as written (case-sensitive); the relevance
+# model still decides.
+#   - V2_GATE_RULE_NAMES (default 1, 0 turns it off): a core company's collector names (primary_keywords). The hand-written lists
+#     above left out "AMD" and "Cisco" (8-17 Nov: AMD lost 382 of 730 collected articles at the gate,
+#     CSCO 94 of 261) and the tickers (NVDA, AVGO, ...). "NET" (.NET) and "META" (a word) stay out.
+#   - always: terms the weekly keyword refresh put into a rule as keywords (auto_keywords "as": "keyword",
+#     tools/keyword_refresh.py apply), so an approved product name keeps the articles it brings in.
+GATE_RULE_NAMES = os.getenv("V2_GATE_RULE_NAMES", "1") == "1"   # on 2026-11-19 (the user)
+CORE_RULES_DIR = Path(os.getenv(
+    "V2_CORE_RULES_DIR", str(Path(__file__).resolve().parents[2] / "collectors" / "news" / "gdelt" / "company_rules")))
+_RULE_NAME_SKIP = {"NET", "META"}
+
+
+def _rule_terms(rule_names: bool = GATE_RULE_NAMES) -> dict[str, list[str]]:
+    out: dict[str, list[str]] = {}
+    for d, core in ((CORE_RULES_DIR, True), (UNIVERSE_RULES_DIR, False)):
+        for f in sorted(d.glob("*.json")) if d.exists() else []:
+            try:
+                r = json.loads(f.read_text())
+            except ValueError:
+                continue
+            terms = [k.strip() for k in (r.get("primary_keywords") or []) if rule_names and core and isinstance(k, str)
+                     and len(k.strip()) >= 3 and k.strip() not in _RULE_NAME_SKIP]
+            terms += [a["term"].strip() for a in r.get("auto_keywords") or []
+                      if a.get("as") == "keyword" and len((a.get("term") or "").strip()) >= 3]
+            if terms:
+                out.setdefault((r.get("symbol") or f.stem).upper(), []).extend(terms)
+    return out
+
+
+_RULE_PATTERNS: dict[str, re.Pattern] = {
+    sym: re.compile(r"(?<!\w)(" + "|".join(re.escape(t) for t in sorted(set(terms), key=len, reverse=True)) + r")(?!\w)")
+    for sym, terms in _rule_terms().items()
+}
+
+
 def _has_direct_mention(symbol: str, title: str, content: str) -> bool:
-    """True when the matched symbol's keywords (any case) or its short company name (as written) appear
-    in title or body."""
+    """True when the matched symbol's keywords (any case), its short company name (as written) or its rule
+    names (_RULE_PATTERNS, as written) appear in title or body."""
     hit = False
-    for pat in (_SCAN_PATTERNS.get(symbol), _NAME_PATTERNS.get(symbol)):
+    for pat in (_SCAN_PATTERNS.get(symbol), _NAME_PATTERNS.get(symbol), _RULE_PATTERNS.get(symbol)):
         if pat and (pat.search(title) or pat.search(content)):
             hit = True
             break
