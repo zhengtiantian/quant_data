@@ -77,10 +77,11 @@ with DAG(
     m_ireland = _job_task("ireland_morning_scan", "ireland", timeout_minutes=60)
     m_cn_ft = _job_task("china_fulltime_daily", "china_fulltime_all", timeout_minutes=45)
     m_cn_pt = _job_task("china_parttime_daily", "china_parttime", timeout_minutes=35)
+    m_ie_pt = _job_task("ireland_parttime_daily", "ireland_parttime", timeout_minutes=25)
     m_gl_fast = _job_task("eu_me_official_ats_morning", "global_official_fast", timeout_minutes=20)
     m_backup = _job_task("backup_db", "backup_db", timeout_minutes=10, trigger_rule="all_done")
 
-    m_mat >> m_ireland >> m_cn_ft >> m_cn_pt >> m_gl_fast >> m_backup
+    m_mat >> m_ireland >> m_cn_ft >> m_cn_pt >> m_ie_pt >> m_gl_fast >> m_backup
 
 
 with DAG(
