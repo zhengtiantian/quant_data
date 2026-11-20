@@ -50,6 +50,14 @@ def _sector_map() -> dict:
     return out
 
 
+def news_symbols() -> dict:
+    """{ticker: the symbol its articles are stored under} (N.8, 2026-11-19). The ticker itself, unless names.json
+    gives news_symbol: a second share class (GOOG -> GOOGL, FOX, NWS, UA), a renamed company (FB -> META,
+    LB -> BBWI, PARA -> PSKY), or None for a company with no news collected (INFO, SATS: missing, not zero).
+    The news version of the panel reads articles through this."""
+    return {t: v.get("news_symbol", t) for t, v in json.loads(NAMES.read_text()).items()}
+
+
 def sectors() -> None:
     import time
     import yfinance as yf

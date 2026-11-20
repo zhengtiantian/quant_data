@@ -2,13 +2,11 @@
  "symbol": "DOV",
  "name": "Dover Corporation",
  "primary_keywords": [
-  "Dover Corporation"
+  "Dover"
  ],
  "expansion_keywords": [],
  "tightened": "2026-11-03",
- "weak_names_not_counted": [
-  "Dover"
- ],
+ "weak_names_not_counted": [],
  "dropped_expansion": [
   "Mike DePrisco",
   "Deere & Company",
@@ -21,5 +19,35 @@
   "Dover Process Solutions",
   "Dover Building Solutions"
  ],
- "special_rules": {}
+ "special_rules": {
+  "ambiguous": {
+   "problem": "N.8 context rule 2026-11-19: 'Dover' is mostly a place (Delaware, New Hampshire, Kent, the port, the speedway) or another company",
+   "required_keywords": [
+    "Dover"
+   ],
+   "min_matches": 1,
+   "trust_single_match": true,
+   "title_context_patterns": [
+    "Dover Corp",
+    "Dover Co\\.",
+    "\\(\\s*(?:NYSE\\s*:\\s*)?DOV\\s*\\)",
+    "\\$DOV\\b",
+    "NYSE\\s*:\\s*DOV\\b",
+    "Richard (?:J\\. )?Tobin",
+    "Dover Fueling Solutions",
+    "\\bDover'?s?\\s+(?:stock|shares|earnings|revenue|Q[1-4]|(?:first|second|third|fourth)[- ]quarter|quarterly results|dividend|price target|guidance|outlook|acquires|to acquire|completes acquisition|beats|misses|tops)\\b"
+   ],
+   "exclude_title_patterns": [
+    "ILC Dover",
+    "Dover Motorsports",
+    "Dover Downs",
+    "Dover Street",
+    "Dover Speedway",
+    "Dover Motor Speedway",
+    "Dover International",
+    "Dover Air Force",
+    "Port of Dover"
+   ]
+  }
+ }
 }

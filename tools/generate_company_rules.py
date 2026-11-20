@@ -151,8 +151,10 @@ JUNK_RE = {"IEX": re.compile(r"^IDEX XE\d*$")}
 # an index, fund or contract named after the company is quoted in every market report, not news of it
 PRODUCT_RE = re.compile(r"(?<!\w)(Index|Indices|Futures|Options|ETFs?|Fund)(?!\w)", re.I)
 # Not news targets of their own: a reused ticker (the company it was is elsewhere or has no bars in its
-# index years) or a second share class of a company that has a rule already.
-DROP = {"FB": "META", "INFO": None, "LB": None, "SATS": None, "PARA": None,
+# index years) or a second share class of a company that has a rule already. The value is where its
+# articles are stored, as names.json's news_symbol says (2026-11-19: LB -> BBWI and PARA -> PSKY, whose
+# rules now carry the former names); None: not collected.
+DROP = {"FB": "META", "INFO": None, "LB": "BBWI", "SATS": None, "PARA": "PSKY",
         "GOOG": "GOOGL", "FOX": "FOXA", "NWS": "NWSA", "UA": "UAA", "TGT": "TGT"}
 # former names since 2021, so the years before a rename are found too
 EXTRA = {"SLB": ["Schlumberger"], "CPB": ["Campbell Soup"], "ELV": ["Anthem Inc", "Anthem, Inc."],

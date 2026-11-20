@@ -16,11 +16,15 @@
  ],
  "special_rules": {
   "ambiguous": {
-   "problem": "Public Storage: also an ordinary word, a surname, a place or another organisation",
+   "problem": "N.8 context rule 2026-11-19: 'public storage' is also a generic phrase (public storage of data, of firearms, for grain)",
    "required_keywords": [
     "Public Storage"
    ],
-   "min_matches": 1
+   "min_matches": 1,
+   "trust_single_match": true,
+   "title_context_patterns": [
+    "(?-i:Public Storage)(?!\\s+(?:of|for|space|spaces|tanks?|lockers?|facilit(?:y|ies) for)\\b)"
+   ]
   }
  }
 }

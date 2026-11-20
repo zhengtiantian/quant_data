@@ -890,9 +890,11 @@
   "industry": "Industrial Distribution"
  },
  "FB": {
-  "name": "ProShares S&P 500 Dynamic Daily Buffer ETF",
-  "sector": null,
-  "industry": null
+  "name": "Meta Platforms, Inc. (Facebook)",
+  "sector": "Communication Services",
+  "industry": "Internet Content & Information",
+  "news_symbol": "META",
+  "note": "ticker FB until 2022-06-09, then META. Since 2025 FB is a ProShares buffer ETF: universe/bars/FB.daily.parquet is that ETF, not Facebook"
  },
  "FCX": {
   "name": "Freeport-McMoRan Inc.",
@@ -977,7 +979,9 @@
  "FOX": {
   "name": "Fox Corporation",
   "sector": "Communication Services",
-  "industry": "Entertainment"
+  "industry": "Entertainment",
+  "news_symbol": "FOXA",
+  "note": "second share class; its articles are stored under the class collected (FOXA)"
  },
  "FOXA": {
   "name": "Fox Corporation",
@@ -1057,7 +1061,9 @@
  "GOOG": {
   "name": "Alphabet Inc.",
   "sector": "Communication Services",
-  "industry": "Internet Content & Information"
+  "industry": "Internet Content & Information",
+  "news_symbol": "GOOGL",
+  "note": "second share class; its articles are stored under the class collected (GOOGL)"
  },
  "GPC": {
   "name": "Genuine Parts Company",
@@ -1200,9 +1206,11 @@
   "industry": "Biotechnology"
  },
  "INFO": {
-  "name": "Harbor PanAgora Dynamic Large Cap Core ETF",
-  "sector": null,
-  "industry": null
+  "name": "IHS Markit Ltd.",
+  "sector": "Industrials",
+  "industry": "Consulting Services",
+  "news_symbol": null,
+  "note": "merged into S&P Global on 2022-02-28; no news collected for it. INFO is now a Harbor ETF: universe/bars/INFO.daily.parquet is that ETF"
  },
  "INVH": {
   "name": "Invitation Homes Inc.",
@@ -1340,9 +1348,11 @@
   "industry": "Insurance - Property & Casualty"
  },
  "LB": {
-  "name": "LandBridge Corporation",
-  "sector": "Energy",
-  "industry": "Oil & Gas E&P"
+  "name": "L Brands, Inc.",
+  "sector": "Consumer Cyclical",
+  "industry": "Specialty Retail",
+  "news_symbol": "BBWI",
+  "note": "renamed Bath & Body Works (BBWI) on 2021-08-02 after the Victoria's Secret spin-off; BBWI's rule has 'L Brands' since 2026-11-19. LB is now LandBridge: universe/bars/LB.daily.parquet is LandBridge"
  },
  "LDOS": {
   "name": "Leidos Holdings, Inc.",
@@ -1662,7 +1672,9 @@
  "NWS": {
   "name": "News Corporation",
   "sector": "Communication Services",
-  "industry": "Entertainment"
+  "industry": "Entertainment",
+  "news_symbol": "NWSA",
+  "note": "second share class; its articles are stored under the class collected (NWSA)"
  },
  "NWSA": {
   "name": "News Corporation",
@@ -1720,9 +1732,11 @@
   "industry": "Oil & Gas E&P"
  },
  "PARA": {
-  "name": "Parabolic Technologies, Inc.",
-  "sector": "Technology",
-  "industry": "Software - Application"
+  "name": "Paramount Global",
+  "sector": "Communication Services",
+  "industry": "Entertainment",
+  "news_symbol": "PSKY",
+  "note": "ViacomCBS until 2022-02; merged with Skydance into Paramount Skydance (PSKY) on 2025-08-07. PSKY's rule has 'Paramount Global' and 'ViacomCBS' since 2026-11-19. No bars for PARA"
  },
  "PAYC": {
   "name": "Paycom Software, Inc.",
@@ -1960,9 +1974,11 @@
   "industry": "Diagnostics & Research"
  },
  "SATS": {
-  "name": "Strive, Inc.",
-  "sector": "Financial Services",
-  "industry": "Asset Management"
+  "name": "EchoStar Corporation",
+  "sector": "Communication Services",
+  "industry": "Telecom Services",
+  "news_symbol": null,
+  "note": "added to the S&P 500 in 2026-03 (membership 2026-03-23 to 2026-06-24); the 2026-11 name lookup returned 'Strive, Inc.'. No news collected; bars only from 2026-10-20"
  },
  "SBAC": {
   "name": "SBA Communications Corporation",
@@ -2227,7 +2243,9 @@
  "UA": {
   "name": "Under Armour, Inc.",
   "sector": "Consumer Cyclical",
-  "industry": "Apparel Manufacturing"
+  "industry": "Apparel Manufacturing",
+  "news_symbol": "UAA",
+  "note": "second share class; its articles are stored under the class collected (UAA)"
  },
  "UAA": {
   "name": "Under Armour, Inc.",

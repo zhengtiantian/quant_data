@@ -2,14 +2,11 @@
  "symbol": "ROL",
  "name": "Rollins, Inc.",
  "primary_keywords": [
-  "Rollins, Inc.",
-  "Rollins Inc"
+  "Rollins"
  ],
  "expansion_keywords": [],
  "tightened": "2026-11-03",
- "weak_names_not_counted": [
-  "Rollins"
- ],
+ "weak_names_not_counted": [],
  "dropped_expansion": [
   "Pest Control",
   "Orkin",
@@ -18,5 +15,30 @@
   "National Pest Control",
   "Rapid Environment Response"
  ],
- "special_rules": {}
+ "special_rules": {
+  "ambiguous": {
+   "problem": "N.8 context rule 2026-11-19: 'Rollins' is mostly a surname (Seth, Henry, Sonny, Jimmy, Brooke, Rachael Rollins) or Rollins College",
+   "required_keywords": [
+    "Rollins"
+   ],
+   "min_matches": 1,
+   "trust_single_match": true,
+   "title_context_patterns": [
+    "Rollins,?\\s+Inc\\b",
+    "\\(\\s*(?:NYSE\\s*:\\s*)?ROL\\s*\\)",
+    "\\$ROL\\b",
+    "NYSE\\s*:\\s*ROL\\b",
+    "\\b(?:Orkin|HomeTeam Pest|Clark Pest|Northwest Exterminating|Critter Control|Fox Pest|Aardwolf|Saela)\\b",
+    "Jerry Gahlhoff",
+    "\\bRollins'?s?\\s+(?:stock|earnings|revenue|sales|Q[1-4]|(?:first|second|third|fourth)[- ]quarter|quarterly|dividend|price target|guidance|outlook|acquisition|acquires|to acquire|completes acquisition|pest|termite|shares (?:rise|rose|fall|fell|jump|drop|gain|slip|climb|sink|surge|tumble|up|down|hit))\\b"
+   ],
+   "exclude_title_patterns": [
+    "Rollins College",
+    "Rollins School",
+    "Rollins Financial",
+    "\\b(?:Brooke|Henry|Seth|Sonny|Jimmy|Rachael|Ed|Sean|Kevin|Ken|Devon|Amy|Chris|Patricia|Kenny|Damien|Mel|Darren) Rollins",
+    "Agriculture|USDA|\\bWWE\\b"
+   ]
+  }
+ }
 }

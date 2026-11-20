@@ -2,14 +2,11 @@
  "symbol": "VTR",
  "name": "Ventas, Inc.",
  "primary_keywords": [
-  "Ventas, Inc.",
-  "Ventas Inc"
+  "Ventas"
  ],
  "expansion_keywords": [],
  "tightened": "2026-11-03",
- "weak_names_not_counted": [
-  "Ventas"
- ],
+ "weak_names_not_counted": [],
  "dropped_expansion": [
   "Jeffery H. Blau",
   "Michael J. D'Amore",
@@ -20,5 +17,21 @@
   "Medical Office",
   "LifeStance"
  ],
- "special_rules": {}
+ "special_rules": {
+  "ambiguous": {
+   "problem": "N.8 context rule 2026-11-19: 'ventas' is Spanish for sales (Spanish-language headlines in GKG)",
+   "required_keywords": [
+    "Ventas"
+   ],
+   "min_matches": 1,
+   "trust_single_match": true,
+   "title_context_patterns": [
+    "(?-i:\\bVentas\\b)(?!\\s+(?:de|del|en|por|al|y|e|minoristas|online|totales|netas|anuales)\\b)"
+   ],
+   "exclude_title_patterns": [
+    "\\b(?:las|sus|según|aumentan|caen|crecen|cayeron|subieron|millones|navideñas|también|desde|hasta|mientras|empresas?)\\b",
+    "\\b(?:en|de|por) (?:el|la|los|las)\\b"
+   ]
+  }
+ }
 }

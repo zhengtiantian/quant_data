@@ -565,6 +565,12 @@ class AmbiguousNameRule(BaseRule):
         self.trust_single_match = config.get('trust_single_match', False)
         self._compiled_exclude = [re.compile(p, re.IGNORECASE) for p in self.exclude_patterns]
         self._compiled_exclude_title = [re.compile(p, re.IGNORECASE) for p in self.exclude_title_patterns]
+        # title_context_patterns (N.8, 2026-11-19): for a short name that is mostly something else (Dover the
+        # town, Rollins the surname, "ventas" in Spanish headlines), the headline or URL slug must also show the
+        # company: one of these patterns (case-insensitive; "(?-i:...)" for a case-sensitive part). Checked
+        # after the exclusions, before the SLM; a rule with them usually sets trust_single_match.
+        self.title_context_patterns = config.get('title_context_patterns', [])
+        self._compiled_title_context = [re.compile(p, re.IGNORECASE) for p in self.title_context_patterns]
         self.domain_kill = config.get('domain_kill', [])
         base_use_slm = config.get('use_slm', True)
         enabled_symbols_raw = os.getenv("SLM_ENABLED_SYMBOLS", "*")
@@ -688,6 +694,14 @@ class AmbiguousNameRule(BaseRule):
         if len(matches) < self.min_matches:
             track_filter_step("killed_by_keyword")
             return False
+
+        # 3.5 the company's context in the headline (title_context_patterns)
+        if self._compiled_title_context:
+            from .headline import gkg_title, url_slug
+            headline = (title or gkg_title(content)).replace("’", "'") + " | " + url_slug(article.get('url', ''))
+            if not any(_pat.search(headline) for _pat in self._compiled_title_context):
+                track_filter_step("killed_by_context")
+                return False
 
         # 4. 特殊短Ticker强校验 (Mandatory Identity Check)
         if self.strict_validation_keywords:

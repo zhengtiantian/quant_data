@@ -2,15 +2,12 @@
  "symbol": "MRK",
  "name": "Merck & Co., Inc.",
  "primary_keywords": [
-  "Merck Sharp & Dohme",
-  "Merck & Co Inc",
-  "Merck & Co."
+  "Merck",
+  "Merck Sharp & Dohme"
  ],
  "expansion_keywords": [],
  "tightened": "2026-11-03",
- "weak_names_not_counted": [
-  "Merck"
- ],
+ "weak_names_not_counted": [],
  "dropped_expansion": [
   "Keytruda",
   "Vyepti",
@@ -23,5 +20,46 @@
   "Brolucizumab",
   "Pembrolizumab"
  ],
- "special_rules": {}
+ "special_rules": {
+  "ambiguous": {
+   "problem": "N.8 context rule 2026-11-19: 'Merck' is also Merck KGaA of Darmstadt (EMD Serono, MilliporeSigma, Merck Life Science / Electronics), its Merck Foundation, and the music manager Merck Mercuriadis; in a headline with a euro amount, semiconductors / electronics, or a country unit it is Merck KGaA (the US company is MSD outside the US and Canada)",
+   "required_keywords": [
+    "Merck"
+   ],
+   "min_matches": 1,
+   "trust_single_match": true,
+   "exclude_patterns": [
+    "Merck KGaA",
+    "Merck[- ]Foundation",
+    "Mercuriadis",
+    "EMD Serono",
+    "Millipore ?Sigma"
+   ],
+   "exclude_title_patterns": [
+    "Merck Group",
+    "Darmstadt",
+    "EMD (?:Serono|Electronics|Performance)",
+    "Merck Life Science",
+    "Merck Electronics",
+    "Merck Healthcare",
+    "Merck Serono",
+    "Sigma-Aldrich",
+    "MKGAF",
+    "MRK\\.DE",
+    "Germany'?s Merck",
+    "German (?:drugmaker|drug maker|pharma\\w*|chemicals? \\w+|company|group|firm) Merck",
+    "Schnelldorf",
+    "Merck More Than a Mother",
+    "Our Africa by Merck",
+    "\\bFirst Lad(?:y|ies)\\b",
+    "€|\\bEUR\\s?\\d|\\beuros?\\b",
+    "semiconductor|\\bchip (?:chemical|material)s?|electronics|\\bdisplay|liquid crystal|\\bOLED\\b|quantum comput\\w*",
+    "M Ventures",
+    "Merck (?:China|Korea|Taiwan|India|Ltd|Limited|Specialities|Specialties|Japan|Pakistan|Indonesia)\\b",
+    "German\\w*\\W+(?:\\w+\\W+){0,3}Merck",
+    "BioReliance|Syntropy|Chord Therapeutics",
+    "\\bFiscal 20\\d\\d\\b"
+   ]
+  }
+ }
 }
