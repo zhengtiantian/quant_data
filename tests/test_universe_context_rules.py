@@ -127,12 +127,23 @@ def test_news_symbols_helper():
 def test_fetch_uses_the_rule_set_of_each_run(monkeypatch, tmp_path):
     # core rows, then universe rows in one process (backfill_universe_news daily): each download is judged by its own set
     sys.path.insert(0, str(ROOT / "tools"))
+    import types
     import backfill_symbol_news as bf
-    import historical_collector as hc
+    # a stand-in for the collector with its lazy rule manager (the real module needs newspaper3k / psycopg2,
+    # which CI does not install)
+    hc = types.ModuleType("historical_collector")
+    hc.__file__ = str(ROOT / "collectors" / "news" / "gdelt" / "historical_collector.py")
+    hc._rule_manager = None
+
+    def get_rule_manager():
+        if hc._rule_manager is None:
+            hc._rule_manager = RuleManager()
+        return hc._rule_manager
+    hc.get_rule_manager = get_rule_manager
+    monkeypatch.setitem(sys.modules, "historical_collector", hc)
     kept = tmp_path / "kept.jsonl"
     kept.write_text("")
     monkeypatch.setattr(bf, "existing_urls", lambda urls, symbol: set())
-    monkeypatch.setattr(hc, "_rule_manager", None)
     seen = []
     for rules_dir in (None, str(UNI / "company_rules"), None):
         monkeypatch.setattr(bf, "RULES_DIR", rules_dir)
