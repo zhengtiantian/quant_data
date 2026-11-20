@@ -73,7 +73,10 @@
         "Shield TV",
         "Tesla P100",
         "G-SYNC Pulsar",
-        "AI infrastructure spending"
+        "AI infrastructure spending",
+        "Kimberly Powell",
+        "Nemotron",
+        "RTX 5080"
     ],
     "special_rules": {
         "ambiguous": {
@@ -88,5 +91,37 @@
                 "GPU"
             ]
         }
-    }
+    },
+    "auto_keywords": [
+        {
+            "term": "Kimberly Powell",
+            "as": "keyword",
+            "kind": "executive",
+            "first_seen": "20261112",
+            "week": "2026-11-14",
+            "approved": "2026-11-19T17:55:01",
+            "id": "core:NVDA:kimberly powell",
+            "history": "first_seen"
+        },
+        {
+            "term": "Nemotron",
+            "as": "keyword",
+            "kind": "product",
+            "first_seen": "20261028",
+            "week": "2026-11-04",
+            "approved": "2026-11-19T17:55:01",
+            "id": "core:NVDA:nemotron",
+            "history": "first_seen"
+        },
+        {
+            "term": "RTX 5080",
+            "as": "keyword",
+            "kind": "product",
+            "first_seen": "20261028",
+            "week": "2026-11-04",
+            "approved": "2026-11-19T17:55:01",
+            "id": "core:NVDA:rtx 5080",
+            "history": "first_seen"
+        }
+    ]
 }

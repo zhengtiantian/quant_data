@@ -24,7 +24,9 @@
     "Starbucks acquisition",
     "Starbucks dividend",
     "Starbucks union",
-    "Starbucks store"
+    "Starbucks store",
+    "Bearista",
+    "Red Cup"
   ],
   "special_rules": {
     "ambiguous": {
@@ -65,5 +67,27 @@
         "NASDAQ:SBUX"
       ]
     }
-  }
+  },
+  "auto_keywords": [
+    {
+      "term": "Bearista",
+      "as": "keyword",
+      "kind": "product",
+      "first_seen": "20261109",
+      "week": "2026-11-14",
+      "approved": "2026-11-19T17:55:01",
+      "id": "core:SBUX:bearista",
+      "history": "first_seen"
+    },
+    {
+      "term": "Red Cup",
+      "as": "keyword",
+      "kind": "product",
+      "first_seen": "20261028",
+      "week": "2026-11-04",
+      "approved": "2026-11-19T17:55:01",
+      "id": "core:SBUX:red cup",
+      "history": "first_seen"
+    }
+  ]
 }

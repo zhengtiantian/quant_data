@@ -27,7 +27,9 @@
     "McDonald's acquisition",
     "McDonald's dividend",
     "McDonald's franchise",
-    "McDonald's same-store"
+    "McDonald's same-store",
+    "Happy Meal",
+    "McRib"
   ],
   "special_rules": {
     "ambiguous": {
@@ -69,5 +71,27 @@
         "NYSE:MCD"
       ]
     }
-  }
+  },
+  "auto_keywords": [
+    {
+      "term": "Happy Meal",
+      "as": "keyword",
+      "kind": "product",
+      "first_seen": "20261110",
+      "week": "2026-11-14",
+      "approved": "2026-11-19T17:55:01",
+      "id": "core:MCD:happy meal",
+      "history": "first_seen"
+    },
+    {
+      "term": "McRib",
+      "as": "keyword",
+      "kind": "product",
+      "first_seen": "20261030",
+      "week": "2026-11-04",
+      "approved": "2026-11-19T17:55:01",
+      "id": "core:MCD:mcrib",
+      "history": "first_seen"
+    }
+  ]
 }

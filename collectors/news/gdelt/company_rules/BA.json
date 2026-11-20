@@ -29,7 +29,8 @@
     "Boeing acquisition",
     "Boeing dividend",
     "Boeing delivery",
-    "Boeing strike"
+    "Boeing strike",
+    "787-9 Dreamliner"
   ],
   "special_rules": {
     "ambiguous": {
@@ -79,5 +80,17 @@
         "NYSE:BA"
       ]
     }
-  }
+  },
+  "auto_keywords": [
+    {
+      "term": "787-9 Dreamliner",
+      "as": "keyword",
+      "kind": "product",
+      "first_seen": "20261101",
+      "week": "2026-11-04",
+      "approved": "2026-11-19T17:55:01",
+      "id": "core:BA:787-9 dreamliner",
+      "history": "first_seen"
+    }
+  ]
 }

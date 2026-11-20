@@ -47,7 +47,10 @@
         "Android Marshmallow",
         "Project Fi",
         "Brillo",
-        "Chromecast"
+        "Chromecast",
+        "Gemini 4 Carbon",
+        "Pixel Watch",
+        "TPU 8tx"
     ],
     "special_rules": {
         "renamed": {
@@ -97,5 +100,37 @@
     "headline_names": [
         "Alphabet",
         "Google"
+    ],
+    "auto_keywords": [
+        {
+            "term": "Gemini 4 Carbon",
+            "as": "keyword",
+            "kind": "product",
+            "first_seen": "20261028",
+            "week": "2026-11-04",
+            "approved": "2026-11-19T17:55:01",
+            "id": "core:GOOGL:gemini 4 carbon",
+            "history": "first_seen"
+        },
+        {
+            "term": "Pixel Watch",
+            "as": "keyword",
+            "kind": "product",
+            "first_seen": "20261108",
+            "week": "2026-11-14",
+            "approved": "2026-11-19T17:55:01",
+            "id": "core:GOOGL:pixel watch",
+            "history": "first_seen"
+        },
+        {
+            "term": "TPU 8tx",
+            "as": "keyword",
+            "kind": "product",
+            "first_seen": "20261109",
+            "week": "2026-11-14",
+            "approved": "2026-11-19T17:55:01",
+            "id": "core:GOOGL:tpu 8tx",
+            "history": "first_seen"
+        }
     ]
 }

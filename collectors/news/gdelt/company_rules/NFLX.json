@@ -21,7 +21,9 @@
         "Password sharing crackdown",
         "TUDUM",
         "Content spend",
-        "Overseas expansion"
+        "Overseas expansion",
+        "Chiranjeevi Megaverse",
+        "Twilight Between"
     ],
     "special_rules": {
         "ambiguous": {
@@ -39,5 +41,27 @@
         "Netflix",
         "Streaming"
     ],
-    "company_name": "Netflix"
+    "company_name": "Netflix",
+    "auto_keywords": [
+        {
+            "term": "Chiranjeevi Megaverse",
+            "as": "keyword",
+            "kind": "product",
+            "first_seen": "20261029",
+            "week": "2026-11-04",
+            "approved": "2026-11-19T17:55:01",
+            "id": "core:NFLX:chiranjeevi megaverse",
+            "history": "first_seen"
+        },
+        {
+            "term": "Twilight Between",
+            "as": "keyword",
+            "kind": "product",
+            "first_seen": "20261112",
+            "week": "2026-11-14",
+            "approved": "2026-11-19T17:55:01",
+            "id": "core:NFLX:twilight between",
+            "history": "first_seen"
+        }
+    ]
 }

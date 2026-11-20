@@ -54,7 +54,8 @@
         "iPhone",
         "Dynamic Island",
         "MagSafe",
-        "Studio Display"
+        "Studio Display",
+        "18e"
     ],
     "special_rules": {
         "ambiguous": {
@@ -70,5 +71,17 @@
                 "MacBook"
             ]
         }
-    }
+    },
+    "auto_keywords": [
+        {
+            "term": "18e",
+            "as": "keyword",
+            "kind": "product",
+            "first_seen": "20261108",
+            "week": "2026-11-14",
+            "approved": "2026-11-19T17:55:01",
+            "id": "core:AAPL:18e",
+            "history": "first_seen"
+        }
+    ]
 }

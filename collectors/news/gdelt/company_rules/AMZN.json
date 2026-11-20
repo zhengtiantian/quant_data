@@ -32,7 +32,11 @@
         "Zoox",
         "Dash Button",
         "Echo Dot",
-        "Amazon Lumberyard"
+        "Amazon Lumberyard",
+        "Echo Show 16",
+        "Echo Studio",
+        "Echo Time",
+        "Paperwhite"
     ],
     "special_rules": {
         "ambiguous": {
@@ -50,5 +54,47 @@
             ],
             "min_matches": 1
         }
-    }
+    },
+    "auto_keywords": [
+        {
+            "term": "Echo Show 16",
+            "as": "keyword",
+            "kind": "product",
+            "first_seen": "20261028",
+            "week": "2026-11-04",
+            "approved": "2026-11-19T17:55:01",
+            "id": "core:AMZN:echo show 16",
+            "history": "first_seen"
+        },
+        {
+            "term": "Echo Studio",
+            "as": "keyword",
+            "kind": "product",
+            "first_seen": "20261028",
+            "week": "2026-11-04",
+            "approved": "2026-11-19T17:55:01",
+            "id": "core:AMZN:echo studio",
+            "history": "first_seen"
+        },
+        {
+            "term": "Echo Time",
+            "as": "keyword",
+            "kind": "product",
+            "first_seen": "20261028",
+            "week": "2026-11-04",
+            "approved": "2026-11-19T17:55:01",
+            "id": "core:AMZN:echo time",
+            "history": "first_seen"
+        },
+        {
+            "term": "Paperwhite",
+            "as": "keyword",
+            "kind": "product",
+            "first_seen": "20261110",
+            "week": "2026-11-14",
+            "approved": "2026-11-19T17:55:01",
+            "id": "core:AMZN:paperwhite",
+            "history": "first_seen"
+        }
+    ]
 }

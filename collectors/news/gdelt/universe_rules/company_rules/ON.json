@@ -5,7 +5,9 @@
   "ON Semiconductor",
   "onsemi"
  ],
- "expansion_keywords": [],
+ "expansion_keywords": [
+  "EliteSiC M4"
+ ],
  "tightened": "2026-11-03",
  "weak_names_not_counted": [],
  "dropped_expansion": [
@@ -27,5 +29,17 @@
    "min_matches": 1,
    "trust_single_match": true
   }
- }
+ },
+ "auto_keywords": [
+  {
+   "term": "EliteSiC M4",
+   "as": "keyword",
+   "kind": "product",
+   "first_seen": "20261110",
+   "week": "2026-11-14",
+   "approved": "2026-11-19T17:55:01",
+   "id": "universe:ON:elitesic m4",
+   "history": "first_seen"
+  }
+ ]
 }

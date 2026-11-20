@@ -27,7 +27,9 @@
         "Gigafactory",
         "Cybertruck",
         "Supercharger",
-        "Model Y"
+        "Model Y",
+        "Cybercab",
+        "Full Self-Driving"
     ],
     "special_rules": {
         "ambiguous": {
@@ -58,5 +60,27 @@
             ],
             "min_matches": 1
         }
-    }
+    },
+    "auto_keywords": [
+        {
+            "term": "Cybercab",
+            "as": "keyword",
+            "kind": "product",
+            "first_seen": "20261107",
+            "week": "2026-11-14",
+            "approved": "2026-11-19T17:55:01",
+            "id": "core:TSLA:cybercab",
+            "history": "first_seen"
+        },
+        {
+            "term": "Full Self-Driving",
+            "as": "keyword",
+            "kind": "product",
+            "first_seen": "20261028",
+            "week": "2026-11-04",
+            "approved": "2026-11-19T17:55:01",
+            "id": "core:TSLA:full self-driving",
+            "history": "first_seen"
+        }
+    ]
 }

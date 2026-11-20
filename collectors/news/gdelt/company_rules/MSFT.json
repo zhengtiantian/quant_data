@@ -29,7 +29,8 @@
         "Surface Pro",
         "Windows",
         "GitHub",
-        "DirectX"
+        "DirectX",
+        "M365"
     ],
     "special_rules": {
         "ambiguous": {
@@ -60,5 +61,17 @@
     "headline_names": [
         "Microsoft",
         "Xbox"
+    ],
+    "auto_keywords": [
+        {
+            "term": "M365",
+            "as": "keyword",
+            "kind": "product",
+            "first_seen": "20261112",
+            "week": "2026-11-14",
+            "approved": "2026-11-19T17:55:01",
+            "id": "core:MSFT:m365",
+            "history": "first_seen"
+        }
     ]
 }
