@@ -30,9 +30,10 @@ Tiers shown to the user: "add" (model says it belongs, co-mention >= STRONG, not
           GKG read per month for all of them (<OUT>/rescan.json records each). core: the collector's rules,
           then downloaded into news_articles like backfill_symbol_news.py, for the nightly company match
           and enrichment. universe: rules + headline gate, merged into backfill_universe_news.py's kept
-          rows and label todo lists (a month already labelled is written again; its old labels are reused,
-          only the new headlines go to the model). Run at the start of each universe backfill window
-          (it holds LM Studio: the filter may ask the SLM), before the labels.
+          rows (downloaded by the same run's fetch, then labelled by the students). Run daily since
+          2026-11-20 by backfill_universe_news.py daily (airflow coverage_watch_daily, 09:20 after the
+          audit; it holds LM Studio: the core filter may ask the SLM). The universe windows that ran it
+          until 2026-11-07 were removed with the title-only labels.
 
   screen  (2026-11-19) the collateral check of the latest run's add / weak candidates (or --run DATE): past
           co-mention over 24 months of GKG headlines, the words and companies next to the term in the

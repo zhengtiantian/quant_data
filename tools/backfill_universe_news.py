@@ -21,17 +21,19 @@ the GKG headline by one model. Steps, each resumable:
           headlines per request agreed on 71%; the labels must match the ones already stored.
           -> <labels>/<YYYY-MM>.jsonl, one row per kept URL; <labels>/<YYYY-MM>.keys.jsonl while a
           month is under way
-  fetch   (not scheduled) download and store in news_articles_universe
+  fetch   download into news_articles (origin=universe_backfill, 2026-11-10) and promote
   (rescan) before the labels, each window runs tools/keyword_refresh.py rescan: past months for keywords
           added in the weekly review (2026-11-04)
 
-  window --until HH:MM   the scheduled form (airflow/dags/universe_news_backfill.py: 11:30-15:45 and
-          16:30-23:00, the hours the user gave, clear of job_agent at 11:00 / 16:00 and the 04:00 chain):
-          runs whatever is unfinished in the order above and stops before HH:MM, between months
-          (scan), companies (filter) or chunks of headlines (label).
+  window --until HH:MM   the scheduled form until 2026-11-07 (airflow/dags/universe_news_backfill.py, removed
+          with the title-only labels): runs whatever is unfinished in the order above and stops before
+          HH:MM, between months (scan), companies (filter) or chunks of headlines (label).
+  daily --until HH:MM    the scheduled form since 2026-11-20 (airflow/dags/keyword_refresh.py,
+          coverage_watch_daily): extend, the keyword rescan, then fetch for the companies whose kept rows
+          grew, and promote. No labels: tools/universe_students.py runs next.
 
 Usage: .venv311/bin/python tools/backfill_universe_news.py scan|filter|index|extend|prepend|refilter|label|fetch|status [SYMBOLS...]
-       .venv311/bin/python tools/backfill_universe_news.py window --until 15:00
+       .venv311/bin/python tools/backfill_universe_news.py daily --until 10:40
        (under tools/lm_session.py run --model qwen3.5-9b-mlx --workers-env LM_WORKERS -- ...)
 """
 
@@ -548,11 +550,64 @@ def _insert_new(col, rows: list, err) -> int:
         return e.details.get("nInserted", 0)
 
 
-def window(until: str) -> None:
+def _deadline(until: str) -> float | None:
+    """Today's HH:MM as a timestamp; None (and a note) when it is less than two minutes away."""
     h, m = map(int, until.split(":"))
     end = datetime.now().replace(hour=h, minute=m, second=0, microsecond=0).timestamp()
     if time.time() >= end - 120:
         print(f"started after the window ({until}); nothing to do")
+        return None
+    return end
+
+
+def fetch_grown(rm, deadline: float | None = None) -> list:
+    """fetch for every company whose kept.jsonl changed after its last download (kept.fetched older or missing):
+    the rows extend / a keyword rescan / a rule rescan appended. Downloads only what is neither stored nor tried
+    before (fetch_stage), then marks the company done by touching kept.fetched. Stops between companies."""
+    fw = int(os.getenv("FETCH_WORKERS", "20"))
+    done = []
+    for s in sorted(rm.company_configs):
+        kept, fetched = WORK / s / "kept.jsonl", WORK / s / "kept.fetched"
+        if not kept.exists() or not kept.stat().st_size:
+            continue
+        if fetched.exists() and fetched.stat().st_mtime >= kept.stat().st_mtime:
+            continue
+        if deadline and time.time() >= deadline:
+            print(f"fetch: stopped at the deadline, {len(done)} companies done", flush=True)
+            break
+        bf.fetch_stage(s, rm.company_configs[s].get("name") or s, kept, fw)
+        fetched.touch()
+        done.append(s)
+    print(f"fetch: {len(done)} companies with new rows {done[:20]}", flush=True)
+    return done
+
+
+def daily(until: str) -> None:
+    """The scheduled form since 2026-11-20 (airflow/dags/keyword_refresh.py coverage_watch_daily, after the keyword
+    audit). The title-label windows that ran extend and the keyword rescan were removed on 2026-11-07 and nothing
+    ran either since. Months that ended since the scan (extend), past months for the keywords added in the
+    review (tools/keyword_refresh.py rescan: core and universe; the core part uses the SLM, hence lm_session),
+    then the companies whose kept rows grew downloaded (fetch_grown) and promoted. The students relevance-check
+    and label what was promoted (tools/universe_students.py, the next task). Stops at `until`; resumable."""
+    end = _deadline(until)
+    if end is None:
+        return
+    rm = rules()
+    syms = sorted(rm.company_configs)
+    print(f"daily until {until}: {len(syms)} companies", flush=True)
+    if extend(rm, syms, end):
+        import keyword_refresh
+        try:
+            keyword_refresh.rescan(end)
+        except Exception as e:  # noqa: BLE001 - a failed keyword rescan must not hold up the months' downloads
+            print(f"keyword rescan failed, fetch goes on: {type(e).__name__}: {e}", flush=True)
+    fetch_grown(rm, end)
+    promote()
+
+
+def window(until: str) -> None:
+    end = _deadline(until)
+    if end is None:
         return
     rm = rules()
     syms = sorted(rm.company_configs)
@@ -582,6 +637,9 @@ def window(until: str) -> None:
 def main(stage: str, args: list) -> None:
     if stage == "window":
         window(args[args.index("--until") + 1] if "--until" in args else "23:59")
+        return
+    if stage == "daily":
+        daily(args[args.index("--until") + 1] if "--until" in args else "23:59")
         return
     if stage == "status":
         status()
@@ -626,6 +684,7 @@ def main(stage: str, args: list) -> None:
             if kept.exists():
                 print(f"PROGRESS [shard {shard_idx}/{shard_total}] fetch_pass2 {i} {len(my_syms)} {s} {time.time() - t0:.0f}s", flush=True)
                 bf.fetch_stage(s, rm.company_configs[s].get("name") or s, kept, fw)
+                (WORK / s / "kept.fetched").touch()      # fetch_grown: this company is up to date
         promote()
 
 

@@ -17,8 +17,17 @@ coverage_watch_daily     (2026-11-19) 09:20 Irish time: tools/coverage_watch.py 
                          kept against its usual, rule faults replayed) and `keyword_refresh.py audit`
                          (what each added term brought in; failing auto-added terms are taken out).
                          Created paused.
-Past news for an added keyword is searched at the start of the next universe backfill window
-(backfill_universe_news.py window -> keyword_refresh.py rescan), which holds LM Studio.
+                         Then (2026-11-20, the user's go-ahead) the universe news update: the universe
+                         backfill windows that read each month as it ended and searched an added keyword's
+                         past news were removed on 2026-11-07 and nothing ran either since (the 490
+                         companies' news stopped at 2026-10; the 11-19 auto-added terms were never
+                         searched back). `backfill_universe_news.py daily --until 10:40`: months that ended
+                         (extend), `keyword_refresh.py rescan` (core and universe; the core rows go through
+                         the SLM, so LM Studio is held), downloads for the companies with new rows, promote;
+                         stops at 10:40, clear of job_agent at 11:00. Then tools/universe_students.py all:
+                         relevance and labels A/B for what was promoted (its own lm_session per chunk, quiet
+                         around 11:00 / 16:00). A few minutes on most days; the first of a month reads the
+                         month that ended.
 Both created paused; unpaused 2026-11-04 at the user's go-ahead.
 """
 
@@ -87,4 +96,12 @@ with DAG(
 ) as daily:
     watch = host_task("coverage_watch", "tools/coverage_watch.py", execution_timeout=timedelta(minutes=20))
     kw_audit = host_task("keyword_audit", "tools/keyword_refresh.py audit", execution_timeout=timedelta(minutes=20))
-    watch >> kw_audit
+    universe = host_task(
+        "universe_update",
+        "tools/backfill_universe_news.py daily --until 10:40",
+        execution_timeout=timedelta(minutes=90),
+        lm_model="qwen3.5-9b-mlx",
+        lm_workers_env=("LM_WORKERS",),
+    )
+    students = host_task("universe_students", "tools/universe_students.py all", execution_timeout=timedelta(hours=4))
+    watch >> kw_audit >> universe >> students

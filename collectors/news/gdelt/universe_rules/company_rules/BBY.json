@@ -18,11 +18,29 @@
  ],
  "special_rules": {
   "ambiguous": {
-   "problem": "Best Buy: also an ordinary word, a surname, a place or another organisation",
+   "problem": "N.8 context rule 2026-11-20: 'Best Buy' is unambiguous in a headline but most headlines are other sellers' product deals at Best Buy, and 'best buy' is also a rating (wine, cars, stocks). The SLM dropped company news (CEO, results); the shop deals, ratings and the shop's own pages are excluded instead.",
    "required_keywords": [
     "Best Buy"
    ],
-   "min_matches": 1
+   "min_matches": 1,
+   "trust_single_match": true,
+   "exclude_title_patterns": [
+    "^(?!.*(?:NYSE:\\s?BBY\\b|\\(BBY\\)|\\$BBY\\b|Best Buy(?:'s)?\\s+(?:Co\\b|Inc\\b|stock|shares|earnings|CEO|cuts|raises|lowers|lifts|reports?|posts?|beats?|misses|tops|sees|says|warns|names?|forecasts?|predicts|profit|revenue|results|outlook|guidance|Q[1-4]\\b|quarterly|fiscal))).*(?:\\$\\s?\\d[\\d,.]*\\s*(?:off|discount|price cut|cheaper)\\b|\\b\\d+\\s?%\\s*off\\b|\\bdeals\\b|\\brestocks?\\b|\\bpre-?orders?\\b|\\b(?:is|are|now|back|still|available) in stock\\b|\\bin stock (?:at|now|today|online)\\b|\\bin-stock\\b|\\bsold out\\b|\\bwhere to (?:buy|find|pre-?order)\\b|\\bon sale\\b|\\bsale\\b|\\bdiscount\\w*|\\bprice (?:cut|drop|match)\\w*|\\bcoupons?\\b|\\bdoorbusters?\\b|\\bclearance\\b|\\bclear-?out\\b|\\bgift cards?\\b|\\bsave (?:up to |big |on |\\$|almost |over )|\\bsavings\\b|\\bfor (?:under |as low as |just |only )?\\$\\d[\\d,.]*(?!\\s*(?:million|billion|bn|mn|m|b)\\b)|\\blowest(?:[- ]ever)? price|\\ball-time low\\b|\\bbargains?\\b|\\bmarkdowns?\\b|\\bpromo code\\b|\\b(?:best|top|great|sweet|steal|hot|daily|early|tv|laptop|this|that|monitor|phone|headphone|gaming|friday|monday|day|week|holiday|flash) deal\\b|\\bdeal (?:of the day|alert|at|from|on (?:a|an|the|this)\\b)|\\bdeal:|\\ba solo \\$|\\$\\d[\\d,.]* en Best Buy|\\b(?:just|only) \\$\\d|\\bpromos?\\b|\\btrade-in\\b|\\bsave you\\b|\\bdropped the price\\b)",
+    "^(?!.*(?:NYSE:\\s?BBY\\b|\\(BBY\\)|\\$BBY\\b|Best Buy(?:'s)?\\s+(?:Co\\b|Inc\\b|stock|shares|earnings|CEO|cuts|raises|lowers|lifts|reports?|posts?|beats?|misses|tops|sees|says|warns|names?|forecasts?|predicts|profit|revenue|results|outlook|guidance|Q[1-4]\\b|quarterly|fiscal))).*(?-i:\\b(?:best buy|Best buy|best Buy)\\b)",
+    "^(?!.*(?:NYSE:\\s?BBY\\b|\\(BBY\\)|\\$BBY\\b|Best Buy(?:'s)?\\s+(?:Co\\b|Inc\\b|stock|shares|earnings|CEO|cuts|raises|lowers|lifts|reports?|posts?|beats?|misses|tops|sees|says|warns|names?|forecasts?|predicts|profit|revenue|results|outlook|guidance|Q[1-4]\\b|quarterly|fiscal))).*(?:Best Buy (?:Awards?|rating|rated|table|tables|stocks|picks|wines?|beers?|whiske?ys?)\\b|\\bbest buy-rated|Kelley Blue Book|Consumer Reports|\\bCR Best Buy|Which\\? Best Buy|Wine Enthusiast|ScubaLab)",
+    "^(?!.*(?:NYSE:\\s?BBY\\b|\\(BBY\\)|\\$BBY\\b|Best Buy(?:'s)?\\s+(?:Co\\b|Inc\\b|stock|shares|earnings|CEO|cuts|raises|lowers|lifts|reports?|posts?|beats?|misses|tops|sees|says|warns|names?|forecasts?|predicts|profit|revenue|results|outlook|guidance|Q[1-4]\\b|quarterly|fiscal))).*\\b(?:the|a|our|my|your|is|are) Best Buy\\b(?!'s| (?:Co\\b|Inc\\b|stock|shares|stores?|employees?|workers?|CEO|customers?|shoppers?|locations?|Health|Canada))",
+    "^(?!.*(?:NYSE:\\s?BBY\\b|\\(BBY\\)|\\$BBY\\b|Best Buy(?:'s)?\\s+(?:Co\\b|Inc\\b|stock|shares|earnings|CEO|cuts|raises|lowers|lifts|reports?|posts?|beats?|misses|tops|sees|says|warns|names?|forecasts?|predicts|profit|revenue|results|outlook|guidance|Q[1-4]\\b|quarterly|fiscal))).*(?<![\\d,.])\\b\\d{1,3} Best Buy\\b(?! (?:stores?|locations?|employees?|workers?|jobs))",
+    "\\s-\\s+Best Buy(?:\\s*$|(?-i:,\\s*[a-z]))",
+    "^Best Buy: .*(?-i:, [a-z][a-z0-9 ]*)$"
+   ],
+   "domain_kill": [
+    "www.bestbuy.com/",
+    "//bestbuy.com/",
+    "www.bestbuy.ca/",
+    "//bestbuy.ca/",
+    "o93x.net",
+    "7tiv.net"
+   ]
   }
  }
 }

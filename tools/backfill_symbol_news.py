@@ -197,9 +197,16 @@ def fetch_stage(symbol: str, name: str, kept: Path, workers: int) -> None:
     import historical_collector as hc
     import pymongo
     from pymongo import UpdateOne
-    if RULES_DIR and getattr(hc, "_rule_manager", None) is None:
-        from special_rules import RuleManager
-        hc._rule_manager = RuleManager(RULES_DIR)
+    # the download re-checks each page with this run's rule set. One process can fetch core rows, then universe
+    # rows (backfill_universe_news daily, 2026-11-20): the rules loaded first must not judge the other set.
+    cur = getattr(hc, "_rule_manager", None)
+    if RULES_DIR:
+        if cur is None or os.path.realpath(cur.rules_dir) != os.path.realpath(RULES_DIR):
+            from special_rules import RuleManager
+            hc._rule_manager = RuleManager(RULES_DIR)
+    elif cur is not None and os.path.realpath(cur.rules_dir) != os.path.realpath(
+            os.path.join(os.path.dirname(hc.__file__), "company_rules")):
+        hc._rule_manager = None                         # the collector loads its own (core) rules again
     col = pymongo.MongoClient(os.getenv("MONGO_URI"))["quant_data"][NEWS_COLLECTION]
     done_file = kept.with_suffix(".fetched")
     done = set(done_file.read_text().split("\n")) if done_file.exists() else set()

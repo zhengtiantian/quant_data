@@ -9,19 +9,27 @@
  "weak_names_not_counted": [],
  "special_rules": {
   "ambiguous": {
-   "problem": "Waste Management: also an ordinary word, a surname, a place or another organisation; generic uses excluded (rule check 2026-11-04: 0/8)",
+   "problem": "N.8 context rule 2026-11-20: 'waste management' is mostly the ordinary phrase (city waste, plastics, other firms' names) and the SLM dropped most of the company's own news (NYSE:WM holdings, results). The headline must show the company itself: its full name, the ticker, or Waste Management as the subject of company news; other firms called '<Name> Waste Management' and the Phoenix Open are excluded.",
    "required_keywords": [
     "Waste Management"
    ],
    "min_matches": 1,
-   "exclude_patterns": [
-    "\\b(solid|industrial|municipal|medical|bio-?medical|hazardous|plastics?|PET|proper|e-|electronic|household|sustainable|integrated|responsible|community|urban|city|county)[ -]waste management",
-    "waste management (projects?|contracts?|efforts?|plans?|systems?|sector|policy|policies|facilit(y|ies)|practices|law|bill|crisis|issues?|problems?|programmes?|programs?|infrastructure|services in|in the)\\b"
-   ],
    "exclude_title_patterns": [
-    "\\b(a|in|of|for|on|and|the) (Revolution in |better |proper |scientific |sustainable )?(E-)?Waste Management\\b(?! Inc)",
-    "\\bE-Waste Management\\b",
-    "Waste Management (Contracts?|Projects?|Plan|Efforts?|Crisis|Policy|Bill|Law|Act|Authority|Board|Department|Unit|Centre|Center|Facility)\\b"
+    "^(?!.*(?:NYSE:\\s?WM\\b|\\bWM:NYSE\\b|\\(WM\\)|\\$WM\\b|Waste Management,? Inc\\b)).*(?:\\b(solid|industrial|municipal|medical|bio-?medical|hazardous|plastics?|PET|proper|e-|electronic|household|sustainable|integrated|responsible|community|urban|city|county)[ -]waste management)",
+    "^(?!.*(?:NYSE:\\s?WM\\b|\\bWM:NYSE\\b|\\(WM\\)|\\$WM\\b|Waste Management,? Inc\\b)).*(?:waste management (projects?|contracts?|efforts?|plans?|systems?|sector|policy|policies|facilit(y|ies)|practices|law|bill|crisis|issues?|problems?|programmes?|programs?|infrastructure|services in|in the)\\b)",
+    "^(?!.*(?:NYSE:\\s?WM\\b|\\bWM:NYSE\\b|\\(WM\\)|\\$WM\\b|Waste Management,? Inc\\b)).*(?:\\b(a|in|of|for|on|and|the) (Revolution in |better |proper |scientific |sustainable )?(E-)?Waste Management\\b(?!,? Inc))",
+    "^(?!.*(?:NYSE:\\s?WM\\b|\\bWM:NYSE\\b|\\(WM\\)|\\$WM\\b|Waste Management,? Inc\\b)).*(?:\\bE-Waste Management\\b)",
+    "^(?!.*(?:NYSE:\\s?WM\\b|\\bWM:NYSE\\b|\\(WM\\)|\\$WM\\b|Waste Management,? Inc\\b)).*(?:Waste Management (Contracts?|Projects?|Plan|Efforts?|Crisis|Policy|Bill|Law|Act|Authority|Board|Department|Unit|Centre|Center|Facility)\\b)",
+    "^(?!.*(?:NYSE:\\s?WM\\b|\\bWM:NYSE\\b|\\(WM\\)|\\$WM\\b|Waste Management,? Inc\\b)).*(?:Phoenix Open|(?-i:Waste Management Open\\b))",
+    "^(?!.*(?:NYSE:\\s?WM\\b|\\bWM:NYSE\\b|\\(WM\\)|\\$WM\\b|Waste Management,? Inc\\b)).*(?:Waste Management (?:Stocks|Market|Industry|Sector|Companies|Firms|Solutions? Market|Expert|Specialist|Officer|Manager|Engineer|Course|Training|Conference|Summit|Week|Day|Award))",
+    "^(?!.*(?:NYSE:\\s?WM\\b|\\bWM:NYSE\\b|\\(WM\\)|\\$WM\\b|Waste Management,? Inc\\b)).*(?:\\b(?:Cleanaway|Kenny|KDEB|Valencia|Daiseki|Re Sustainability|Ramky|Advanced Disposal|Casella|Clean Harbors|Veolia|Biffa|Suez|Remondis|Stericycle|Covanta|Recology|Rumpke|Republic Services|Wheelabrator|Sembcorp|SembWaste|Enviro|Green|Eco|Metro|Regional|National|Northern|Southern|Eastern|Western|Coastal)\\w* Waste Management)"
+   ],
+   "trust_single_match": true,
+   "title_context_patterns": [
+    "Waste Management,? Inc\\b|\\bNYSE:\\s?WM\\b|\\bWM:NYSE\\b|\\(WM\\)|\\$WM\\b|\\bWM stock\\b",
+    "(?-i:Waste Management(?:'s)? (?!and |or |in |of |for |is (?:a|an|the|key|crucial|vital|important|essential) )[a-z])",
+    "(?-i:Waste Management|WASTE MANAGEMENT)(?:'s)?:?\\s+(?:to|is|was|will|has|had|says|said|reports?|posts?|beats?|misses|tops|raises|lowers|lifts|boosts?|cuts|increases?|names?|named|hires|appoints|acquires?|buys|bought|agrees?|approves?|completes?|closes?|closing|sells|sold|sues|sued|loses|faces|fined|settles?|wins|won|plans?|opens?|launches?|expands?|invests?|announces?|unveils?|offers?|offering|pledges?|sends?|adopts?|resumes?|ranked|ranks|partners?|teams|donates?|celebrates?|honors?|recognized|seeks?|wants?|asks?|CEO|CFO|COO|president|chief|executives?|officials?|employees?|workers?|drivers?|trucks?|truck|landfills?|stock|shares|analysts?|earnings|revenue|profit|results|Q[1-4]\\b|[1-4]Q\\b|quarter|quarterly|fiscal|FY\\d*|outlook|guidance|forecasts?|dividend|buyback|deal|contract|strike|union|layoffs?|Inc|Corp|Co\\b|garbage|trash|recycling|pickup|collection|customers?|rates?|plant|site|bins?|of (?:Alameda|Arizona|California|Florida|Illinois|Michigan|Ohio|Oregon|Texas|Washington|New England|Wisconsin|Pennsylvania|Colorado|Georgia))",
+    "\\b(?:with|by|from|against|to|joins|sues|vs\\.?) (?-i:Waste Management|WASTE MANAGEMENT)(?:'s)?(?!\\s+(?:Plan|Act|Rules|Projects?|Polic\\w+|Strateg\\w+|Solutions?|Programs?|Programmes?|Practices|Systems?|Facilit\\w+|Market|Industry|Sector|Infrastructure|Services in|in\\b|for\\b|and\\b))"
    ]
   }
  }
