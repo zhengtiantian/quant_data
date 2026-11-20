@@ -591,6 +591,12 @@ def _fetch_html_with_requests(url):
         return raw.decode(resp.encoding or "utf-8", errors="replace")
 
 
+# lxml's HTML parser is not safe across threads: on 2026-11-20 "pointer being freed was not allocated" in
+# lxml.etree._fixHtmlDictNames (lxml 6.0.2, libxml2 2.14.6) aborted the universe fetch, which downloads in
+# threads (backfill_symbol_news.fetch_stage). One parse at a time; the download stays parallel.
+_PARSE_LOCK = threading.Lock()
+
+
 def _extract_article_payload(row, company, debug_trace=False):
     url = str(row["URL"])
     title = row.get("Title", "")
@@ -608,7 +614,8 @@ def _extract_article_payload(row, company, debug_trace=False):
         art.set_html(html)
         if debug_trace:
             print(f"🧭 TASK {task_id} -> download done {time.time() - t0:.2f}s")
-        art.parse()
+        with _PARSE_LOCK:
+            art.parse()
         _normalize_publish_date(base_data, art.publish_date)
         final_title = (art.title or "").strip() or title
         if not _should_keep_english_only(html=html, title=final_title, content=art.text):

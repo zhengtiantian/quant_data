@@ -12,6 +12,8 @@ the GKG headline by one model. Steps, each resumable:
   extend  each month that has ended since the scan: scanned, filtered and merged into the above (2026-11-04)
   prepend the months before the first scan's start when SINCE moves back (2018-01 on 2026-11-05), the same way
   refilter today's rules over every candidate again (2026-11-05), the label todo list rebuilt from the result
+  rescan  <tag> SYM...: companies whose keywords changed, every month scanned again and filtered, new kept rows
+          merged (N.8, 2026-11-19); then `fetch SYM...` downloads and promotes them
   label   newest month first. Rows of one company with the same headline (syndicated copies, ~20% in
           2021-06 and 2025-09) are labelled once. llm_enrich_articles.call_llm with today's prompt, title
           only, one headline per request: on 500 headlines (2026-11-03) a short prompt ran 1.7x faster but
@@ -250,6 +252,48 @@ def refilter(rm, syms: list, tag: str, deadline: float | None = None) -> bool:
     done.write_text(json.dumps({**changed, "months_to_rewrite": sorted(rewritten)}) + "\n")
     print(f"refilter {tag}: kept rows {changed['old']} -> {changed['new']}; written months to redo: {sorted(rewritten)}", flush=True)
     return True
+
+
+def rescan(rm, syms: list, tag: str, deadline: float | None = None) -> dict | None:
+    """Companies whose rules changed (N.8, 2026-11-19: short names with context rules, the former names of renamed
+    companies): every month from SINCE up to the first one the scan has not reached (scan.done) read again with
+    today's keywords into <work>/_rescan_<tag>/, filtered with today's rules, and the rows not kept before
+    appended to <SYM>/kept.jsonl; `fetch SYMS` then downloads what is not stored yet and promotes it. A row kept
+    before that today's rule rejects stays. Resumable by month (scan) and company (filter, merge); None when it
+    stopped at the deadline, else {symbol: new kept rows}."""
+    rdir = WORK / f"_rescan_{tag}"
+    rdir.mkdir(parents=True, exist_ok=True)
+    before = (WORK / "scan.done").read_text().strip() if (WORK / "scan.done").exists() else this_month()
+    old = bf.WORK_DIR
+    bf.WORK_DIR = str(rdir)                          # scan_many writes <WORK_DIR>/<SYM>/candidates.jsonl
+    try:
+        if not bf.scan_many({s: all_keywords(rm, s) for s in syms}, SINCE, deadline, before_month=before):
+            return None
+    finally:
+        bf.WORK_DIR = old
+    out = {}
+    for s in syms:
+        sdir = rdir / s
+        if not (sdir / "filter.done").exists():
+            if deadline and time.time() >= deadline:
+                return None
+            (sdir / "candidates.jsonl").touch()
+            for f in (sdir / "kept.jsonl", sdir / "kept.decided"):
+                f.unlink(missing_ok=True)             # a company cut off mid-filter starts again
+            bf.filter_stage(s, sdir / "candidates.jsonl", sdir / "kept.jsonl", WORKERS)
+            (sdir / "kept.jsonl").touch()
+            (sdir / "filter.done").write_text(datetime.now().isoformat(timespec="seconds"))
+        if not (sdir / "merged.done").exists():
+            kept = WORK / s / "kept.jsonl"
+            have = {json.loads(l)["url"] for l in kept.open()} if kept.exists() else set()
+            new = [l for l in (sdir / "kept.jsonl").open() if json.loads(l)["url"] not in have]
+            kept.parent.mkdir(parents=True, exist_ok=True)
+            with kept.open("a") as f:
+                f.writelines(new)
+            (sdir / "merged.done").write_text(str(len(new)))
+        out[s] = int((sdir / "merged.done").read_text())
+    print(f"rescan {tag}: new kept rows {json.dumps(out)}", flush=True)
+    return out
 
 
 def filter_all(rm, syms: list, deadline: float | None = None) -> bool:
@@ -560,6 +604,8 @@ def main(stage: str, args: list) -> None:
         extend(rm, syms)
     elif stage == "prepend":
         prepend(rm, syms)
+    elif stage == "rescan":                        # rescan <tag> SYM...: changed rules over every month again
+        rescan(rm, [a.upper() for a in args[1:]], args[0])
     elif stage == "refilter":                      # refilter <tag>: today's rules over every candidate again
         tag = args[0] if args else datetime.now().strftime("%Y-%m-%d")
         refilter(rm, sorted(rm.company_configs), tag)
