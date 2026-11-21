@@ -4,6 +4,8 @@ Daily advice DAG (host-based BashOperator), PROJECT_PLAN Q.16.
 Three times each weekday the advice models (research/models/daily_advice.py, retrained on Sundays by
 weekly_model_training) forecast each holding's next 5 / 20 / 60 sessions from fresh daily bars and
 the news store, into /Volumes/Data4T/daily_advice/latest.json, which quant_ai's daily action shows.
+The holdings are read from quant_ai at each run (daily_advice.held_symbols), so a stock bought or sold
+is followed from the next run; nothing about the portfolio is written here.
 
 Schedule (UTC): 13:30 = 08:30 New York before the open, 17:30 = 12:30 midday, 21:30 = 16:30 after
 the close (an hour later while New York is on daylight time).
@@ -31,8 +33,8 @@ with DAG(
     BashOperator(
         task_id="predict",
         on_failure_callback=notify_failure,
-        bash_command=f"cd {ROOT} && {PYTHON} {ROOT}/research/models/daily_advice.py predict $ADVICE_SYMBOLS",
-        env={**BASE_ENV, "ADVICE_SYMBOLS": "INTC SKHY TSM STX GOOGL"},
+        bash_command=f"cd {ROOT} && {PYTHON} {ROOT}/research/models/daily_advice.py predict",
+        env=BASE_ENV,
         append_env=True,
         execution_timeout=timedelta(minutes=20),
     )

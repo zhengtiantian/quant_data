@@ -36,6 +36,9 @@ import pandas as pd
 
 EP_DIR = Path(os.getenv("EP_DIR", "/Volumes/Data4T/earnings_policy"))
 OUT = Path(os.getenv("ADVICE_DIR", "/Volumes/Data4T/daily_advice"))
+# The stocks to advise on are the ones held now, read from quant_ai (its database is the record of the
+# portfolio); the list was hard-coded in the DAG until 2026-11-21 and drifted from the real holdings.
+QUANT_AI_SYMBOLS = os.getenv("QUANT_AI_SYMBOLS_URL", "http://127.0.0.1:18000/api/markets/portfolio/symbols")
 FEATURES_PARQUET = Path("/Volumes/Data4T/factor_lab/features.parquet")
 HORIZONS = (5, 20, 60)
 QUANTILES = (0.1, 0.5, 0.9)
@@ -600,6 +603,53 @@ def _calendar_study() -> dict:
             "day_before_report": k.get("1 days before the report")}
 
 
+def held_symbols() -> list:
+    """The stocks held now (quant_ai /portfolio/symbols). When quant_ai does not answer, the symbols of
+    the last run's latest.json, so a quant_ai restart does not cost a run."""
+    try:
+        import requests
+        r = requests.get(QUANT_AI_SYMBOLS, timeout=10)
+        r.raise_for_status()
+        held = [s for s in r.json().get("held") or [] if s]
+        if held:
+            return held
+        print("quant_ai lists no holdings", file=sys.stderr)
+    except Exception as e:  # noqa: BLE001
+        print(f"quant_ai did not answer ({e}); the last run's symbols instead", file=sys.stderr)
+    try:
+        return list(json.loads((OUT / "latest.json").read_text()).get("symbols") or {})
+    except (OSError, ValueError):
+        return []
+
+
+def _predict_one(s: str, peers: dict, spy, semi, macro, models, thr, bundle) -> dict:
+    """The advice for one stock: its forecasts, the call, recent drops with their causes, the barriers."""
+    d = peers.get(s) if s in peers else _fresh(s)
+    past, future = report_days(s)
+    f = features(d, spy, semi, past, future, _latest_news(s), macro)
+    x = f.iloc[[-1]]
+    res = {"as_of": str(d.index[-1].date()), "close": round(float(d.Close.iloc[-1]), 2), "horizons": {}}
+    raw = {}
+    for hz in HORIZONS:
+        r = {"p_up_raw": float(models[f"p_up{hz}"].predict_proba(x)[0, 1]),
+             "q10_raw": float(models[f"q10_{hz}"].predict(x)[0]), "q50": round(float(models[f"q50_{hz}"].predict(x)[0]), 2),
+             "q90_raw": float(models[f"q90_{hz}"].predict(x)[0])}
+        raw[hz] = r
+        res["horizons"][hz] = _apply_calibration(r, bundle["calibration"][str(hz)])
+    h20 = raw[20]
+    model_call = advice_from(h20["p_up_raw"], h20["q50"], h20["q10_raw"], raw[5]["p_up_raw"], thr)
+    res["model_call"] = model_call
+    res["call"] = model_call if bundle.get("direction_reliable") else "hold"
+    res["direction_reliable"] = bool(bundle.get("direction_reliable"))
+    res["events"] = recent_events(s, d, spy=spy, semi=semi)
+    try:                                             # Q.16.7: the barriers, aimed at getting out of a losing holding
+        import barrier_model
+        res["barrier"] = barrier_model.live(s, d, f)
+    except Exception as e:  # noqa: BLE001 - the rest of the advice stands without it
+        res["barrier_error"] = f"{type(e).__name__}: {e}"
+    return res
+
+
 def predict(syms: list) -> dict:
     import joblib
     bundle = joblib.load(OUT / "models.joblib")
@@ -621,32 +671,13 @@ def predict(syms: list) -> dict:
                              for h in HORIZONS},
            "decision_test": rep.get("decision"), "symbols": {},
            "macro": _macro_snapshot(),
-           "news_study": _news_study(), "calendar_study": _calendar_study()}
+           "news_study": _news_study(), "calendar_study": _calendar_study(), "errors": {}}
     for s in syms:
-        d = peers.get(s) if s in peers else _fresh(s)
-        past, future = report_days(s)
-        f = features(d, spy, semi, past, future, _latest_news(s), macro)
-        x = f.iloc[[-1]]
-        res = {"as_of": str(d.index[-1].date()), "close": round(float(d.Close.iloc[-1]), 2), "horizons": {}}
-        raw = {}
-        for hz in HORIZONS:
-            r = {"p_up_raw": float(models[f"p_up{hz}"].predict_proba(x)[0, 1]),
-                 "q10_raw": float(models[f"q10_{hz}"].predict(x)[0]), "q50": round(float(models[f"q50_{hz}"].predict(x)[0]), 2),
-                 "q90_raw": float(models[f"q90_{hz}"].predict(x)[0])}
-            raw[hz] = r
-            res["horizons"][hz] = _apply_calibration(r, bundle["calibration"][str(hz)])
-        h20 = raw[20]
-        model_call = advice_from(h20["p_up_raw"], h20["q50"], h20["q10_raw"], raw[5]["p_up_raw"], thr)
-        res["model_call"] = model_call
-        res["call"] = model_call if bundle.get("direction_reliable") else "hold"
-        res["direction_reliable"] = bool(bundle.get("direction_reliable"))
-        res["events"] = recent_events(s, d, spy=spy, semi=semi)
-        try:                                             # Q.16.7: the barriers, aimed at getting out of a losing holding
-            import barrier_model
-            res["barrier"] = barrier_model.live(s, d, f)
-        except Exception as e:  # noqa: BLE001 - the rest of the advice stands without it
-            res["barrier_error"] = f"{type(e).__name__}: {e}"
-        out["symbols"][s] = res
+        try:
+            out["symbols"][s] = _predict_one(s, peers, spy, semi, macro, models, thr, bundle)
+        except Exception as e:  # noqa: BLE001 - one stock (a listing too young for the features) leaves the others
+            out["errors"][s] = f"{type(e).__name__}: {e}"[:300]
+            print(f"{s}: no advice ({out['errors'][s]})", file=sys.stderr)
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "latest.json").write_text(json.dumps(out, indent=1, default=str))
     print(json.dumps(out["symbols"], indent=1, default=str))
@@ -669,4 +700,7 @@ if __name__ == "__main__":
         (OUT / "report.json").write_text(json.dumps(rep, indent=1, default=str))
         print({h: {k: v for k, v in c.items() if k != "p_grid"} for h, c in rep["calibration"].items()}, "direction_reliable:", rep["direction_reliable"])
     else:
-        predict(sys.argv[2:] or ["INTC"])
+        syms = sys.argv[2:] or held_symbols()
+        if not syms:
+            sys.exit("No holdings to advise on (quant_ai lists none and there is no earlier run)")
+        predict(syms)
