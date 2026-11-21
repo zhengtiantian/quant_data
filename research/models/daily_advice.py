@@ -41,7 +41,7 @@ HORIZONS = (5, 20, 60)
 QUANTILES = (0.1, 0.5, 0.9)
 FIRST_TEST_YEAR = 2019
 SEED = 7
-SEMIS = ["INTC", "TSM", "MU", "AMD", "NVDA", "AVGO", "AMAT", "LRCX", "KLAC", "QCOM", "ADI", "TXN", "MCHP", "ASML", "ARM", "SMCI", "STX"]
+SEMIS = ["INTC", "TSM", "MU", "AMD", "NVDA", "AVGO", "AMAT", "LRCX", "KLAC", "QCOM", "ADI", "TXN", "MCHP", "ASML", "ARM", "SMCI", "STX", "WDC"]
 NEWS_COLS = ["avg_sentiment_3d", "avg_sentiment_5d", "sentiment_shift_5d", "news_count_5d", "news_burst_20d",
              "negative_event_count_5d", "high_signal_count_3d"]
 # What each feature means, for the explanation on the page
@@ -423,16 +423,17 @@ NEG = r"plunge|plummet|tumble|slump|sink|fall|fell|drop|slide|crash|cut|weak|mis
 CAUSES = OUT / "drop_causes.json"
 
 
-def recent_events(sym: str, d: pd.DataFrame, lookback: int = 30) -> list:
+def recent_events(sym: str, d: pd.DataFrame, lookback: int = 30,
+                  spy: pd.Series | None = None, semi: pd.Series | None = None) -> list:
     """Each session in the last `lookback` down 5%+ or 2 x ATR+, with its cause: the most negative
     headlines of that day and the day before, put in one sentence (English and Chinese) by the local
-    model from the headlines alone; cached per symbol and day."""
-    import re
+    model from the headlines grounded by verified SPY / chip-basket moves; cached per symbol and day."""
     cache = json.loads(CAUSES.read_text()) if CAUSES.exists() else {}
     pc = d.Close.shift()
     tr = pd.concat([d.High - d.Low, (d.High - pc).abs(), (d.Low - pc).abs()], axis=1).max(axis=1)
     atr = tr.rolling(14).mean().shift()
     ret = d.Close.pct_change() * 100
+    spy_ret = spy.pct_change() * 100 if spy is not None else None
     out = []
     big = [i for i in range(max(1, len(d) - lookback), len(d))
            if ret.iloc[i] <= -5 or (atr.iloc[i] and (pc.iloc[i] - d.Close.iloc[i]) / atr.iloc[i] >= 2)]
@@ -442,7 +443,9 @@ def recent_events(sym: str, d: pd.DataFrame, lookback: int = 30) -> list:
         key = f"{sym}:{t.date()}"
         if key not in cache:
             heads = _drop_headlines(sym, d.index[i - 1], t)
-            cache[key] = {**_summarise(sym, t, r, heads), "sources": heads[:3]} if heads else None
+            spy_r1 = float(spy_ret.loc[t]) if (spy_ret is not None and t in spy_ret.index and pd.notna(spy_ret.loc[t])) else None
+            semi_r1 = float(semi.loc[t] * 100) if (semi is not None and t in semi.index and pd.notna(semi.loc[t])) else None
+            cache[key] = {**_summarise(sym, t, r, heads, spy_r1=spy_r1, semi_r1=semi_r1), "sources": heads[:3]} if heads else None
         ev = cache.get(key) or {"cause_en": "No news found that explains it", "cause_zh": "新闻库里没有找到能解释这次下跌的消息", "sources": []}
         out.append({"date": str(t.date()), "ret_pct": round(float(r), 1), **ev})
     CAUSES.write_text(json.dumps(cache, indent=1, default=str))
@@ -474,13 +477,23 @@ def _drop_headlines(sym: str, prev: pd.Timestamp, day: pd.Timestamp) -> list:
     return sorted(out, key=lambda r: -r["score"])[:12]
 
 
-def _summarise(sym: str, day: pd.Timestamp, ret: float, heads: list) -> dict:
-    """One sentence on the cause from the headlines only, by the local model (LM Studio)."""
+def _summarise(sym: str, day: pd.Timestamp, ret: float, heads: list,
+               spy_r1: float | None = None, semi_r1: float | None = None) -> dict:
+    """One sentence on the cause from headlines grounded by verified market/sector moves, by the local model."""
     import re
     import requests
     lines = "\n".join(f"- {h['title']}" for h in heads)
-    prompt = (f"{sym} closed {ret:.1f}% on {day.date()}. Headlines from the day before and that day:\n{lines}\n\n"
-              "Using only facts stated in these headlines, give the most likely cause of the drop. Reply with JSON only: "
+    ctx_parts = []
+    if spy_r1 is not None:
+        ctx_parts.append(f"S&P 500 (SPY) {spy_r1:+.1f}%")
+    if semi_r1 is not None:
+        ctx_parts.append(f"chip/storage peer basket {semi_r1:+.1f}%")
+    ctx = (f"Verified market moves on {day.date()}: {', '.join(ctx_parts)}. "
+           "Do NOT contradict these verified market moves (never claim the market or chip index rose when it fell). "
+           "If the headlines are stale/positive or do not explain today's drop, state that it fell with the broader/chip selloff with no clear company-specific catalyst in the headlines.\n\n") if ctx_parts else ""
+    prompt = (f"{sym} closed {ret:.1f}% on {day.date()}.\n{ctx}"
+              f"Headlines from the day before and that day:\n{lines}\n\n"
+              "Using only verified moves above and facts stated in these headlines, give the most likely cause of the drop. Reply with JSON only: "
               '{"cause_en": "<one sentence, <= 25 words>", "cause_zh": "<the same in Chinese, <= 50 characters>"}')
     url = os.getenv("LM_STUDIO_URL", "http://localhost:1234/v1").rstrip("/")
     model = os.getenv("ADVICE_LLM", "qwen3.5-9b-mlx")
@@ -496,6 +509,72 @@ def _summarise(sym: str, day: pd.Timestamp, ret: float, heads: list) -> dict:
     except Exception:  # noqa: BLE001 - no model: the top headline stands in
         pass
     return {"cause_en": heads[0]["title"], "cause_zh": heads[0]["title"], "by": "headline"}
+
+
+def _macro_snapshot() -> dict:
+    """Fresh 60-session macro baseline (10Y/2Y Treasury yields, DXY, HYG/IEF credit) for quant_ai's weather banner."""
+    out: dict = {}
+    try:
+        tnx = _fresh("^TNX").Close.dropna()
+        if len(tnx) >= 61:
+            out["as_of"] = str(tnx.index[-1].date())
+            out["y10"] = round(float(tnx.iloc[-1]), 2)
+            out["y10_60d_ago"] = round(float(tnx.iloc[-61]), 2)
+            out["y10_chg60"] = round(float(tnx.iloc[-1] - tnx.iloc[-61]), 2)
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        import io
+        import requests
+        r = requests.get("https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS2", timeout=10)
+        if r.ok:
+            s = pd.read_csv(io.StringIO(r.text))
+            vals = pd.to_numeric(s.iloc[:, 1], errors="coerce").dropna()
+            if len(vals) >= 61:
+                out["y2"] = round(float(vals.iloc[-1]), 2)
+                out["y2_60d_ago"] = round(float(vals.iloc[-61]), 2)
+                out["y2_chg60"] = round(float(vals.iloc[-1] - vals.iloc[-61]), 2)
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        dxy = _fresh("DX-Y.NYB").Close.dropna()
+        if len(dxy) >= 61 and float(dxy.iloc[-61]) > 0:
+            out["dxy"] = round(float(dxy.iloc[-1]), 2)
+            out["dxy_60d_ago"] = round(float(dxy.iloc[-61]), 2)
+            out["dollar_chg60"] = round(float((dxy.iloc[-1] / dxy.iloc[-61] - 1.0) * 100.0), 2)
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        hyg = _fresh("HYG").Close.dropna()
+        ief = _fresh("IEF").Close.dropna()
+        ratio = np.log((hyg / ief).dropna())
+        if len(ratio) >= 21:
+            out["credit_chg20"] = round(float((ratio.iloc[-1] - ratio.iloc[-21]) * 100.0), 2)
+        if len(ratio) >= 61:
+            out["credit_chg60"] = round(float((ratio.iloc[-1] - ratio.iloc[-61]) * 100.0), 2)
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        cl = _fresh("CL=F").Close.dropna()
+        if len(cl) >= 21 and float(cl.iloc[-21]) > 0:
+            out["oil"] = round(float(cl.iloc[-1]), 2)
+            out["oil_20d_ago"] = round(float(cl.iloc[-21]), 2)
+            out["oil_chg20"] = round(float((cl.iloc[-1] / cl.iloc[-21] - 1.0) * 100.0), 2)
+        if len(cl) >= 61 and float(cl.iloc[-61]) > 0:
+            out["oil_60d_ago"] = round(float(cl.iloc[-61]), 2)
+            out["oil_chg60"] = round(float((cl.iloc[-1] / cl.iloc[-61] - 1.0) * 100.0), 2)
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        bz = _fresh("BZ=F").Close.dropna()
+        if len(bz) >= 21 and float(bz.iloc[-21]) > 0:
+            out["brent"] = round(float(bz.iloc[-1]), 2)
+            out["brent_chg20"] = round(float((bz.iloc[-1] / bz.iloc[-21] - 1.0) * 100.0), 2)
+        if len(bz) >= 61 and float(bz.iloc[-61]) > 0:
+            out["brent_chg60"] = round(float((bz.iloc[-1] / bz.iloc[-61] - 1.0) * 100.0), 2)
+    except Exception:  # noqa: BLE001
+        pass
+    return out
 
 
 def _news_study() -> dict:
@@ -541,6 +620,7 @@ def predict(syms: list) -> dict:
            "model_quality": {str(h): {k: rep["horizons"][str(h)].get(k) for k in ("ic", "ic_t", "q10_breached_pct", "base_up_pct")}
                              for h in HORIZONS},
            "decision_test": rep.get("decision"), "symbols": {},
+           "macro": _macro_snapshot(),
            "news_study": _news_study(), "calendar_study": _calendar_study()}
     for s in syms:
         d = peers.get(s) if s in peers else _fresh(s)
@@ -560,7 +640,7 @@ def predict(syms: list) -> dict:
         res["model_call"] = model_call
         res["call"] = model_call if bundle.get("direction_reliable") else "hold"
         res["direction_reliable"] = bool(bundle.get("direction_reliable"))
-        res["events"] = recent_events(s, d)
+        res["events"] = recent_events(s, d, spy=spy, semi=semi)
         try:                                             # Q.16.7: the barriers, aimed at getting out of a losing holding
             import barrier_model
             res["barrier"] = barrier_model.live(s, d, f)
