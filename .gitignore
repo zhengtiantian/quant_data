@@ -67,3 +67,7 @@ catboost_info/
 
 # Local backups made before edits (*.YYYY-MM-DD-before-*.bak)
 *.bak
+
+# job_agent is a separate project; it only borrows the host Airflow. Its DAG file is a symlink
+# to ~/Library/Application Support/job_agent/job_agent_dags.py (source in its own Drive folder).
+airflow/dags/job_agent_daily.py
