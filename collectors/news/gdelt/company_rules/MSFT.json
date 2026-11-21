@@ -30,7 +30,9 @@
         "Windows",
         "GitHub",
         "DirectX",
-        "M365"
+        "M365",
+        "CEO Nadella",
+        "MAI Code 2"
     ],
     "special_rules": {
         "ambiguous": {
@@ -64,6 +66,16 @@
     ],
     "auto_keywords": [
         {
+            "term": "CEO Nadella",
+            "as": "keyword",
+            "kind": "executive",
+            "first_seen": "20261119",
+            "week": "2026-11-21",
+            "approved": "2026-11-21T08:55:01",
+            "id": "core:MSFT:ceo nadella",
+            "history": "first_seen"
+        },
+        {
             "term": "M365",
             "as": "keyword",
             "kind": "product",
@@ -71,6 +83,16 @@
             "week": "2026-11-14",
             "approved": "2026-11-19T17:55:01",
             "id": "core:MSFT:m365",
+            "history": "first_seen"
+        },
+        {
+            "term": "MAI Code 2",
+            "as": "keyword",
+            "kind": "product",
+            "first_seen": "20261118",
+            "week": "2026-11-21",
+            "approved": "2026-11-21T08:55:01",
+            "id": "core:MSFT:mai code 2",
             "history": "first_seen"
         }
     ]

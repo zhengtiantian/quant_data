@@ -46,7 +46,8 @@
         "Xeon E5",
         "Atom processor",
         "Brian Krzanich",
-        "Optane"
+        "Optane",
+        "Lip-Bu Tan"
     ],
     "special_rules": {
         "ambiguous": {
@@ -65,5 +66,17 @@
             ],
             "min_matches": 1
         }
-    }
+    },
+    "auto_keywords": [
+        {
+            "term": "Lip-Bu Tan",
+            "as": "keyword",
+            "kind": "executive",
+            "first_seen": "20261118",
+            "week": "2026-11-21",
+            "approved": "2026-11-21T08:55:01",
+            "id": "core:INTC:lip-bu tan",
+            "history": "first_seen"
+        }
+    ]
 }

@@ -29,7 +29,8 @@
     "Disney subscriber",
     "Disney dividend",
     "Imagineering",
-    "Invisible Horse"
+    "Invisible Horse",
+    "Jollywood Nights"
   ],
   "special_rules": {
     "ambiguous": {
@@ -92,6 +93,16 @@
       "week": "2026-11-14",
       "approved": "2026-11-19T17:55:01",
       "id": "core:DIS:invisible horse",
+      "history": "first_seen"
+    },
+    {
+      "term": "Jollywood Nights",
+      "as": "keyword",
+      "kind": "brand",
+      "first_seen": "20261117",
+      "week": "2026-11-21",
+      "approved": "2026-11-21T08:55:01",
+      "id": "core:DIS:jollywood nights",
       "history": "first_seen"
     }
   ]

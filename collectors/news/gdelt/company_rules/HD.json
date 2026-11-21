@@ -21,7 +21,8 @@
     "Home Depot quarter",
     "Home Depot results",
     "Home Depot acquisition",
-    "Home Depot dividend"
+    "Home Depot dividend",
+    "Richard McPhail"
   ],
   "special_rules": {
     "ambiguous": {
@@ -58,5 +59,17 @@
         "NYSE:HD"
       ]
     }
-  }
+  },
+  "auto_keywords": [
+    {
+      "term": "Richard McPhail",
+      "as": "keyword",
+      "kind": "executive",
+      "first_seen": "20261117",
+      "week": "2026-11-21",
+      "approved": "2026-11-21T08:55:01",
+      "id": "core:HD:richard mcphail",
+      "history": "first_seen"
+    }
+  ]
 }

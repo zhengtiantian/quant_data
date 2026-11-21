@@ -29,7 +29,8 @@
         "Supercharger",
         "Model Y",
         "Cybercab",
-        "Full Self-Driving"
+        "Full Self-Driving",
+        "Cybercabs"
     ],
     "special_rules": {
         "ambiguous": {
@@ -70,6 +71,16 @@
             "week": "2026-11-14",
             "approved": "2026-11-19T17:55:01",
             "id": "core:TSLA:cybercab",
+            "history": "first_seen"
+        },
+        {
+            "term": "Cybercabs",
+            "as": "keyword",
+            "kind": "product",
+            "first_seen": "20261116",
+            "week": "2026-11-21",
+            "approved": "2026-11-21T08:55:01",
+            "id": "core:TSLA:cybercabs",
             "history": "first_seen"
         },
         {

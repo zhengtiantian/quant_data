@@ -36,7 +36,9 @@
         "Echo Show 16",
         "Echo Studio",
         "Echo Time",
-        "Paperwhite"
+        "Paperwhite",
+        "Prime India",
+        "Tablet 12 Pro"
     ],
     "special_rules": {
         "ambiguous": {
@@ -94,6 +96,26 @@
             "week": "2026-11-14",
             "approved": "2026-11-19T17:55:01",
             "id": "core:AMZN:paperwhite",
+            "history": "first_seen"
+        },
+        {
+            "term": "Prime India",
+            "as": "keyword",
+            "kind": "service",
+            "first_seen": "20261119",
+            "week": "2026-11-21",
+            "approved": "2026-11-21T08:55:01",
+            "id": "core:AMZN:prime india",
+            "history": "first_seen"
+        },
+        {
+            "term": "Tablet 12 Pro",
+            "as": "keyword",
+            "kind": "product",
+            "first_seen": "20261114",
+            "week": "2026-11-21",
+            "approved": "2026-11-21T08:55:01",
+            "id": "core:AMZN:tablet 12 pro",
             "history": "first_seen"
         }
     ]

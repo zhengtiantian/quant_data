@@ -4,7 +4,9 @@
  "primary_keywords": [
   "Garmin"
  ],
- "expansion_keywords": [],
+ "expansion_keywords": [
+  "Instinct 3"
+ ],
  "tightened": "2026-11-03",
  "weak_names_not_counted": [],
  "dropped_expansion": [
@@ -19,5 +21,17 @@
   "Garmin Alpha",
   "Garmin ECHOMAP"
  ],
- "special_rules": {}
+ "special_rules": {},
+ "auto_keywords": [
+  {
+   "term": "Instinct 3",
+   "as": "keyword",
+   "kind": "product",
+   "first_seen": "20261115",
+   "week": "2026-11-21",
+   "approved": "2026-11-21T08:55:01",
+   "id": "universe:GRMN:instinct 3",
+   "history": "first_seen"
+  }
+ ]
 }

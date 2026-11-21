@@ -24,7 +24,8 @@
     "Nike layoff",
     "Nike quarter",
     "Nike results",
-    "Nike acquisition"
+    "Nike acquisition",
+    "Vaporfly"
   ],
   "special_rules": {
     "ambiguous": {
@@ -60,5 +61,17 @@
         "NYSE:NKE"
       ]
     }
-  }
+  },
+  "auto_keywords": [
+    {
+      "term": "Vaporfly",
+      "as": "keyword",
+      "kind": "product",
+      "first_seen": "20261116",
+      "week": "2026-11-21",
+      "approved": "2026-11-21T08:55:01",
+      "id": "core:NKE:vaporfly",
+      "history": "first_seen"
+    }
+  ]
 }

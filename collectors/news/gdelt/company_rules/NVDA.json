@@ -76,7 +76,8 @@
         "AI infrastructure spending",
         "Kimberly Powell",
         "Nemotron",
-        "RTX 5080"
+        "RTX 5080",
+        "Jay Puri"
     ],
     "special_rules": {
         "ambiguous": {
@@ -93,6 +94,16 @@
         }
     },
     "auto_keywords": [
+        {
+            "term": "Jay Puri",
+            "as": "keyword",
+            "kind": "executive",
+            "first_seen": "20261115",
+            "week": "2026-11-21",
+            "approved": "2026-11-21T08:55:01",
+            "id": "core:NVDA:jay puri",
+            "history": "first_seen"
+        },
         {
             "term": "Kimberly Powell",
             "as": "keyword",

@@ -22,7 +22,8 @@
     "PayPal revenue",
     "PayPal CEO",
     "PayPal layoff",
-    "NASDAQ:PYPL"
+    "NASDAQ:PYPL",
+    "Claire Bramley"
   ],
   "special_rules": {
     "ambiguous": {
@@ -61,5 +62,17 @@
         "Dan Schulman"
       ]
     }
-  }
+  },
+  "auto_keywords": [
+    {
+      "term": "Claire Bramley",
+      "as": "keyword",
+      "kind": "executive",
+      "first_seen": "20261120",
+      "week": "2026-11-21",
+      "approved": "2026-11-21T08:55:01",
+      "id": "core:PYPL:claire bramley",
+      "history": "first_seen"
+    }
+  ]
 }
